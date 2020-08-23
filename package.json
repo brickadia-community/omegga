@@ -1,0 +1,34 @@
+{
+  "name": "omegga",
+  "version": "0.0.1",
+  "description": "Brickadia server wrapper, installer, and automator",
+  "main": "index.js",
+  "dependencies": {
+    "blake3": "^2.1.4",
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.8.20",
+    "blessed-tab-container": "^1.0.0",
+    "brs-js": "^1.2.2",
+    "child_process": "^1.0.2",
+    "chokidar": "^3.4.1",
+    "colors": "^1.4.0",
+    "commander": "^5.1.0",
+    "disrequire": "^1.1.0",
+    "glob": "^7.1.6",
+    "js-yaml": "^3.14.0",
+    "jsonschema": "^1.2.6",
+    "lodash": "^4.17.19",
+    "node-fetch": "^2.6.0",
+    "npm": "^6.14.8",
+    "ps-tree": "^1.2.0",
+    "readline": "^1.3.0",
+    "strip-ansi": "^6.0.0",
+    "zucc": "^0.1.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Meshiest",
+  "license": "ISC"
+}

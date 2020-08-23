@@ -1,0 +1,7 @@
+package-lock.json
+node_modules
+server
+data
+plugins
+config.yml
+config.json
