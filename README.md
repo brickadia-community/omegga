@@ -43,7 +43,7 @@ class PluginName {
   }
 
   stop() {
-    this.omega
+    this.omegga
       .removeAllListeners('chatcmd:ping')
       .removeAllListeners('chatcmd:pos');
   }
