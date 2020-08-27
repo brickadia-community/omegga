@@ -74,8 +74,8 @@ class PluginName {
       "name": "!pos",
       "description": "announces player position",
       "example": "!pos",
-      "args": [],
+      "args": []
     }
-  ],
+  ]
 }
 ```
