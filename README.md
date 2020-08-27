@@ -48,6 +48,8 @@ class PluginName {
       .removeAllListeners('chatcmd:pos');
   }
 }
+
+module.exports = PluginName;
 ```
 
 ### `doc.json` (example)
