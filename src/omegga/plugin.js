@@ -107,8 +107,10 @@ class PluginLoader {
     }
 
     // make sure there are no plugins running
-    if (this.plugins.some(p => p.isLoaded()))
-      throw 'cannot re-scan plugins while a plugin is loaded';
+    if (this.plugins.some(p => p.isLoaded())) {
+      console.error('cannot re-scan plugins while a plugin is loaded');
+      return;
+    }
 
     // find all directories in the plugin path
     this.plugins = fs.readdirSync(this.path)
