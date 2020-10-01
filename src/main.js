@@ -18,6 +18,8 @@ const config = require('./softconfig');
 
 const program = require('commander')
   .description(package.description)
+  .option('-s, --serverless', 'Run omegga without a webserver')
+  .option('-p, --port', 'Specify a custom port for the webserver (default 8080)')
   .version(package.version)
   .action(() => {
     // TODO: start server if in configured folder

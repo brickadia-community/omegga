@@ -1,33 +1,50 @@
 {
   "name": "omegga",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Brickadia server wrapper, installer, and automator",
   "main": "index.js",
   "dependencies": {
-    "blake3": "^2.1.4",
     "blessed": "^0.1.81",
     "blessed-contrib": "^4.8.20",
     "blessed-tab-container": "^1.0.0",
+    "body-parser": "^1.19.0",
     "brs-js": "^1.2.3",
     "child_process": "^1.0.2",
     "chokidar": "^3.4.2",
     "colors": "^1.4.0",
     "commander": "^5.1.0",
     "disrequire": "^1.1.1",
+    "express": "^4.17.1",
     "glob": "^7.1.6",
     "js-yaml": "^3.14.0",
     "jsonschema": "^1.2.6",
     "lodash": "^4.17.20",
-    "node-fetch": "^2.6.0",
+    "nedb": "^1.8.0",
     "npm": "^6.14.8",
     "ps-tree": "^1.2.0",
     "readline": "^1.3.0",
-    "strip-ansi": "^6.0.0",
-    "zucc": "^0.1.2"
+    "socket.io": "^2.3.0",
+    "strip-ansi": "^6.0.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "css-loader": "^4.3.0",
+    "file-loader": "^6.1.0",
+    "node-sass": "^4.14.1",
+    "sass-loader": "^10.0.2",
+    "tabler-icons": "^1.30.0",
+    "vue": "^2.6.12",
+    "vue-loader": "^15.9.3",
+    "vue-router": "^3.4.5",
+    "vue-socket.io": "^3.0.10",
+    "vue-style-loader": "^4.1.2",
+    "vue-template-compiler": "^2.6.12",
+    "webpack": "^4.44.2",
+    "webpack-cli": "^3.3.12"
+  },
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dist": "export MODE=production; npm run build",
+    "watch": "npx webpack --watch"
   },
   "author": "Meshiest",
   "license": "ISC"

@@ -6,6 +6,9 @@ const config = require('../softconfig.js');
 // Check if this plugin is disabled
 const DISABLED_FILE = 'disabled.omegga';
 
+// TODO: plugin_nodevm https://www.npmjs.com/package/vm2
+// TODO: move doc.json to this file
+
 /*
   Plugin interface
     Allows omegga to interface with plugins of a format
@@ -125,9 +128,14 @@ class PluginLoader {
         // let users know if there's a missing plugin format
         if (!PluginFormat)
           console.error('Missing plugin format for', dir);
+        try {
+          // if there is a plugin format, create the plugin instance (but don't load yet)
+          return PluginFormat && new PluginFormat(dir, this.omegga);
+        } catch (e) {
+          // if a plugin format fails to load, prevent omegga from dying
+          console.error('Error loading plugin format', PluginFormat, e);
+        }
 
-        // if there is a plugin format, create the plugin instance (but don't load yet)
-        return PluginFormat && new PluginFormat(dir, this.omegga);
       })
       // remove plugins without formats
       .filter(p => p);
