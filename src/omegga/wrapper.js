@@ -8,7 +8,7 @@ const BrickadiaServer = require('../brickadia/server.js');
 const validate = require('../config/validator.js');
 const soft = require('../softconfig.js');
 
-const GENERIC_LINE_REGEX = /^\[(?<date>\d{4}\.\d\d.\d\d-\d\d.\d\d.\d\d:\d{3})\]\[\s*(?<counter>\d+)\](?<generator>\w+): (?<data>.+)$/;
+const GENERIC_LINE_REGEX = /^(\[(?<date>\d{4}\.\d\d.\d\d-\d\d.\d\d.\d\d:\d{3})\]\[\s*(?<counter>\d+)\])?(?<generator>\w+): (?<data>.+)$/;
 
 class OmeggaWrapper extends EventEmitter {
   #server = undefined;

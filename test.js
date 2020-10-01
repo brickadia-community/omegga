@@ -3,7 +3,7 @@ const colors = require('colors');
 
 const { Omegga, config } = require('.');
 
-const server = new Omegga('.', config.read('./config.yml'));
+const server = new Omegga('.', config.read('./.omegga-config.yml'));
 
 let logging = true;
 server.on('line', l => logging && console.log('[out]'.blue, l));
@@ -19,7 +19,7 @@ server.on('cmd:reload', name => {
     console.log('Loaded', server.pluginLoader.plugins.filter(p => p.isLoaded()).map(p => p.getName()));
   }
 });
-server.on('cmd:logs', name => {
+server.on('chatcmd:logs', name => {
   if(server.getPlayer(name).isHost()) {
     logging = !logging;
   }
@@ -85,6 +85,12 @@ server.on('chatcmd:savedata', async (name, args) => {
   }
 });
 
+process.on('uncaughtException', err => {
+  try { server.pluginLoader.unload(); } catch (e) { console.error(e); }
+  try { server.stop(); } catch (e) { console.error(e); }
+  process.exit();
+});
+
 readline.createInterface({input: process.stdin, output: process.stdout, terminal: false})
   .on('line', line => {
     const [cmd, ...args] = line.split(' ');
@@ -99,8 +105,10 @@ readline.createInterface({input: process.stdin, output: process.stdout, terminal
       console.log('Loaded', server.pluginLoader.plugins.filter(p => p.isLoaded()).map(p => p.getName()));
     }
 
-    if (cmd === 'stop')
+    if (cmd === 'stop') {
+      server.pluginLoader.unload();
       server.stop();
+    }
 
     if (cmd === 'exit')
       process.exit();

@@ -16,9 +16,8 @@ const MATCHERS = [
   require('./matchers/command.js'), // 'cmd:command' event => name, args (string)
   require('./matchers/auth.js'), // assigns host, 'start' event, 'unauthorized' event
   require('./matchers/exit.js'), // 'exit' event
+  require('./matchers/version.js'), // check game version
 ];
-
-// TODO: GetAll BP_FigureV2_C ActiveEmotes
 
 class Omegga extends OmeggaWrapper {
   // pluginloader is not private so plugins can potentially add more formats
@@ -51,7 +50,7 @@ class Omegga extends OmeggaWrapper {
     this.host = undefined;
 
     // game version
-    this.version = 'a5';
+    this.version = 'a4';
 
     // add all the matchers to the server
     for (const matcher of MATCHERS) {

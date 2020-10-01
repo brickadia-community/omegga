@@ -4,4 +4,6 @@ server
 data
 plugins
 config.yml
+.omegga-config.yml
 config.json
+.omegga-config.json
