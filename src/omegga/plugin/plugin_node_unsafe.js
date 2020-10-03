@@ -43,8 +43,8 @@ class NodePlugin extends Plugin {
   // require the plugin into the system, run the init func
   load() {
     const stopPlugin = reason => {
-      console.error('error launching node plugin', this.path, ':', reason);
-      try{disrequire(this.pluginFile);}catch(e){console.error('error unloading node plugin (2)', this.path, e);}
+      Omegga.error('error launching node plugin', this.path, ':', reason);
+      try{disrequire(this.pluginFile);}catch(e){Omegga.error('error unloading node plugin (2)', this.path, e);}
       return false;
     };
 
@@ -65,7 +65,7 @@ class NodePlugin extends Plugin {
 
       return true;
     } catch (e) {
-      console.error('error loading node plugin', this.path, e);
+      Omegga.error('error loading node plugin', this.path, e);
       return false;
     }
   }
@@ -86,7 +86,7 @@ class NodePlugin extends Plugin {
       this.loadedPlugin = undefined;
       return true;
     } catch (e) {
-      console.error('error unloading node plugin', this.path, e);
+      Omegga.error('error unloading node plugin', this.path, e);
       return false;
     }
   }

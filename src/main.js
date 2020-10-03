@@ -64,9 +64,9 @@ const program = require('commander')
     const server = new Omegga('.', conf, options);
 
     // create a terminal
-    new Terminal(server, options);
+    Omegga.setTerminal(new Terminal(server, options));
+    Omegga.log('>>'.green, 'Starting server...');
 
-    console.log('>>'.green, 'Starting server...');
     // start the server
     server.start();
   });

@@ -3,8 +3,7 @@ const colors = require('colors');
 
 const { chat: { sanitize } } = require('../util/index.js');
 
-const log = (...args) => console.log('>>'.green, ...args);
-const err = (...args) => console.log('!>'.red, ...args);
+let log, err;
 
 // the terminal wraps omegga and displays console output and handles console input
 class Terminal {
@@ -14,41 +13,34 @@ class Terminal {
 
     this.commands = {};
 
+    // terminal interface
+    this.rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+      terminal: true,
+    });
+    this.rl.setPrompt('> '.brightGreen);
+
+    // shortand fns
+    log = (...args) => this.log('>>'.green, ...args);
+    err = (...args) => this.error('!>'.red, ...args);
+
     // print log line if debug is enabled
-    omegga.on('line', l => options.debug && console.log('[out]'.blue, l));
+    omegga.on('line', l => options.debug && this.log('::'.blue, l));
 
     // print debug events regardless of debug status
-    omegga.on('debug', l => console.log('[dbg]'.green, l));
+    omegga.on('debug', l => this.log('?>'.magenta, l));
 
     // print chat events as players join/leave the server
-    omegga.on('join', p => console.log(`${p.name.underline} joined.`.brightBlue));
-    omegga.on('leave', p => console.log(`${p.name.underline} left.`.brightBlue));
-    omegga.on('chat', (name, message) => console.log(`${name.brightYellow.underline}: ${message}`));
+    omegga.on('join', p => this.log(`${p.name.underline} joined.`.brightBlue));
+    omegga.on('leave', p => this.log(`${p.name.underline} left.`.brightBlue));
+    omegga.on('chat', (name, message) => this.log(`${name.brightYellow.underline}: ${message}`));
     omegga.on('start', () => log('Server has started. Type', '/help'.yellow, 'for more commands'));
     omegga.on('unauthorized', () => err('Server failed authentication check'));
     omegga.on('error', e => err('Server caught unhandled exception:\n' + e));
     omegga.on('exit', () => log('Server has closed, type', '/stop'.yellow, 'to close omegga'));
 
-    // terminal interface
-    readline.createInterface({input: process.stdin, output: process.stdout, terminal: false})
-      .on('line', line => {
-        if (line.startsWith('/')) {
-          const [cmd, ...args] = line.slice(1).split(' ');
-          if (!this.commands[cmd]) {
-            err(`unrecognized command /${cmd.underline}. type /help for more info`.red);
-          } else {
-            this.commands[cmd].fn(args);
-          }
-        } else {
-          if (omegga.started) {
-            // broadcast when the chat does not start with a command
-            omegga.broadcast(`"[<b><color=\\"ff00ff\\">SERVER</></>]: ${sanitize(line)}"`);
-            console.log(`[${'SERVER'.brightMagenta.underline}]: ${line}`);
-          } else {
-            err(`server is not started yet. type /help for more info`.red);
-          }
-        }
-      });
+    this.rl.on('line', this.handleLine.bind(this));
 
     // console commands
     Object.entries({
@@ -66,12 +58,13 @@ class Terminal {
         fn() {
           const maxCmdLen = Math.max(...Object.keys(this.commands).map(s => s.length));
           log('Omegga Help Text:\n')
-          console.log('  Console input not starting with / will be sent in chat from a "SERVER" user');
-          console.log('  Console input starting with / will be treated as one of the following commands\n');
-          console.log('-- Available Omegga commands (type', '/command'.yellow.underline, 'to run)');
+          this.log('  Console input not starting with / will be sent in chat from a "SERVER" user');
+          this.log('  Console input starting with / will be treated as one of the following commands\n');
+          this.log('-- Available Omegga commands (type', '/command'.yellow.underline, 'to run)');
           Object.keys(this.commands).sort().forEach(k => {
-            console.log('  ', k.yellow.underline, '-'.padStart(maxCmdLen - k.length + 1), this.commands[k].desc);
+            this.log('  ', k.yellow.underline, '-'.padStart(maxCmdLen - k.length + 1), this.commands[k].desc);
           });
+          this.log('');
         },
       },
 
@@ -99,7 +92,7 @@ class Terminal {
             const maxNameLen = Math.max(...status.players.map(p => p.name.length));
 
             log('Server Status');
-            console.log(`
+            this.log(`
   ${status.serverName.yellow}
     Bricks: ${(status.bricks+'').yellow}
     Uptime: ${msToTime(status.time).yellow}
@@ -176,8 +169,52 @@ class Terminal {
     }).forEach(([cmd, {desc, fn}]) => this.addCommand(cmd, desc, fn));
   }
 
+  // add a command
   addCommand(name, desc, fn) {
     this.commands[name] = {name, desc, fn: fn.bind(this)};
+  }
+
+  async handleLine(line) {
+    if (line.startsWith('/')) {
+      const [cmd, ...args] = line.slice(1).split(' ');
+      if (!this.commands[cmd]) {
+        err(`unrecognized command /${cmd.underline}. type /help for more info`.red);
+      } else {
+        try {
+          const res = this.commands[cmd].fn(args);
+          if (res instanceof Promise) {
+            await res;
+          }
+        } catch (e) {
+          err('unhandled terminal error', e);
+        }
+      }
+    } else if (line.trim().length > 0) {
+      if (this.omegga.started) {
+        // broadcast when the chat does not start with a command
+        this.omegga.broadcast(`"[<b><color=\\"ff00ff\\">SERVER</></>]: ${sanitize(line)}"`);
+        process.stdout.clearLine();
+        this.log(`[${'SERVER'.brightMagenta.underline}]: ${line}`);
+      } else {
+        err('Server is not started yet. type'.red,'/help'.yellow,'for more info'.red);
+      }
+    }
+  }
+
+  // let readline render a log without interrupting user input
+  log(...args) {
+    process.stdout.clearLine();
+    process.stdout.cursorTo(0);
+    console.log(...args);
+    this.rl.prompt(true);
+  }
+
+  // let readline render an error log without interrupting user input
+  error(...args) {
+    process.stdout.clearLine();
+    process.stdout.cursorTo(0);
+    console.error(...args);
+    this.rl.prompt(true);
   }
 }
 

@@ -10,6 +10,7 @@ const { Webserver } = require('../webserver/index.js');
 const Database = require('../database/index.js');
 const soft = require('../softconfig.js');
 const { uuid, pattern, time, file, color } = require('../util/index.js');
+const Terminal = require('../cli/terminal.js');
 
 const MATCHERS = [
   require('./matchers/join.js'), // 'join' event => { name, id, state, controller }
@@ -21,12 +22,23 @@ const MATCHERS = [
   require('./matchers/version.js'), // check game version
 ];
 
+// TODO: safe broadcast parsing
+
 class Omegga extends OmeggaWrapper {
   // pluginloader is not private so plugins can potentially add more formats
   pluginLoader = undefined;
 
   // prevent omegga from saving over the same file
   #tempSaveCounter = 0;
+
+  // allow a terminal to be used instead of console log
+  static terminal = undefined;
+  static log(...args) { (Omegga.terminal || console).log(...args); }
+  static error(...args) { (Omegga.terminal || console).error(...args); }
+  static setTerminal(term) {
+    if (term instanceof Terminal)
+      Omegga.terminal = term;
+  };
 
   constructor(serverPath, cfg, options={}) {
     super(serverPath, cfg);
@@ -91,20 +103,12 @@ class Omegga extends OmeggaWrapper {
 
     process.on('uncaughtException', err => {
       this.emit('error', err);
-      try { this.stop(); } catch (e) { console.error(e); }
+      try { this.stop(); } catch (e) { Omegga.error(e); }
       process.exit();
     });
 
     this.on('start', () => this.started = true);
     this.on('exit', () => this.stop());
-  }
-
-  // if auth files exist, copy them
-  copyAuthFiles() {
-    const authPath = path.join(this.path, soft.DATA_PATH, 'Saved/Auth');
-    const homeAuthPath = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
-
-    file.copyFiles(homeAuthPath, authPath, soft.BRICKADIA_AUTH_FILES);
   }
 
   // start load plugins and start the server
@@ -126,6 +130,14 @@ class Omegga extends OmeggaWrapper {
     this.emit('server:stopped');
     this.started = false;
     this.starting = false;
+  }
+
+  // if auth files exist, copy them
+  copyAuthFiles() {
+    const authPath = path.join(this.path, soft.DATA_PATH, 'Saved/Auth');
+    const homeAuthPath = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
+
+    file.copyFiles(homeAuthPath, authPath, soft.BRICKADIA_AUTH_FILES);
   }
 
   // broadcast messages to chat
@@ -150,7 +162,6 @@ class Omegga extends OmeggaWrapper {
       .flatMap(m => m.split('\n'))
       .forEach(m => this.writeln(`Chat.Whisper ${target.name} ${m}`));
   }
-
 
   // get a list of players
   getPlayers() { return this.players.map(p => ({...p})); }
@@ -320,8 +331,7 @@ class Omegga extends OmeggaWrapper {
           }))
       }));
     } catch (e) {
-      console.log('err', e);
-      // likely the issue is that it took too long to get all this data.. tubular
+      Omegga.error('error getting minigames', e);
       return undefined;
     }
   }
@@ -438,4 +448,5 @@ class Omegga extends OmeggaWrapper {
   }
 }
 
+global.Omegga = Omegga;
 module.exports = Omegga;

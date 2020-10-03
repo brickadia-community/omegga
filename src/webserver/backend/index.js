@@ -16,6 +16,8 @@ const ASSET_PATH = path.join(__dirname, '../frontend/assets');
 // path to webpacked data
 const PUBLIC_PATH = path.join(__dirname, '../public');
 
+let log;
+
 // the webserver servers an authenticated
 class Webserver {
   // create a webserver
@@ -23,6 +25,7 @@ class Webserver {
     this.port = options.port || process.env.PORT || soft.DEFAULT_PORT;
     this.database = database;
     this.omegga = omegga;
+    log = this.omegga.log;
 
     // create socket.io & express app
     this.app = express();
@@ -70,7 +73,7 @@ class Webserver {
     const io = SocketIo(this.server);
     io.use((socket, next) => {
         if (!socket.handshake.query.token) {
-          console.log('has token');
+          log('has token');
           next('unauthorized');
         }
 
@@ -92,9 +95,9 @@ class Webserver {
 
   // handle successful websocket connections
   handlePluginConn(ws, req, plugin) {
-    console.log('ws conn', ws);
+    log('ws conn', ws);
     ws.on('message', message => {
-      console.log(`ws message: ${message}`);
+      log(`ws message: ${message}`);
     });
     ws.send('ping');
   }
@@ -103,7 +106,7 @@ class Webserver {
   start() {
     return new Promise(resolve => {
       this.server.listen(this.port, () => {
-        console.log(`${'>>'.green} Started webserver at http://127.0.0.1:${this.port}`)
+        log(`${'>>'.green} Started webserver at http://127.0.0.1:${this.port}`)
         resolve();
       });
     });

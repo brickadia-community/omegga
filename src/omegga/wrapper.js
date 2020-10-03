@@ -291,7 +291,7 @@ class OmeggaWrapper extends EventEmitter {
           // if there's  match, handle it for this type of matcher
           if (match) onMatch(match, matcher);
         } catch (e) {
-          console.error('error in matcher', matcher.pattern, e);
+          Omegga.error('error in matcher', matcher.pattern, e);
         }
       }
     }
