@@ -24,7 +24,7 @@ module.exports = {
       port: 8080,
     },
     server: {
-      port: 7779,
+      port: 7777,
     },
   },
   // Writes save data to a file
