@@ -27,7 +27,7 @@ class Terminal {
     omegga.on('start', () => log('Server has started. Type', '/help'.yellow, 'for more commands'));
     omegga.on('unauthorized', () => err('Server failed authentication check'));
     omegga.on('error', e => err('Server caught unhandled exception:\n' + e));
-    omegga.on('exit', e => log('Server is closing', e));
+    omegga.on('exit', () => log('Server has closed, type', '/stop'.yellow, 'to close omegga'));
 
     // terminal interface
     readline.createInterface({input: process.stdin, output: process.stdout, terminal: false})
@@ -120,6 +120,18 @@ class Terminal {
           log('Stopping server...');
           this.omegga.stop();
           process.exit();
+        },
+      },
+
+      start: {
+        desc: 'start the server if it is stopped',
+        fn() {
+          if (!this.omegga || this.omegga && (this.omegga.starting || this.omegga.started)) {
+            err('Omegga is already running');
+            return;
+          }
+          log('Starting server...');
+          this.omegga.start();
         },
       },
 

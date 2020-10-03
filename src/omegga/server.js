@@ -81,6 +81,7 @@ class Omegga extends OmeggaWrapper {
 
     // server has started
     this.started = false;
+    this.starting = false;
 
     // add all the matchers to the server
     for (const matcher of MATCHERS) {
@@ -93,6 +94,9 @@ class Omegga extends OmeggaWrapper {
       try { this.stop(); } catch (e) { console.error(e); }
       process.exit();
     });
+
+    this.on('start', () => this.started = true);
+    this.on('exit', () => this.stop());
   }
 
   // if auth files exist, copy them
@@ -105,12 +109,12 @@ class Omegga extends OmeggaWrapper {
 
   // start load plugins and start the server
   async start() {
+    this.starting = true;
     if (this.webserver) await this.webserver.start();
     if (this.pluginLoader)
       this.pluginLoader.reload();
     super.start();
     this.emit('server:starting');
-    this.once('start', () => this.started = true);
   }
 
   // unload load plugins and stop the server
@@ -121,6 +125,7 @@ class Omegga extends OmeggaWrapper {
     if (this.webserver) this.webserver.stop();
     this.emit('server:stopped');
     this.started = false;
+    this.starting = false;
   }
 
   // broadcast messages to chat
