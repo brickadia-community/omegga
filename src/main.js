@@ -1,6 +1,11 @@
-const package = require('../package');
-const soft = require('./softconfig');
+const path = require('path');
 require('colors');
+
+const package = require('../package');
+const soft = require('./softconfig.js');
+const Omegga = require('./omegga/server.js');
+const config = require('./config/index.js');
+const { Terminal, auth } = require('./cli/index.js');
 
 /*
 
@@ -10,7 +15,16 @@ require('colors');
   json rpc?
 // TODO: web interface instead of blessed
 
+// TODO: let omegga bundle config (roles, bans, server config) to zip
+// TODO: let omegga unbundle config from zip to current omegga dir
 */
+
+// write a default config file
+const createDefaultConfig = () => {
+  console.log('>>'.green, 'Created default config file');
+  config.write(soft.CONFIG_FILENAMES[0] + '.yml', config.defaultConfig);
+  return config.defaultConfig;
+};
 
 const program = require('commander')
   .description(package.description)
@@ -19,25 +33,32 @@ const program = require('commander')
   .option('-W, --webless', 'Run omegga without a web ui (plugins still work, no user-accessible frontend)')
   .option('-d, --debug', 'Print all console logs rather than just chat messages')
   .option('-p, --port', 'Specify a custom port for the webserver (default 8080)')
-  .action(() => {
-
-    const { Omegga, config } = require('./lib.js');
-    const { Terminal } = require('./cli/index.js');
-
+  .action(async() => {
     const configFile = config.find('.');
+    let conf;
 
+    // create a default config file if it does not already exist
     if (!configFile) {
-      console.error('error: missing config file, run', 'omegga init'.underline);
-      process.exit(1);
-      return;
+      conf = createDefaultConfig();
+    } else {
+      conf = config.read(configFile);
+    }
+
+    // check if the auth files don't exist
+    if (!auth.exists(path.join('.', soft.DATA_PATH, 'Saved/Auth')) && !auth.exists()) {
+      const success = await auth.prompt();
+      if (!success) {
+        console.log('!>'.red, 'Start aborted - could not generate auth tokens');
+        return;
+      }
     }
 
     // build options
     const { serverless, webless, port, debug } = program.opts();
-    const options = { serverless, webless, port, debug };
+    const options = { noserver: serverless, noweb: webless, port, debug };
 
     // setup the server
-    const server = new Omegga('.', config.read(configFile), options);
+    const server = new Omegga('.', conf, options);
 
     // create a terminal
     new Terminal(server, options);
@@ -48,21 +69,30 @@ const program = require('commander')
 
 program
   .command('init')
-  .option('-q, --quiet', 'Run without output, do not show interactive config at the end') // TODO: implement init --quiet
   .description('Sets up the current directory as a brickadia server')
   .action(() => {
-    // TODO: create config file
-    // TODO: open config file in interactive editor
-    require('./cli/config.js');
+    const configFile = config.find('.');
+    if (configFile) {
+      console.log('!>'.red, 'Config file already exists:', configFile.yellow.underline);
+      return;
+    }
+    createDefaultConfig();
   });
 
 program
-  .command('config')
-  .alias('c')
-  .description('Configure the brickadia server in the current directory')
+  .command('auth')
+  .option('-c, --clean', 'Remove old auth files')
+  .option('-f, --force', 'Forcefully regenerate auth token')
+  .description('Generates server auth tokens from brickadia account email+password')
   .action(() => {
-    // TODO: open interactive config file
-    require('./cli/config.js');
+    const { clean, force } = program.opts;
+    if (clean || force) {
+      console.log('>>'.green, 'Clearing old auth files');
+      auth.deleteAuthFiles();
+      if (clean)
+        return;
+    }
+    auth.prompt();
   });
 
 program
@@ -70,6 +100,7 @@ program
   .alias('n')
   .description('Shows server name, description, port, install info, and installed plugins')
   .action(() => {
+    console.log('!>'.red, 'not implemented yet');
     // TODO: implement config parsing
   });
 
@@ -81,7 +112,8 @@ program
   .option('-q, --quiet', 'Disable output and interactive config at end of install') // TODO: implement install --quiet
   .option('-c, --config', 'JSON default config') // TODO: implement install --config
   .arguments('<pluginUrl> [morePlugins...]')
-  .action((plugin, otherPlugins, flags) => {
+  .action((plugin, otherPlugins) => {
+    console.log('!>'.red, 'not implemented yet');
     // TODO: automatically fetch and install plugins
   });
 
@@ -93,7 +125,8 @@ program
   .option('-q, --quiet', 'Disable output and interactive config at end of install') // TODO: implement update --quiet
   .option('-c, --config', 'JSON default config') // TODO: implement update --config
   .arguments('[pluginName]')
-  .action((plugin, flags) => {
+  .action((plugin) => {
+    console.log('!>'.red, 'not implemented yet');
     // TODO: automatically fetch and install plugins
   });
 

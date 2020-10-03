@@ -1,5 +1,8 @@
 const fs = require('fs');
+const path = require('path');
 const chokidar = require('chokidar');
+const rimraf = require('rimraf');
+
 
 // objects to store cached data
 const cachedTimes = {};
@@ -52,7 +55,48 @@ function readWatchedJSON(file) {
   return read();
 }
 
+// recursively mkdir (mkdir -p )
+function mkdir(path) {
+  try { fs.mkdirSync(path, {recursive: true}) } catch (e) { /* */ }
+}
+
+// rm -rf a path
+function rmdir(dir) {
+  return new Promise((resolve, reject) => {
+    rimraf(dir, error => {
+      if (error)
+        reject(error);
+      else
+        resolve();
+    });
+  })
+}
+
+// copy files from one dir to another, creating the directories in the process
+function copyFiles(srcDir, dstDir, files) {
+  // create the directories if they don't already exist
+  mkdir(srcDir);
+  mkdir(dstDir);
+
+  // copy the brickadia auth files
+  for (const f of files) {
+    // source is the omegga config path
+    const src = path.join(srcDir, f);
+
+    // destination file is in the auth path
+    const dst = path.join(dstDir, f);
+
+    // if it exists in the auth path and not in the current folder
+    if (!fs.existsSync(dst) && fs.existsSync(src)) {
+      fs.copyFileSync(src, dst);
+    }
+  }
+}
+
 module.exports = {
   readCachedJSON,
   readWatchedJSON,
+  rmdir,
+  mkdir,
+  copyFiles,
 };

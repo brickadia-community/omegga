@@ -8,7 +8,7 @@ const OmeggaWrapper = require('./wrapper.js');
 const { PluginLoader } = require('./plugin.js');
 const { Webserver } = require('../webserver/index.js');
 const Database = require('../database/index.js');
-const config = require('../softconfig.js');
+const soft = require('../softconfig.js');
 const { uuid, pattern, time, file, color } = require('../util/index.js');
 
 const MATCHERS = [
@@ -35,29 +35,40 @@ class Omegga extends OmeggaWrapper {
     this.options = options;
 
     // path to save files
-    this.savePath = path.join(serverPath, config.DATA_PATH, 'Saved/Builds');
+    this.savePath = path.join(serverPath, soft.DATA_PATH, 'Saved/Builds');
 
     // path to config files
-    this.configPath = path.join(serverPath, config.DATA_PATH, 'Saved/Server');
+    this.configPath = path.join(serverPath, soft.DATA_PATH, 'Saved/Server');
+
+    // create dir folders
+    file.mkdir(this.savePath);
+    file.mkdir(this.configPath);
+
+    // ignore auth file copy
+    if (!options.noauth)
+      this.copyAuthFiles();
 
     // the database provides omegga with metrics, chat logs, and more
     // to help administrators keep track of their users and server
-    this.database = new Database(options, this);
+    if (!options.nodb)
+      this.database = new Database(options, this);
 
     // create the webserver if it's enabled
     // the webserver lets non-js plugins talk to omegga
     // as well as gives the administrator access to server information while the server is running
-    if (!options.serverless)
+    if (!options.noserver)
       this.webserver = new Webserver(options, this.database, this);
 
-    // create the pluginloader
-    this.pluginLoader = new PluginLoader(path.join(serverPath, config.PLUGIN_PATH), this);
+    if (!options.noplugin) {
+      // create the pluginloader
+      this.pluginLoader = new PluginLoader(path.join(serverPath, soft.PLUGIN_PATH), this);
 
-    // load all the plugin formats in
-    this.pluginLoader.loadFormats(path.join(__dirname, 'plugin'));
+      // load all the plugin formats in
+      this.pluginLoader.loadFormats(path.join(__dirname, 'plugin'));
 
-    // scan all available plugins
-    this.pluginLoader.scan();
+      // scan all available plugins
+      this.pluginLoader.scan();
+    }
 
     // list of online players
     this.players = [];
@@ -84,10 +95,19 @@ class Omegga extends OmeggaWrapper {
     });
   }
 
+  // if auth files exist, copy them
+  copyAuthFiles() {
+    const authPath = path.join(this.path, soft.DATA_PATH, 'Saved/Auth');
+    const homeAuthPath = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
+
+    file.copyFiles(homeAuthPath, authPath, soft.BRICKADIA_AUTH_FILES);
+  }
+
   // start load plugins and start the server
   async start() {
     if (this.webserver) await this.webserver.start();
-    this.pluginLoader.reload();
+    if (this.pluginLoader)
+      this.pluginLoader.reload();
     super.start();
     this.emit('server:starting');
     this.once('start', () => this.started = true);
@@ -95,7 +115,8 @@ class Omegga extends OmeggaWrapper {
 
   // unload load plugins and stop the server
   stop() {
-    this.pluginLoader.unload();
+    if (this.pluginLoader)
+      this.pluginLoader.unload();
     super.stop();
     if (this.webserver) this.webserver.stop();
     this.emit('server:stopped');

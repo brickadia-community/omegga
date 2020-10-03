@@ -103,7 +103,7 @@ class Terminal {
   ${status.serverName.yellow}
     Bricks: ${(status.bricks+'').yellow}
     Uptime: ${msToTime(status.time).yellow}
-    Players:
+    Players: ${status.players.length === 0 ? 'none'.grey : ''}
       ${status.players.map(p =>
       `[${msToTime(p.time).grey}] ${p.name.yellow.underline}`
     ).join('\n      ')}
@@ -117,10 +117,6 @@ class Terminal {
       stop: {
         desc: 'stop the server and close Omegga',
         fn() {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
           log('Stopping server...');
           this.omegga.stop();
           process.exit();
@@ -132,6 +128,11 @@ class Terminal {
         fn() {
           if (!this.omegga.started) {
             err('Omegga is not running');
+            return;
+          }
+
+          if (!this.omegga.pluginLoader) {
+            err('Omegga is not using plugins');
             return;
           }
 

@@ -26,7 +26,7 @@ class BrickadiaServer extends EventEmitter {
 
   // start the server child process
   start() {
-    const { email, password } = this.config.credentials;
+    const { email, password } = this.config.credentials || {};
 
     // Either unbuffer or stdbuf must be used because brickadia's output is buffered
     // this means that multiple lines can be bundled together if the output buffer is not full

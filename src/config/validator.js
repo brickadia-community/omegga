@@ -1,16 +1,29 @@
-const Validator = require('jsonschema').Validator;
+const allowedKeys = ['omegga', 'credentials', 'server'];
 
-// The JSON Schema for config file format
-// visit http://json-schema.org/ for more info on JSON Schema
-
-// TODO: Add Roles, BanList, Etc
-// TODO: Separate schema into separate files
-
-//. the JSON schema for the config file output
-const schema = require('./schema.json');
-
-// export a single function that validates a config object
+// low effort js object validation
 module.exports = obj => {
-  const v = new Validator();
-  return v.validate(obj, schema);
+  if (typeof obj !== 'object')
+    return {valid: false, errors: ['not an object']};
+
+  if (Object.keys(obj).some(k => !allowedKeys.includes(k)))
+    return {valid: false, errors: ['contains invalid keys']};
+
+  if (!obj.server || typeof obj.server !== 'object')
+    return {valid: false, errors: ['missing/invalid server category']};
+
+  if (typeof obj.server.port !== 'number')
+    return {valid: false, errors: ['server.port must be a number']};
+
+  if (obj.server.branch && typeof obj.server.branch !== 'string')
+    return {valid: false, errors: ['server.branch must be a string']};
+
+  if (obj.omegga) {
+    if (typeof obj.omegga !== 'object')
+      return {valid: false, errors: ['invalid omegga category']};
+
+    if (typeof obj.omegga.port !== 'undefined' && typeof obj.omegga.port !== 'number')
+      return {valid: false, errors: ['omegga.port must be a nubmer']};
+  }
+
+  return {valid: true, errors: []};
 };

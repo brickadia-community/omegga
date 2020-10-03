@@ -19,6 +19,14 @@ const formats = fs.readdirSync(path.join(__dirname, 'formats'))
 
 // create read/write funcs for the provided formats
 module.exports = {
+  defaultConfig: {
+    omegga: {
+      port: 8080,
+    },
+    server: {
+      port: 7779,
+    },
+  },
   // Writes save data to a file
   // function(path, blob) -> void
   write: require('./writer.js')(formats),
