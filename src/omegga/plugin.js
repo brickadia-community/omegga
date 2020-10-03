@@ -6,7 +6,7 @@ const config = require('../softconfig.js');
 // Check if this plugin is disabled
 const DISABLED_FILE = 'disabled.omegga';
 
-// TODO: plugin_nodevm https://www.npmjs.com/package/vm2
+// TODO: plugin_node_vm https://www.npmjs.com/package/vm2
 // TODO: move doc.json to this file
 
 /*
@@ -17,6 +17,9 @@ class Plugin {
   // returns true if a plugin at this path can be loaded
   // only one kind of plugin should match this type
   static canLoad(pluginPath) { return false; }
+
+  // returns the kind of plugin this is
+  static getFormat() { throw 'undefined plugin format'; }
 
   // initialize a plugin at this path
   constructor(pluginPath, omegga) {
@@ -70,7 +73,7 @@ class PluginLoader {
       // find all plugin_EXT.js files in the given dir
       ...fs.readdirSync(dir)
         // all files match the plugin_nameType.js pattern
-        .filter(file => file.match(/plugin_[a-zA-Z]+\.js/))
+        .filter(file => file.match(/plugin_[a-zA-Z_]+\.js/))
         // require all the formats
         .map(file => require('./plugin/' + file))
     );
@@ -90,29 +93,34 @@ class PluginLoader {
             p.load();
       } else {
         console.error('did not successfully unload plugin', p.path);
+        return false;
       }
     }
+    return true;
   }
 
   // stop all plugins from running
   unload() {
-     for (const p of this.plugins) {
+    let ok = true;
+    for (const p of this.plugins) {
       // unload the plugin if it's loaded
-      if (p.isLoaded()) p.unload();
+      if (p.isLoaded() && !p.unload())
+        ok = false;
     }
+    return ok;
   }
 
   // find every loadable plugin
   scan() {
     // plugin directory doesn't exist
     if (!fs.existsSync(this.path)) {
-      return;
+      return false;
     }
 
     // make sure there are no plugins running
     if (this.plugins.some(p => p.isLoaded())) {
       console.error('cannot re-scan plugins while a plugin is loaded');
-      return;
+      return false;
     }
 
     // find all directories in the plugin path
@@ -139,7 +147,8 @@ class PluginLoader {
       })
       // remove plugins without formats
       .filter(p => p);
-    }
+    return true;
+  }
 }
 
 module.exports = { Plugin, PluginLoader };

@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const soft = require('../softconfig.js');
+
 // find all format_EXT.js files in the formats path
 const formats = fs.readdirSync(path.join(__dirname, 'formats'))
   // all formats match the format_EXT.js pattern
@@ -24,4 +26,17 @@ module.exports = {
   // reads save data from a file
   // function(path) -> config
   read: require('./reader.js')(formats),
+
+  // open config at a specified path
+  find(dir='.') {
+    // find the first config file matching these config file names
+    for (const f of soft.CONFIG_FILENAMES) {
+      for (const { extension } of formats) {
+        const file = path.join(dir, f + '.' + extension);
+        if (fs.existsSync(file)) return file;
+      }
+    }
+
+    return undefined;
+  }
 };

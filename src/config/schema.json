@@ -29,6 +29,13 @@
     ],
     "additionalProperties": false,
     "properties": {
+        "omegga": {
+            "type": "object",
+            "title": "Omegga",
+            "description": "Contains omegga application config",
+            "default": {},
+            "additionalProperties": true
+        },
         "credentials": {
             "type": "object",
             "title": "Credentials",

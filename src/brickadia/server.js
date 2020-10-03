@@ -8,8 +8,6 @@ const readline = require('readline');
 const path = require('path');
 const stripAnsi = require('strip-ansi');
 
-const BINARY_PATH = 'Brickadia/Binaries/Linux/BrickadiaServer-Linux-Shipping';
-
 // Start a brickadia server
 class BrickadiaServer extends EventEmitter {
   #child = null;

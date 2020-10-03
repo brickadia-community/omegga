@@ -9,6 +9,14 @@ const { Plugin } = require('../plugin.js');
 // TODO: implement loader
 
 class RpcPlugin extends Plugin {
+
+  static canLoad(pluginPath) {
+    return false;
+  }
+
+  // websocket rpc plugin type
+  static getFormat() { return 'ws_rpc'; }
+
   constructor() { }
 }
 

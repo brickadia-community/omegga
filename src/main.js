@@ -1,6 +1,6 @@
 const package = require('../package');
-const cli = require('./cli');
-const config = require('./softconfig');
+const soft = require('./softconfig');
+require('colors');
 
 /*
 
@@ -10,20 +10,40 @@ const config = require('./softconfig');
   json rpc?
 // TODO: web interface instead of blessed
 
-// TODO: Main node runs webserver hand has json rpc between sub nodes (and self)
-// TODO: If Main node goes down, the other nodes know which one to spin up a new webserver from
-// TODO: Connect sub nodes to main by JSONRPC
-
 */
 
 const program = require('commander')
   .description(package.description)
-  .option('-s, --serverless', 'Run omegga without a webserver')
-  .option('-p, --port', 'Specify a custom port for the webserver (default 8080)')
   .version(package.version)
+  .option('-S, --serverless', 'Run omegga without a webserver (will prevent certain kinds of plugins from working)')
+  .option('-W, --webless', 'Run omegga without a web ui (plugins still work, no user-accessible frontend)')
+  .option('-d, --debug', 'Print all console logs rather than just chat messages')
+  .option('-p, --port', 'Specify a custom port for the webserver (default 8080)')
   .action(() => {
-    // TODO: start server if in configured folder
-    // TODO: send message to run init otherwise
+
+    const { Omegga, config } = require('./lib.js');
+    const { Terminal } = require('./cli/index.js');
+
+    const configFile = config.find('.');
+
+    if (!configFile) {
+      console.error('error: missing config file, run', 'omegga init'.underline);
+      process.exit(1);
+      return;
+    }
+
+    // build options
+    const { serverless, webless, port, debug } = program.opts();
+    const options = { serverless, webless, port, debug };
+
+    // setup the server
+    const server = new Omegga('.', config.read(configFile), options);
+
+    // create a terminal
+    new Terminal(server, options);
+
+    // start the server
+    server.start();
   });
 
 program
@@ -46,29 +66,20 @@ program
   });
 
 program
-  .command('start')
-  .description('Starts the server')
-  .alias('s')
-  .action(() => {
-    require('./cli/server.js');
-    // TODO: same as if run without commands
-  });
-
-program
   .command('info')
-  .description('Shows server name, description, port, install info, and installed plugins')
   .alias('n')
+  .description('Shows server name, description, port, install info, and installed plugins')
   .action(() => {
     // TODO: implement config parsing
   });
 
 program
   .command('install') // TODO: implement install command
+  .alias('i')
   .description('Installs a plugin to the current brickadia server')
   .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement install --force
   .option('-q, --quiet', 'Disable output and interactive config at end of install') // TODO: implement install --quiet
   .option('-c, --config', 'JSON default config') // TODO: implement install --config
-  .alias('i')
   .arguments('<pluginUrl> [morePlugins...]')
   .action((plugin, otherPlugins, flags) => {
     // TODO: automatically fetch and install plugins
@@ -76,11 +87,11 @@ program
 
 program
   .command('update') // TODO: implement update plugins command
+  .alias('u')
   .description('Updates all installed plugins to latest versions')
   .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement update --force
   .option('-q, --quiet', 'Disable output and interactive config at end of install') // TODO: implement update --quiet
   .option('-c, --config', 'JSON default config') // TODO: implement update --config
-  .alias('i')
   .arguments('[pluginName]')
   .action((plugin, flags) => {
     // TODO: automatically fetch and install plugins

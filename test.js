@@ -86,7 +86,6 @@ server.on('chatcmd:savedata', async (name, args) => {
 });
 
 process.on('uncaughtException', err => {
-  try { server.pluginLoader.unload(); } catch (e) { console.error(e); }
   try { server.stop(); } catch (e) { console.error(e); }
   process.exit();
 });

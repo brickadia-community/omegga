@@ -24,7 +24,8 @@ class OmeggaWrapper extends EventEmitter {
 
     this.config = cfg;
     this.path = serverPath;
-    this.#server = new BrickadiaServer(path.join(serverPath, soft.DATA_PATH), cfg);
+    this.dataPath = path.join(serverPath, soft.DATA_PATH);
+    this.#server = new BrickadiaServer(this.dataPath, cfg);
     this.#server.on('line', this.handleLog.bind(this));
   }
 

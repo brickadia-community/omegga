@@ -6,8 +6,10 @@ const _ = require('lodash');
 
 const OmeggaWrapper = require('./wrapper.js');
 const { PluginLoader } = require('./plugin.js');
+const { Webserver } = require('../webserver/index.js');
+const Database = require('../database/index.js');
 const config = require('../softconfig.js');
-const { uuid, pattern, time, file, color } = require('../util');
+const { uuid, pattern, time, file, color } = require('../util/index.js');
 
 const MATCHERS = [
   require('./matchers/join.js'), // 'join' event => { name, id, state, controller }
@@ -26,13 +28,27 @@ class Omegga extends OmeggaWrapper {
   // prevent omegga from saving over the same file
   #tempSaveCounter = 0;
 
-  constructor(serverPath, cfg) {
+  constructor(serverPath, cfg, options={}) {
     super(serverPath, cfg);
+
+    // launch options (disabling webserver)
+    this.options = options;
 
     // path to save files
     this.savePath = path.join(serverPath, config.DATA_PATH, 'Saved/Builds');
+
     // path to config files
     this.configPath = path.join(serverPath, config.DATA_PATH, 'Saved/Server');
+
+    // the database provides omegga with metrics, chat logs, and more
+    // to help administrators keep track of their users and server
+    this.database = new Database(options, this);
+
+    // create the webserver if it's enabled
+    // the webserver lets non-js plugins talk to omegga
+    // as well as gives the administrator access to server information while the server is running
+    if (!options.serverless)
+      this.webserver = new Webserver(options, this.database, this);
 
     // create the pluginloader
     this.pluginLoader = new PluginLoader(path.join(serverPath, config.PLUGIN_PATH), this);
@@ -49,26 +65,41 @@ class Omegga extends OmeggaWrapper {
     // host player info
     this.host = undefined;
 
-    // game version
+    // game version (defaults to a4, updates in a matcher)
     this.version = 'a4';
+
+    // server has started
+    this.started = false;
 
     // add all the matchers to the server
     for (const matcher of MATCHERS) {
       const {pattern, callback} = matcher(this);
       this.addMatcher(pattern, callback);
     }
+
+    process.on('uncaughtException', err => {
+      this.emit('error', err);
+      try { this.stop(); } catch (e) { console.error(e); }
+      process.exit();
+    });
   }
 
   // start load plugins and start the server
-  start() {
+  async start() {
+    if (this.webserver) await this.webserver.start();
     this.pluginLoader.reload();
     super.start();
+    this.emit('server:starting');
+    this.once('start', () => this.started = true);
   }
 
   // unload load plugins and stop the server
   stop() {
     this.pluginLoader.unload();
     super.stop();
+    if (this.webserver) this.webserver.stop();
+    this.emit('server:stopped');
+    this.started = false;
   }
 
   // broadcast messages to chat

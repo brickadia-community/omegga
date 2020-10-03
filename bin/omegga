@@ -1,0 +1,9 @@
+#!/usr/bin/env node
+
+const isBrickInstalled = require('hasbin').sync('brickadia');
+if (!isBrickInstalled) {
+  console.error('brickadia launcher must be installed for omegga to run');
+  process.exit(1);
+} else {
+  require('../src/main.js');
+}

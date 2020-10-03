@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const disrequire = require('disrequire');
 
+global.OMEGGA_UTIL = require('../../util/index.js');
+
 const { Plugin } = require('../plugin.js');
 
 // Main plugin file (like index.js)
@@ -22,6 +24,9 @@ class NodePlugin extends Plugin {
     return fs.existsSync(path.join(pluginPath, MAIN_FILE)) &&
       fs.existsSync(path.join(pluginPath, DOC_FILE));
   }
+
+  // unsafe node plugins (can potentially crash omegga) are powerful
+  static getFormat() { return 'node_unsafe'; }
 
   constructor(pluginPath, omegga) {
     super(pluginPath, omegga);
@@ -69,7 +74,7 @@ class NodePlugin extends Plugin {
   unload() {
     // can't unload the plugin if it hasn't been loaded
     if (typeof this.loadedPlugin === 'undefined')
-      return;
+      return false;
 
     try {
       // run the stop func on the plugin if applicable

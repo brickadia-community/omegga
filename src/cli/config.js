@@ -2,6 +2,8 @@
 // TODO: convert config view into a contained blessed component
 const blessed = require('blessed');
 const contrib = require('blessed-contrib');
+const soft = require('../softconfig.js');
+const path = require('path');
 
 const screen = blessed.screen({
   smartCSR: true,
@@ -219,9 +221,10 @@ serverCfgForm.on('submit', data => {
     // TODO: validate config and show errors before writing to file
     // TODO: write roles to file
     // write config to yml file
-    require('../config').write('./config.yml', cfg);
+    require('../config').write(path.join('.', soft.CONFIG_FILENAMES[0] + '.yml'), cfg);
     // write config to ini file
-    require('../brickadia/config.js').write(require('../softconfig.js').BRICKADIA_PATH, cfg);
+    // TODO: this might fail
+    require('../brickadia/config.js').write(soft.BRICKADIA_PATH, cfg);
     screen.destroy();
   } catch (e) {
     // TODO: do something with the error (probably validation)

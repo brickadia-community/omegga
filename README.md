@@ -4,7 +4,7 @@ Similar to [n42k's brikkit](https://github.com/n42k/brikkit), wraps brickadia's 
 
 ## Running
 
-Omegga depends on node v12+ and the brickadia linux launcher.
+Omegga depends on node v12+ and the brickadia linux launcher. You can run omegga in the Windows Subsystem for Linux or on an actual linux install.
 
 Before running, `npm start -- config` needs to be run to generate brickadia config.
 
@@ -23,6 +23,10 @@ Node plugins are effectively `require`'d into omegga. They have the potential to
 These plugins receive a direct reference to the `omegga` that wraps the brickadia server. As a result, they can directly modify how omegga runs.
 
 Cleanup is important as code can still be running after the plugin is unloaded resulting in strange and undefined behavior. Make sure to run `clearInterval` and `clearTimeout`
+
+### Globals
+
+  * `OMEGGA_UTIL` - access to the `src/util/index.js` module
 
 ### Folder Structure
 
