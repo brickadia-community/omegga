@@ -25,10 +25,10 @@ const emailPrompt = text => new Promise((resolve) => {
 
 // async function to prompt for credentials
 async function prompt() {
-  console.log('>>'.green, 'Enter', 'Brickadia'.green, 'credentials (not stored)');
+  console.log('>>'.green, 'Enter', 'Brickadia'.green.underline, 'credentials (not stored)');
   return [
-    await emailPrompt('     email: '),
-    await passwordPrompt('  password: '),
+    await emailPrompt('     '+'email'.yellow.underline+': '),
+    await passwordPrompt('  '+'password'.yellow.underline+': '),
   ];
 }
 

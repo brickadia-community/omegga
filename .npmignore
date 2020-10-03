@@ -1,0 +1,14 @@
+data
+plugins
+config.yml
+.omegga-config.yml
+.omegga.yml
+omegga-config.json
+omegga.json
+config.json
+webpack.config.js
+test.js
+src/frontend/components
+src/frontend/css
+src/frontend/views
+src/frontend/app.js

@@ -2,17 +2,52 @@
 
 Similar to [n42k's brikkit](https://github.com/n42k/brikkit), wraps brickadia's server console to provide interactivity via plugins.
 
+## Install
+
+Omegga depends on node v12+ and the **brickadia linux launcher** which is not available publicly at the moment. You can run omegga in the Windows Subsystem for Linux or on an actual linux install.
+
+Omegga is can be installed as a global npm package
+
+    npm i -g omegga
+
+Alternatively, you can use a development/local omegga
+
+    # clone omegga
+    git clone https://github.com/brickadia-community/omegga.git && cd omegga
+
+    # point development omegga to global npm bin
+    npm link
+
 ## Running
 
-Omegga depends on node v12+ and the brickadia linux launcher. You can run omegga in the Windows Subsystem for Linux or on an actual linux install.
+To start a server, simply type the following in a linux shell after install:
 
-Before running, `npm start -- config` needs to be run to generate brickadia config.
+    omegga
 
-At the moment, Omegga is far from complete and is run via `node test.js` in the project folder.
+Omegga will prompt for credentials as necessary and only stores the auth tokens brickadia generates on login.
 
-Eventually it will be able to be run in any directory via `omegga` and configured with `omegga config` or a website.
+# Planned Features
+
+  * [ ] web interface
+    * [ ] enable/disable plugins live
+    * [ ] manage plugins config, perhaps by iframe
+    * [ ] chat with players
+    * [ ] view recent console logs
+    * [ ] view server status
+  * [ ] metrics
+    * [ ] bricks over time charts
+    * [ ] player online time tracking
+    * [ ] chat logs
+    * [ ] chats/hour tracking
+  * [ ] plugins in other languages via websocket connection
+  * [ ] sandboxed node plugins (more secure, more stable)
+  * [ ] plugin installation by `omegga install gh@user/repo`
+  * [ ] plugin updates by `omegga update`
+  * [ ] server config bundling (making it easier to transfer configs)
 
 # Plugins
+
+Plugins are located in the `plugins` directory in an omegga config folder
 
 Plugins are going to be able to be developed in more languages in the future but at the moment are currently limited to javascript.
 

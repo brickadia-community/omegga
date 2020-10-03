@@ -6,6 +6,7 @@ const soft = require('./softconfig.js');
 const Omegga = require('./omegga/server.js');
 const config = require('./config/index.js');
 const { Terminal, auth } = require('./cli/index.js');
+const file = require('./util/file.js');
 
 /*
 
@@ -23,6 +24,8 @@ const { Terminal, auth } = require('./cli/index.js');
 const createDefaultConfig = () => {
   console.log('>>'.green, 'Created default config file');
   config.write(soft.CONFIG_FILENAMES[0] + '.yml', config.defaultConfig);
+  file.mkdir('data/Saved/Builds');
+  file.mkdir('plugins');
   return config.defaultConfig;
 };
 
@@ -55,7 +58,7 @@ const program = require('commander')
 
     // build options
     const { serverless, webless, port, debug } = program.opts();
-    const options = { noserver: serverless, noweb: webless, port, debug };
+    const options = { noserver: serverless || true, noweb: webless, port, debug };
 
     // setup the server
     const server = new Omegga('.', conf, options);
@@ -63,6 +66,7 @@ const program = require('commander')
     // create a terminal
     new Terminal(server, options);
 
+    console.log('>>'.green, 'Starting server...');
     // start the server
     server.start();
   });

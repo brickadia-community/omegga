@@ -5,5 +5,7 @@ data
 plugins
 config.yml
 .omegga-config.yml
+.omegga.yml
+omegga-config.json
+omegga.json
 config.json
-.omegga-config.json
