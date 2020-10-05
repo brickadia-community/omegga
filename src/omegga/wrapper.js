@@ -6,7 +6,7 @@ const path = require('path');
 
 const BrickadiaServer = require('../brickadia/server.js');
 const soft = require('../softconfig.js');
-const LogWrangler = require('./LogWrangler');
+const LogWrangler = require('./logWrangler.js');
 
 class OmeggaWrapper extends EventEmitter {
   #server = undefined;
