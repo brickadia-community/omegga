@@ -4,7 +4,7 @@ Similar to [n42k's brikkit](https://github.com/n42k/brikkit), wraps brickadia's 
 
 ## Install
 
-Omegga depends on node v12+ and the **brickadia linux launcher** which is not available publicly at the moment. You can run omegga in the Windows Subsystem for Linux or on an actual linux install.
+Omegga depends on Node v12+ ([windows](https://nodejs.org/en/download/), [ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions)) and the **brickadia linux launcher** which is not available publicly at the moment. You can run omegga in the Windows Subsystem for Linux or on an actual linux install.
 
 Omegga is can be installed as a global npm package
 
@@ -55,6 +55,90 @@ Plugins are located in the `plugins` directory in an omegga config folder
 
 Plugins are going to be able to be developed in more languages in the future but at the moment are currently limited to javascript.
 
+## Node VM Plugins
+
+Node VM Plugins are what you should be using. They are run inside a VM inside a Worker. This means when they crash, they do not crash the whole server and they can in the future have locked down permissions (disable filesystem access, etc).
+
+These plugins receive a "proxy" reference to `omegga` and have limited reach for what they can touch.
+
+At the moment, the following omegga methods are **missing**: `getSaves, writeSaveData, readSaveData, loadSaveData, getSaveData`
+
+### Globals
+
+  * `OMEGGA_UTIL` - access to the `src/util/index.js` module
+  * `Omegga` - access to the "proxy" omegga
+  * `console.log` - and other variants (console.error, console.info) print specialized output to console
+
+### Folder Structure
+
+In a `plugins` directory create the following folder structure:
+
+* `plugins/myPlugin` - plugin folder (required)
+* `plugins/myPlugin/omegga.plugin.js` - js plugin main file (required)
+* `plugins/myPlugin/doc.json` - plugin information (required)
+* `plugins/myPlugin/access.json` - plugin access information (required, but doesn't have to have anything right now). this will contain what things the vm will need to access
+* `plugins/myPlugin/disable.omegga` - empty file only present if the plugin should be disabled (optional)
+
+### `omegga.main.js` (example)
+
+```javascript
+class PluginName {
+  // the constructor also contains an omegga if you don't want to use the global one
+  constructor(omegga) {
+    this.omegga = omegga;
+    console.info('constructed my plugin!');
+  }
+
+  init() {
+    Omegga
+      .on('chatcmd:ping', (name, ...args) => {
+        Omegga.broadcast(`pong @ ${name} + ${args.length} args`);
+      })
+      .on('chatcmd:pos', async name => {
+        const [x, y, z] = await Omegga.getPlayer(name).getPosition();
+        Omegga.broadcast(`<b>${name}</> is at ${x} ${y} ${z}`);
+      });
+  }
+
+  stop() {
+    // any remove events are not necessary because the VM removes the code
+  }
+}
+
+module.exports = PluginName;
+```
+
+### `doc.json` (example)
+
+```json
+{
+  "name": "My Plugin",
+  "description": "Example Plugin",
+  "author": "cake",
+  "commands": [
+    {
+      "name": "!ping",
+      "description": "sends a pong to the sender",
+      "example": "!ping foo bar",
+      "args": [
+        {
+          "name": "args",
+          "description": "random filler arguments",
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "!pos",
+      "description": "announces player position",
+      "example": "!pos",
+      "args": []
+    }
+  ]
+}
+```
+
+
 ## Node Plugins
 
 Node plugins are effectively `require`'d into omegga. They have the potential to crash the entire service through uncaught exceptions and also can be insecure. Develop and run these at your own risk - your server stability may suffer.
@@ -73,7 +157,7 @@ In a `plugins` directory create the following folder structure:
 
 * `plugins/myPlugin` - plugin folder (required)
 * `plugins/myPlugin/omegga.main.js` - js plugin main file (required)
-* `plugins/myPlugin/doc.json` - plugin information (optional)
+* `plugins/myPlugin/doc.json` - plugin information (required)
 * `plugins/myPlugin/disable.omegga` - empty file only present if the plugin should be disabled (optional)
 
 ### `omegga.main.js` (example)

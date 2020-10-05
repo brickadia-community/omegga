@@ -15,7 +15,13 @@ const MAIN_FILE = 'omegga.main.js';
 // Documentation file (contains name, description, author, command helptext)
 const DOC_FILE = 'doc.json';
 
-// TODO: pass lightweight omegga to plugin instead of entire omegga
+const readJSON = file => {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch (e) {
+    return null;
+  }
+};
 
 class NodePlugin extends Plugin {
   // every node plugin requires the main file and a doc file
@@ -30,7 +36,8 @@ class NodePlugin extends Plugin {
 
   constructor(pluginPath, omegga) {
     super(pluginPath, omegga);
-    this.documentation = require(path.join(pluginPath, DOC_FILE));
+    // TODO: validate documentation
+    this.documentation = readJSON(path.join(pluginPath, DOC_FILE));
     this.pluginFile = path.join(pluginPath, MAIN_FILE);
   }
 
@@ -41,10 +48,10 @@ class NodePlugin extends Plugin {
   isLoaded() { return !!this.loadedPlugin; }
 
   // require the plugin into the system, run the init func
-  load() {
+  async load() {
     const stopPlugin = reason => {
-      Omegga.error('error launching node plugin', this.path, ':', reason);
-      try{disrequire(this.pluginFile);}catch(e){Omegga.error('error unloading node plugin (2)', this.path, e);}
+      Omegga.error('error launching node plugin', this.getName(), ':', reason);
+      try{disrequire(this.pluginFile);}catch(e){Omegga.error('error unloading node plugin (2)', this.getName(), e);}
       return false;
     };
 
@@ -65,13 +72,13 @@ class NodePlugin extends Plugin {
 
       return true;
     } catch (e) {
-      Omegga.error('error loading node plugin', this.path, e);
+      Omegga.error('error loading node plugin', this.getName(), e);
       return false;
     }
   }
 
   // disrequire the plugin into the system, run the stop func
-  unload() {
+  async unload() {
     // can't unload the plugin if it hasn't been loaded
     if (typeof this.loadedPlugin === 'undefined')
       return false;
@@ -86,7 +93,7 @@ class NodePlugin extends Plugin {
       this.loadedPlugin = undefined;
       return true;
     } catch (e) {
-      Omegga.error('error unloading node plugin', this.path, e);
+      Omegga.error('error unloading node plugin', this.getName(), e);
       return false;
     }
   }

@@ -109,9 +109,9 @@ class Terminal {
 
       stop: {
         desc: 'stop the server and close Omegga',
-        fn() {
+        async fn() {
           log('Stopping server...');
-          this.omegga.stop();
+          await this.omegga.stop();
           process.exit();
         },
       },
@@ -130,7 +130,7 @@ class Terminal {
 
       reload: {
         desc: 'reload available plugins',
-        fn() {
+        async fn() {
           if (!this.omegga.started) {
             err('Omegga is not running');
             return;
@@ -142,21 +142,21 @@ class Terminal {
           }
 
           log('Unloading current plugins');
-          let success = this.omegga.pluginLoader.unload();
+          let success = await this.omegga.pluginLoader.unload();
           if (!success) {
             err('Could not unload all plugins');
             return;
           }
 
           log('Scanning for new plugins');
-          success = this.omegga.pluginLoader.scan();
+          success = await this.omegga.pluginLoader.scan();
           if (!success) {
             err('Could not scan for plugins')
             return;
           }
 
           log('Starting plugins');
-          success = this.omegga.pluginLoader.reload();
+          success = await this.omegga.pluginLoader.reload();
           if (success) {
             const plugins = this.omegga.pluginLoader.plugins.filter(p => p.isLoaded()).map(p => p.getName());
             log('Loaded', (plugins.length+'').yellow, 'plugins:', plugins);

@@ -6,8 +6,8 @@ const config = require('../softconfig.js');
 // Check if this plugin is disabled
 const DISABLED_FILE = 'disabled.omegga';
 
-// TODO: plugin_node_vm https://www.npmjs.com/package/vm2
-// TODO: move doc.json to this file
+// TODO: move doc.json to this file (maybe)
+// TODO: cleaner plugin error messages
 
 /*
   Plugin interface
@@ -31,7 +31,10 @@ class Plugin {
   isEnabled() { return !fs.existsSync(path.join(this.path, DISABLED_FILE)); }
 
   // get the plugin name, usually based on documentation data
-  getName() { return this.getDocumentation().name; }
+  getName() {
+    const doc = this.getDocumentation();
+    return doc ? doc.name : path.dirname(this.path);
+  }
 
   // get the documentation object for this plugin
   getDocumentation() { return null; }
@@ -40,10 +43,10 @@ class Plugin {
   isLoaded() { return false; }
 
   // start the plugin, returns true if plugin successfully loaded
-  load() { return false; }
+  async load() { return false; }
 
   // stop + kill the plugin, returns true if plugin successfully unloaded
-  unload() { return false; }
+  async unload() { return false; }
 }
 
 /*
@@ -82,32 +85,44 @@ class PluginLoader {
   }
 
   // unload and load all installed plugins
-  reload() {
+  async reload() {
+    let ok = true;
     for (const p of this.plugins) {
-      // unload the plugin if it's loaded
-      if (p.isLoaded())
-        p.unload();
+      try {
+        // unload the plugin if it's loaded
+        if (p.isLoaded())
+          await p.unload();
 
-      // load the plugin if it successfully unloaded
-      if (!p.isLoaded()) {
-        // only load it if it is enabled
-        if (p.isEnabled())
-            p.load();
-      } else {
-        console.error('did not successfully unload plugin', p.path);
-        return false;
+        // load the plugin if it successfully unloaded
+        if (!p.isLoaded()) {
+          // only load it if it is enabled
+          if (p.isEnabled())
+            await p.load();
+        } else {
+          Omegga.error('did not successfully unload plugin', p.path);
+          ok = false;
+        }
+      } catch (err) {
+        Omegga.error('error reloading plugin', p.path);
+        ok = false;
       }
     }
-    return true;
+    return ok;
   }
 
   // stop all plugins from running
-  unload() {
+  async unload() {
     let ok = true;
+    // potentually use Promise.all
     for (const p of this.plugins) {
-      // unload the plugin if it's loaded
-      if (p.isLoaded() && !p.unload())
+      try {
+        // unload the plugin if it's loaded
+        if (p.isLoaded() && !await p.unload())
+          ok = false;
+      } catch (e) {
+        Omegga.error('error unloading plugin', p.path);
         ok = false;
+      }
     }
     return ok;
   }
@@ -121,7 +136,7 @@ class PluginLoader {
 
     // make sure there are no plugins running
     if (this.plugins.some(p => p.isLoaded())) {
-      console.error('cannot re-scan plugins while a plugin is loaded');
+      Omegga.error('cannot re-scan plugins while a plugin is loaded');
       return false;
     }
 
@@ -137,13 +152,13 @@ class PluginLoader {
 
         // let users know if there's a missing plugin format
         if (!PluginFormat)
-          console.error('Missing plugin format for', dir);
+          Omegga.error('Missing plugin format for', dir);
         try {
           // if there is a plugin format, create the plugin instance (but don't load yet)
           return PluginFormat && new PluginFormat(dir, this.omegga);
         } catch (e) {
           // if a plugin format fails to load, prevent omegga from dying
-          console.error('Error loading plugin format', PluginFormat, e);
+          Omegga.error('Error loading plugin', PluginFormat, e);
         }
 
       })

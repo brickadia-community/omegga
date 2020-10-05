@@ -21,6 +21,7 @@ module.exports = omegga => {
     },
     // when there's a match, emit the chat message event
     callback(version) {
+      omegga.emit('version', version);
       omegga.version = version;
     },
   };

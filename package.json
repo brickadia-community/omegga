@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Brickadia server wrapper, configurator, and automator",
   "main": "index.js",
   "bin": {
@@ -28,6 +28,7 @@
     "rimraf": "^3.0.2",
     "socket.io": "^2.3.0",
     "strip-ansi": "^6.0.0",
+    "vm2": "^3.9.2",
     "ws": "^7.3.1"
   },
   "devDependencies": {

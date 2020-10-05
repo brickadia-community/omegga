@@ -13,7 +13,4 @@ module.exports = {
 
   // time parsing utils
   time: require('./time.js'),
-
-  // file reading
-  file: require('./file.js'),
 };

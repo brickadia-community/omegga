@@ -11,6 +11,14 @@ class Player {
     this.state = state;
   }
 
+  // clone the player
+  clone() {
+    return new Player(this.#omegga, name, id, controller, state);
+  }
+
+  // get raw player info (to feed into a constructor)
+  raw() { return [this.name, this.id, this.controller, this.state]; }
+
   // true if the player is the host
   isHost() { return this.#omegga.host.id === this.id; }
 
@@ -20,7 +28,7 @@ class Player {
   // get a player's roles, if any
   getRoles() {
     const data = this.#omegga.getRoleAssignments().savedPlayerRoles[this.id];
-    return data && data.roles ? data.roles : [];
+    return Object.freeze(data && data.roles ? data.roles : []);
   }
 
   // get a player's permissions
@@ -29,7 +37,7 @@ class Player {
 
     // if the player is the host, the player has every permission
     if (this.isHost()) {
-      return Object.fromEntries(defaultRole.permissions.map(p => [p.name, true]));
+      return Object.freeze(Object.fromEntries(defaultRole.permissions.map(p => [p.name, true])));
     }
 
     // get the player's roles
@@ -53,7 +61,7 @@ class Player {
       }
     }
 
-    return permissions;
+    return Object.freeze(permissions);
   }
 
   // get player's name color
@@ -76,7 +84,7 @@ class Player {
       }
     }
 
-    return color.rgbToHex(defaultRole.bHasColor ? defaultRole.color : {r: 255, g: 255, b: 255, a: 255});
+   return Object.freeze(color.rgbToHex(defaultRole.bHasColor ? defaultRole.color : {r: 255, g: 255, b: 255, a: 255}));
   }
 
   // get player's position

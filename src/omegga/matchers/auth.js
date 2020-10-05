@@ -34,6 +34,7 @@ module.exports = omegga => {
       if (type == 'host') {
         // store the host info
         omegga.host = Object.freeze(host);
+        omegga.emit('host', Object.freeze(host));
       } else if (type === 'valid') {
         // let the server know it has started
         omegga.emit('start');

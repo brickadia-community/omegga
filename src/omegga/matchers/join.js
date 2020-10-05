@@ -94,6 +94,7 @@ module.exports = omegga => {
     callback(player) {
       omegga.emit('join', player);
       omegga.players.push(player);
+      omegga.emit('plugin:players:raw', omegga.players.map(p => p.raw()));
     },
   };
 };

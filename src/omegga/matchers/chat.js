@@ -1,7 +1,6 @@
 module.exports = omegga => {
   // pattern to get PlayerController from a leave message
   const chatRegExp = /^(?<name>.+?): (?<message>.+)$/;
-
   return {
     // listen for chat messages
     pattern(_line, logMatch) {

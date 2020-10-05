@@ -24,6 +24,7 @@ module.exports = omegga => {
     callback(player) {
       omegga.players.splice(omegga.players.indexOf(player), 1);
       omegga.emit('leave', player);
+      omegga.emit('plugin:players:raw', omegga.players.map(p => p.raw()));
     },
   };
 };
