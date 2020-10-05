@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Brickadia server wrapper, configurator, and automator",
   "main": "index.js",
   "bin": {
@@ -13,6 +13,7 @@
     "chokidar": "^3.4.2",
     "colors": "^1.4.0",
     "commander": "^5.1.0",
+    "configstore": "^5.0.1",
     "disrequire": "^1.1.1",
     "express": "^4.17.1",
     "glob": "^7.1.6",
@@ -28,6 +29,7 @@
     "rimraf": "^3.0.2",
     "socket.io": "^2.3.0",
     "strip-ansi": "^6.0.0",
+    "update-notifier": "^5.0.0",
     "vm2": "^3.9.2",
     "ws": "^7.3.1"
   },

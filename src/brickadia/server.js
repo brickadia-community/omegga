@@ -17,7 +17,8 @@ class BrickadiaServer extends EventEmitter {
   constructor(dataPath, config) {
     super();
     this.config = config;
-    this.path = dataPath;
+    // use the data path if it's absolute, otherwise build an absolute path
+    this.path = path.isAbsolute(dataPath) ? dataPath : path.join(process.cwd(), dataPath);
 
     this.lineListener = this.lineListener.bind(this);
     this.errorListener = this.errorListener.bind(this);
@@ -39,7 +40,7 @@ class BrickadiaServer extends EventEmitter {
       '--server',
       '--',
       '-NotInstalled', '-log',
-      this.path && `-UserDir="${path.join(process.cwd(), this.path)}"`,
+      this.path && `-UserDir="${this.path}"`,
       email && `-User="${email}"`, // remove email argument if not provided
       password && `-Password="${password}"`, // remove password argument if not provided
       `-port="${this.config.server.port}"`,

@@ -33,21 +33,38 @@ Omegga will prompt for credentials as necessary and only stores the auth tokens 
 # Planned Features
 
   * [ ] web interface
+    * [ ] reload plugins
     * [ ] enable/disable plugins live
     * [ ] manage plugins config, perhaps by iframe
     * [ ] chat with players
     * [ ] view recent console logs
     * [ ] view server status
+  * [x] terminal interface
+    * [x] reload plugins
+    * [x] chat with players
+    * [x] view recent console logs
+    * [x] view server status
   * [ ] metrics
     * [ ] bricks over time charts
     * [ ] player online time tracking
     * [ ] chat logs
     * [ ] chats/hour tracking
   * [ ] plugins in other languages via websocket connection
+    * [ ] LogWrangler impl for other languages
+    * [ ] events sent through thread
   * [ ] sandboxed node plugins (more secure, more stable)
+    * [x] running in own thread (worker)
+    * [x] running in own vm
+    * [x] can `require`
+    * [x] partial omegga spec (events, some features)
+    * [ ] full omegga spec
+    * [ ] _good_ access restrictions (ask user for permission)
   * [ ] plugin installation by `omegga install gh@user/repo`
   * [ ] plugin updates by `omegga update`
   * [ ] server config bundling (making it easier to transfer configs)
+    * [ ] omegga.server.json
+      * [ ] list of installed omegga plugins, versions, and download urls
+      * [ ] list of roles, bans, role assignments
 
 # Plugins
 
