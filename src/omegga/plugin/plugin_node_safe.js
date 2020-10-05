@@ -113,7 +113,7 @@ class NodeVmPlugin extends Plugin {
   async load() {
     // vm restriction settings, default is access to everything
     const vmOptions = {
-      builtin: ['*'], // TODO: reference access file
+      builtin: this.access, // TODO: reference access file
       external: true, // TODO: reference access file
     };
 

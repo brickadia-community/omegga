@@ -56,7 +56,7 @@ class ProxyOmegga extends EventEmitter {
     commandInjector(this, this.logWrangler);
 
     // blanket apply fields
-    this.on('boostrap', data => {
+    this.on('bootstrap', data => {
       for (const key in data) {
         this[key] = data[key];
       }
@@ -68,7 +68,9 @@ class ProxyOmegga extends EventEmitter {
       this.version = version;
     });
     // create players from raw constructor data
-    this.on('plugin:players:raw', players => this.players = players.map(p => new Player(this, ...p)));
+    this.on('plugin:players:raw', players => {
+      this.players = players.map(p => new Player(this, ...p));
+    });
 
     this.on('start', () => {
       this.started = true;

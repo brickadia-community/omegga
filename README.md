@@ -24,7 +24,7 @@ To start a server, simply type the following in a linux shell after install:
 
     omegga
 
-Omegga will prompt for credentials as necessary and only stores the auth tokens brickadia generates on login.
+Omegga will prompt for credentials as necessary and only stores the auth tokens brickadia generates on login. **Omegga does not store your password**
 
 ## Screenshots
 
