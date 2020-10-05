@@ -153,32 +153,49 @@ class NodeVmPlugin extends Plugin {
   }
 
   // disrequire the plugin into the system, run the stop func
-  async unload() {
-    // can't unload the plugin if it hasn't been loaded
-    if (typeof this.#worker === 'undefined')
-      return false;
+  unload() {
+    return new Promise(async resolve => {
+      // can't unload the plugin if it hasn't been loaded
+      if (typeof this.#worker === 'undefined')
+        return resolve(false);
 
-    try {
-      // stop the plugin (cleanly)
-      await this.emit('stop');
+      try {
 
-      // let the unload function wait for the worker to properly cleanup
-      const promise = new Promise(resolve => {
-        this.#worker.once('exit', resolve);
-      })
+        let frozen = true;
 
-      // kill the worker
-      await this.emit('kill');
+        // check if the
+        setTimeout(() => {
+          if (!frozen) return;
+          this.plugin.emit('error', 0, 'I appear to be in an infinite loop - terminating worker')
+          this.#worker.terminate();
+          this.omegga.off('*', this.eventPassthrough);
+          this.#worker.emit('exit');
+          resolve(true);
+        }, 5000);
 
-      // wait for the worker to exit
-      await promise;
+        // stop the plugin (cleanly)
+        await this.emit('stop');
 
-      this.omegga.off('*', this.eventPassthrough);
-      return true;
-    } catch (e) {
-      Omegga.error('>!'.red, 'error unloading node plugin', this.getName().brightRed.underline, e);
-      return false;
-    }
+        // let the unload function wait for the worker to properly cleanup
+        const promise = new Promise(res => {
+          this.#worker.once('exit', res);
+        });
+
+        // kill the worker
+        await this.emit('kill');
+
+        // wait for the worker to exit
+        await promise;
+
+        this.omegga.off('*', this.eventPassthrough);
+        frozen = false;
+        return resolve(true);
+      } catch (e) {
+        Omegga.error('>!'.red, 'error unloading node plugin', this.getName().brightRed.underline, e);
+        frozen = false;
+        return resolve(false);
+      }
+    });
   }
 
   // emit an action to the worker and return a promise with its response

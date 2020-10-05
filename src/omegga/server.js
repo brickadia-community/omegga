@@ -153,9 +153,12 @@ class Omegga extends OmeggaWrapper {
   // broadcast messages to chat
   // messages are broken by new line
   // multiple arguments are additional lines
+  // TODO: split messages that longer than 512 characters
+  // TODO: delete characters that are known to crash the game
   broadcast(...messages) {
     messages
-      .flatMap(m => m.split('\n'))
+      .flatMap(m => m.toString().split('\n'))
+      .filter(m => m.length < 512)
       .forEach(m => this.writeln(`Chat.Broadcast ${m}`));
   }
 
@@ -169,7 +172,8 @@ class Omegga extends OmeggaWrapper {
 
     // whisper the messages to that player
     messages
-      .flatMap(m => m.split('\n'))
+      .flatMap(m => m.toString().split('\n'))
+      .filter(m => m.length < 512)
       .forEach(m => this.writeln(`Chat.Whisper ${target.name} ${m}`));
   }
 

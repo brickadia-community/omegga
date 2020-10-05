@@ -72,9 +72,7 @@ function createVm(pluginPath, {builtin=['*'], external=true}={}) {
   // create the vm
   vm = new NodeVM({
     console: 'redirect',
-    sandbox: {
-      Omegga: omegga,
-    },
+    sandbox: {},
     require: {
       external,
       builtin,
@@ -94,6 +92,7 @@ function createVm(pluginPath, {builtin=['*'], external=true}={}) {
 
   // pass in util functions
   vm.freeze(require('../../../util/index.js'), 'OMEGGA_UTIL');
+  vm.freeze(omegga, 'Omegga');
 
   const file = path.join(pluginPath, MAIN_FILE);
   let pluginCode;

@@ -20,7 +20,6 @@ class LogWrangler {
     // callback reads in new lines
     this.callback = this.handleLog.bind(this);
 
-
     this.addMatcher = this.addMatcher.bind(this);
     this.addWatcher = this.addWatcher.bind(this);
     this.watchLogArray = this.watchLogArray.bind(this);

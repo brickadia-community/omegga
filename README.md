@@ -79,7 +79,7 @@ In a `plugins` directory create the following folder structure:
 * `plugins/myPlugin/access.json` - plugin access information (required, but doesn't have to have anything right now). this will contain what things the vm will need to access
 * `plugins/myPlugin/disable.omegga` - empty file only present if the plugin should be disabled (optional)
 
-### `omegga.main.js` (example)
+### `omegga.plugin.js` (example)
 
 ```javascript
 class PluginName {

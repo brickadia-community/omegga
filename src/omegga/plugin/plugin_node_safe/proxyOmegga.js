@@ -57,7 +57,6 @@ class ProxyOmegga extends EventEmitter {
 
     // blanket apply fields
     this.on('boostrap', data => {
-      console.log('boostrapped', data);
       for (const key in data) {
         this[key] = data[key];
       }
