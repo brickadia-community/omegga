@@ -29,16 +29,24 @@ class BrickadiaServer extends EventEmitter {
   start() {
     const { email, password } = this.config.credentials || {};
 
+    // handle non-launcher support
+    // DEPRECATED
+    const launchArgs = this.config.server.__LEGACY ? [
+      this.config.server.__LEGACY
+    ] : [
+      'brickadia',
+      this.config.server.branch && `--branch=${this.config.server.branch}`,
+      '--server',
+      '--',
+    ]
+
     // Either unbuffer or stdbuf must be used because brickadia's output is buffered
     // this means that multiple lines can be bundled together if the output buffer is not full
     // unfortunately without stdbuf or unbuffer, the output would not happen immediately
     this.#child = spawn('stdbuf', [
       '--output=L',
       '--',
-      'brickadia',
-      this.config.server.branch && `--branch=${this.config.server.branch}`,
-      '--server',
-      '--',
+      ...launchArgs,
       '-NotInstalled', '-log',
       this.path && `-UserDir="${this.path}"`,
       email && `-User="${email}"`, // remove email argument if not provided

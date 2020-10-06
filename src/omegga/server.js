@@ -31,7 +31,8 @@ class Omegga extends OmeggaWrapper {
   pluginLoader = undefined;
 
   // prevent omegga from saving over the same file
-  #tempSaveCounter = 0;
+  _tempSaveCounter = 0;
+  _tempSavePrefix = 'omegga_temp_';
 
   // allow a terminal to be used instead of console log
   static terminal = undefined;
@@ -220,7 +221,7 @@ class Omegga extends OmeggaWrapper {
     if (!target)
       return;
 
-    this.writeln(`Bricks.Clear ${target} ${quiet ? 1 : ''}`)
+    this.writeln(`Bricks.Clear ${target} ${quiet && this.version !== 'a4' ? 1 : ''}`)
   }
 
   // save bricks
@@ -230,7 +231,7 @@ class Omegga extends OmeggaWrapper {
   saveBricks(name) { this.writeln(`Bricks.Save ${name}`); }
 
   // load bricks
-  loadBricks(name, {offX=0, offY=0, offZ=0, quiet=false}={}) { this.writeln(`Bricks.Load ${name} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`); }
+  loadBricks(name, {offX=0, offY=0, offZ=0, quiet=false}={}) { this.writeln(`Bricks.Load ${name} ${offX} ${offY} ${offZ} ${quiet && this.version !== 'a4' ? 1 : ''}`); }
 
   // get all saves in the save folder
   getSaves() { return fs.existsSync(this.savePath) ? glob.sync(this.savePath + '/**/*.brs') : []; }
@@ -247,6 +248,8 @@ class Omegga extends OmeggaWrapper {
       throw 'expected name argument for writeSaveData';
 
     const file = path.join(this.savePath, name + '.brs');
+    if (!file.startsWith(this.savePath))
+      throw 'save file not in Saved/Builds directory';
     fs.writeFileSync(file, new Uint8Array(brs.write(data)));
   }
 
@@ -256,19 +259,21 @@ class Omegga extends OmeggaWrapper {
       throw 'expected name argument for readSaveData';
 
     const file = this.getSavePath(name);
+    if (!file.startsWith(this.savePath))
+      throw 'save file not in Saved/Builds directory';
     if (file) return brs.read(fs.readFileSync(file));
   }
 
   // load bricks from save data
   // A5+ only
   async loadSaveData(data, {offX=0, offY=0, offZ=0, quiet=false}={}) {
-    const saveFile = 'omegga_temp_' + Date.now() + '_' + (this.#tempSaveCounter++);
+    const saveFile = this._tempSavePrefix + Date.now() + '_' + (this._tempSaveCounter++);
     // write savedata to file
     this.writeSaveData(saveFile, data);
 
     // wait for the server to finish reading the save
     await this.watchLogChunk(
-      `Bricks.Load ${saveFile} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`,
+      `Bricks.Load ${saveFile} ${offX} ${offY} ${offZ} ${quiet && this.version !== 'a4' ? 1 : ''}`,
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '...'),
@@ -286,7 +291,7 @@ class Omegga extends OmeggaWrapper {
   // get current bricks as save data
   // A5+ only
   async getSaveData() {
-    const saveFile = 'omegga_temp_' + Date.now() + '_' + (this.#tempSaveCounter++);
+    const saveFile = this._tempSavePrefix + Date.now() + '_' + (this._tempSaveCounter++);
 
     // wait for the server to save the file
     await this.watchLogChunk(

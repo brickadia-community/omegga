@@ -24,16 +24,18 @@ const STEAL_PROTOTYPES = [
   'broadcast', 'whisper', 'getPlayer', 'getPlayers',
   'findPlayerByName', 'getHostId',
   'clearBricks', 'clearAllBricks', 'loadBricks', 'saveBricks',
+  'getSavePath', 'getSaves',
+  'writeSaveData', 'readSaveData', 'loadSaveData', 'getSaveData',
+  'getRoleSetup', 'getRoleAssignments', 'getBanList', 'getNameCache',
 ];
-
-/*Missing functions:
-  getSaves, writeSaveData, readSaveData, loadSaveData, getSaveData
-*/
 
 // this is a "soft" omegga
 // it is built to mimic the core omegga
 // it does not provide direct write access to
 class ProxyOmegga extends EventEmitter {
+  _tempSaveCounter = 0;
+  _tempSavePrefix = 'omegga_plugin_temp_';
+
   constructor(emit, exec) {
     super();
 

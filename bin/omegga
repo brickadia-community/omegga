@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 
 const isBrickInstalled = require('hasbin').sync('brickadia');
-if (!isBrickInstalled) {
-  console.error('brickadia launcher must be installed for omegga to run');
-  process.exit(1);
+
+// DEPRECATED
+const isLegacy = !isBrickInstalled && require('../src/config/index.js').store.get('legacy');
+
+if (!isBrickInstalled && !isLegacy) {
+  require('colors');
+  console.error('!>'.red, 'brickadia launcher'.yellow.underline, 'must be installed for omegga to run');
+
+  // DEPRECATED
+  require('../src/cli/legacy.js');
 } else {
   require('../src/main.js');
 }

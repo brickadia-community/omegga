@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+# THIS FILE ONLY EXISTS FOR USERS WHO DO NOT HAVE ACCESS TO THE BRICKADIA LAUNCHER
+# IT WILL BE DEPRECATED ONCE A5 COMES OUT
+
+TAR_FILE=Brickadia_Alpha4_Patch1_CL3642_Linux.tar.xz
+BRICKADIA_URL=https://static.brickadia.com/builds/CL3642/$TAR_FILE
+LEGACY_PATH=$HOME/.config/omegga/Legacy
+FILE=$LEGACY_PATH/$TAR_FILE
+BINARY_PATH=$LEGACY_PATH/Brickadia/Binaries/Linux/BrickadiaServer-Linux-Shipping
+FILEZ=$FILE.xz
+
+if ! [[ $(which tar) && $(which wget) ]]; then
+  echo ">! Missing dependencies, please run:" >&2
+  echo "  apt-get install wget tar" >&2
+  echo
+  exit 0
+fi;
+
+if ! [[ $(which omegga) ]]; then
+  echo ">! how on earth are you running this without omegga" >&2
+  exit 1
+fi;
+
+if [[ -f $BINARY_PATH ]]; then
+  echo ">> Legacy binary already installed!"
+  exit 0
+fi
+
+mkdir -p $LEGACY_PATH
+
+if [[ -f $FILE ]]; then
+  echo ">> Legacy tar already downloaded!"
+else
+  echo ">> Downloading Brickadia tar"
+  wget $BRICKADIA_URL -P $LEGACY_PATH
+fi
+
+if [[ -f $BINARY_PATH ]]; then
+  echo ">> Legacy binary already installed?!"
+else
+  echo ">> Extracting Brickadia tar"
+  tar xJf $FILE -C $LEGACY_PATH
+fi

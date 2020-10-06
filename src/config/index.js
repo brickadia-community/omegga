@@ -7,6 +7,7 @@ const Configstore = require('configstore');
 
 const store = new Configstore(soft.PROJECT_NAME, {
   defaultOmegga: '.',
+  legacyBin: '',
 }, {
   globalConfigPath: true,
 });

@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Brickadia server wrapper, configurator, and automator",
   "main": "index.js",
   "bin": {

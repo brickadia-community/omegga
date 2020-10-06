@@ -41,17 +41,7 @@ const emit = (action, ...args) => {
 // tell omegga to exec a command
 const exec = cmd => emit('exec', cmd);
 
-/*
-
-// potentially handle uncaught exceptions
-process.on('uncaughtException', err => {
-  emit('error', 'uncaught plugin exception', err);
-  try { pluginInstance.stop(); } catch (e) { emit('error', 'error stopping plugin', e); }
-  process.exit();
-});
-
-*/
-
+// create the proxy omegga
 const omegga = new ProxyOmegga(emit, exec);
 
 // generic brickadia events are forwarded to the proxy omegga
@@ -142,6 +132,8 @@ parent.on('kill', (resp) => {
 // set plugin name
 parent.on('name', (resp, name) => {
   pluginName = name;
+  // temp save prefix changes to avoid collision
+  omegga._tempSavePrefix = 'omegga_' + name + '_temp';
   emit(resp);
 });
 

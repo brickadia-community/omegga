@@ -6,7 +6,7 @@ const package = require('../package');
 const soft = require('./softconfig.js');
 const Omegga = require('./omegga/server.js');
 const config = require('./config/index.js');
-const { Terminal, auth } = require('./cli/index.js');
+const { Terminal, auth, config: omeggaConfig } = require('./cli/index.js');
 const file = require('./util/file.js');
 
 const updateNotifier = require('update-notifier');
@@ -48,6 +48,7 @@ const program = require('commander')
 
     // default working directory is the one specified in config
     let workDir = config.store.get('defaultOmegga');
+    const legacyBin = config.store.get('legacyBin'); // DEPRECATED
 
     // if there's a config in the current directory, use that one instead
     if (config.find('.'))
@@ -75,6 +76,9 @@ const program = require('commander')
     } else {
       conf = config.read(configFile);
     }
+
+    // if legacy config is provided
+    if (legacyBin) conf.server.__LEGACY = legacyBin; // DEPRECATED
 
     // check if the auth files don't exist
     if (!auth.exists(path.join(workDir, soft.DATA_PATH, 'Saved/Auth')) && !auth.exists()) {
@@ -119,65 +123,7 @@ program
     'Type ' + 'omegga config list'.yellow.underline + ' for current settings and available fields'
   )
   .action((field, value) => {
-    const fields = {
-      default: {
-        desc: 'default omegga project directory when running omegga in a non-configured folder',
-        example: 'omegga config default $(pwd)',
-        default: '.',
-        get: () => {
-          let val = config.store.get('defaultOmegga') || '.';
-          if (val === '.') val += ' [current working dir]'.grey;
-          return val;
-        },
-        set: val => {
-          if (!val) {
-            val = '.';
-          }
-
-          // check if the path is valid
-          if (val !== '.' && !path.isAbsolute(val)) {
-            err('setting must be an absolute path or "."');
-            process.exit(1);
-            return;
-          }
-          if (!fs.existsSync(val)) {
-            err('given path does not exist');
-            process.exit(1);
-            return;
-          }
-          if (!fs.statSync(val).isDirectory) {
-            err('given path is not for a directory');
-            process.exit(1);
-            return;
-          }
-
-          // update the setting
-          config.store.set('defaultOmegga', val);
-          log('Set', 'default'.green, 'to', val.green)
-        },
-      },
-    };
-
-    if (field === 'list') {
-      log('Configurable fields:')
-      const maxLen = Math.max(...Object.keys(fields).map(f => f.length));
-      for (const key in fields) {
-        const field = fields[key];
-        console.log('\n  ' + key.yellow.underline,
-          '-'.padStart(maxLen - key.length + 1),
-          field.desc,
-        );
-        console.log('    current'.brightGreen + ':', field.get());
-        console.log('    default:', field.default);
-        console.log('    example'.brightBlue + ':', field.example);
-      }
-      console.log();
-    } else if (fields[field]) {
-      fields[field].set(value);
-    } else {
-      error('invalid field, run', 'omegga config list'.yellow.underline, 'for a list of available fields');
-      process.exit(1);
-    }
+    omeggaConfig(field, value, program.opts());
   });
 
 program
@@ -186,7 +132,7 @@ program
   .option('-f, --force', 'Forcefully regenerate auth token')
   .description('Generates server auth tokens from brickadia account email+password')
   .action(() => {
-    const { clean, force } = program.opts;
+    const { clean, force } = program.opts();
     if (clean || force) {
       log('Clearing old auth files');
       auth.deleteAuthFiles();

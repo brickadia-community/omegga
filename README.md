@@ -4,7 +4,14 @@ Similar to [n42k's brikkit](https://github.com/n42k/brikkit), wraps brickadia's 
 
 ## Install
 
-Omegga depends on Node v12+ ([windows](https://nodejs.org/en/download/), [ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions)) and the **brickadia linux launcher** which is not available publicly at the moment. You can run omegga in the Windows Subsystem for Linux or on an actual linux install.
+You can run omegga in the Windows Subsystem for Linux or on an actual linux install.
+
+Omegga depends on:
+
+  * Node v12+ ([windows](https://nodejs.org/en/download/), [ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions))
+  * one of:
+    * the **brickadia linux launcher** which is not available publicly at the moment.
+    * `apt install wget tar` (to download a4 binary)
 
 Omegga is can be installed as a global npm package
 
@@ -57,7 +64,7 @@ Omegga will prompt for credentials as necessary and only stores the auth tokens 
     * [x] running in own vm
     * [x] can `require`
     * [x] partial omegga spec (events, some features)
-    * [ ] full omegga spec
+    * [x] full omegga spec
     * [ ] _good_ access restrictions (ask user for permission)
   * [ ] plugin installation by `omegga install gh@user/repo`
   * [ ] plugin updates by `omegga update`
@@ -77,8 +84,6 @@ Plugins are going to be able to be developed in more languages in the future but
 Node VM Plugins are what you should be using. They are run inside a VM inside a Worker. This means when they crash, they do not crash the whole server and they can in the future have locked down permissions (disable filesystem access, etc).
 
 These plugins receive a "proxy" reference to `omegga` and have limited reach for what they can touch.
-
-At the moment, the following omegga methods are **missing**: `getSaves, writeSaveData, readSaveData, loadSaveData, getSaveData`
 
 ### Globals
 

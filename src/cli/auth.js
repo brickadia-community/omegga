@@ -8,7 +8,6 @@ const { genAuthFiles, writeAuthFiles } = require('../omegga/auth.js');
 const file = require('../util/file.js');
 const soft = require('../softconfig.js');
 
-
 const AUTH_PATH = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
 
 // prompt user for email
