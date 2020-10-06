@@ -53,10 +53,10 @@ class Omegga extends OmeggaWrapper {
     this.options = options;
 
     // path to save files
-    this.savePath = path.join(serverPath, soft.DATA_PATH, 'Saved/Builds');
+    this.savePath = path.join(this.path, soft.DATA_PATH, 'Saved/Builds');
 
     // path to config files
-    this.configPath = path.join(serverPath, soft.DATA_PATH, 'Saved/Server');
+    this.configPath = path.join(this.path, soft.DATA_PATH, 'Saved/Server');
 
     // create dir folders
     file.mkdir(this.savePath);
@@ -79,7 +79,7 @@ class Omegga extends OmeggaWrapper {
 
     if (!options.noplugin) {
       // create the pluginloader
-      this.pluginLoader = new PluginLoader(path.join(serverPath, soft.PLUGIN_PATH), this);
+      this.pluginLoader = new PluginLoader(path.join(this.path, soft.PLUGIN_PATH), this);
 
       // load all the plugin formats in
       this.pluginLoader.loadFormats(path.join(__dirname, 'plugin'));

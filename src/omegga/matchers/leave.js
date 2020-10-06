@@ -17,14 +17,39 @@ module.exports = omegga => {
       const match = data.match(ownerRegExp);
       if (!match) return null;
 
-      // return the player with the corresponding controller
-      return omegga.players.find(p => p.controller === match[1]);
+      // helper func for finding player with this controller
+      const getLeavingPlayer = () => omegga.players.find(p => p.controller === match[1]);
+
+      let found = getLeavingPlayer();
+
+      // attempt to find the player over the course of 2 seconds
+      // this is because a player can join before all their data is collected
+      return new Promise((resolve, reject) => {
+        let tries = 50;
+        function attempt() {
+          found = getLeavingPlayer();
+
+          if (found) return resolve(found);
+          if (tries-- < 0) return reject('ghost player ' + match[1]);
+
+          setTimeout(attempt, 50);
+        }
+        attempt();
+      });
     },
     // when there's a match, remove the player from the player list, emit a leave event
-    callback(player) {
-      omegga.players.splice(omegga.players.indexOf(player), 1);
-      omegga.emit('leave', player);
-      omegga.emit('plugin:players:raw', omegga.players.map(p => p.raw()));
+    async callback(res) {
+      if (!(res instanceof Promise)) return;
+
+      try {
+        const player = await res;
+        omegga.players.splice(omegga.players.indexOf(player), 1);
+        omegga.emit('leave', player);
+        omegga.emit('plugin:players:raw', omegga.players.map(p => p.raw()));
+
+      } catch (e) {
+        omegga.error('error getting player leave', e);
+      }
     },
   };
 };

@@ -142,9 +142,9 @@ class PluginLoader {
 
     // find all directories in the plugin path
     this.plugins = fs.readdirSync(this.path)
-      .map(dir => path.join(process.cwd(), this.path, dir)) // convert from local paths
+      .map(dir => path.join(this.path, dir)) // convert from local paths
       // every plugin must be in a directory
-      .filter(dir => fs.lstatSync(dir).isDirectory())
+      .filter(dir => fs.existsSync(dir) && fs.lstatSync(dir).isDirectory())
       // every plugin must be loadable through some format
       .map(dir => {
         // find a plugin format that can load in this plugin
