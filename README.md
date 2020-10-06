@@ -13,7 +13,7 @@ Omegga depends on:
     * the **brickadia linux launcher** which is not available publicly at the moment.
     * `apt install wget tar` (to download a4 binary)
 
-Omegga is can be installed as a global npm package
+Omegga is installed as a global npm package
 
     npm i -g omegga
 

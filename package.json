@@ -58,5 +58,13 @@
     "watch": "npx webpack --watch"
   },
   "author": "Meshiest",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brickadia-community/omegga.git"
+  },
+  "bugs": {
+    "url": "https://github.com/brickadia-community/omegga/issues"
+  },
+  "homepage": "https://github.com/brickadia-community/omegga#readme"
 }
