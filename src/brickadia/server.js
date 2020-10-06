@@ -18,7 +18,7 @@ class BrickadiaServer extends EventEmitter {
     super();
     this.config = config;
     // use the data path if it's absolute, otherwise build an absolute path
-    this.path = path.isAbsolute(dataPath) ? dataPath : path.join(process.cwd(), dataPath);
+    this.path = path.isAbsolute(dataPath) || dataPath.startsWith('/') ? dataPath : path.join(process.cwd(), dataPath);
 
     this.lineListener = this.lineListener.bind(this);
     this.errorListener = this.errorListener.bind(this);

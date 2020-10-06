@@ -45,7 +45,6 @@ async function genAuthFiles(email, password) {
   const options = {
     noauth: true,
     nodb: true,
-    noserver: true,
     noplugin: true,
     noweb: true,
   };

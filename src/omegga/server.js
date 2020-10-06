@@ -74,7 +74,7 @@ class Omegga extends OmeggaWrapper {
     // create the webserver if it's enabled
     // the webserver lets non-js plugins talk to omegga
     // as well as gives the administrator access to server information while the server is running
-    if (!options.noserver)
+    if (!options.noweb)
       this.webserver = new Webserver(options, this.database, this);
 
     if (!options.noplugin) {

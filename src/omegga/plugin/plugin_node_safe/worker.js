@@ -42,7 +42,7 @@ const emit = (action, ...args) => {
 const exec = cmd => emit('exec', cmd);
 
 // create the proxy omegga
-const omegga = new ProxyOmegga(emit, exec);
+const omegga = new ProxyOmegga(exec);
 
 // generic brickadia events are forwarded to the proxy omegga
 parent.on('brickadiaEvent', (type, ...args) => {

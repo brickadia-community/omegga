@@ -5,7 +5,6 @@ const url = require('url');
 const querystring = require('querystring');
 
 const express = require('express');
-const WebSocketServer = require('ws').Server;
 const SocketIo = require('socket.io');
 const bodyParser = require('body-parser');
 
@@ -32,40 +31,7 @@ class Webserver {
     this.server = http.Server(this.app);
 
     // setup routes and webserver
-    this.initPluginWebsocket();
     this.initWebUI();
-  }
-
-  // setup websocket route and server server
-  initPluginWebsocket() {
-    // setup websocket server
-    this.ws = new WebSocketServer({noServer: true});
-
-    // authorize on upgrade requests
-    this.server.on('upgrade', (request, socket, head) => {
-      const { pathname, query: queryRaw } = url.parse(request.url, true);
-      const { token } = querystring.parse(queryRaw);
-
-      if (pathname !== soft.WEB_PLUGIN_API_ROUTE) return;
-
-      const plugin = this.omegga.pluginLoader.plugins.find(p => p)
-
-      const isAuth = true;
-
-      if (!isAuth) {
-        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-        socket.destroy();
-        return;
-      }
-
-      // finish the
-      this.ws.handleUpgrade(request, socket, head, ws => {
-        this.ws.emit('connection', ws, request, client);
-      });
-    });
-
-    // handle incoming connections
-    this.ws.on('connection', this.handlePluginConn.bind(this));
   }
 
   // setup the web ui routes

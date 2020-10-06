@@ -45,7 +45,7 @@ const fields = {
   },
   legacy: {
     desc: 'path to a4 binary for users without access to the brickadia launcher',
-    example: 'omegga config legacy path/to/Brickadia/Binaries/Linŭ/BrickadiaServer-Linux-Shipping',
+    example: 'omegga config legacy path/to/Brickadia/Binaries/Linux/BrickadiaServer-Linux-Shipping',
     default: '[not set]'.grey,
     get() {
       let val = store.get('legacyBin') || '';

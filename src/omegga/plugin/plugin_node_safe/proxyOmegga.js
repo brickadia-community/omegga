@@ -36,10 +36,9 @@ class ProxyOmegga extends EventEmitter {
   _tempSaveCounter = 0;
   _tempSavePrefix = 'omegga_plugin_temp_';
 
-  constructor(emit, exec) {
+  constructor(exec) {
     super();
 
-    this.emitParent = emit;
     this.writeln = exec;
 
     this.version = 'a4';
@@ -58,7 +57,7 @@ class ProxyOmegga extends EventEmitter {
     commandInjector(this, this.logWrangler);
 
     // blanket apply fields
-    this.on('bootstrap', data => {
+    this.once('bootstrap', data => {
       for (const key in data) {
         this[key] = data[key];
       }
@@ -66,13 +65,11 @@ class ProxyOmegga extends EventEmitter {
 
     // data synchronization
     this.on('host', host => this.host = host);
-    this.on('version', version => {
-      this.version = version;
-    });
+    this.on('version', version => this.version = version);
+
     // create players from raw constructor data
-    this.on('plugin:players:raw', players => {
-      this.players = players.map(p => new Player(this, ...p));
-    });
+    this.on('plugin:players:raw', players =>
+      this.players = players.map(p => new Player(this, ...p)));
 
     this.on('start', () => {
       this.started = true;
@@ -83,59 +80,9 @@ class ProxyOmegga extends EventEmitter {
       this.starting = false;
     });
   }
-
-  // create a copy of omegga for indirect access of its API
-  // BADCODE: this is just placeholder code
-  static softOmegga(omegga) {
-    // create a copied emitter
-    const emitter = new EventEmitter();
-    omegga.on('*', (...args) => emitter.emit(...args));
-
-    return {
-      // event handler
-      on: (...args) => emitter.on(...args),
-
-      // getters
-      getHost: () => Object.freeze(omegga.host),
-      getVersion: () => omegga.version,
-      getStarted: () => omegga.started,
-      getPlayers: () => deepFreeze(omegga.getPlayers()),
-      getRoleSetup: () => deepFreeze(omegga.getRoleSetup()),
-      getRoleAssignments: () => deepFreeze(omegga.getRoleAssignments()),
-      getBanList: () => deepFreeze(omegga.getBanList()),
-      getNameCache: () => deepFreeze(omegga.getNameCache()),
-      getServerStatus: () => omegga.getServerStatus(),
-      getAllPlayerPositions: () => omegga.getAllPlayerPositions(),
-      getHostId: () => omegga.getHostId(),
-      getMinigames: () => omegga.getMinigames(),
-      getSaves: () => omegga.getSaves(),
-      getSavePath: (...args) => omegga.getSavePath(...args),
-      findPlayerByName: name => {
-        const player = omegga.findPlayerByName(name);
-        return player && player.clone();
-      },
-      getPlayer: name => {
-        const player = omegga.getPlayer(name);
-        return player && player.clone();
-      },
-
-      // funcs
-      broadcast: (...args) => omegga.broadcast(...args),
-      whisper: (...args) => omegga.whisper(...args),
-      write: (...args) => omegga.write(...args),
-      writeln: (...args) => omegga.writeln(...args),
-      clearAllBricks: () => omegga.clearAllBricks(),
-      clearBricks: (...args) => omegga.clearBricks(...args),
-      loadBricks: (...args) => omegga.loadBricks(...args),
-      saveBricks: (...args) => omegga.saveBricks(...args),
-      writeSaveData: (...args) => omegga.writeSaveData(...args),
-      readSaveData: (...args) => omegga.readSaveData(...args),
-      loadSaveData: (...args) => omegga.loadSaveData(...args),
-      getSaveData: (...args) => omegga.getSaveData(...args),
-    };
-  }
 };
 
+// copy prototypes from core omegga to the proxy omegga
 for (const fn of STEAL_PROTOTYPES) {
   ProxyOmegga.prototype[fn] = Omegga.prototype[fn];
 }
