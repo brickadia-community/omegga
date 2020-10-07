@@ -15,14 +15,6 @@ const MAIN_FILE = 'omegga.main.js';
 // Documentation file (contains name, description, author, command helptext)
 const DOC_FILE = 'doc.json';
 
-const readJSON = file => {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (e) {
-    return null;
-  }
-};
-
 class NodePlugin extends Plugin {
   // every node plugin requires the main file and a doc file
   // may evolve this so it checks the contents of the doc file later
@@ -37,7 +29,7 @@ class NodePlugin extends Plugin {
   constructor(pluginPath, omegga) {
     super(pluginPath, omegga);
     // TODO: validate documentation
-    this.documentation = readJSON(path.join(pluginPath, DOC_FILE));
+    this.documentation = Plugin.readJSON(path.join(pluginPath, DOC_FILE));
     this.pluginFile = path.join(pluginPath, MAIN_FILE);
   }
 

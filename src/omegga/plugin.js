@@ -21,6 +21,15 @@ class Plugin {
   // returns the kind of plugin this is
   static getFormat() { throw 'undefined plugin format'; }
 
+  // read a file as json or return null
+  static readJSON(file) {
+    try {
+      return JSON.parse(fs.readFileSync(file, 'utf8'));
+    } catch (e) {
+      return null;
+    }
+  }
+
   // initialize a plugin at this path
   constructor(pluginPath, omegga) {
     this.path = pluginPath;

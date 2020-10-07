@@ -20,15 +20,6 @@ const MAIN_FILE = 'omegga.plugin.js';
 const DOC_FILE = 'doc.json';
 const ACCESS_FILE = 'access.json';
 
-// read a file as json or return null
-const readJSON = file => {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
-  } catch (e) {
-    return null;
-  }
-};
-
 class NodeVmPlugin extends Plugin {
   #worker = undefined;
   #outInterface = undefined;
@@ -53,11 +44,11 @@ class NodeVmPlugin extends Plugin {
     this.messageCounter = 0;
 
     // TODO: validate documentation
-    this.documentation = readJSON(path.join(pluginPath, DOC_FILE));
+    this.documentation = Plugin.readJSON(path.join(pluginPath, DOC_FILE));
 
     // access list is a list of builtin requires
     // can be ['*'] for everything
-    this.access = readJSON(path.join(pluginPath, ACCESS_FILE)) || [];
+    this.access = Plugin.readJSON(path.join(pluginPath, ACCESS_FILE)) || [];
 
     // verify access is an array of strings
     if (!(this.access instanceof Array) || !this.access.every(s => typeof s === 'string')) {
@@ -81,8 +72,6 @@ class NodeVmPlugin extends Plugin {
 
     // listen on every message, post them to to the worker
     this.eventPassthrough = this.eventPassthrough.bind(this);
-    omegga.on('*', this.eventPassthrough);
-
   }
 
   // documentation is based on doc.json file
@@ -119,6 +108,9 @@ class NodeVmPlugin extends Plugin {
         });
       }
 
+      // pass events through
+      this.omegga.on('*', this.eventPassthrough);
+
       // actually start the plugin
       if (!(await this.emit('start')))
         throw '';
@@ -135,7 +127,8 @@ class NodeVmPlugin extends Plugin {
   }
 
   // disrequire the plugin into the system, run the stop func
-  unload() {
+  async unload() {
+    // this is wrapped in a promise for the freeze check
     return new Promise(async resolve => {
       // can't unload the plugin if it hasn't been loaded
       if (typeof this.#worker === 'undefined')
@@ -145,15 +138,17 @@ class NodeVmPlugin extends Plugin {
 
         let frozen = true;
 
-        // check if the
+        // check if the worker is frozen (while true)
         setTimeout(() => {
           if (!frozen) return;
-          this.plugin.emit('error', 0, 'I appear to be in an infinite loop - terminating worker')
-          this.#worker.terminate();
+          this.plugin.emit('error', 0, 'I appear to be in unresponsive - terminating worker')
+          if(this.#worker) this.#worker.terminate();
           this.omegga.off('*', this.eventPassthrough);
-          this.#worker.emit('exit');
+          if(this.#worker) this.#worker.emit('exit');
           resolve(true);
         }, 5000);
+
+        this.omegga.off('*', this.eventPassthrough);
 
         // stop the plugin (cleanly)
         await this.emit('stop');
@@ -169,7 +164,6 @@ class NodeVmPlugin extends Plugin {
         // wait for the worker to exit
         await promise;
 
-        this.omegga.off('*', this.eventPassthrough);
         frozen = false;
         return resolve(true);
       } catch (e) {

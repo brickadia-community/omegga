@@ -15,7 +15,14 @@ module.exports = omegga => {
       const match = data.match(chatRegExp);
       if (!match) return null;
 
-      const { name, message } = match.groups;
+      let { name, message } = match.groups;
+
+      if (omegga.version === 'a5') {
+        message = message.toString()
+          .replace(/&scl;/g, ';')
+          .replace(/&gt;/g, '>')
+          .replace(/&lt;/g, '<');
+      }
 
       // no player has this name. probably a bug
       if (!omegga.players.some(p => p.name === name))
