@@ -1,4 +1,5 @@
 const { color, time } = require('../util/index.js');
+const _ = require('lodash');
 
 // A list of commands that can be injected to things with the log wrangler
 const COMMANDS = {
