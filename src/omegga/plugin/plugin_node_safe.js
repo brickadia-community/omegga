@@ -121,7 +121,7 @@ class NodeVmPlugin extends Plugin {
       // kill the worker
       await this.emit('kill');
 
-      Omegga.error('>!'.red, 'error loading node vm plugin', this.getName().brightRed.underline, e);
+      Omegga.error('!>'.red, 'error loading node vm plugin', this.getName().brightRed.underline, e);
       return false;
     }
   }
@@ -136,7 +136,7 @@ class NodeVmPlugin extends Plugin {
 
       try {
 
-        let frozen = true;
+        let frozen = true, timed = false;
 
         // check if the worker is frozen (while true)
         setTimeout(() => {
@@ -145,6 +145,7 @@ class NodeVmPlugin extends Plugin {
           if(this.#worker) this.#worker.terminate();
           this.omegga.off('*', this.eventPassthrough);
           if(this.#worker) this.#worker.emit('exit');
+          timed = true;
           resolve(true);
         }, 5000);
 
@@ -165,9 +166,11 @@ class NodeVmPlugin extends Plugin {
         await promise;
 
         frozen = false;
+        if (timed) return;
         return resolve(true);
       } catch (e) {
-        Omegga.error('>!'.red, 'error unloading node plugin', this.getName().brightRed.underline, e);
+        if (timed) return;
+        Omegga.error('!>'.red, 'error unloading node plugin', this.getName().brightRed.underline, e);
         frozen = false;
         return resolve(false);
       }
@@ -212,7 +215,7 @@ class NodeVmPlugin extends Plugin {
 
     // broadcast an error if there is one
     this.#worker.on('error', err => {
-      Omegga.error('>!'.red, 'error in plugin', this.getName().brightRed.underline, err);
+      Omegga.error('!>'.red, 'error in plugin', this.getName().brightRed.underline, err);
     });
 
     // when the worker exits - set its variable to undefined this knows it's stopped

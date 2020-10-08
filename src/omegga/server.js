@@ -225,7 +225,7 @@ class Omegga extends OmeggaWrapper {
   }
 
   // save bricks
-  clearAllBricks() { this.writeln('Bricks.ClearAll'); }
+  clearAllBricks(quiet=false) { this.writeln(`Bricks.ClearAll ${quiet && this.version !== 'a4' ? 1 : ''}`); }
 
   // save bricks
   saveBricks(name) { this.writeln(`Bricks.Save ${name}`); }

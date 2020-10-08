@@ -48,7 +48,7 @@ module.exports = omegga => {
         omegga.emit('plugin:players:raw', omegga.players.map(p => p.raw()));
 
       } catch (e) {
-        omegga.error('error getting player leave', e);
+        Omegga.error('error getting player leave', e);
       }
     },
   };

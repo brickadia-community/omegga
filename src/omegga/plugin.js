@@ -42,7 +42,7 @@ class Plugin {
   // get the plugin name, usually based on documentation data
   getName() {
     const doc = this.getDocumentation();
-    return doc ? doc.name : path.dirname(this.path);
+    return doc ? doc.name : path.basename(this.path);
   }
 
   // get the documentation object for this plugin
