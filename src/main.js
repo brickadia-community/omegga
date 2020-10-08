@@ -60,7 +60,7 @@ const program = require('commander')
       return;
     }
     if (!fs.statSync(workDir).isDirectory) {
-      err('configured omegga default path is not a directory')
+      err('configured omegga default path is not a directory');
       process.exit(1);
       return;
     }
@@ -157,7 +157,7 @@ program
   .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement install --force
   .option('-c, --config', 'JSON default config') // TODO: implement install --config
   .arguments('<pluginUrl> [morePlugins...]')
-  .action((plugin, otherPlugins) => {
+  .action((_plugin, _otherPlugins) => {
     err('not implemented yet');
     // TODO: automatically fetch and install plugins
   });
@@ -168,7 +168,7 @@ program
   .description('Updates all or selected installed plugins to latest versions')
   .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement update --force
   .option('-c, --config', 'JSON default config') // TODO: implement update --config
-  .action((plugin) => {
+  .action((_plugins) => {
     err('not implemented yet');
     // TODO: automatically fetch and install plugins
   });

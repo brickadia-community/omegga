@@ -13,7 +13,7 @@ class Player {
 
   // clone the player
   clone() {
-    return new Player(this.#omegga, name, id, controller, state);
+    return new Player(this.#omegga, this.name, this.id, this.controller, this.state);
   }
 
   // get raw player info (to feed into a constructor)
@@ -46,7 +46,7 @@ class Player {
     const permissions = {};
     // apply all permissions from default role
     for (const p in defaultRole.permissions)
-        permissions[p.name] = p.bEnabled;
+      permissions[p.name] = p.bEnabled;
 
     // loop through all the roles
     for (const role in roles) {
@@ -84,7 +84,7 @@ class Player {
       }
     }
 
-   return Object.freeze(color.rgbToHex(defaultRole.bHasColor ? defaultRole.color : {r: 255, g: 255, b: 255, a: 255}));
+    return Object.freeze(color.rgbToHex(defaultRole.bHasColor ? defaultRole.color : {r: 255, g: 255, b: 255, a: 255}));
   }
 
   // get player's position
@@ -94,7 +94,7 @@ class Player {
     const omegga = this.#omegga;
 
     // given a player controller, match the player's pawn
-    const pawnRegExp = new RegExp(`BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\\d+)'`);
+    const pawnRegExp = new RegExp(`BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\\d+)'`);
 
     // wait for the pawn watcher to return a pawn
     const [{groups: { pawn }}] = await omegga.addWatcher(pawnRegExp, {

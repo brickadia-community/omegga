@@ -10,7 +10,7 @@ const cachedJSON = {};
 
 // read a file and write it to cache, return the json object
 function updateJSONCache(file) {
-  cachedJSON[file] = JSON.parse(fs.readFileSync(file, 'utf8'))
+  cachedJSON[file] = JSON.parse(fs.readFileSync(file, 'utf8'));
   cachedTimes[file] = Date.now();
   return cachedJSON[file];
 }
@@ -57,7 +57,7 @@ function readWatchedJSON(file) {
 
 // recursively mkdir (mkdir -p )
 function mkdir(path) {
-  try { fs.mkdirSync(path, {recursive: true}) } catch (e) { /* */ }
+  try { fs.mkdirSync(path, {recursive: true}); } catch (e) { /* */ }
 }
 
 // rm -rf a path
@@ -69,7 +69,7 @@ function rmdir(dir) {
       else
         resolve();
     });
-  })
+  });
 }
 
 // copy files from one dir to another, creating the directories in the process

@@ -20,7 +20,7 @@ function prompt() {
       rl.close();
       resolve(['y', 'yes'].includes(resp.toLowerCase()));
     });
-  })
+  });
 }
 
 // run the installer script
@@ -38,7 +38,7 @@ async function legacyPester() {
   const ok = await prompt();
 
   if (!ok) {
-    err('Omegga could not be started - missing dependencies')
+    err('Omegga could not be started - missing dependencies');
     process.exit(1);
     return;
   }
@@ -47,7 +47,7 @@ async function legacyPester() {
   const res = await runInstaller();
   if (res === 0) {
     log('Success!');
-    require('./config.js')('legacy', LEGACY_PATH)
+    require('./config.js')('legacy', LEGACY_PATH);
     require('../main.js');
   }
 }

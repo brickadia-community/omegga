@@ -220,7 +220,7 @@ class Omegga extends OmeggaWrapper {
     if (!target)
       return;
 
-    this.writeln(`Bricks.Clear ${target} ${quiet && this.version !== 'a4' ? 1 : ''}`)
+    this.writeln(`Bricks.Clear ${target} ${quiet && this.version !== 'a4' ? 1 : ''}`);
   }
 
   // save bricks

@@ -38,7 +38,7 @@ class BrickadiaServer extends EventEmitter {
       this.config.server.branch && `--branch=${this.config.server.branch}`,
       '--server',
       '--',
-    ]
+    ];
 
     // Either unbuffer or stdbuf must be used because brickadia's output is buffered
     // this means that multiple lines can be bundled together if the output buffer is not full

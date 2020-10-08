@@ -95,7 +95,7 @@ class LogWrangler {
           // reject the promise
           reject('timed out');
         }
-      }
+      };
 
       // if the delay is non 0, kill the promise after some time
       if (timeoutDelay !== 0) {
@@ -121,7 +121,7 @@ class LogWrangler {
     // create the
     return this.addWatcher(line => {
       const logLineMatch = line.match(logLineRegExp);
-      if (!logLineMatch) return
+      if (!logLineMatch) return;
 
       // get the counter and rest of line from the log line match
       const {groups: { counter, rest }} = logLineMatch;
@@ -174,7 +174,7 @@ class LogWrangler {
       debounce: true,
       timeoutDelay: 100,
       afterMatchDelay,
-    })
+    });
   }
 
   // get a chunked array from the log
@@ -190,7 +190,6 @@ class LogWrangler {
     }, ...]
   */
   async watchLogArray(cmd, itemPattern, memberPattern) {
-    let started = false;
     const results = await this.watchLogChunk(cmd,
       line => {
         // match on items
@@ -236,7 +235,7 @@ class LogWrangler {
     }, {
       array: this.#watchers,
       onMatch(match, watcher) {
-         // if the watcher is in bundle mode, add the match to its matches
+        // if the watcher is in bundle mode, add the match to its matches
         if (watcher.bundle) {
 
           // allow the watcher to terminate early

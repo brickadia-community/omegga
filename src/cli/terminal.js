@@ -56,7 +56,7 @@ class Terminal {
         desc: 'list supported commands and their descriptions',
         fn() {
           const maxCmdLen = Math.max(...Object.keys(this.commands).map(s => s.length));
-          log('Omegga Help Text:\n')
+          log('Omegga Help Text:\n');
           this.log('  Console input not starting with / will be sent in chat from a "SERVER" user');
           this.log('  Console input starting with / will be treated as one of the following commands\n');
           this.log('-- Available Omegga commands (type', '/command'.yellow.underline, 'to run)');

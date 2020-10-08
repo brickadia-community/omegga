@@ -21,7 +21,7 @@ const COMMANDS = {
       .match(/[^|]+/g) // get all strings between the |'s'
       .map((line, i) => [line.slice(1, -1), line.length - (i === 5 ? 1 : 2)]) // calculate the lengths (and remove the spaces)
       .map(([name, len]) => ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`) // create a regex pattern to match strings of that length (and trim off whitespace at the end)
-      .join('\\|')) // join the regexes with the |
+      .join('\\|')); // join the regexes with the |
 
     const status = {
       // easily extract certain values from the server status

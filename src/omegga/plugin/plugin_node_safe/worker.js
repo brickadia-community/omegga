@@ -100,7 +100,7 @@ function createVm(pluginPath, {builtin=['*'], external=true}={}) {
     PluginClass = vm.run(pluginCode, file);
   } catch (e) {
     emit('error', 'plugin failed to init');
-    console.log(e)
+    console.log(e);
     throw 'plugin failed to init: ' + e.toString();
   }
 

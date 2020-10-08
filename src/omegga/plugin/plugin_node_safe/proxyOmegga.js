@@ -80,7 +80,7 @@ class ProxyOmegga extends EventEmitter {
       this.starting = false;
     });
   }
-};
+}
 
 // copy prototypes from core omegga to the proxy omegga
 for (const fn of STEAL_PROTOTYPES) {

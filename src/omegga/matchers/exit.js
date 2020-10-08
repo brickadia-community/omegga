@@ -10,7 +10,7 @@ module.exports = omegga => {
       return generator === 'LogServerList' && data === 'Deleting server.';
     },
     // when there's a match, emit the chat message event
-    callback(exit) {
+    callback() {
       omegga.emit('exit');
     },
   };

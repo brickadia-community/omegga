@@ -61,7 +61,7 @@ class NodeVmPlugin extends Plugin {
     // when the worker emits an error or a log, pass it up to omegga
     this.plugin.on('error', (_, ...args) => {
       Omegga.log(name.brightRed.underline, '!>'.red, ...args);
-      this.emit()
+      this.emit();
     });
     this.plugin.on('log', (_, ...args) => {
       Omegga.log(name.underline, '>>'.green, ...args);
@@ -229,7 +229,7 @@ class NodeVmPlugin extends Plugin {
     });
 
     // when the worker exits - set its variable to undefined this knows it's stopped
-    this.#worker.on('exit', (code) => {
+    this.#worker.on('exit', () => {
       this.#outInterface.removeAllListeners('line');
       this.#errInterface.removeAllListeners('line');
       this.#worker = undefined;

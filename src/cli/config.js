@@ -40,7 +40,7 @@ const fields = {
 
       // update the setting
       store.set('defaultOmegga', val);
-      log('Set', 'default'.green, 'to', val.green)
+      log('Set', 'default'.green, 'to', val.green);
     },
   },
   legacy: {
