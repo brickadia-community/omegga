@@ -5,7 +5,7 @@ module.exports = {
   mode: process.env.MODE || 'development',
   entry: './src/webserver/frontend/app.js',
   output: {
-    path: path.resolve(__dirname, 'src/webserver/public'),
+    path: path.resolve(__dirname, 'public'),
     filename: 'bundle.js',
     publicPath: '/',
   },

@@ -13,7 +13,7 @@ const soft = require('../../softconfig.js');
 // path to assets folder
 const ASSET_PATH = path.join(__dirname, '../frontend/assets');
 // path to webpacked data
-const PUBLIC_PATH = path.join(__dirname, '../public');
+const PUBLIC_PATH = path.join(__dirname, '../../../public');
 
 let log;
 
