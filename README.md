@@ -264,8 +264,8 @@ The server communicates with the plugin by sending messages to `stdin` and expec
 | `host` | [{name, id}] | Run when the brickadia server detects the host | |
 | `version` | ['a4' or 'a5'] | Run when the brickadia server detects the version | |
 | `unauthorized` | _none_ | Run when the brickadia server fails an auth check | |
-| `join` | [{name, id, stae, controller}] | Run when a player joins | |
-| `leave` | [{name, id, stae, controller}] | Run when a player leaves | |
+| `join` | [{name, id, state, controller}] | Run when a player joins | |
+| `leave` | [{name, id, state, controller}] | Run when a player leaves | |
 | `cmd:command` | [playerName, ...args] | (a5 only) Runs when a player runs a `/command args` | |
 | `chatcmd:command` | [playerName, ...args] | Runs when a player runs a `!command args` | |
 | `chat` | [playerName, message] | Runs when a player sends a chat message | |
