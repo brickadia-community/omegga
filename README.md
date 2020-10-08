@@ -140,6 +140,23 @@ In a `plugins` directory create the following folder structure:
 * `plugins/myPlugin/doc.json`
 * `plugins/myPlugin/access.json` - plugin access information (required, but doesn't have to have anything right now). this will contain what things the vm will need to access
 
+### `access.json` (examples)
+
+Access to any builtin modules (`fs`, `path`, etc)
+```json
+["*"]
+```
+
+Access to nothing - only the code in the `omegga.plugin.js`
+```json
+[]
+```
+
+Access to only `fs`, (`const fs = require('fs');`)
+```json
+["fs"]
+```
+
 ### `omegga.plugin.js` (example)
 
 ```javascript
