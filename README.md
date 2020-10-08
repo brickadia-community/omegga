@@ -219,7 +219,7 @@ class PluginName {
 module.exports = PluginName;
 ```
 
-### JSON RPC Plugins
+## JSON RPC Plugins
 
 JSON RPC Plugins let you use any language you desire, as long as you can run it from a single execuable file. They follow the [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification)
 
@@ -245,7 +245,7 @@ JSON RPC Plugins let you use any language you desire, as long as you can run it 
 | `clearBricks` | {target: string, quiet: bool (a5 only)} | Clears a specific player's bricks |
 | `clearAllBricks` | quiet (bool, a5 only) | Clears all bricks on the server |
 | `saveBricks` | name (string) | Save bricks to a save named `name` |
-| `loadBricks` | {name: string, offX=0 (Number), offY=0 (Number), offY=0 (Number), quiet: bool (a5 only)} | Load bricks in save `name` |
+| `loadBricks` | {name: string, offX=0 (Number), offY=0 (Number), offY=0 (Number), quiet: bool (a5 only)} | Load bricks of save named `name` |
 | `readSaveData` | name (string) | Parses save into a brs-js save object, returns the object |
 | `loadSaveData` | {data: object, offX=0 (Number), offY=0 (Number), offY=0 (Number), quiet: bool (a5 only)} | Loads brs-js save data object to the server |
 
@@ -256,7 +256,7 @@ JSON RPC Plugins let you use any language you desire, as long as you can run it 
 | `init` | _none_ | Returns _something_, called when plugin starts | &#9745; |
 | `stop` | _none_ | Returns _something_, called when plugin is stopped | &#9745; |
 | `bootstrap` | [{ object full of omegga info (`host`, `version`, etc) }] | Run when plugin is started for base data | |
-| `plugin:players:raw` | [[... [player `name`, `id`, `controller`, `state` ]] | Lists players on the server | |
+| `plugin:players:raw` | [[... [player `name`, `id`, `controller`, `state`] ]] | Lists players on the server | |
 | `line` | [brickadiaLog string] | A brickadia console log | |
 | `start` | _none_ | Run when the brickadia server starts | |
 | `host` | [{name, id}] | Run when the brickadia server detects the host | |
@@ -264,8 +264,8 @@ JSON RPC Plugins let you use any language you desire, as long as you can run it 
 | `unauthorized` | _none_ | Run when the brickadia server fails an auth check | |
 | `join` | [{name, id, stae, controller}] | Run when a player joins | |
 | `leave` | [{name, id, stae, controller}] | Run when a player leaves | |
-| `cmd:command` | [playerName, ...args] | (a5 only) Runs when a player runs a /command args | |
-| `chatcmd:command` | [playerName, ...args] | Runs when a player runs a !command args | |
+| `cmd:command` | [playerName, ...args] | (a5 only) Runs when a player runs a `/command args` | |
+| `chatcmd:command` | [playerName, ...args] | Runs when a player runs a `!command args` | |
 | `chat` | [playerName, message] | Runs when a player sends a chat message | |
 
 ### Folder Structure
@@ -276,7 +276,7 @@ In a `plugins` directory create the following folder structure:
 * `plugins/myPlugin/doc.json`
 * `plugins/myPlugin/omegga_plugin` - executable plugin file (required)
 
-### `omegga_plugin` (example)
+### `omegga_plugin` (example, node javascript)
 
 ```javascript
 #!/usr/bin/env node
@@ -394,8 +394,8 @@ rpc.addMethod('line', ([line]) => {
   ev.emit('line', line);
 });
 
-rpc.addMethod('init', async blob => 'ok');
-rpc.addMethod('stop', async blob => 'ok');
+rpc.addMethod('init', async () => 'ok');
+rpc.addMethod('stop', async () => 'ok');
 
 
 ```
