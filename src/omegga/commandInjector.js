@@ -51,7 +51,7 @@ const COMMANDS = {
   // get every player's position
   async getAllPlayerPositions() {
     const pawnRegExp = /(?<index>\d+)\) BP_PlayerController_C .+?PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+)'$/;
-    const posRegExp = /(?<index>\d+)\) CapsuleComponent .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.CollisionCylinder\.RelativeLocation = \(X=(?<x>[\d\.-]+),Y=(?<y>[\d\.-]+),Z=(?<z>[\d\.-]+)\)$/;
+    const posRegExp = /(?<index>\d+)\) CapsuleComponent .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.CollisionCylinder\.RelativeLocation = \(X=(?<x>[\d.-]+),Y=(?<y>[\d.-]+),Z=(?<z>[\d.-]+)\)$/;
     const deadFigureRegExp = /(?<index>\d+)\) BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.bIsDead = (?<dead>(True|False))$/;
 
     // wait for the pawn and position watchers to return all the results
@@ -65,21 +65,21 @@ const COMMANDS = {
       // iterate through the pawn+controllers
       .map(pawn => ({
       // find the player for the associated controller
-      player: this.getPlayer(pawn.groups.controller),
-      // find the position for the associated pawn
-      pos: positions.find(pos => pawn.groups.pawn === pos.groups.pawn),
-      isDead: deadFigures.find(dead => pawn.groups.pawn === dead.groups.pawn),
-      pawn,
-    }))
-    // filter by only those who have both player and position
-    .filter(p => p.player && p.pos)
-    // turn the position into a [x, y, z] number array (last 3 items in the array)
-    .map(p => ({
-      player: p.player,
-      pawn: p.pawn.groups.pawn,
-      pos: p.pos.slice(3).map(Number),
-      isDead: p.isDead && p.isDead.groups.dead === 'True',
-    }));
+        player: this.getPlayer(pawn.groups.controller),
+        // find the position for the associated pawn
+        pos: positions.find(pos => pawn.groups.pawn === pos.groups.pawn),
+        isDead: deadFigures.find(dead => pawn.groups.pawn === dead.groups.pawn),
+        pawn,
+      }))
+      // filter by only those who have both player and position
+      .filter(p => p.player && p.pos)
+      // turn the position into a [x, y, z] number array (last 3 items in the array)
+      .map(p => ({
+        player: p.player,
+        pawn: p.pawn.groups.pawn,
+        pos: p.pos.slice(3).map(Number),
+        isDead: p.isDead && p.isDead.groups.dead === 'True',
+      }));
   },
 
   // get all minigames and their players (and the player's teams)
@@ -157,4 +157,4 @@ module.exports = (obj, logWrangler) => {
   for (const cmd in COMMANDS) {
     obj[cmd] = COMMANDS[cmd].bind(logWrangler);
   }
-}
+};

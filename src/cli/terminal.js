@@ -1,5 +1,4 @@
 const readline = require('readline');
-const colors = require('colors');
 
 const { chat: { sanitize } } = require('../util/index.js');
 
@@ -89,7 +88,6 @@ class Terminal {
           const msToTime = ms => new Date(ms).toISOString().substr(11, 8);
           try {
             const status = await this.omegga.getServerStatus();
-            const maxNameLen = Math.max(...status.players.map(p => p.name.length));
 
             log('Server Status');
             this.log(`
@@ -97,10 +95,10 @@ class Terminal {
     Bricks: ${(status.bricks+'').yellow}
     Uptime: ${msToTime(status.time).yellow}
     Players: ${status.players.length === 0 ? 'none'.grey : ''}
-      ${status.players.map(p =>
-      `[${msToTime(p.time).grey}] ${p.name.yellow.underline}`
-    ).join('\n      ')}
-`)
+      ${status.players
+    .map(p => `[${msToTime(p.time).grey}] ${p.name.yellow.underline}`)
+    .join('\n      ')}
+`);
           } catch (e) {
             err('An error occurred while getting server status');
           }
@@ -131,11 +129,6 @@ class Terminal {
       reload: {
         desc: 'reload available plugins',
         async fn() {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
-
           if (!this.omegga.pluginLoader) {
             err('Omegga is not using plugins');
             return;
@@ -151,7 +144,7 @@ class Terminal {
           log('Scanning for new plugins');
           success = await this.omegga.pluginLoader.scan();
           if (!success) {
-            err('Could not scan for plugins')
+            err('Could not scan for plugins');
             return;
           }
 

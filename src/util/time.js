@@ -17,7 +17,7 @@ function parseDuration(str) {
   // parse each chunk
   for (const chunk of chunks) {
     // extract the duration and unit from the chunk
-    const [_, duration, unit] = chunk.match(/^(\d+)(\w+)$/) || [];
+    const [, duration, unit] = chunk.match(/^(\d+)(\w+)$/) || [];
 
     // ignore invalid chunks
     if (!duration || !unit || !UNIT_CONVERSION[unit]) continue;

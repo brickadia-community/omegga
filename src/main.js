@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 require('colors');
 
-const package = require('../package');
+const pkg = require('../package');
 const soft = require('./softconfig.js');
 const Omegga = require('./omegga/server.js');
 const config = require('./config/index.js');
@@ -10,7 +10,7 @@ const { Terminal, auth, config: omeggaConfig } = require('./cli/index.js');
 const file = require('./util/file.js');
 
 const updateNotifier = require('update-notifier');
-updateNotifier({pkg: package}).notify();
+updateNotifier({pkg: pkg}).notify();
 
 /*
 
@@ -37,8 +37,8 @@ const createDefaultConfig = () => {
 };
 
 const program = require('commander')
-  .description(package.description)
-  .version(package.version)
+  .description(pkg.description)
+  .version(pkg.version)
   .option('-W, --webless', 'Run omegga without a web ui')
   .option('-d, --debug', 'Print all console logs rather than just chat messages')
   .option('-p, --port', 'Specify a custom port for the webserver (default 8080)')

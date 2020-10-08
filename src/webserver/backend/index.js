@@ -1,8 +1,5 @@
-const fs = require('fs');
 const path = require('path');
 const http = require('http');
-const url = require('url');
-const querystring = require('querystring');
 
 const express = require('express');
 const SocketIo = require('socket.io');
@@ -38,13 +35,13 @@ class Webserver {
   initWebUI() {
     const io = SocketIo(this.server);
     io.use((socket, next) => {
-        if (!socket.handshake.query.token) {
-          log('has token');
-          next('unauthorized');
-        }
+      if (!socket.handshake.query.token) {
+        log('has token');
+        next('unauthorized');
+      }
 
-        // ok
-        next();
+      // ok
+      next();
     });
 
     // provide assets in the /public path
@@ -59,20 +56,11 @@ class Webserver {
     });
   }
 
-  // handle successful websocket connections
-  handlePluginConn(ws, req, plugin) {
-    log('ws conn', ws);
-    ws.on('message', message => {
-      log(`ws message: ${message}`);
-    });
-    ws.send('ping');
-  }
-
   // start the webserver
   start() {
     return new Promise(resolve => {
       this.server.listen(this.port, () => {
-        log(`${'>>'.green} Started webserver at http://127.0.0.1:${this.port}`)
+        log(`${'>>'.green} Started webserver at http://127.0.0.1:${this.port}`);
         resolve();
       });
     });

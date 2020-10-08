@@ -10,7 +10,9 @@ const { write: writeConfig } = require('../brickadia/config.js');
 async function removeTempDir() {
   if (fs.existsSync(soft.TEMP_DIR_NAME)) {
     // attempt to remove the temporary dir
-    try { await file.rmdir(soft.TEMP_DIR_NAME); } catch (e) {}
+    try { await file.rmdir(soft.TEMP_DIR_NAME); } catch (e) {
+      // ignore fail - the directory probably doesn't exist
+    }
   }
 }
 

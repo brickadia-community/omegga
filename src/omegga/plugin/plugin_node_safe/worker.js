@@ -5,7 +5,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { parentPort, receiveMessageOnPort } = require('worker_threads');
+const { parentPort } = require('worker_threads');
 const { ProxyOmegga } = require('./proxyOmegga.js');
 const { EventEmitter } = require('events');
 

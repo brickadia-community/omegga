@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const glob = require('glob');
 const brs = require('brs-js');
-const _ = require('lodash');
 
 const OmeggaWrapper = require('./wrapper.js');
 const { PluginLoader } = require('./plugin.js');
@@ -10,7 +9,7 @@ const commandInjector = require('./commandInjector.js');
 const { Webserver } = require('../webserver/index.js');
 const Database = require('../database/index.js');
 const soft = require('../softconfig.js');
-const { uuid, pattern, time, color } = require('../util/index.js');
+const { uuid, pattern } = require('../util/index.js');
 const file = require('../util/file.js');
 const Terminal = require('../cli/terminal.js');
 
@@ -41,7 +40,7 @@ class Omegga extends OmeggaWrapper {
   static setTerminal(term) {
     if (term instanceof Terminal)
       Omegga.terminal = term;
-  };
+  }
 
   constructor(serverPath, cfg, options={}) {
     super(serverPath, cfg);

@@ -77,15 +77,15 @@ const fields = {
 
       // update the setting
       store.set('legacyBin', val);
-      log('Set', 'legacy'.green, 'to', (val || 'disabled').green)
+      log('Set', 'legacy'.green, 'to', (val || 'disabled').green);
     },
   },
 };
 
-module.exports = (field, value, opts={}) => {
+module.exports = (field, value, _opts={}) => {
   // list command lists all fields, current setting, and description
   if (field === 'list') {
-    log('Configurable fields:')
+    log('Configurable fields:');
     const maxLen = Math.max(...Object.keys(fields).map(f => f.length));
     for (const key in fields) {
       const field = fields[key];
@@ -105,7 +105,7 @@ module.exports = (field, value, opts={}) => {
 
   } else {
     // no valid field was entered
-    error('invalid field, run', 'omegga config list'.yellow.underline, 'for a list of available fields');
+    err('invalid field, run', 'omegga config list'.yellow.underline, 'for a list of available fields');
     process.exit(1);
   }
 };

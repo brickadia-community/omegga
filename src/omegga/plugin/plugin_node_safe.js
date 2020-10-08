@@ -4,7 +4,7 @@ const { EventEmitter } = require('events');
 const readline = require('readline');
 
 const {
-  Worker, MessageChannel,
+  Worker,
 } = require('worker_threads');
 
 const { Plugin } = require('../plugin.js');
@@ -127,54 +127,64 @@ class NodeVmPlugin extends Plugin {
   }
 
   // disrequire the plugin into the system, run the stop func
-  async unload() {
-    // this is wrapped in a promise for the freeze check
-    return new Promise(async resolve => {
-      // can't unload the plugin if it hasn't been loaded
-      if (typeof this.#worker === 'undefined')
-        return resolve(false);
+  unload() {
+    let frozen = true, timed = false;
 
-      try {
+    return Promise.race([
+      (async() => {
+        // can't unload the plugin if it hasn't been loaded
+        if (typeof this.#worker === 'undefined')
+          return false;
 
-        let frozen = true, timed = false;
+        try {
+          // remove listeners
+          this.omegga.off('*', this.eventPassthrough);
 
+          // stop the plugin (cleanly)
+          await this.emit('stop');
+
+          // let the unload function wait for the worker to properly cleanup
+          const promise = new Promise(res => {
+            this.#worker.once('exit', res);
+          });
+
+          // kill the worker
+          await this.emit('kill');
+
+          // wait for the worker to exit
+          await promise;
+
+          frozen = false;
+          if (timed) return;
+          return true;
+        } catch (e) {
+          frozen = false;
+          if (timed) return;
+
+          Omegga.error('!>'.red, 'error unloading node plugin', this.getName().brightRed.underline, e);
+          return false;
+        }
+      })(),
+      new Promise(resolve => {
         // check if the worker is frozen (while true)
         setTimeout(() => {
           if (!frozen) return;
-          this.plugin.emit('error', 0, 'I appear to be in unresponsive - terminating worker')
-          if(this.#worker) this.#worker.terminate();
+          this.plugin.emit('error', 0, 'I appear to be in unresponsive - terminating worker');
+
+          // remove listeners
           this.omegga.off('*', this.eventPassthrough);
+
+          // tell the worker to exit
           if(this.#worker) this.#worker.emit('exit');
+
+          // terminate the worker if it still exists
+          if(this.#worker) this.#worker.terminate();
+
           timed = true;
           resolve(true);
         }, 5000);
-
-        this.omegga.off('*', this.eventPassthrough);
-
-        // stop the plugin (cleanly)
-        await this.emit('stop');
-
-        // let the unload function wait for the worker to properly cleanup
-        const promise = new Promise(res => {
-          this.#worker.once('exit', res);
-        });
-
-        // kill the worker
-        await this.emit('kill');
-
-        // wait for the worker to exit
-        await promise;
-
-        frozen = false;
-        if (timed) return;
-        return resolve(true);
-      } catch (e) {
-        if (timed) return;
-        Omegga.error('!>'.red, 'error unloading node plugin', this.getName().brightRed.underline, e);
-        frozen = false;
-        return resolve(false);
-      }
-    });
+      })
+    ]);
   }
 
   // emit an action to the worker and return a promise with its response

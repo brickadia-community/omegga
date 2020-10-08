@@ -2,7 +2,6 @@
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
-const { EventEmitter } = require('events');
 
 const readline = require('readline');
 const { JSONRPCServer, JSONRPCClient, JSONRPCServerAndClient } = require('json-rpc-2.0');
@@ -13,7 +12,7 @@ const { bootstrap } = require('./plugin_node_safe/proxyOmegga.js');
 
 // TODO: check if version is compatible (v1 -> v2) from file
 // TODO: write jsonrpc wrappers in a few languages, implement a few simple plugins
-// TODO: languages: [ python, javascript (lol), rust, go ]
+// TODO: languages: [ python, rust, go ]
 
 const MAIN_FILE = 'omegga_plugin';
 const DOC_FILE = 'doc.json';
@@ -27,7 +26,7 @@ class RpcPlugin extends Plugin {
   // all RPC plugins require a main (binary) file and a doc file
   static canLoad(pluginPath) {
     return fs.existsSync(path.join(pluginPath, MAIN_FILE)) &&
-      fs.existsSync(path.join(pluginPath, DOC_FILE))
+      fs.existsSync(path.join(pluginPath, DOC_FILE));
   }
 
   // websocket rpc plugin type
@@ -54,11 +53,57 @@ class RpcPlugin extends Plugin {
 
   // spawn the plugin as a child process
   load() {
-    // this is wrapped in a promise for the freeze check
-    return new Promise(async resolve => {
-      let frozen = true, timed = false;
-      const name = this.getName();
-      try {
+    let frozen = true, timed = false;
+    const name = this.getName();
+
+    return Promise.race([
+      (async() => {
+        try {
+          this.#child = spawn(this.pluginFile);
+          this.#child.stdin.setEncoding('utf8');
+          this.#outInterface = readline.createInterface({input: this.#child.stdout, terminal: false});
+          this.#errInterface = readline.createInterface({input: this.#child.stderr, terminal: false});
+          this.attachListeners();
+
+          // get some initial information to create an omegga proxy
+          const initialData = bootstrap(this.omegga);
+
+          // send all of the mock events to the proxy omegga
+          for (const ev in initialData) {
+            // send some initial information
+            this.notify(ev, initialData[ev]);
+          }
+
+          // pass events through
+          this.omegga.on('*', this.eventPassthrough);
+
+          try {
+          // tell the plugin to start
+            await this.emit('init');
+          } catch (e) {
+            if (!e.message) return;
+            Omegga.error('!>'.red, 'rpc plugin', name.brightRed.underline, 'missing start impl');
+          }
+
+          // plugin is not frozen, resolve that it has loaded
+          frozen = false;
+          if (timed) return;
+          return true;
+        } catch(e) {
+          if (timed) return;
+          Omegga.error('!>'.red, 'error loading stdio rpc plugin', this.getName().brightRed.underline, e);
+          await this.kill();
+          frozen = false;
+          return false;
+        }
+      })(),
+      new Promise(resolve => {
+        // let user know if the child quit while launching
+        this.#child.once('exit', () => {
+          if (!frozen || timed) return;
+          frozen = false;
+          resolve(false);
+        });
 
         // check if the child is frozen (while true)
         setTimeout(() => {
@@ -68,52 +113,8 @@ class RpcPlugin extends Plugin {
           timed = true;
           resolve(false);
         }, 5000);
-
-        this.#child = spawn(this.pluginFile);
-        this.#child.stdin.setEncoding('utf8');
-        this.#outInterface = readline.createInterface({input: this.#child.stdout, terminal: false});
-        this.#errInterface = readline.createInterface({input: this.#child.stderr, terminal: false});
-        this.attachListeners();
-
-        // let user know if the child quit while launching
-        this.#child.once('exit', code => {
-          if (!frozen || timed) return;
-          frozen = false;
-          resolve(false);
-        });
-
-        // get some initial information to create an omegga proxy
-        const initialData = bootstrap(this.omegga);
-
-        // send all of the mock events to the proxy omegga
-        for (const ev in initialData) {
-          // send some initial information
-          this.notify(ev, initialData[ev]);
-        }
-
-        // pass events through
-        this.omegga.on('*', this.eventPassthrough);
-
-        try {
-        // tell the plugin to start
-          const res = await this.emit('init');
-        } catch (e) {
-          if (!e.message) return;
-          Omegga.error('!>'.red, 'rpc plugin', name.brightRed.underline, 'missing start impl');
-        }
-
-        // plugin is not frozen, resolve that it has loaded
-        frozen = false;
-        if (timed) return;
-        return resolve(true);
-      } catch(e) {
-        if (timed) return;
-        Omegga.error('!>'.red, 'error loading stdio rpc plugin', this.getName().brightRed.underline, e);
-        await this.kill();
-        frozen = false;
-        return resolve(false);
-      }
-    });
+      })
+    ]);
   }
 
   // kill the child process after requesting it to stop
@@ -122,11 +123,32 @@ class RpcPlugin extends Plugin {
       this.detachListeners();
       return Promise.resolve(true);
     }
-    // this is wrapped in a promise for the freeze check
-    return new Promise(async resolve => {
-      let frozen = true, timed = false;
-      const name = this.getName();
-      try {
+    let frozen = true, timed = false;
+    const name = this.getName();
+
+    return Promise.race([
+      (async() => {
+        try {
+
+          // let the plugin know it's time to stop, if this error it's probably because the method was not implemented
+          try { await this.emit('stop'); } catch (e) {
+            // lazy developer - just implement stop please
+          }
+
+          await this.kill();
+
+          frozen = false;
+          if (timed) return;
+          return true;
+        } catch (e) {
+          if (timed) return;
+          Omegga.error('!>'.red, 'error unloading rpc plugin', name.brightRed.underline, e);
+          frozen = false;
+          return false;
+        }
+      })(),
+      // this is wrapped in a promise for the freeze check
+      new Promise(resolve => {
         // check if the child is frozen (while true)
         setTimeout(() => {
           if (!frozen) return;
@@ -135,22 +157,8 @@ class RpcPlugin extends Plugin {
           timed = true;
           resolve(true);
         }, 5000);
-
-        // let the plugin know it's time to stop, if this error it's probably because the method was not implemented
-        try { await this.emit('stop'); } catch (e) {}
-
-        await this.kill();
-
-        frozen = false;
-        if (timed) return;
-        return resolve(true);
-      } catch (e) {
-        if (timed) return;
-        Omegga.error('!>'.red, 'error unloading rpc plugin', name.brightRed.underline, e);
-        frozen = false;
-        return resolve(false);
-      }
-    });
+      }),
+    ]);
   }
 
   // attaches event listeners
@@ -194,7 +202,9 @@ class RpcPlugin extends Plugin {
     try {
       if (this.#child && !this.#child.exitCode)
         this.#child.stdin.write(line + '\n');
-    } catch (e) {}
+    } catch (e) {
+      // the child probably died... oops!
+    }
   }
 
   // forcibly kills the plugin
@@ -221,7 +231,7 @@ class RpcPlugin extends Plugin {
 
   eventPassthrough(type, ...args) {
     if (!this.#child) return;
-      this.notify(type, args);
+    this.notify(type, args);
   }
 
   // setup the JSONRPC communication
@@ -279,7 +289,9 @@ class RpcPlugin extends Plugin {
   notify(type, arg) {
     try {
       this.#rpc.notify(type, arg);
-    } catch (e) {}
+    } catch (e) {
+      // this only happens if the RPC library is hitting some issues - probably redundant
+    }
   }
 }
 

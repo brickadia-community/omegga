@@ -14,8 +14,7 @@ module.exports = {
 
     file.mkdir(configPath);
 
-    fs.writeFileSync(settingsPath,
-`[Server__BP_ServerSettings_General_C BP_ServerSettings_General_C]
+    fs.writeFileSync(settingsPath, `[Server__BP_ServerSettings_General_C BP_ServerSettings_General_C]
 MaxSelectedBricks=1000
 MaxPlacedBricks=1000
 SelectionTimeout=2.000000
@@ -30,7 +29,7 @@ bGlobalRulesetSelfDamage=True
 bGlobalRulesetPhysicsDamage=False`
     );
   },
-  read(serverPath) {
+  read() {
     // TODO: Implement server config reading
   },
 };

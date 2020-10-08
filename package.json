@@ -34,9 +34,11 @@
     "vm2": "^3.9.2"
   },
   "devDependencies": {
+    "babel-eslint": "^10.1.0",
     "bufferutil": "^4.0.1",
     "css-loader": "^4.3.0",
     "eslint": "^7.10.0",
+    "eslint-plugin-vue": "^7.0.1",
     "fibers": "^5.0.0",
     "file-loader": "^6.1.0",
     "node-sass": "^4.14.1",
