@@ -33,6 +33,8 @@ class Omegga extends OmeggaWrapper {
   _tempSaveCounter = 0;
   _tempSavePrefix = 'omegga_temp_';
 
+  #database = undefined;
+
   // allow a terminal to be used instead of console log
   static terminal = undefined;
   static log(...args) { (Omegga.terminal || console).log(...args); }
@@ -68,13 +70,13 @@ class Omegga extends OmeggaWrapper {
     // the database provides omegga with metrics, chat logs, and more
     // to help administrators keep track of their users and server
     if (!options.nodb)
-      this.database = new Database(options, this);
+      this.#database = new Database(options, this);
 
-    // create the webserver if it's enabled
-    // the webserver lets non-js plugins talk to omegga
-    // as well as gives the administrator access to server information while the server is running
-    if (!options.noweb)
-      this.webserver = new Webserver(options, this.database, this);
+    // create the webserver if it's enabled (requires the database to be enabled too)
+    // the web interface provides access to server information while the server is running
+    // and lets you view chat logs, disable plugins, etc
+    if (!options.noweb && !options.nodb)
+      this.webserver = new Webserver(options, this.#database, this);
 
     if (!options.noplugin) {
       // create the pluginloader
@@ -119,6 +121,11 @@ class Omegga extends OmeggaWrapper {
     this.on('exit', () => {
       this.stop();
     });
+    this.on('closed', () => {
+      if (this.started)
+        this.emit('exit');
+      this.stop();
+    });
   }
 
   // start load plugins and start the server
@@ -136,7 +143,6 @@ class Omegga extends OmeggaWrapper {
     if (this.pluginLoader)
       await this.pluginLoader.unload();
     super.stop();
-    if (this.webserver) this.webserver.stop();
     this.emit('server:stopped');
     this.started = false;
     this.starting = false;

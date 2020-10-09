@@ -39,11 +39,9 @@ const createDefaultConfig = () => {
 const program = require('commander')
   .description(pkg.description)
   .version(pkg.version)
-  .option('-W, --webless', 'Run omegga without a web ui')
   .option('-d, --debug', 'Print all console logs rather than just chat messages')
-  .option('-p, --port', 'Specify a custom port for the webserver (default 8080)')
   .action(async() => {
-    const { webless, port, debug } = program.opts();
+    const { debug } = program.opts();
 
     // default working directory is the one specified in config
     let workDir = config.store.get('defaultOmegga');
@@ -90,7 +88,14 @@ const program = require('commander')
     }
 
     // build options
-    const options = { noweb: webless || true, port, debug };
+    const options = {
+      // default enable web ui (set to false)
+      noweb: typeof conf.omegga.webui === 'boolean' && !conf.omegga.webui,
+      // default enable https (set to true, will not be https if it can't generate)
+      https: typeof conf.omegga.https !== 'boolean' || conf.omegga.https,
+      port: conf.omegga.port || soft.DEFAULT_PORT,
+      debug,
+    };
 
     // setup the server
     const server = new Omegga(workDir, conf, options);

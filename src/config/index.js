@@ -30,7 +30,9 @@ const formats = fs.readdirSync(path.join(__dirname, 'formats'))
 module.exports = {
   defaultConfig: {
     omegga: {
+      webui: false,
       port: soft.DEFAULT_PORT,
+      https: true,
     },
     server: {
       port: 7777,

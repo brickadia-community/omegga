@@ -40,7 +40,10 @@ module.exports = {
   PLUGIN_STORE: 'plugins.db',
   STATUS_STORE: 'status.db',
   USER_STORE: 'users.db',
+  SERVER_STORE: 'store.db',
+  SESSION_STORE: 'session.db',
 
   // website config
-  WEB_PLUGIN_API_ROUTE: '/plugin/api/v1/websocket',
+  WEB_CERTS_DATA: 'web_certs.json',
+  WEB_SESSION_TOKEN: 'web_session_token',
 };

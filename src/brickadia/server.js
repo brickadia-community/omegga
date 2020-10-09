@@ -100,7 +100,7 @@ class BrickadiaServer extends EventEmitter {
     this.#outInterface.on('line', this.lineListener);
     this.#errInterface.on('line', this.errorListener);
     this.#child.on('exit', this.exitListener);
-    this.#child.on('close', () => console.log('brickadia closed'));
+    this.#child.on('close', () => {});
   }
 
   // removes previously attached proxy event listeners
@@ -108,6 +108,7 @@ class BrickadiaServer extends EventEmitter {
     this.#outInterface.off('line', this.lineListener);
     this.#errInterface.off('line', this.errorListener);
     this.#child.off('exit', this.exitListener);
+    this.#child.removeAllListeners('close');
   }
 
   // -- listeners for basic events (line, err, exit)
@@ -116,7 +117,7 @@ class BrickadiaServer extends EventEmitter {
   }
 
   exitListener() {
-    this.emit('exit');
+    this.emit('closed');
     this.cleanup();
   }
 

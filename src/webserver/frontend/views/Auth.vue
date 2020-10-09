@@ -2,5 +2,5 @@
 </style>
 
 <template>
-  <div>404</div>
+  <div>unauthorized</div>
 </template>

@@ -3,10 +3,13 @@ const path = require('path');
 
 module.exports = {
   mode: process.env.MODE || 'development',
-  entry: './src/webserver/frontend/app.js',
+  entry: {
+    app: './src/webserver/frontend/app.js',
+    auth: './src/webserver/frontend/app.js',
+  },
   output: {
     path: path.resolve(__dirname, 'public'),
-    filename: 'bundle.js',
+    filename: '[name].bundle.js',
     publicPath: '/',
   },
   module: {
