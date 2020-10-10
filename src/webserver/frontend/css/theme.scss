@@ -5,6 +5,13 @@ $br-bg-secondary: #131d30;
 $br-bg-secondary-alt: #111a2b;
 $br-bg-footer: #091021;
 $br-bg-header: $br-bg-footer;
+$br-fg-footer: #ffffff;
+$br-fg-header: $br-fg-footer;
+
+$br-header-font: 24px;
+$br-header-height: 50px;
+$br-footer-font: 24px;
+$br-footer-height: 50px;
 
 /* Text & Icon */
 $br-boring-button-fg: #a7bbce;
@@ -52,3 +59,5 @@ $br-element-bg: #224c7b;
 $br-element-popout-bg: #263f61;
 $br-element-header-bg: #162841;
 $br-element-footer-bg: $br-element-header-bg;
+$br-element-height: 32px;
+$br-element-font: 24px;

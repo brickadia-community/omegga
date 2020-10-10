@@ -2,6 +2,8 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import VueSocketIO from 'vue-socket.io';
 
+import '../../../node_modules/tabler-icons/iconfont/tabler-icons.scss';
+
 Vue.use(VueRouter);
 Vue.use(new VueSocketIO({
   connection: io(),

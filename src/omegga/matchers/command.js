@@ -1,6 +1,7 @@
 module.exports = omegga => {
   // pattern to get PlayerController from a leave message
   const commandRegExp = /^Player (?<name>.+?) is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
+  const a4commandRegExp = /(?<name>.+?) tried to call nonexistent command "(?<command>.*?)"$/;
 
   return {
     // listen for commands messages
@@ -12,18 +13,33 @@ module.exports = omegga => {
       // check if log is a command log
       if (generator !== 'LogChatCommands') return;
 
+      // match log to argument-less a4 commands
+      const a4match = data.match(a4commandRegExp);
+      if (a4match) {
+        const { name, command } = a4match.groups;
+
+        // no player has this name. probably a bug
+        if (!omegga.players.some(p => p.name === name))
+          return;
+
+        // return the player and the command
+        return { name, command, args: [] };
+      }
+
       // match the log to the command pattern
       const match = data.match(commandRegExp);
-      if (!match) return null;
+      if (match) {
+        const { name, command, args } = match.groups;
 
-      const { name, command, args } = match.groups;
+        // no player has this name. probably a bug
+        if (!omegga.players.some(p => p.name === name))
+          return;
 
-      // no player has this name. probably a bug
-      if (!omegga.players.some(p => p.name === name))
-        return;
+        // return the player and the command
+        return { name, command, args: args.split(' ') };
+      }
 
-      // return the player with the corresponding controller
-      return { name, command, args: args.split(' ') };
+      return null;
     },
     // when there's a match, emit the comand event
     callback({ name, command, args }) {

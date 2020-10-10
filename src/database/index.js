@@ -1,6 +1,7 @@
 const path = require('path');
 
 const Datastore = require('nedb-promise');
+const bcrypt = require('bcrypt');
 
 const soft = require('../softconfig.js');
 
@@ -23,20 +24,76 @@ class Database {
       users: new Datastore({filename: path.join(omegga.dataPath, soft.USER_STORE), autoload: true}),
       chat: new Datastore({filename: path.join(omegga.dataPath, soft.CHAT_STORE), autoload: true}),
       plugin: new Datastore({filename: path.join(omegga.dataPath, soft.PLUGIN_STORE), autoload: true}),
-      player: new Datastore({filename: path.join(omegga.dataPath, soft.PLAYER_STORE), autoload: true}),
+      players: new Datastore({filename: path.join(omegga.dataPath, soft.PLAYER_STORE), autoload: true}),
       status: new Datastore({filename: path.join(omegga.dataPath, soft.STATUS_STORE), autoload: true}),
       server: new Datastore({filename: path.join(omegga.dataPath, soft.SERVER_STORE), autoload: true}),
     };
   }
 
-  async getServerId() {
+
+  // get the running instance id of this omegga
+  async getInstanceId() {
     if (serverInstance) return serverInstance;
     const doc = await this.stores.server.insert({
-      type: 'start',
+      type: 'app:start',
       date: new Date(),
     });
     serverInstance = doc;
     return doc;
+  }
+
+  // determine if this user would be the first user (admin user)
+  async isFirstUser() {
+    return (await this.stores.users.count({type: 'user'})) === 0;
+  }
+
+  // create an admin user account, username can be blank (no password)
+  async createAdminUser(username, password) {
+    console.log('[debug] c');
+    const hash = await bcrypt.hash(password, 10);
+    // create an owner user
+    console.log('[debug] d');
+    const user = this.stores.users.insert({
+      // this is a user
+      type: 'user',
+
+      // credentials
+      username,
+      hash,
+
+      // permissions
+      isOwner: true,
+      roles: [],
+
+      // brickadia player uuid
+      playerId: '',
+    });
+    return user;
+  }
+
+  // get a user from credentials
+  async authUser(username, password) {
+    const user = await this.stores.users.findOne({ username });
+    // user not found
+    if (!user || user.isBanned) return null;
+
+    // make sure the user's password hash is valid
+    if (await bcrypt.compare(password, user.hash))
+      return user;
+
+    // wrong password
+    return null;
+  }
+
+  // find a user by object id
+  async findUserById(id) {
+    return await this.stores.users.findOne({ $or: [
+      // the owner has no username, so everyone is the owner
+      { type: 'user', username: '', isOwner: true },
+
+      // the user exists and has an id
+      { type: 'user', _id: id },
+    ] });
   }
 }
 

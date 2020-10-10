@@ -1,0 +1,13 @@
+@import 'font';
+@import 'theme';
+@import 'mixins';
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Glacial Indifference';
+}
+

@@ -15,6 +15,10 @@ const soft = require('../../softconfig.js');
 
 // path to assets folder
 const ASSET_PATH = path.join(__dirname, '../frontend/assets');
+
+// path to frontend directory
+const FRONTEND_PATH = path.join(__dirname, '../frontend');
+
 // path to webpacked data
 const PUBLIC_PATH = path.join(__dirname, '../../../public');
 
@@ -166,29 +170,92 @@ class Webserver {
     const io = SocketIo(this.server);
 
     // use the session middleware
-    io.use(function(socket, next) {
-      session(socket.request, socket.request.res || {}, () => {
-        // TODO: check auth and reject
-        // next(new Error('unauth'));
-        next();
+    io.use((socket, next) => {
+      session(socket.request, socket.request.res || {}, async () => {
+        // check if user is authenticated
+        const user = await this.database.findUserById(socket.request.session.userId);
+        if (user && !user.isBanned) {
+          // TODO: check if user is banned while connected to disconnect websocket
+          socket.user = user;
+          next();
+        } else {
+          next(new Error('unauthorized'));
+        }
       });
     });
 
     // provide assets in the /public path
     this.app.use('/public', express.static(PUBLIC_PATH));
     this.app.use('/public', express.static(ASSET_PATH));
-    this.app.use(bodyParser.urlencoded({ extended: false }));
+    this.app.use(bodyParser.json());
+
+    // open API is accessible without auth
+    const openApi = express.Router();
+    const api = express.Router();
+
+    // check if this is the first user in the database
+    openApi.get('/first', async (req, res) =>
+      res.json(await this.database.isFirstUser()));
+
+    // login / create admin user route
+    openApi.post('/auth', async (req, res) => {
+      // body is username and password
+      if (typeof req.body !== 'object' ||
+        typeof req.body.username !== 'string' || typeof req.body.password !== 'string') {
+        return res
+          .status(422)
+          .json({message: 'invalid body'});
+      }
+      const { username, password } = req.body;
+
+      // username regex
+      if (!username.match(/^\w{0,32}$/)) {
+        return res
+          .status(422)
+          .json({message: 'invalid body'});
+      }
+
+      // if this is the first user, create it as the admin user
+      const isFirst = await this.database.isFirstUser();
+      let user;
+      if (isFirst) {
+        user = await this.database.createAdminUser(username, username === '' ? '' : password);
+      } else {
+        user = await this.database.authUser(username, password);
+      }
+
+      if (user) {
+        req.session.userId = user._id;
+        req.session.save();
+        res.status(200).json({});
+      } else {
+        res.status(404).json({message: 'no user found'});
+      }
+    });
+
+    // authentication middleware for api
+    api.all(async (req, res, next) => {
+      const user = await this.database.findUserById(req.session.userId);
+      if (!user || user.isBanned)
+        return next(new Error('unauthorized'));
+      req.user = user;
+      next();
+    });
+
+    // register routes
+    this.app.use('/api/v1', openApi);
+    this.app.use('/api/v1', api);
 
     // every request goes through the index file (frontend handles 404s)
-    this.app.use((req, res) => {
-      // TODO: send auth webpage instead
-      // TODO: get user from req.session
-      /*
-        socket.request.session.save(e => {
-          error(e);
-        });
-      */
-      res.sendFile(path.join(ASSET_PATH, 'index.html'));
+    this.app.use(async (req, res) => {
+      const user = await this.database.findUserById(req.session.userId);
+      const isAuth = user && !user.isBanned;
+
+      if (isAuth) {
+        res.sendFile(path.join(FRONTEND_PATH, 'app.html'));
+      } else {
+        res.sendFile(path.join(FRONTEND_PATH, 'auth.html'));
+      }
     });
   }
 
