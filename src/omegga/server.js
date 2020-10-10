@@ -7,7 +7,6 @@ const OmeggaWrapper = require('./wrapper.js');
 const { PluginLoader } = require('./plugin.js');
 const commandInjector = require('./commandInjector.js');
 const { Webserver } = require('../webserver/index.js');
-const Database = require('../database/index.js');
 const soft = require('../softconfig.js');
 const { uuid, pattern } = require('../util/index.js');
 const file = require('../util/file.js');
@@ -67,16 +66,11 @@ class Omegga extends OmeggaWrapper {
     if (!options.noauth)
       this.copyAuthFiles();
 
-    // the database provides omegga with metrics, chat logs, and more
-    // to help administrators keep track of their users and server
-    if (!options.nodb)
-      this.#database = new Database(options, this);
-
-    // create the webserver if it's enabled (requires the database to be enabled too)
+    // create the webserver if it's enabled
     // the web interface provides access to server information while the server is running
     // and lets you view chat logs, disable plugins, etc
-    if (!options.noweb && !options.nodb)
-      this.webserver = new Webserver(options, this.#database, this);
+    if (!options.noweb)
+      this.webserver = new Webserver(options, this);
 
     if (!options.noplugin) {
       // create the pluginloader

@@ -254,6 +254,7 @@ class NodeVmPlugin extends Plugin {
       });
     } catch (e) {
       // make sure post message doesn't crash the entire app
+      Omegga.error('!>'.red, 'error sending to plugin', ...args, e);
     }
   }
 }

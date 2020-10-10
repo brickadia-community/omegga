@@ -117,5 +117,3 @@ class Player {
 }
 
 module.exports = Player;
-
-// GetAll BRPlayerState PermissionsRoles Owner=BP_PlayerController_C_214782500

@@ -3,7 +3,7 @@ const path = require('path');
 const Datastore = require('nedb-promise');
 const bcrypt = require('bcrypt');
 
-const soft = require('../softconfig.js');
+const soft = require('../../softconfig.js');
 
 // TODO: online users graph
 // TODO: player online times
