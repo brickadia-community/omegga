@@ -233,6 +233,13 @@ class Webserver {
       }
     });
 
+    // kill a session
+    api.get('/logout', (req, res) => {
+      req.session.destroy(e => {
+        res.status(e ? 500 : 200).json({});
+      });
+    });
+
     // authentication middleware for api
     api.all(async (req, res, next) => {
       const user = await this.database.findUserById(req.session.userId);

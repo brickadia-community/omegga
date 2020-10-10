@@ -49,10 +49,8 @@ class Database {
 
   // create an admin user account, username can be blank (no password)
   async createAdminUser(username, password) {
-    console.log('[debug] c');
     const hash = await bcrypt.hash(password, 10);
     // create an owner user
-    console.log('[debug] d');
     const user = this.stores.users.insert({
       // this is a user
       type: 'user',

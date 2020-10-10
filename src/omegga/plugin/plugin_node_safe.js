@@ -102,10 +102,12 @@ class NodeVmPlugin extends Plugin {
       const initialData = bootstrap(this.omegga);
       // send all of the mock events to the proxy omegga
       for (const ev in initialData) {
-        this.#worker.postMessage({
-          action: 'brickadiaEvent',
-          args: [ev, ...initialData[ev]],
-        });
+        try {
+          this.#worker.postMessage({
+            action: 'brickadiaEvent',
+            args: [ev, ...initialData[ev]],
+          });
+        } catch (e) { /* just writing 'safe' code :) */}
       }
 
       // pass events through
@@ -198,10 +200,14 @@ class NodeVmPlugin extends Plugin {
       this.plugin.once(messageId, resolve));
 
     // post the message
-    this.#worker.postMessage({
-      action,
-      args: [messageId, ...args],
-    });
+    try {
+      this.#worker.postMessage({
+        action,
+        args: [messageId, ...args],
+      });
+    } catch (e) {
+      return Promise.reject(e);
+    }
 
     // return the promise
     return promise;
@@ -240,11 +246,15 @@ class NodeVmPlugin extends Plugin {
     // worker does not exist
     if (!this.#worker) return;
 
-    // post the message
-    this.#worker.postMessage({
-      action: 'brickadiaEvent',
-      args,
-    });
+    try {
+      // post the message
+      this.#worker.postMessage({
+        action: 'brickadiaEvent',
+        args,
+      });
+    } catch (e) {
+      // make sure post message doesn't crash the entire app
+    }
   }
 }
 

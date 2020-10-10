@@ -173,7 +173,6 @@ export default {
   },
   methods: {
     auth(username, password) {
-      console.log('username', username, password)
       this.loading = true;
       fetch('/api/v1/auth', {
         method: 'POST',
@@ -184,9 +183,10 @@ export default {
       })
         .then(r => Promise.all([r, r.json()]))
         .then(([r, b]) => {
-          console.log(b)
           if (r.status === 200) {
             location.reload();
+          } else {
+            console.error(b.message)
           }
           this.loading = false
         })

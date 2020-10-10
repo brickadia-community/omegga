@@ -81,9 +81,6 @@ import Vue from 'vue';
 
 export default Vue.component('br-loader', {
   props: ['active', 'size', 'blur', 'inline'],
-  created() {
-    console.log(this.active);
-  }
 });
 
 </script>
