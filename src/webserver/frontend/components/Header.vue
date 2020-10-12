@@ -11,6 +11,7 @@
   height: $br-header-height;
   align-items: center;
   padding-left: 20px;
+  padding-right: 10px;
 }
 
 </style>

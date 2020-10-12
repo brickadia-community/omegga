@@ -10,7 +10,7 @@ const bodyParser = require('body-parser');
 
 const util = require('./util.js');
 const setupApi = require('./api.js');
-const Database = require('./database.sh');
+const Database = require('./database.js');
 
 const soft = require('../../softconfig.js');
 
@@ -104,13 +104,16 @@ class Webserver {
     this.app.use(session);
 
     // setup routes and webserver
-    this.initWebUI(session);
+    await this.initWebUI(session);
     return true;
   }
 
   // setup the web ui routes
-  initWebUI(session) {
+  async initWebUI(session) {
     const io = SocketIo(this.server);
+    this.io = io;
+
+    await this.database.getInstanceId();
 
     // use the session middleware
     io.use((socket, next) => {
@@ -132,8 +135,30 @@ class Webserver {
     this.app.use('/public', express.static(ASSET_PATH));
     this.app.use(bodyParser.json());
 
+    this.rooms = ['chat'];
+
     // setup the api
     setupApi(this, io);
+
+    // chat events
+    this.omegga.on('chat', async (name, message) => {
+      const p = this.omegga.getPlayer(name);
+      const user = {
+        id: p.id,
+        name,
+        color: p.getNameColor(),
+      };
+      io.to('chat').emit('chat',
+        await this.database.addChatLog('msg', user, message));
+    });
+    this.omegga.on('leave', async ({id, name}) => {
+      io.to('chat').emit('chat',
+        await this.database.addChatLog('leave', {id, name}));
+    });
+    this.omegga.on('join', async ({id, name}) => {
+      io.to('chat').emit('chat',
+        await this.database.addChatLog('join', {id, name}));
+    });
 
     // every request goes through the index file (frontend handles 404s)
     this.app.use(async (req, res) => {

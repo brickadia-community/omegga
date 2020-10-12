@@ -16,7 +16,11 @@
   user-select: none;
 }
 
-.button .ti {
+.button:not(:last-child) {
+  margin-right: 8px;
+}
+
+.button:not(.icon) .ti {
   margin-right: 8px;
 }
 
@@ -59,6 +63,13 @@
 .error:hover { background-color: $br-error-hover; }
 .error:active, .error.disabled {background-color: $br-error-pressed; }
 
+.normal {
+  color: $br-boring-button-fg;
+  background-color: $br-element-normal;
+}
+.normal:hover { background-color: $br-element-hover; }
+.normal:active, .normal.disabled {background-color: $br-element-pressed; }
+
 </style>
 
 <template>
@@ -67,6 +78,7 @@
     main: (typeof main !== 'undefined'),
     error: (typeof error !== 'undefined') ,
     info: (typeof info !== 'undefined'),
+    normal: (typeof normal !== 'undefined'),
     disabled: (typeof disabled !== 'undefined') && disabled,
     icon: (typeof icon !== 'undefined'),
   }]" @click="$emit('click', $event)">
@@ -80,7 +92,7 @@
 import Vue from 'vue';
 
 export default Vue.component('br-button', {
-  props: ['warn', 'main', 'icon', 'error', 'info', 'disabled'],
+  props: ['warn', 'main', 'icon', 'error', 'info', 'normal', 'disabled'],
 });
 
 </script>

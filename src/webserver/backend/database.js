@@ -33,13 +33,13 @@ class Database {
 
   // get the running instance id of this omegga
   async getInstanceId() {
-    if (serverInstance) return serverInstance;
+    if (serverInstance) return serverInstance._id;
     const doc = await this.stores.server.insert({
       type: 'app:start',
       date: new Date(),
     });
     serverInstance = doc;
-    return doc;
+    return doc._id;
   }
 
   // determine if this user would be the first user (admin user)
@@ -54,6 +54,7 @@ class Database {
     const user = this.stores.users.insert({
       // this is a user
       type: 'user',
+      created: Date.now(),
 
       // credentials
       username,
@@ -92,6 +93,34 @@ class Database {
       // the user exists and has an id
       { type: 'user', _id: id },
     ] });
+  }
+
+  // get a list of roles
+  getRoles() {
+    return this.stores.server.find({ type: 'role' });
+  }
+
+  // add a chat message to the chat log store
+  async addChatLog(action, user, message) {
+    return await this.stores.chat.insert({
+      type: 'chat',
+      created: Date.now(),
+      instanceId: await this.getInstanceId(),
+      action,
+      user,
+      ...(message ? {message} : {}),
+    });
+  }
+
+  // get recent chat activity
+  async getRecentChats(count=50) {
+    return await this.stores.chat.cfind({
+      type: 'chat',
+      instanceId: await this.getInstanceId(),
+    })
+      .sort({ created: 1 })
+      .limit(count)
+      .exec();
   }
 }
 

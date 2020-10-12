@@ -11,3 +11,18 @@ body {
   font-family: 'Glacial Indifference';
 }
 
+::-webkit-scrollbar {
+  width: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background: $br-bg-secondary;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $br-element-bg;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #fff;
+}

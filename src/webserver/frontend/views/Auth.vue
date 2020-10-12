@@ -14,7 +14,6 @@ body {
   overflow: hidden;
 }
 
-
 .modal {
   background-color: $br-bg-primary;
   width: 500px;
@@ -52,31 +51,6 @@ body {
   background-color: $br-bg-secondary;
 }
 
-.background {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-
-  background-image: url('/public/img/auth_bg.jpg');
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  background-size: cover;
-  background-position: 50% 50%;
-}
-
-.bg-img {
-  position: absolute;
-  filter: blur(20px);
-  left: -40px;
-  top: -40px;
-  width: calc(100% + 80px);
-  height: calc(100% + 80px);
-  object-fit: cover;
-}
-
 .turkey {
   filter: blur(10px);
   position: absolute;
@@ -110,12 +84,11 @@ body {
 
 <template>
   <div>
-    <div class="background">
-      <img class="bg-img" src="/public/img/auth_bg.jpg">
+    <br-background>
       <div class="turkey" :style="{top: turkey + '%'}">
         <img src="/public/img/turkey.webp"/>
       </div>
-    </div>
+    </br-background>
     <div :class="['modal', {visible}]">
       <div class="modal-content">
         <br-header>Brickadia Server Login</br-header>

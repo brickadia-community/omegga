@@ -1,5 +1,9 @@
 const express = require('express');
 
+const { JSONRPCServer, JSONRPCClient, JSONRPCServerAndClient } = require('json-rpc-2.0');
+
+const { chat: { sanitize } } = require('../../util/index.js');
+
 module.exports = (server, io) => {
   const { database } = server;
 
@@ -61,6 +65,87 @@ module.exports = (server, io) => {
       return next(new Error('unauthorized'));
     req.user = user;
     next();
+  });
+
+  // websocket data
+  io.on('connection', socket => {
+    // let this user receive messages directed to this user
+    socket.join('user:' + socket.user._id);
+
+    database.getRoles().then(roles => {
+      socket.emit('data', {
+        roles,
+        canLogOut: socket.user.username !== '',
+        now: Date.now(), // this can be used for the frontend to anticipate drift
+        user: {
+          username: socket.user.username || 'Admin',
+          isOwner: socket.user.isOwner,
+          roles: socket.user.roles,
+        },
+      });
+    });
+
+    // rpc connection
+    const rpcServer = new JSONRPCServer();
+    const rpcClient = new JSONRPCClient(async data =>
+      socket.emit('rpc', data));
+    const rpc = new JSONRPCServerAndClient(rpcServer, rpcClient);
+    socket.on('rpc', data => {
+      if (data && typeof data === 'object') {
+        try {
+          rpc.receiveAndSend(data);
+        } catch (e) {
+          // silently discard broken rpc requests
+        }
+      }
+    });
+
+    // send chat message from web ui
+    // TODO: check if this user has a role with permission to chat
+    rpc.addMethod('chat', async ([message]) => {
+      if (typeof message !== 'string') return;
+      if (message.length > 140)
+        message = message.slice(0, 140);
+
+      // create fake user
+      const user = {
+        name: socket.user.username || 'Admin',
+        id: socket.user.playerId,
+        color: 'ff00ff',
+        web: true,
+      };
+
+      // create database entry, send to web ui
+      io.to('chat').emit('chat', await database.addChatLog('msg', user, message));
+
+      // broadcast to chat
+      server.omegga.broadcast(`"[<b><color=\\"ff00ff\\">${user.name}</></>]: ${sanitize(message)}"`);
+
+      // broadcast to terminal
+      Omegga.log(`[${user.name.brightMagenta.underline}]: ${message}`);
+
+      return 'ok';
+    });
+
+    // send recent chat messages
+    // TODO: add permission check
+    rpc.addMethod('chat.recent', () => {
+      return database.getRecentChats();
+    });
+
+    // subscribe and unsubscribe to events
+    socket.on('subscribe', room => {
+      if(server.rooms.includes(room)) {
+        socket.join(room);
+      }
+    });
+    socket.on('unsubscribe', room => {
+      if(server.rooms.includes(room))
+        socket.leave(room);
+    });
+
+    socket.on('disconnect', () => {
+    });
   });
 
   // register routes
