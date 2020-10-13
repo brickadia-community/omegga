@@ -41,7 +41,7 @@ class Player {
     }
 
     // get the player's roles
-    const playerRoles = this.getRoles();
+    const playerRoles = this.getRoles().map(r => r.toLowerCase());
 
     const permissions = {};
     // apply all permissions from default role
@@ -51,7 +51,7 @@ class Player {
     // loop through all the roles
     for (const role in roles) {
       // ignore ones the player does not have
-      if (!playerRoles.includes(role.name))
+      if (!playerRoles.includes(role.name.toLowerCase()))
         continue;
 
       // add all the new permissions the player now has
@@ -73,18 +73,19 @@ class Player {
       return color.rgbToHex(ownerRoleColor);
 
     // get the player's role
-    const playerRoles = this.getRoles();
+    const playerRoles = this.getRoles().map(r => r.toLowerCase());
 
     // only if the player actually has roles...
     if (playerRoles.length > 0) {
       // check the role list in reverse for the player's role (highest tier first)
-      for (const role in roles.reverse()) {
-        if (playerRoles.includes(role.name) && role.bHasColor)
-          return color.rgbToHex(role.color);
-      }
+      const found = roles.slice().reverse().find(role =>
+        role.bHasColor && playerRoles.includes(role.name.toLowerCase()));
+
+      if (found)
+        return color.rgbToHex(found.color);
     }
 
-    return Object.freeze(color.rgbToHex(defaultRole.bHasColor ? defaultRole.color : {r: 255, g: 255, b: 255, a: 255}));
+    return color.rgbToHex(defaultRole.bHasColor ? defaultRole.color : {r: 255, g: 255, b: 255, a: 255});
   }
 
   // get player's position

@@ -133,6 +133,12 @@ module.exports = (server, io) => {
       return database.getRecentChats();
     });
 
+    // send server status at request
+    // TODO: server status permission check
+    rpc.addMethod('server.status', () => {
+      return server.lastReportedStatus;
+    });
+
     // subscribe and unsubscribe to events
     socket.on('subscribe', room => {
       // TODO: permission check for certain rooms

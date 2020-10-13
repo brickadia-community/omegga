@@ -1,5 +1,7 @@
 const soft = require('../../softconfig.js');
 
+const error = (...args) => global.Omegga.error(...args);
+
 module.exports = (server, io) => {
   const { database, omegga } = server;
 
@@ -13,6 +15,7 @@ module.exports = (server, io) => {
   // players that have joined in the last hour
   let hourlyPlayers = [];
 
+  server.lastReportedStatus = null;
   server.serverStatusInterval = setInterval(async () => {
     if (!omegga.started) return;
     try {
@@ -22,6 +25,16 @@ module.exports = (server, io) => {
 
       // get players by id
       const players = status.players.map(p => p.id);
+
+      // send the unaltered status to the frontend
+      server.lastReportedStatus = status;
+      io.to('status').emit('server.status', status);
+      try {
+        omegga.emit('metrics:heartbeat', status);
+      } catch (e) {
+        // prevent the omegga callback handlers from crashing this
+        error('Error in heartbeat emit', e);
+      }
 
       // stop recording metrics after 3 empty server statuses
       if (players.length === 0 && ++empties > soft.METRIC_EMPTIES_BEFORE_PAUSE) {
@@ -38,7 +51,7 @@ module.exports = (server, io) => {
 
       // find all the players unique to this hour
       const newPlayers = players.filter(p => !hourlyPlayers.includes(p));
-      if (newPlayers > 0) {
+      if (newPlayers.length > 0) {
         // update the punchcard
         await database.updatePlayerPunchcard(newPlayers.length);
         // mark those players as previously joined players
@@ -61,6 +74,7 @@ module.exports = (server, io) => {
       await database.addHeartbeat(data);
     } catch (e) {
       // probably an issue getting server status
+      error('Error in heartbeat', e);
     }
 
   }, soft.METRIC_HEARTBEAT_INTERVAL);

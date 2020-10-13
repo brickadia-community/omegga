@@ -100,7 +100,7 @@ class Database {
     if (serverInstance) return serverInstance._id;
     const doc = await this.stores.server.insert({
       type: 'app:start',
-      date: new Date(),
+      date: Date.now(),
     });
     serverInstance = doc;
     return doc._id;
@@ -182,7 +182,7 @@ class Database {
       type: 'chat',
       instanceId: await this.getInstanceId(),
     })
-      .sort({ created: 1 })
+      .sort({ created: -1 })
       .limit(count)
       .exec();
   }
@@ -260,7 +260,7 @@ class Database {
     });
 
     // update player heartbeats and last seens
-    const players = await this.stores.players.update({
+    await this.stores.players.update({
       // all players in the status update
       id: {$in: data.players}
     }, {
@@ -270,9 +270,12 @@ class Database {
       $inc: { heartbeats: 1 },
     }, {multi: true});
 
+    // get all players in the status update
+    const players = await this.stores.players.find({id: {$in: data.players}});
+
     await Promise.all(players
       // find players without the discovered ip
-      .filter(p => !p.ips.includes(data.ips[p.id]))
+      .filter(p => !(p.ips || []).includes(data.ips[p.id]))
       // insert the IP into the player's ip list
       .map(p => this.stores.players.update({ _id: p._id }, {
         $addToSet: { ips: data.ips[p.id] }

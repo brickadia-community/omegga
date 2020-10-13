@@ -56,7 +56,7 @@
 }
 
 .log-entry .join-message {
-  color: #5875d6;
+  color: #3477e3;
 }
 
 .log-entry .chat-message {
@@ -76,10 +76,10 @@
               >{{log.user.name}}</span>{{log.user.web ? ']' : ''}}: {{log.message}}
             </div>
             <div v-if="log.action === 'leave'" class="join-message">
-              <span class="user">{{log.user.name}}</span> left.
+              <span class="user">{{log.user.name}}</span> left the game.
             </div>
             <div v-if="log.action === 'join'" class="join-message">
-              <span class="user">{{log.user.name}}</span> joined.
+              <span class="user">{{log.user.name}}</span> joined the game.
             </div>
           </div>
         </div>
@@ -110,18 +110,24 @@ export default Vue.component('br-chat-widget', {
 
       this.scroll();
     },
+    connect() {
+      this.getChats();
+    },
   },
   beforeDestroy() {
     this.$$emit('unsubscribe', 'chat');
   },
   created() {
-    this.$$emit('subscribe', 'chat');
-    this.$$request('chat.recent').then(logs => {
-      this.chats = logs;
-      this.scroll();
-    });
+    this.getChats();
   },
   methods: {
+    getChats() {
+      this.$$emit('subscribe', 'chat');
+      this.$$request('chat.recent').then(logs => {
+        this.chats = logs.reverse();
+        this.scroll();
+      });
+    },
     scroll() {
       // scroll to bottom of message log
       window.requestAnimationFrame(() => {

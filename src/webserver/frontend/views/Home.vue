@@ -107,6 +107,41 @@ body {
   flex: 1;
 }
 
+.widgets-container {
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.widgets-list {
+  background-color: $br-element-footer-bg;
+  margin-right: 8px;
+  min-width: 200px;
+}
+
+.widget-item {
+  background-color: $br-bg-primary;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 50px;
+  padding: 0 10px;
+}
+
+.widget-item .name {
+  display: flex;
+  align-items: center;
+}
+
+.widget-item .name .ti {
+  margin-right: 10px;
+}
+
+.widget-item:nth-child(even) {
+  background-color: $br-bg-primary-alt;
+}
+
 @media screen and (max-width: 600px) {
   .main-content {
     flex-direction: column;
@@ -145,11 +180,35 @@ body {
           <span style="flex: 1; margin-left: 8px">
             Welcome, {{user.username}}
           </span>
-          <br-button normal icon :disabled="true"
-            data-tooltip="Add more widgets to the dashboard"
-          >
-            <i class="ti ti-apps"/>
-          </br-button>
+          <div class="widgets-container">
+            <br-button normal boxy
+              data-tooltip="Add more widgets to the dashboard"
+              @click="showWidgets = !showWidgets"
+            >
+              <i class="ti ti-apps"/>
+              Widgets
+            </br-button>
+            <div class="widgets-list" :style="{display: showWidgets ? 'block' : 'none'}">
+              <div v-for="widget, k in widgetList" :key="k" class="widget-item">
+                <div class="name" :data-tooltip="widget.tooltip.js">
+                  <i :class="['ti', widget.icon]"/>
+                  {{k}}
+                </div>
+                <br-button normal icon v-if="!hasWidget[k]"
+                  :data-tooltip="'Add '+k+' widget'"
+                  @click="addWidget(k)"
+                >
+                  <i class="ti ti-plus"/>
+                </br-button>
+                <br-button warn icon v-else
+                  :data-tooltip="'Remove '+k+' widget'"
+                  @click="removeWidget(k)"
+                >
+                  <i class="ti ti-minus"/>
+                </br-button>
+              </div>
+            </div>
+          </div>
           <br-button icon error
             v-if="showLogout"
             data-tooltip="Logout of Web UI"
@@ -233,9 +292,9 @@ body {
               >
                 <br-header class="drag-handle">
                   <span style="flex: 1">{{item.i}}</span>
-                  <br-button icon errors class="no-drag"
+                  <br-button icon error class="no-drag"
                     data-tooltip="Close widget"
-                    :disabled="true"
+                    @click="removeWidget(item.i)"
                   >
                     <i class="ti ti-x" />
                   </br-button>
@@ -274,6 +333,17 @@ export default {
     layoutUpdated(layout) {
       localStorage.omeggaDashLayout = JSON.stringify(layout);
     },
+    removeWidget(id) {
+      this.layout = this.layout.filter(l => l.i !== id);
+    },
+    addWidget(id) {
+      this.layout.push({
+        x: 0, y: 0,
+        w: 2, h: 2,
+        i: id,
+        component: this.widgetList[id].component,
+      });
+    },
   },
   sockets: {
     data(data) {
@@ -284,11 +354,16 @@ export default {
       this.loading = false;
     }
   },
+  computed: {
+    hasWidget() {
+      return Object.fromEntries(this.layout.map(l => [l.i, true]));
+    },
+  },
   data() {
     // default layout
     let layout = [
       {x: 0, y: 0, w: 2, h: 2, i: 'chat', component: 'br-chat-widget'},
-      {x: 2, y: 0, w: 2, h: 2, i: 'status'},
+      {x: 2, y: 0, w: 2, h: 2, i: 'status', component: 'br-status-widget'},
     ];
 
     if (localStorage.omeggaDashLayout) {
@@ -299,6 +374,19 @@ export default {
     return {
       loading: true,
       showLogout: false,
+      showWidgets: false,
+      widgetList: {
+        chat: {
+          component: 'br-chat-widget',
+          icon: 'ti-message-dots',
+          tooltip: 'Read and chat with online players',
+        },
+        status: {
+          component: 'br-status-widget',
+          icon: 'ti-list',
+          tooltip: 'View current online players and server status',
+        },
+      },
       roles: [],
       user: {},
       layout,

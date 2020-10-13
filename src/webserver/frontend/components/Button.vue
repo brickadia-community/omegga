@@ -11,9 +11,14 @@
   border-radius: $br-element-height/2;
   color: $br-button-fg;
   font-weight: bold;
-  padding: 0 15px;
+  padding: 0 16px;
   cursor: pointer;
   user-select: none;
+}
+
+.button.boxy {
+  border-radius: 0;
+  padding: 0 8px;
 }
 
 .button:not(:last-child) {
@@ -80,6 +85,7 @@
     info: (typeof info !== 'undefined'),
     normal: (typeof normal !== 'undefined'),
     disabled: (typeof disabled !== 'undefined') && disabled,
+    boxy: (typeof boxy !== 'undefined'),
     icon: (typeof icon !== 'undefined'),
   }]" @click="$emit('click', $event)">
     <div class="button-content">
@@ -92,7 +98,7 @@
 import Vue from 'vue';
 
 export default Vue.component('br-button', {
-  props: ['warn', 'main', 'icon', 'error', 'info', 'normal', 'disabled'],
+  props: ['warn', 'main', 'icon', 'error', 'info', 'normal', 'disabled', 'boxy'],
 });
 
 </script>
