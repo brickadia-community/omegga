@@ -94,7 +94,6 @@ body {
 }
 
 .disable-userselect {
-  touch-action: none;
 }
 
 .vue-grid-item.vue-grid-placeholder {
@@ -216,6 +215,7 @@ body {
               :margin="[8, 8]"
               :responsive="true"
               :use-css-transforms="true"
+              @layout-updated="layoutUpdated"
             >
               <grid-item v-for="item in layout"
                :x="item.x"
@@ -270,7 +270,10 @@ export default {
   methods: {
     logout() {
       fetch('/api/v1/logout').then(() => location.reload());
-    }
+    },
+    layoutUpdated(layout) {
+      localStorage.omeggaDashLayout = JSON.stringify(layout);
+    },
   },
   sockets: {
     data(data) {
@@ -282,16 +285,23 @@ export default {
     }
   },
   data() {
+    // default layout
+    let layout = [
+      {x: 0, y: 0, w: 2, h: 2, i: 'chat', component: 'br-chat-widget'},
+      {x: 2, y: 0, w: 2, h: 2, i: 'status'},
+    ];
+
+    if (localStorage.omeggaDashLayout) {
+      layout = JSON.parse(localStorage.omeggaDashLayout);
+    }
+
     /* this.$route.name */
     return {
       loading: true,
       showLogout: false,
       roles: [],
       user: {},
-      layout: [
-        {x: 0, y: 0, w: 2, h: 2, i: 'chat', component: 'br-chat-widget'},
-        {x: 2, y: 0, w: 2, h: 2, i: 'status',},
-      ],
+      layout,
     };
   },
   components: {

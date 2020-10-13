@@ -135,6 +135,7 @@ module.exports = (server, io) => {
 
     // subscribe and unsubscribe to events
     socket.on('subscribe', room => {
+      // TODO: permission check for certain rooms
       if(server.rooms.includes(room)) {
         socket.join(room);
       }

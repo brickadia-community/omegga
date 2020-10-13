@@ -50,4 +50,9 @@ module.exports = {
   // website config
   WEB_CERTS_DATA: 'web_certs.json',
   WEB_SESSION_TOKEN: 'web_session_token',
+
+  // how often server status is requested in a heartbeat
+  METRIC_HEARTBEAT_INTERVAL: 60 * 1000,
+  // the number of empty server statuses before metric logging is paused
+  METRIC_EMPTIES_BEFORE_PAUSE: 3,
 };

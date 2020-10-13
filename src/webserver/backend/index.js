@@ -10,6 +10,7 @@ const bodyParser = require('body-parser');
 
 const util = require('./util.js');
 const setupApi = require('./api.js');
+const setupMetrics = require('./metrics.js');
 const Database = require('./database.js');
 
 const soft = require('../../softconfig.js');
@@ -51,6 +52,9 @@ class Webserver {
   // create the webserver
   async createServer() {
     const hasOpenSSL = require('hasbin').sync('openssl');
+
+    // let the database do migrations
+    await this.database.doMigrations();
 
     // create express app
     this.app = express();
@@ -140,25 +144,8 @@ class Webserver {
     // setup the api
     setupApi(this, io);
 
-    // chat events
-    this.omegga.on('chat', async (name, message) => {
-      const p = this.omegga.getPlayer(name);
-      const user = {
-        id: p.id,
-        name,
-        color: p.getNameColor(),
-      };
-      io.to('chat').emit('chat',
-        await this.database.addChatLog('msg', user, message));
-    });
-    this.omegga.on('leave', async ({id, name}) => {
-      io.to('chat').emit('chat',
-        await this.database.addChatLog('leave', {id, name}));
-    });
-    this.omegga.on('join', async ({id, name}) => {
-      io.to('chat').emit('chat',
-        await this.database.addChatLog('join', {id, name}));
-    });
+    // setup metrics and tracking
+    setupMetrics(this, io);
 
     // every request goes through the index file (frontend handles 404s)
     this.app.use(async (req, res) => {
@@ -190,6 +177,7 @@ class Webserver {
   stop() {
     this.server.close();
     this.started = false;
+    clearInterval(this.serverStatusInterval);
   }
 }
 
