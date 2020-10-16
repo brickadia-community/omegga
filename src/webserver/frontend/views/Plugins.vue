@@ -138,10 +138,36 @@ import BugIcon from 'vue-tabler-icons/icons/BugIcon';
 import CircleCheckIcon from 'vue-tabler-icons/icons/CircleCheckIcon';
 import RefreshAlertIcon from 'vue-tabler-icons/icons/RefreshAlertIcon';
 
+const updatePluginState = p => {
+  p.state = (p.isLoaded ? 2 : 0) + (p.isEnabled ? 1 : 0);
+  p.status = [
+    'disabled',
+    'broken',
+    'bugged',
+    'running',
+  ][p.state];
+  p.tooltip = [
+    'Plugin is disabled',
+    'Plugin is enabled but not running',
+    'Plugin is running but not enabled',
+    'Plugin is running',
+  ][p.state];
+  p.icon = [
+    'PowerIcon',
+    'AlertCircleIcon',
+    'BugIcon',
+    'CircleCheckIcon',
+  ][p.state];
+};
+
 export default {
   components: { RotateIcon, PowerIcon, AlertCircleIcon, BugIcon, CircleCheckIcon, RefreshAlertIcon },
   created() {
+    this.$$emit('subscribe', 'plugins');
     this.getPlugins();
+  },
+  beforeDestroy() {
+    this.$$emit('unsubscribe', 'plugins');
   },
   methods: {
     matches(p) {
@@ -154,25 +180,7 @@ export default {
       const plugins = await this.$$request('plugins.list');
       this.loading = false;
       for (const p of plugins) {
-        p.state = (p.isLoaded ? 2 : 0) + (p.isEnabled ? 1 : 0);
-        p.status = [
-          'disabled',
-          'broken',
-          'bugged',
-          'running',
-        ][p.state];
-        p.tooltip = [
-          'Plugin is disabled',
-          'Plugin is enabled but not running',
-          'Plugin is running but not enabled',
-          'Plugin is running',
-        ][p.state];
-        p.icon = [
-          'PowerIcon',
-          'AlertCircleIcon',
-          'BugIcon',
-          'CircleCheckIcon',
-        ][p.state];
+        updatePluginState(p);
       }
       this.plugins = plugins;
     },
@@ -185,6 +193,13 @@ export default {
     }
   },
   sockets: {
+    plugin([path, info]) {
+      const plugin = this.plugins.find(p => p.path === path);
+      if (plugin) {
+        Object.assign(plugin, info);
+        updatePluginState(plugin);
+      }
+    },
   },
   computed: {
     selectedPlugin() {

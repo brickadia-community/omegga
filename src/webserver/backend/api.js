@@ -207,7 +207,7 @@ module.exports = (server, io) => {
       const plugin = omegga.pluginLoader.plugins.find(p => p.shortPath === shortPath);
       if (!plugin) return false;
       if (!plugin.isLoaded()) return false;
-      log('Unloading plugin', plugin.getName().yellow);
+      log('Unloading'.red, 'plugin', plugin.getName().yellow);
       return await plugin.unload();
     });
 
@@ -217,7 +217,7 @@ module.exports = (server, io) => {
       const plugin = omegga.pluginLoader.plugins.find(p => p.shortPath === shortPath);
       if (!plugin) return false;
       if (plugin.isLoaded() || !plugin.isEnabled()) return false;
-      log('Loading plugin', plugin.getName().yellow);
+      log('Loading'.green, 'plugin', plugin.getName().yellow);
       return await plugin.load();
     });
 
@@ -229,7 +229,7 @@ module.exports = (server, io) => {
       if (!plugin) return false;
       try {
         plugin.setEnabled(enabled);
-        log(enabled ? 'Enable'.green : 'Disabled'.red, 'plugin', plugin.getName().yellow);
+        log(enabled ? 'Enabled'.green : 'Disabled'.red, 'plugin', plugin.getName().yellow);
         return true;
       } catch (e) {
         error('Error', enabled ? 'enabling'.green : 'disabling'.red, 'plugin', plugin.getName().yellow);

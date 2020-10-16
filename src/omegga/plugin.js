@@ -50,6 +50,16 @@ class Plugin {
     } else {
       fs.closeSync(fs.openSync(disabledPath, 'w'));
     }
+    this.emitStatus();
+  }
+
+  // emit a plugin status change
+  emitStatus() {
+    this.omegga.emit('plugin:status', this.shortPath, {
+      name: this.getName(),
+      isLoaded: this.isLoaded(),
+      isEnabled: this.isEnabled(),
+    });
   }
 
   // get the plugin name, usually based on documentation data

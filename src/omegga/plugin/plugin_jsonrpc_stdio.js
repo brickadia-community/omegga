@@ -88,12 +88,14 @@ class RpcPlugin extends Plugin {
           // plugin is not frozen, resolve that it has loaded
           frozen = false;
           if (timed) return;
+          this.emitStatus();
           return true;
         } catch(e) {
           if (timed) return;
           Omegga.error('!>'.red, 'error loading stdio rpc plugin', this.getName().brightRed.underline, e);
           await this.kill();
           frozen = false;
+          this.emitStatus();
           return false;
         }
       })(),
@@ -102,6 +104,7 @@ class RpcPlugin extends Plugin {
         this.#child.once('exit', () => {
           if (!frozen || timed) return;
           frozen = false;
+          this.emitStatus();
           resolve(false);
         });
 
@@ -111,6 +114,7 @@ class RpcPlugin extends Plugin {
           Omegga.error('!>'.red, 'I appear to be unresponsive when starting (maybe I forgot to respond to start)', name.brightRed.underline);
           this.kill();
           timed = true;
+          this.emitStatus();
           resolve(false);
         }, 5000);
       })
@@ -121,6 +125,7 @@ class RpcPlugin extends Plugin {
   unload() {
     if (!this.#child || this.#child.exitCode) {
       this.detachListeners();
+      this.emitStatus();
       return Promise.resolve(true);
     }
     let frozen = true, timed = false;
@@ -139,11 +144,13 @@ class RpcPlugin extends Plugin {
 
           frozen = false;
           if (timed) return;
+          this.emitStatus();
           return true;
         } catch (e) {
           if (timed) return;
           Omegga.error('!>'.red, 'error unloading rpc plugin', name.brightRed.underline, e);
           frozen = false;
+          this.emitStatus();
           return false;
         }
       })(),
@@ -155,6 +162,7 @@ class RpcPlugin extends Plugin {
           Omegga.error('!>'.red, 'I appear to be unresponsive when stopping (maybe I forgot to respond to stop)', name.brightRed.underline);
           this.kill();
           timed = true;
+          this.emitStatus();
           resolve(true);
         }, 5000);
       }),
@@ -227,6 +235,7 @@ class RpcPlugin extends Plugin {
     // wait for the process to exit
     await promise;
     this.#child = undefined;
+    this.emitStatus();
   }
 
   eventPassthrough(type, ...args) {

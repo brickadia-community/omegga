@@ -117,6 +117,7 @@ class NodeVmPlugin extends Plugin {
       if (!(await this.emit('start')))
         throw '';
 
+      this.emitStatus();
       return true;
     } catch (e) {
 
@@ -124,6 +125,7 @@ class NodeVmPlugin extends Plugin {
       await this.emit('kill');
 
       Omegga.error('!>'.red, 'error loading node vm plugin', this.getName().brightRed.underline, e);
+      this.emitStatus();
       return false;
     }
   }
@@ -158,12 +160,14 @@ class NodeVmPlugin extends Plugin {
 
           frozen = false;
           if (timed) return;
+          this.emitStatus();
           return true;
         } catch (e) {
           frozen = false;
           if (timed) return;
 
           Omegga.error('!>'.red, 'error unloading node plugin', this.getName().brightRed.underline, e);
+          this.emitStatus();
           return false;
         }
       })(),
@@ -184,6 +188,7 @@ class NodeVmPlugin extends Plugin {
 
           timed = true;
           resolve(true);
+          this.emitStatus();
         }, 5000);
       })
     ]);
@@ -239,6 +244,7 @@ class NodeVmPlugin extends Plugin {
       this.#outInterface.removeAllListeners('line');
       this.#errInterface.removeAllListeners('line');
       this.#worker = undefined;
+      this.emitStatus();
     });
   }
 

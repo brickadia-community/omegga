@@ -44,6 +44,7 @@ class NodePlugin extends Plugin {
     const stopPlugin = reason => {
       Omegga.error('error launching node plugin', this.getName(), ':', reason);
       try{disrequire(this.pluginFile);}catch(e){Omegga.error('error unloading node plugin (2)', this.getName(), e);}
+      this.emitStatus();
       return false;
     };
 
@@ -62,9 +63,11 @@ class NodePlugin extends Plugin {
       if (typeof this.loadedPlugin.init === 'function')
         this.loadedPlugin.init();
 
+      this.emitStatus();
       return true;
     } catch (e) {
       Omegga.error('error loading node plugin', this.getName(), e);
+      this.emitStatus();
       return false;
     }
   }
@@ -72,8 +75,10 @@ class NodePlugin extends Plugin {
   // disrequire the plugin into the system, run the stop func
   async unload() {
     // can't unload the plugin if it hasn't been loaded
-    if (typeof this.loadedPlugin === 'undefined')
+    if (typeof this.loadedPlugin === 'undefined') {
+      this.emitStatus();
       return false;
+    }
 
     try {
       // run the stop func on the plugin if applicable
@@ -83,9 +88,11 @@ class NodePlugin extends Plugin {
       // unload the plugin
       disrequire(this.pluginFile);
       this.loadedPlugin = undefined;
+      this.emitStatus();
       return true;
     } catch (e) {
       Omegga.error('error unloading node plugin', this.getName(), e);
+      this.emitStatus();
       return false;
     }
   }

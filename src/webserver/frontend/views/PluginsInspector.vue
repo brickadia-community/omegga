@@ -146,6 +146,10 @@ import MinusIcon from 'vue-tabler-icons/icons/MinusIcon';
 export default {
   components: { PlayerPlayIcon, PlayerStopIcon, RefreshIcon, PlusIcon, MinusIcon },
   sockets: {
+    plugin([path, info]) {
+      if (path === this.plugin.path)
+        Object.assign(this.plugin, info);
+    },
   },
   methods: {
     async getPlugin() {
@@ -175,9 +179,8 @@ export default {
       this.waiting = false;
     },
     async togglePlugin(enabled) {
-      console.log('toggled', enabled);
       this.waiting = true;
-      console.log('ok', await this.$$request('plugin.toggle', this.$route.params.id, enabled));
+      await this.$$request('plugin.toggle', this.$route.params.id, enabled);
       await this.getPlugin();
       this.waiting = false;
     },

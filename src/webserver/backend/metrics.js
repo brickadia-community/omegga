@@ -109,4 +109,9 @@ module.exports = (server, io) => {
     // add the visit to the database
     database.addVisit({id, name});
   });
+
+  // tell web users plugin status
+  omegga.on('plugin:status', (shortPath, info) => {
+    io.to('plugins').emit('plugin', shortPath, info);
+  });
 };
