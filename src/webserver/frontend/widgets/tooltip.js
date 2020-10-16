@@ -79,7 +79,7 @@ function checkHoverElem() {
       updateTooltipPos();
       tooltipElem.style.opacity = 1;
       showTooltip = true;
-    }, 200);
+    }, 400);
 
   // otherwise, hide it
   } else if (currText !== tooltip && showTooltip && tooltipVisible) {

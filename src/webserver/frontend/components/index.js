@@ -7,3 +7,4 @@ import './Input.vue';
 import './PopoutContent.vue';
 import './Loader.vue';
 import './NavBar.vue';
+import './Scroll.vue';

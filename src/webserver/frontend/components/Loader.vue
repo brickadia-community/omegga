@@ -57,11 +57,6 @@
   100% { transform: rotate(360deg); }
 }
 
-.loader-icon.small { font-size: 24px; }
-.loader-icon.normal { font-size: 30px; }
-.loader-icon.huge { font-size: 60px; }
-.loader-icon.massive { font-size: 120px; }
-
 </style>
 
 <template>
@@ -70,7 +65,7 @@
     inline: (typeof inline !== 'undefined'),
   }]" @click="$emit('click', $event)">
     <div :class="['loader-container', {blur: (typeof blur !== 'undefined')}]">
-      <i :class="['loader-icon ti ti-loader', size || 'normal']" />
+      <LoaderIcon :size="sizes[size || 'normal']" :class="['loader-icon']" />
       <div><slot /></div>
     </div>
   </div>
@@ -78,9 +73,21 @@
 <script>
 
 import Vue from 'vue';
+import LoaderIcon from 'vue-tabler-icons/icons/LoaderIcon';
 
 export default Vue.component('br-loader', {
+  components: { LoaderIcon },
   props: ['active', 'size', 'blur', 'inline'],
+  data() {
+    return {
+      sizes: {
+        small: '24',
+        normal: '30',
+        huge: '60',
+        massive: '120',
+      },
+    }
+  },
 });
 
 </script>

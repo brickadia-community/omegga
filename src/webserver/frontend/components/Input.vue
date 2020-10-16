@@ -8,7 +8,6 @@
   font-weight: bold;
   cursor: pointer;
   user-select: none;
-  margin: 10px;
 }
 
 .input:not(:last-child) {
@@ -19,11 +18,16 @@
   height: $br-element-height;
   font-family: 'Glacial Indifference';
   padding: 2px 12px;
+  box-sizing: border-box;
   font-weight: bold;
   font-size: $br-element-font;
   background: $br-element-normal;
   color: $br-inverted-fg;
   border: none;
+}
+
+.header > .input input {
+  height: 32px !important;
 }
 
 .input input::placeholder {

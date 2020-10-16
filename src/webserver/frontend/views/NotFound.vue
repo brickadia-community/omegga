@@ -2,5 +2,10 @@
 </style>
 
 <template>
-  <div>404</div>
+  <page>
+    <nav-header title="Not Found" />
+    <page-content>
+      <side-nav />
+    </page-content>
+  </page>
 </template>

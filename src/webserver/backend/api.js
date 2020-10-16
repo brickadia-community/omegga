@@ -1,11 +1,12 @@
-const express = require('express');
 
+const express = require('express');
+const _ = require('lodash');
 const { JSONRPCServer, JSONRPCClient, JSONRPCServerAndClient } = require('json-rpc-2.0');
 
 const { chat: { sanitize } } = require('../../util/index.js');
 
 module.exports = (server, io) => {
-  const { database } = server;
+  const { database, omegga } = server;
 
   // open API is accessible without auth
   const openApi = express.Router();
@@ -85,6 +86,11 @@ module.exports = (server, io) => {
       });
     });
 
+    // logging for this user in the console for web ui actions
+    const usernameText = `[${(socket.user.username || 'Admin').brightMagenta}]`;
+    const log = (...args) => global.Omegga.log('>>'.green, usernameText, ...args);
+    const error = (...args) => global.Omegga.error('!>'.red, usernameText, ...args);
+
     // rpc connection
     const rpcServer = new JSONRPCServer();
     const rpcClient = new JSONRPCClient(async data =>
@@ -131,6 +137,104 @@ module.exports = (server, io) => {
     // TODO: add permission check
     rpc.addMethod('chat.recent', () => {
       return database.getRecentChats();
+    });
+
+    // get the list of plugins
+    // TODO: add permission check
+    rpc.addMethod('plugins.list', () => {
+      return _.sortBy(omegga.pluginLoader.plugins.map(p => ({
+        name: p.getName(),
+        documentation: p.getDocumentation(),
+        path: p.shortPath,
+        isLoaded: p.isLoaded(),
+        isEnabled: p.isEnabled(),
+      })), p => p.name.toLowerCase());
+    });
+
+    // get information on a specific plugin
+    // TODO: add permission check
+    rpc.addMethod('plugin.get', ([shortPath]) => {
+      const plugin = omegga.pluginLoader.plugins.find(p => p.shortPath === shortPath);
+      if (!plugin) return null;
+      return {
+        name: plugin.getName(),
+        format: plugin.constructor.getFormat(),
+        info: plugin.getInfo(),
+        documentation: plugin.getDocumentation(),
+        path: plugin.shortPath,
+        isLoaded: plugin.isLoaded(),
+        isEnabled: plugin.isEnabled(),
+      };
+    });
+
+    // reload all plugins (and scan for new ones)
+    // TODO: add permission check
+    rpc.addMethod('plugins.reload', async() => {
+      if (!omegga.pluginLoader) {
+        error('Omegga is not using plugins');
+        return false;
+      }
+
+      log('Unloading current plugins');
+      let success = await omegga.pluginLoader.unload();
+      if (!success) {
+        error('Could not unload all plugins');
+        return false;
+      }
+
+      log('Scanning for new plugins');
+      success = await omegga.pluginLoader.scan();
+      if (!success) {
+        error('Could not scan for plugins');
+        return false;
+      }
+
+      log('Starting plugins');
+      success = await omegga.pluginLoader.reload();
+      if (success) {
+        const plugins = omegga.pluginLoader.plugins.filter(p => p.isLoaded()).map(p => p.getName());
+        log('Loaded', (plugins.length+'').yellow, 'plugins:', plugins);
+        return true;
+      } else {
+        error('Could not load all plugins');
+        return false;
+      }
+    });
+
+    // unload a plugin
+    // TODO: add permission check
+    rpc.addMethod('plugin.unload', async([shortPath]) => {
+      const plugin = omegga.pluginLoader.plugins.find(p => p.shortPath === shortPath);
+      if (!plugin) return false;
+      if (!plugin.isLoaded()) return false;
+      log('Unloading plugin', plugin.getName().yellow);
+      return await plugin.unload();
+    });
+
+    // load a plugin
+    // TODO: add permission check
+    rpc.addMethod('plugin.load', async([shortPath]) => {
+      const plugin = omegga.pluginLoader.plugins.find(p => p.shortPath === shortPath);
+      if (!plugin) return false;
+      if (plugin.isLoaded() || !plugin.isEnabled()) return false;
+      log('Loading plugin', plugin.getName().yellow);
+      return await plugin.load();
+    });
+
+    // enable/disable a plugin
+    // TODO: add permission check
+    rpc.addMethod('plugin.toggle', ([shortPath, enabled]) => {
+      if (typeof enabled !== 'boolean') return;
+      const plugin = omegga.pluginLoader.plugins.find(p => p.shortPath === shortPath);
+      if (!plugin) return false;
+      try {
+        plugin.setEnabled(enabled);
+        log(enabled ? 'Enable'.green : 'Disabled'.red, 'plugin', plugin.getName().yellow);
+        return true;
+      } catch (e) {
+        error('Error', enabled ? 'enabling'.green : 'disabling'.red, 'plugin', plugin.getName().yellow);
+        return false;
+      }
     });
 
     // send server status at request

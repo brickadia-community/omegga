@@ -95,12 +95,19 @@ You will have to delete your omegga data folders manually
 # Planned Features
 
   * [ ] web interface
-    * [ ] reload plugins
-    * [ ] enable/disable plugins live
+    * [x] reload plugins
+    * [x] enable/disable plugins live
+    * [ ] live plugin reloading/unloading state
     * [ ] manage plugins config, perhaps by iframe
-    * [ ] chat with players
+    * [ ] start/stop server
+    * [x] chat with players
     * [ ] view recent console logs
-    * [ ] view server status
+    * [x] view server status
+    * [ ] multiple users
+    * [ ] roles for each user
+    * [ ] chatcmd history
+    * [ ] track players kicked/banned
+    * [ ] automated/scheduled server restarting (when noone is on)
   * [x] terminal interface
     * [x] reload plugins
     * [x] chat with players

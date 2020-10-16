@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const soft = require('../softconfig.js');
 
 // Check if this plugin is disabled
 const DISABLED_FILE = 'disabled.omegga';
@@ -19,6 +20,7 @@ class Plugin {
   // returns the kind of plugin this is
   static getFormat() { throw 'undefined plugin format'; }
 
+
   // read a file as json or return null
   static readJSON(file) {
     try {
@@ -32,10 +34,23 @@ class Plugin {
   constructor(pluginPath, omegga) {
     this.path = pluginPath;
     this.omegga = omegga;
+    this.shortPath = pluginPath.replace(path.join(omegga.path, soft.PLUGIN_PATH) + '/', '');
   }
 
   // check if the plugin is enabled
   isEnabled() { return !fs.existsSync(path.join(this.path, DISABLED_FILE)); }
+  // set the plugin enabled/disabled
+  setEnabled(enabled) {
+    const disabledPath = path.join(this.path, DISABLED_FILE);
+    if (enabled === this.isEnabled()) {
+      return;
+    }
+    if (enabled) {
+      fs.unlinkSync(disabledPath);
+    } else {
+      fs.closeSync(fs.openSync(disabledPath, 'w'));
+    }
+  }
 
   // get the plugin name, usually based on documentation data
   getName() {
@@ -54,6 +69,9 @@ class Plugin {
 
   // stop + kill the plugin, returns true if plugin successfully unloaded
   async unload() { return false; }
+
+  // extra info for this kind of plugin
+  getInfo() { return {}; }
 }
 
 /*
@@ -250,7 +268,7 @@ class PluginLoader {
     this.commands = {};
     for (const plugin of this.plugins) {
       // make sure this plugin has docs
-      const doc = plugin.getDocumentation();
+      const doc = JSON.parse(JSON.stringify(plugin.getDocumentation()));
       if (!doc) continue;
       const name = plugin.getName();
       if (!name) continue;

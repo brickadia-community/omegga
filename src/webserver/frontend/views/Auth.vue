@@ -51,6 +51,10 @@ body {
   background-color: $br-bg-secondary;
 }
 
+.popout-inputs .input {
+  margin: 10px;
+}
+
 .turkey {
   filter: blur(10px);
   position: absolute;
@@ -108,21 +112,20 @@ body {
             :disabled="!ok || confirm !== password"
             @click="auth(username, password)"
           >
-            <i class="ti ti-arrow-right"></i>Create
+            <ArrowRightIcon />Create
           </br-button>
           <br-button main v-else
             :disabled="!ok"
             @click="auth(username, password)"
           >
-            <i class="ti ti-arrow-right">
-            </i>Login
+            <ArrowRightIcon />Login
           </br-button>
           <div style="flex: 1" />
           <br-button warn v-if="create"
             :disabled="!blank || confirm !== password"
             @click="auth('', '')"
           >
-            <i class="ti ti-lock-open"></i>Skip
+            <LockOpenIcon/>Skip
           </br-button>
         </br-footer>
         <br-loader :active="loading" blur size="huge"><b>AUTHORIZING</b></br-loader>
@@ -133,7 +136,12 @@ body {
 
 <script>
 
+import ArrowRightIcon from 'vue-tabler-icons/icons/ArrowRightIcon';
+import LockOpenIcon from 'vue-tabler-icons/icons/LockOpenIcon';
+
+
 export default {
+  components: { ArrowRightIcon, LockOpenIcon },
   computed: {
     // check if entered credentials are okay
     ok() {

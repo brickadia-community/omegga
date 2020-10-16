@@ -7,8 +7,24 @@ html, body {
   padding: 0;
 }
 
+html {
+  width: 100%;
+  height: 100%;
+  display: table;
+}
+
 body {
+  width: 100%;
+  display: table-cell;
+  position: relative;
+  overflow: hidden;
   font-family: 'Glacial Indifference';
+}
+
+@media screen and (max-width: 600px) {
+  body {
+    overflow-y: auto;
+  }
 }
 
 ::-webkit-scrollbar {
@@ -16,7 +32,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: $br-bg-secondary;
+  background-color: $br-element-footer-bg;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -25,4 +41,26 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #fff;
+}
+
+.generic-container {
+  flex: 1;
+  position: relative;
+  margin-left: 8px;
+}
+
+.stat {
+  color: white;
+  font-weight: bold;
+}
+
+.stats {
+  padding: 8px;
+  font-size: 24px;
+  word-break: break-all;
+  background-color: $br-element-popout-bg;
+}
+
+.stat b {
+  color: $br-boring-button-fg;
 }

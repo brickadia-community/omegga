@@ -1,0 +1,96 @@
+<style lang="scss" scoped>
+
+.main-menu-buttons {
+  width: 350px;
+  margin-top: -8px;
+  margin-right: 8px;
+}
+
+@media screen and (max-width: 600px) {
+  .main-menu-buttons {
+    margin-right: 0;
+    width: 100%;
+    min-width: 100%;
+  }
+}
+
+</style>
+
+<template>
+  <div class="main-menu-buttons">
+    <br-menu-button
+      :disabled="false"
+      route=""
+      name="home"
+      data-tooltip="Chat with players, view server status. Main Dashboard"
+    >
+      <DashboardIcon style="background: #de4f43;" />
+      Dashboard
+    </br-menu-button>
+    <br-menu-button
+      :disabled="false"
+      route="history"
+      data-tooltip="Browse chat history"
+    >
+      <MessagesIcon style="background: #008bd6;" />
+      History
+    </br-menu-button>
+    <br-menu-button
+      :disabled="false"
+      route="plugins"
+      data-tooltip="Manage, reload, and configure plugins"
+    >
+      <PlugIcon style="background: #00b35f;"/>
+      Plugins
+    </br-menu-button>
+    <br-menu-button
+      :disabled="false"
+      route="players"
+      data-tooltip="Browse player info and play time"
+    >
+      <UsersIcon style="background: #b3006b;"/>
+      Players
+    </br-menu-button>
+    <br-menu-button
+      :disabled="false"
+      route="metrics"
+      data-tooltip="View statistics and metrics for the server"
+    >
+      <ChartLineIcon style="background: #00b0bd;"/>
+      Metrics
+    </br-menu-button>
+    <br-menu-button
+      :disabled="false"
+      route="saves"
+      data-tooltip="Browse, create, load, and clear saves"
+    >
+      <DeviceFloppyIcon style="background: #1ed4d1;"/>
+      Saves
+    </br-menu-button>
+    <br-menu-button
+      :disabled="false"
+      route="settings"
+      data-tooltip="Server management settings and roles"
+    >
+      <AdjustmentsAltIcon style="background: #c4bb02;"/>
+      Settings
+    </br-menu-button>
+  </div>
+</template>
+
+<script>
+import Vue from 'vue';
+
+import DashboardIcon from 'vue-tabler-icons/icons/DashboardIcon';
+import MessagesIcon from 'vue-tabler-icons/icons/MessagesIcon';
+import PlugIcon from 'vue-tabler-icons/icons/PlugIcon';
+import UsersIcon from 'vue-tabler-icons/icons/UsersIcon';
+import ChartLineIcon from 'vue-tabler-icons/icons/ChartLineIcon';
+import DeviceFloppyIcon from 'vue-tabler-icons/icons/DeviceFloppyIcon';
+import AdjustmentsAltIcon from 'vue-tabler-icons/icons/AdjustmentsAltIcon';
+
+export default Vue.component('side-nav', {
+  components: { DashboardIcon, MessagesIcon, PlugIcon, UsersIcon, ChartLineIcon, DeviceFloppyIcon, AdjustmentsAltIcon },
+  props: ['active'],
+});
+</script>

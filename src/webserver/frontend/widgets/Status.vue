@@ -8,20 +8,7 @@
   position: relative;
   align-items: stretch;
   max-width: 100%;
-}
-
-.status-widget .players {
-  flex: 1;
-  position: relative;
-}
-
-.players-parent {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow-y: scroll;
+  background-color: $br-bg-secondary;
 }
 
 .players-child {
@@ -30,21 +17,6 @@
 }
 
 .chat-widget .footer {
-}
-
-.stat {
-  color: white;
-  font-weight: bold;
-}
-
-.stats {
-  margin: 8px;
-  font-size: 24px;
-  word-break: break-all;
-}
-
-.stat b {
-  color: $br-boring-button-fg;
 }
 
 .players table {
@@ -86,35 +58,33 @@
 
 <template>
   <div class="status-widget">
-    <div class="players">
-      <div class="players-parent" v-if="status.players">
-        <div class="players-child">
-          <div class="stats">
-            <div class="stat"><b>Name:</b> {{status.serverName}}</div>
-            <div class="stat"><b>Uptime:</b> {{duration(status.time)}}</div>
-            <div class="stat"><b>Bricks:</b> {{status.bricks}}</div>
-            <div class="stat"><b>Players:</b> {{status.players.length}}</div>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th style="text-align: left; width: 100%">Name</th>
-                <th>Time</th>
-                <th>Ping</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="player in status.players" class="player-row">
-                <td>{{player.name}}</td>
-                <td style="text-align: right;">{{duration(player.time)}}</td>
-                <td style="text-align: right;">{{player.ping}}</td>
-              </tr>
-            </tbody>
-          </table>
+    <br-scroll v-if="status.players" class="players">
+      <div class="players-child">
+        <div class="stats">
+          <div class="stat"><b>Name:</b> {{status.serverName}}</div>
+          <div class="stat"><b>Uptime:</b> {{duration(status.time)}}</div>
+          <div class="stat"><b>Bricks:</b> {{status.bricks}}</div>
+          <div class="stat"><b>Players:</b> {{status.players.length}}</div>
         </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align: left; width: 100%">Name</th>
+              <th>Time</th>
+              <th>Ping</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="player in status.players" class="player-row">
+              <td>{{player.name}}</td>
+              <td style="text-align: right;">{{duration(player.time)}}</td>
+              <td style="text-align: right;">{{player.ping}}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <br-loader :active="!status.players" blur size="huge">Loading Status</br-loader>
-    </div>
+    </br-scroll>
+    <br-loader :active="!status.players" blur size="huge">Loading Status</br-loader>
   </div>
 </template>
 <script>

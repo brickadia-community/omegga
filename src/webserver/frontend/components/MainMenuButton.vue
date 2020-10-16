@@ -1,15 +1,16 @@
-<style lang="scss" scoped>
+<style lang="scss">
 @import '../css/theme';
 
-$btn-height: 80px;
+$btn-height: 60px;
+$icon-height: $btn-height - 16px;
 
-.button {
+.menu-button {
   display: flex;
   align-items: center;
   justify-content: flex-start;
   text-transform: uppercase;
   height: $btn-height;
-  font-size: 40px;
+  font-size: 30px;
   color: $br-button-fg;
   background-color: $br-bg-secondary;
   font-weight: bold;
@@ -17,56 +18,59 @@ $btn-height: 80px;
   cursor: pointer;
   user-select: none;
   margin: 8px 0;
+  text-decoration: none;
+  width: 350px;
 }
 
-.button .ti {
-  width: $btn-height - 16px;
-  height: $btn-height - 16px;
-  margin-left: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 24px;
-}
-
-.button-content {
+.menu-button-content {
   display: flex;
   text-align: center;
   align-items: center;
   justify-content: center;
 }
 
+.menu-button .ti, .menu-button .icon {
+  display: flex;
+  width: $icon-height;
+  height: $icon-height;
+  margin-left: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24px;
+}
 
-.button:hover { background-color: $br-element-normal; }
-.button:active {background-color: $br-bg-footer; }
+.menu-button:hover { background-color: $br-element-hover; }
+.menu-button:active {background-color: $br-bg-footer; }
+.menu-button.active {background-color: $br-button-normal; }
 
-.button.disabled {
+.menu-button.disabled {
   opacity: 50%;
   cursor: default;
   pointer-events: none;
 }
 
-.button:not(.disabled):active .button-content {
+.menu-button:not(.disabled):active .menu-button-content {
   padding-top: 4px;
 }
 
 </style>
 
 <template>
-  <div :class="['button', {
-    disabled: disabled,
+  <router-link :to="'/'+route" :class="['menu-button', {
+    disabled,
+    active: (name || route) === this.$route.name,
   }]" @click="$emit('click', $event)">
-    <div class="button-content">
+    <div class="menu-button-content">
       <slot/>
     </div>
-  </div>
+  </router-link>
 </template>
 <script>
 
 import Vue from 'vue';
 
 export default Vue.component('br-menu-button', {
-  props: ['disabled'],
+  props: ['disabled', 'route', 'name'],
 });
 
 </script>

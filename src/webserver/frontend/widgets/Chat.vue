@@ -30,13 +30,6 @@
   margin: 8px;
 }
 
-.chat-widget .input, .chat-widget input {
-  height: 32px;
-  max-height: 32px;
-  box-sizing: border-box;
-  margin: 0 !important;
-}
-
 .chat-widget .input {
   flex: 1;
   width: calc(100% - 24px - 20px);
@@ -67,29 +60,27 @@
 
 <template>
   <div class="chat-widget">
-    <div class="messages">
-      <div class="messages-parent">
-        <div class="messages-child">
-          <div v-for="log in chats" :key="log._id" class="log-entry">
-            <div v-if="log.action === 'msg'" class="chat-message">
-              {{log.user.web ? '[' : ''}}<span class="user" :style="{color: '#'+log.user.color}"
-              >{{log.user.name}}</span>{{log.user.web ? ']' : ''}}: {{log.message}}
-            </div>
-            <div v-if="log.action === 'leave'" class="join-message">
-              <span class="user">{{log.user.name}}</span> left the game.
-            </div>
-            <div v-if="log.action === 'join'" class="join-message">
-              <span class="user">{{log.user.name}}</span> joined the game.
-            </div>
+    <br-scroll class="messages">
+      <div class="messages-child">
+        <div v-for="log in chats" :key="log._id" class="log-entry">
+          <div v-if="log.action === 'msg'" class="chat-message">
+            {{log.user.web ? '[' : ''}}<span class="user" :style="{color: '#'+log.user.color}"
+            >{{log.user.name}}</span>{{log.user.web ? ']' : ''}}: {{log.message}}
+          </div>
+          <div v-if="log.action === 'leave'" class="join-message">
+            <span class="user">{{log.user.name}}</span> left the game.
+          </div>
+          <div v-if="log.action === 'join'" class="join-message">
+            <span class="user">{{log.user.name}}</span> joined the game.
           </div>
         </div>
       </div>
-    </div>
+    </br-scroll>
     <form @submit="sendMessage">
       <br-footer>
         <br-input type="text" placeholder="Message" v-model="message" />
         <br-button normal icon style="margin-left: 10px" @click="sendMessage">
-          <i class="ti ti-send"/>
+          <SendIcon />
         </br-button>
       </br-footer>
     </form>
@@ -98,8 +89,11 @@
 <script>
 
 import Vue from 'vue';
+import SendIcon from 'vue-tabler-icons/icons/SendIcon';
+
 
 export default Vue.component('br-chat-widget', {
+  components: { SendIcon },
   sockets: {
     chat(log) {
       this.chats.push(log);
@@ -131,7 +125,7 @@ export default Vue.component('br-chat-widget', {
     scroll() {
       // scroll to bottom of message log
       window.requestAnimationFrame(() => {
-        const container = this.$el.querySelector('.messages-parent');
+        const container = this.$el.querySelector('.scroll-scroller');
         container.scrollTop = container.scrollHeight;
       });
     },

@@ -25,7 +25,7 @@
   margin-right: 8px;
 }
 
-.button:not(.icon) .ti {
+.button:not(.icon) .icon {
   margin-right: 8px;
 }
 
