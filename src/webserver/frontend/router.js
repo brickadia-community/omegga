@@ -13,6 +13,7 @@ const router = new VueRouter({
     path: '/plugins',
     component: Plugins,
     children: [{
+      name: 'plugins',
       path: '/plugins/:id',
       component: PluginsInspector
     }],

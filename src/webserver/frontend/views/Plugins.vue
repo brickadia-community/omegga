@@ -82,7 +82,11 @@
   <page>
     <nav-header title="Plugins">
       <span style="flex: 1"/>
-      <br-button warn :disabled="reloading" @click="reloadPlugins">
+      <br-button warn
+        :disabled="reloading"
+        @click="reloadPlugins"
+        data-tooltip="Reload all plugins, this may clear current plugin progress"
+      >
         <RefreshAlertIcon />
         Reload Plugins
       </br-button>
