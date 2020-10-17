@@ -5,6 +5,8 @@ const bcrypt = require('bcrypt');
 
 const soft = require('../../softconfig.js');
 
+const Calendar = require('./calendar.js');
+
 // TODO: online users graph
 // TODO: player online times
 // TODO: bricks over time graph
@@ -21,6 +23,7 @@ class Database {
   constructor(options, omegga) {
     this.options = options;
     this.omegga = omegga;
+    this.calendar = new Calendar();
 
     // create all the stores
     this.stores = {
@@ -31,6 +34,7 @@ class Database {
       status: new Datastore({filename: path.join(omegga.dataPath, soft.STATUS_STORE), autoload: true}),
       server: new Datastore({filename: path.join(omegga.dataPath, soft.SERVER_STORE), autoload: true}),
     };
+
   }
 
   // make sure all the databases have valid store versions
@@ -102,7 +106,16 @@ class Database {
       type: 'app:start',
       date: Date.now(),
     });
+
     serverInstance = doc;
+
+    // create a calendar of all previous chat messages
+    const dates = (await this.stores.chat.find({type: 'chat'}))
+      .map(c => c.created);
+    for (const d of dates) {
+      this.calendar.addDate(d);
+    }
+
     return doc._id;
   }
 
@@ -166,6 +179,7 @@ class Database {
 
   // add a chat message to the chat log store
   async addChatLog(action, user, message) {
+    this.calendar.addDate(Date.now());
     return await this.stores.chat.insert({
       type: 'chat',
       created: Date.now(),
@@ -177,17 +191,22 @@ class Database {
   }
 
   // get recent chat activity
-  async getRecentChats(count=50) {
+  async getChats({count=50, sameServer, before, after}={}) {
     return await this.stores.chat.cfind({
       type: 'chat',
-      instanceId: await this.getInstanceId(),
+      ...(sameServer ? {instanceId: await this.getInstanceId()} : {}),
+      created:
+        before ? { $lt: before } :
+          after ? { $gt: after } :
+            { $lt: Date.now() }
+
     })
-      .sort({ created: -1 })
+      .sort({ created: !before && after ? 1 : -1 })
       .limit(count)
       .exec();
   }
 
-  // add a user to the visit history
+  // add a user to the visit history, returns true if this is a first visit
   async addVisit(user) {
     const existing = await this.stores.players.findOne({ id: user.id });
     const now = Date.now();
@@ -218,6 +237,7 @@ class Database {
         // number of instances (times omegga was started) this player has joined
         instances: 1,
       });
+      return true;
     } else {
       await this.stores.players.update(
         { _id: existing._id },
@@ -244,6 +264,7 @@ class Database {
           }),
         },
       );
+      return false;
     }
   }
 

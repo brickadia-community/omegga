@@ -102,12 +102,12 @@ module.exports = (server, io) => {
 
   // player join events
   omegga.on('join', async ({id, name}) => {
-    // tell web users a player joined
-    io.to('chat').emit('chat',
-      await database.addChatLog('join', {id, name}));
-
     // add the visit to the database
-    database.addVisit({id, name});
+    const isFirst = database.addVisit({id, name});
+
+    // tell web users a player joined (and if it's their first time joining)
+    io.to('chat').emit('chat',
+      await database.addChatLog('join', {id, name, ...(isFirst ? {isFirst} : {})}));
   });
 
   // tell web users plugin status

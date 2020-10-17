@@ -3,7 +3,7 @@
 
 .navbar {
   display: flex;
-  height: $br-footer-height - 20px;
+  height: 32px;
   font-size: $br-footer-font;
   color: $br-fg-footer;
   background-color: $br-bg-footer;

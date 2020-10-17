@@ -9,6 +9,7 @@
   height: $br-element-height;
   font-size: $br-element-font;
   border-radius: $br-element-height/2;
+  box-sizing: border-box;
   color: $br-button-fg;
   font-weight: bold;
   padding: 0 16px;

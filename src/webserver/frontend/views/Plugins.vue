@@ -118,7 +118,7 @@
                 {{plugin.name}}
               </div>
             </br-scroll>
-            <br-loader :active="loading" blur size="huge">Loading Plugins</br-loader>
+            <br-loader :active="loading" size="huge">Loading Plugins</br-loader>
           </div>
         </div>
         <div class="plugin-inspector-container">

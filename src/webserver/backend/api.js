@@ -133,10 +133,22 @@ module.exports = (server, io) => {
       return 'ok';
     });
 
-    // send recent chat messages
+    // read recent chat messages
     // TODO: add permission check
     rpc.addMethod('chat.recent', () => {
-      return database.getRecentChats();
+      return database.getChats({ sameServer: true });
+    });
+
+    // find chat messages after a certain time
+    // TODO: add permission check
+    rpc.addMethod('chat.history', ([{after, before}]) => {
+      return database.getChats({ after, before });
+    });
+
+    // see what days chat messages were sent
+    // TODO: add permission check
+    rpc.addMethod('chat.calendar', () => {
+      return database.calendar.years;
     });
 
     // get the list of plugins

@@ -96,12 +96,14 @@
     <br-footer>
       <br-button main v-if="plugin.isEnabled && !plugin.isLoaded"
         :disabled="waiting"
+        data-tooltip="Start the plugin"
         @click="loadPlugin()"
       >
         <PlayerPlayIcon />
         Load
       </br-button>
       <br-button warn v-if="plugin.isEnabled && plugin.isLoaded"
+        data-tooltip="Stop, then start the plugin"
         :disabled="waiting"
         @click="reloadPlugin()"
       >
@@ -111,12 +113,14 @@
       <span style="flex: 1"/>
       <br-button error v-if="plugin.isEnabled && plugin.isLoaded"
         :disabled="waiting"
+        data-tooltip="Stop the plugin"
         @click="unloadPlugin()"
       >
         <PlayerStopIcon />
         Unload
       </br-button>
       <br-button main v-if="!plugin.isEnabled"
+        data-tooltip="Allow the plugin to be started"
         :disabled="waiting"
         @click="togglePlugin(true)"
       >
@@ -124,6 +128,7 @@
         Enable
       </br-button>
       <br-button error v-if="plugin.isEnabled && !plugin.isLoaded"
+        data-tooltip="Prevent the plugin from being started"
         :disabled="waiting"
         @click="togglePlugin(false)"
       >

@@ -97,7 +97,8 @@ You will have to delete your omegga data folders manually
   * [ ] web interface
     * [x] reload plugins
     * [x] enable/disable plugins live
-    * [ ] live plugin reloading/unloading state
+    * [x] live plugin reloading/unloading state
+    * [x] browse chat history
     * [ ] manage plugins config, perhaps by iframe
     * [ ] start/stop server
     * [x] chat with players
@@ -116,7 +117,7 @@ You will have to delete your omegga data folders manually
   * [ ] metrics
     * [ ] bricks over time charts
     * [ ] player online time tracking
-    * [ ] chat logs
+    * [x] chat logs
     * [ ] chats/hour tracking
   * [x] plugins in other languages via JSON RPC over stdio
     * [ ] LogWrangler impl for other languages

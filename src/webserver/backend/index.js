@@ -168,6 +168,7 @@ class Webserver {
       this.server.listen(this.port, () => {
         log(`${'>>'.green} Started webserver at`, `http${this.https ? 's' : ''}://127.0.0.1:${this.port}`.green);
         this.started = true;
+        this.database.addChatLog('server', {}, 'Server started');
         resolve();
       });
     });
@@ -175,6 +176,7 @@ class Webserver {
 
   // stop the webserver
   stop() {
+    this.database.addChatLog('server', {}, 'Server stopped');
     this.server.close();
     this.started = false;
     clearInterval(this.serverStatusInterval);

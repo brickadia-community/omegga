@@ -1,4 +1,4 @@
-<style scoped>
+<style>
 
 .scroll-container {
   flex: 1;

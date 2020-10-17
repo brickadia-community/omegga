@@ -38,24 +38,6 @@
 .chat-widget .footer {
 }
 
-.messages .log-entry {
-  font-size: 24px;
-  text-shadow:  -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-  word-break: break-all;
-}
-
-.messages .log-entry .user {
-  font-weight: bold;
-}
-
-.log-entry .join-message {
-  color: #3477e3;
-}
-
-.log-entry .chat-message {
-  color: #ffffff;
-}
-
 </style>
 
 <template>
@@ -71,7 +53,10 @@
             <span class="user">{{log.user.name}}</span> left the game.
           </div>
           <div v-if="log.action === 'join'" class="join-message">
-            <span class="user">{{log.user.name}}</span> joined the game.
+            <span class="user">{{log.user.name}}</span> joined the game{{log.user.isFirst ? ' for the first time' : ''}}.
+          </div>
+          <div v-if="log.action === 'server'" class="server-message">
+            {{log.message}}
           </div>
         </div>
       </div>

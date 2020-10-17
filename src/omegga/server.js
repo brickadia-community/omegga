@@ -102,9 +102,13 @@ class Omegga extends OmeggaWrapper {
       this.addMatcher(pattern, callback);
     }
 
-    process.on('uncaughtException', err => {
+    process.on('uncaughtException', async err => {
       this.emit('error', err);
-      try { this.stop(); } catch (e) { Omegga.error(e); }
+      // publish stop to database
+      if (this.webserver && this.webserver.database) {
+        this.database.addChatLog('server', {}, 'Server error');
+      }
+      try { await this.stop(); } catch (e) { Omegga.error(e); }
       process.exit();
     });
 
@@ -134,10 +138,13 @@ class Omegga extends OmeggaWrapper {
   // unload load plugins and stop the server
   async stop() {
     if (!this.started && !this.starting) return;
+    if (this.stopping) return;
+    this.stopping = true;
     if (this.pluginLoader)
       await this.pluginLoader.unload();
     super.stop();
     this.emit('server:stopped');
+    this.stopping = false;
     this.started = false;
     this.starting = false;
   }
