@@ -165,6 +165,28 @@ Every plugin requires a `doc.json` file to document which briefly describes the 
   "name": "My Plugin",
   "description": "Example Plugin",
   "author": "cake",
+  "config": {
+    "example-text": {
+      "description": "This is an example text input",
+      "default": "default value",
+      "type": "string"
+    },
+    "example-password": {
+      "description": "This is example text input hidden as a password",
+      "default": "hidden password value",
+      "type": "password"
+    },
+    "example-number": {
+      "description": "This is an example numerical input",
+      "default": 5,
+      "type": "number"
+    },
+    "example-bool": {
+      "description": "This is an example boolean input",
+      "default": false,
+      "type": "boolean"
+    }
+  },
   "commands": [
     {
       "name": "!ping",
@@ -187,6 +209,100 @@ Every plugin requires a `doc.json` file to document which briefly describes the 
   ]
 }
 ```
+
+## Plugin Config
+
+This is an example config section of a `doc.json`. The web ui provides an interface for editing these configs.
+
+```json
+  "config": {
+    "example-text": {
+      "description": "This is an example text input",
+      "default": "default value",
+      "type": "string"
+    },
+    "example-password": {
+      "description": "This is example text input hidden as a password",
+      "default": "hidden password value",
+      "type": "password"
+    },
+    "example-number": {
+      "description": "This is an example numerical input",
+      "default": 5,
+      "type": "number"
+    },
+    "example-bool": {
+      "description": "This is an example boolean input",
+      "default": false,
+      "type": "boolean"
+    }
+  }
+```
+
+That config section would generate the following default config:
+
+```json
+{
+  "example-text": "default value",
+  "example-password": "hidden password value",
+  "example-number": 5,
+  "example-bool": false,
+}
+```
+
+This is provided to plugins in the constructor or the RPC init function.
+
+## Plugin Store
+
+All plugins have the capability to get/set values in a very lightweight "database"
+
+The following **asynchronous** methods are provided:
+
+| Method | Arguments | Description |
+| ------ | --------- | ----------- |
+| `store.get` | key (string) | Get an object from plugin store |
+| `store.set` | key (string), value (any) | Store an object in plugin store |
+| `store.delete` | key (string) | Remove an object from plugin store |
+| `store.wipe` | _none_ | Remove all object from plugin store |
+| `store.count` | _none_ | Count number of objects in plugin store |
+| `store.keys` | _none_ | Get keys for all objects in plugin store |
+
+### Example usage:
+
+```javascript
+// simple add function
+async function add() {
+  const a = await store.get('foo');
+  const b = await store.get('bar');
+  await store.set('baz', a + b);
+  await store.delete('foo');
+  await store.delete('bar');
+}
+
+(async () => {
+  // store foo and bar in the plugin store
+  await Promise.all([
+    store.set('foo', 5),
+    store.set('bar', 2),
+  ]);
+
+  // add foo and bar
+  await add();
+
+  // baz should be equal to 7
+  console.log('assert', await store.get('baz') === 7);
+
+  // demo of storing an object
+  await store.set('example object', {
+    foo: 'you can store objects in the store too',
+    bar: 'just don\'t expect it to work with anything recursive (cannot serialize)',
+  })
+})();
+````
+
+For Node Plugins, the `store` is the third argument passed into the constructor. For JSONRPC Plugins, the `"store.get"`/etc methods can be used.
+
+**JSONRPC Note:** `store.set` has an array of arguments (`[key, value]`)
 
 ## Node VM Plugins
 
@@ -231,9 +347,11 @@ Access to only `fs`, (`const fs = require('fs');`)
 ```javascript
 class PluginName {
   // the constructor also contains an omegga if you don't want to use the global one
-  constructor(omegga, config) {
+  // config and store variables are optional but provide access to the plugin data store
+  constructor(omegga, config, store) {
     this.omegga = omegga;
     this.config = config;
+    this.store = store;
     console.info('constructed my plugin!');
   }
 
@@ -281,9 +399,11 @@ In a `plugins` directory create the following folder structure:
 
 ```javascript
 class PluginName {
-  constructor(omegga, config) {
+  // config and store variables are optional but provide access to the plugin data store
+  constructor(omegga, config, store) {
     this.omegga = omegga;
     this.config = config;
+    this.store = store;
   }
 
   init() {
@@ -322,6 +442,12 @@ The server communicates with the plugin by sending messages to `stdin` and expec
 | `info` | line (string) | Same as `log` but with different colors |
 | `warn` | line (string) | Same as `log` but with different colors |
 | `trace` | line (string) | Same as `log` but with different colors |
+| `store.get` | key (string) | Get an object from plugin store |
+| `store.set` | [key (string), value (any)] | Store an object in plugin store |
+| `store.delete` | key (string) | Remove an object from plugin store |
+| `store.wipe` | _none_ | Remove all object from plugin store |
+| `store.count` | _none_ | Count number of objects in plugin store |
+| `store.keys` | _none_ | Get keys for all objects in plugin store |
 | `exec` | cmd (string) | Writes a console command to Brickadia |
 | `writeln` | cmd (string) | Same as `exec` |
 | `broadcast` | line (string) | Broadcasts a message to the server|
@@ -484,6 +610,7 @@ rpc.addMethod('line', ([line]) => {
   ev.emit('line', line);
 });
 
+// receive config object in init
 rpc.addMethod('init', async ([config]) => 'ok');
 rpc.addMethod('stop', async () => 'ok');
 

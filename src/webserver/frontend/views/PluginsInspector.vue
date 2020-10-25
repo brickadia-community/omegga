@@ -114,9 +114,9 @@
 
 <template>
   <div class="plugin-view">
-    <br-loader :active="loading" size="huge">Loading Status</br-loader>
-    <div class="plugin-info" v-if="!loading">
-      <br-scroll>
+    <br-loader :active="loading" size="huge">Loading Plugin</br-loader>
+    <div class="plugin-info">
+      <br-scroll v-if="!loading">
         <div class="stats">
           <div class="stat"><b data-tooltip="Plugin name">Name:</b> {{plugin.name}}</div>
           <div class="stat"><b data-tooltip="Plugin creator">Author:</b> {{plugin.documentation && plugin.documentation.author}}</div>
@@ -292,7 +292,8 @@ export default {
     async getPlugin() {
       this.loading = true;
       this.plugin = await this.$$request('plugin.get', this.$route.params.id) || {};
-      this.config = this.plugin.config;
+      if (this.plugin)
+        this.config = this.plugin.config;
       this.loading = false;
     },
     async unloadPlugin() {

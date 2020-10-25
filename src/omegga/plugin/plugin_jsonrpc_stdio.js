@@ -269,6 +269,14 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('warn', ezLog('warn', name.brightYellow, ':>'.yellow));
     rpc.addMethod('trace', ezLog('trace', name, 'T>'.grey));
 
+    // plugin store interactions
+    rpc.addMethod('store.get', (key) => this.storage.get(key));
+    rpc.addMethod('store.set', ([key, value]) => this.storage.set(key, value));
+    rpc.addMethod('store.delete', (key) => this.storage.delete(key));
+    rpc.addMethod('store.wipe', () => this.storage.wipe());
+    rpc.addMethod('store.count', () => this.storage.count());
+    rpc.addMethod('store.keys', () => this.storage.keys());
+
     // server can run console commands
     rpc.addMethod('exec', line => this.omegga.writeln(line));
     rpc.addMethod('writeln', line => this.omegga.writeln(line));

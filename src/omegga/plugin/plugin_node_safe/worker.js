@@ -44,6 +44,16 @@ const exec = cmd => emit('exec', cmd);
 // create the proxy omegga
 const omegga = new ProxyOmegga(exec);
 
+// interface with plugin store
+const store = {
+  get: key => emit('store.get', key),
+  set: (key, value) => emit('store.set', key, value),
+  delete: key => emit('store.delete', key),
+  wipe: () => emit('store.wipe'),
+  count: () => emit('store.count'),
+  keys: () => emit('store.keys'),
+};
+
 // generic brickadia events are forwarded to the proxy omegga
 parent.on('brickadiaEvent', (type, ...args) => {
   if (!vm) return;
@@ -156,7 +166,7 @@ parent.on('load', (resp, pluginPath, options) => {
 // to coordinate async funcs
 parent.on('start', (resp, config) => {
   try {
-    pluginInstance = new PluginClass(omegga, config);
+    pluginInstance = new PluginClass(omegga, config, store);
     pluginInstance.init();
     emit(resp, true);
   } catch (err) {

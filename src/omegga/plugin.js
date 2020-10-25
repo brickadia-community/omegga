@@ -171,6 +171,12 @@ class PluginStorage {
     return objects.length;
   }
 
+  // get keys of all objects in store
+  async keys() {
+    const objects = await this.store.find({ type: 'store', plugin: this.name });
+    return objects.map(o => o.key);
+  }
+
   // set a stored value
   async set(key, value) {
     const obj = await this.store.findOne({type: 'store', plugin: this.name, key});
@@ -288,11 +294,17 @@ class PluginLoader {
         const PluginFormat = this.formats.find(f => f.canLoad(dir));
 
         // let users know if there's a missing plugin format
-        if (!PluginFormat)
+        if (!PluginFormat) {
           Omegga.error('!>'.red, 'Missing plugin format for', dir);
+          return;
+        }
         try {
           // create the plugin format
           const plugin = PluginFormat && new PluginFormat(dir, this.omegga);
+          if (!plugin.getDocumentation()) {
+            Omegga.error('!>'.red, 'Missing/invalid plugin documentation for', dir);
+            return;
+          }
 
           // create its storage
           const storage = new PluginStorage(this.store, plugin);

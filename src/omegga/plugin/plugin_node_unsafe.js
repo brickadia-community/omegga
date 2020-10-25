@@ -58,8 +58,18 @@ class NodePlugin extends Plugin {
       if (typeof Plugin.prototype !== 'object' || typeof Plugin.prototype.constructor !== 'function')
         return stopPlugin();
 
+      // interface with plugin store
+      const store = {
+        get: key => this.storage.get(key),
+        set: (key, value) => this.storage.set(key, value),
+        delete: key => this.storage.delete(key),
+        wipe: () => this.storage.wipe(),
+        count: () => this.storage.count(),
+        keys: () => this.storage.keys(),
+      };
+
       // create the loaded plugin
-      this.loadedPlugin = new Plugin(this.omegga, config);
+      this.loadedPlugin = new Plugin(this.omegga, config, store);
 
       // start the loaded plugin
       if (typeof this.loadedPlugin.init === 'function')

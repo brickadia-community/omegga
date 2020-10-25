@@ -59,16 +59,64 @@ class NodeVmPlugin extends Plugin {
     const name = this.getName();
 
     // when the worker emits an error or a log, pass it up to omegga
-    this.plugin.on('error', (_, ...args) => {
-      Omegga.log(name.brightRed.underline, '!>'.red, ...args);
-      this.emit();
+    this.plugin.on('error', (resp, ...args) => {
+      Omegga.error(name.brightRed.underline, '!>'.red, ...args);
+      this.notify(resp);
     });
-    this.plugin.on('log', (_, ...args) => {
+    this.plugin.on('log', (resp, ...args) => {
       Omegga.log(name.underline, '>>'.green, ...args);
+      this.notify(resp);
     });
 
     // let the worker write commands to brickadia
     this.plugin.on('exec', (_, cmd) => omegga.writeln(cmd));
+
+    // storage interface
+    this.plugin.on('store.get', async(resp, key) => {
+      try {
+        this.notify(resp, await this.storage.get(key));
+      } catch (e) {
+        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.get of', key);
+      }
+    });
+    this.plugin.on('store.set', async(resp, key, value) => {
+      try {
+        await this.storage.set(key, value);
+      } catch (e) {
+        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.set of', key, value);
+      }
+      this.notify(resp);
+    });
+    this.plugin.on('store.delete', async(resp, key) => {
+      try {
+        await this.storage.delete(key);
+      } catch (e) {
+        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.delete of', key);
+      }
+      this.notify(resp);
+    });
+    this.plugin.on('store.wipe', async(resp) => {
+      try {
+        await this.storage.wipe();
+      } catch (e) {
+        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.wipe');
+      }
+      this.notify(resp);
+    });
+    this.plugin.on('store.count', async(resp) => {
+      try {
+        this.notify(resp, await this.storage.count());
+      } catch (e) {
+        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.count');
+      }
+    });
+    this.plugin.on('store.keys', async(resp) => {
+      try {
+        this.notify(resp, await this.storage.keys());
+      } catch (e) {
+        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.keys');
+      }
+    });
 
     // listen on every message, post them to to the worker
     this.eventPassthrough = this.eventPassthrough.bind(this);
@@ -217,6 +265,21 @@ class NodeVmPlugin extends Plugin {
 
     // return the promise
     return promise;
+  }
+
+  // notify a response to the worker
+  notify(action, ...args) {
+    if (!this.#worker) return;
+
+    // post the message
+    try {
+      this.#worker.postMessage({
+        action,
+        args: [...args],
+      });
+    } catch (e) {
+      // do nothing here
+    }
   }
 
   // create the worker for this plugin, attach emitter
