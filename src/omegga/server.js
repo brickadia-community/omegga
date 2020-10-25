@@ -78,9 +78,6 @@ class Omegga extends OmeggaWrapper {
 
       // load all the plugin formats in
       this.pluginLoader.loadFormats(path.join(__dirname, 'plugin'));
-
-      // scan all available plugins
-      this.pluginLoader.scan();
     }
 
     // list of online players
@@ -130,7 +127,12 @@ class Omegga extends OmeggaWrapper {
   async start() {
     this.starting = true;
     if (this.webserver) await this.webserver.start();
-    if (this.pluginLoader) await this.pluginLoader.reload();
+    if (this.pluginLoader) {
+      // scan for plugins
+      await this.pluginLoader.scan();
+      // load the plugins
+      await this.pluginLoader.reload();
+    }
     super.start();
     this.emit('server:starting');
   }
@@ -218,7 +220,7 @@ class Omegga extends OmeggaWrapper {
       target = target.id;
 
     // if the target isn't a uuid already, find the player by name or controller and use that uuid
-    else  if (typeof target === 'string' && !uuid.match(target)) {
+    else if (typeof target === 'string' && !uuid.match(target)) {
       // only set the target if the player exists
       const player = this.getPlayer(target);
       target = player && player.id;

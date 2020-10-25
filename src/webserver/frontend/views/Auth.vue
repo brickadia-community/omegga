@@ -15,22 +15,20 @@ body {
 }
 
 .modal {
+  @include absolute-center;
   background-color: $br-bg-primary;
   width: 500px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   opacity: 0;
-}
 
-.modal-content {
-  position: relative;
-}
+  &.visible {
+    opacity: 1;
+    animation: fadeIn 0.4s ease 1;
+  }
 
-.modal.visible {
-  opacity: 1;
-  animation: fadeIn 0.4s ease 1;
+  .modal-content {
+    position: relative;
+  }
+
 }
 
 @keyframes fadeIn {
@@ -46,13 +44,12 @@ body {
 }
 
 .popout-inputs {
-  display: flex;
-  flex-direction: column;
+  @include column;
   background-color: $br-bg-secondary;
-}
 
-.popout-inputs .input {
-  margin: 10px;
+  .input {
+    margin: 10px;
+  }
 }
 
 .turkey {

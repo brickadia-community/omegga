@@ -49,6 +49,8 @@ class NodePlugin extends Plugin {
     };
 
     try {
+      const config = await this.storage.getConfig();
+
       // require the plugin itself
       const Plugin = require(this.pluginFile);
 
@@ -57,7 +59,7 @@ class NodePlugin extends Plugin {
         return stopPlugin();
 
       // create the loaded plugin
-      this.loadedPlugin = new Plugin(this.omegga);
+      this.loadedPlugin = new Plugin(this.omegga, config);
 
       // start the loaded plugin
       if (typeof this.loadedPlugin.init === 'function')

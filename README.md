@@ -231,8 +231,9 @@ Access to only `fs`, (`const fs = require('fs');`)
 ```javascript
 class PluginName {
   // the constructor also contains an omegga if you don't want to use the global one
-  constructor(omegga) {
+  constructor(omegga, config) {
     this.omegga = omegga;
+    this.config = config;
     console.info('constructed my plugin!');
   }
 
@@ -280,8 +281,9 @@ In a `plugins` directory create the following folder structure:
 
 ```javascript
 class PluginName {
-  constructor(omegga) {
+  constructor(omegga, config) {
     this.omegga = omegga;
+    this.config = config;
   }
 
   init() {
@@ -341,7 +343,7 @@ The server communicates with the plugin by sending messages to `stdin` and expec
 
 | Method | Arguments | Description | Required |
 | ------ | --------- | ----------- | -------- |
-| `init` | _none_ | Returns _something_, called when plugin starts | &#9745; |
+| `init` | config object | Returns _something_, called when plugin starts | &#9745; |
 | `stop` | _none_ | Returns _something_, called when plugin is stopped | &#9745; |
 | `bootstrap` | [{ object full of omegga info (`host`, `version`, etc) }] | Run when plugin is started for base data | |
 | `plugin:players:raw` | [[... [player `name`, `id`, `controller`, `state`] ]] | Lists players on the server | |
@@ -482,7 +484,7 @@ rpc.addMethod('line', ([line]) => {
   ev.emit('line', line);
 });
 
-rpc.addMethod('init', async () => 'ok');
+rpc.addMethod('init', async ([config]) => 'ok');
 rpc.addMethod('stop', async () => 'ok');
 
 

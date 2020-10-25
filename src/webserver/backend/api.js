@@ -165,18 +165,40 @@ module.exports = (server, io) => {
 
     // get information on a specific plugin
     // TODO: add permission check
-    rpc.addMethod('plugin.get', ([shortPath]) => {
+    rpc.addMethod('plugin.get', async([shortPath]) => {
       const plugin = omegga.pluginLoader.plugins.find(p => p.shortPath === shortPath);
       if (!plugin) return null;
+
+      // get the plugin configs
+      const [defaultConfig, config, objCount] = await Promise.all([
+        plugin.storage.getDefaultConfig(),
+        plugin.storage.getConfig(),
+        plugin.storage.count(),
+      ]);
+
       return {
         name: plugin.getName(),
         format: plugin.constructor.getFormat(),
         info: plugin.getInfo(),
         documentation: plugin.getDocumentation(),
+        config,
+        defaultConfig,
+        objCount,
         path: plugin.shortPath,
         isLoaded: plugin.isLoaded(),
         isEnabled: plugin.isEnabled(),
       };
+    });
+
+    // set plugin config
+    // TODO: add permission check
+    rpc.addMethod('plugin.config', async([shortPath, config]) => {
+      const plugin = omegga.pluginLoader.plugins.find(p => p.shortPath === shortPath);
+      if (!plugin) return null;
+
+      await plugin.storage.setConfig(config);
+      // TODO: validate configs
+      return true;
     });
 
     // reload all plugins (and scan for new ones)

@@ -7,67 +7,60 @@
 }
 
 .plugins-list-container, .plugin-inspector-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  @include column-container;
 }
 
 .plugins-list-container {
-  margin-right: 16px
+  margin-right: 16px;
+
+  .input {
+    max-width: 300px;
+    margin-right: 8px;
+    flex: 1;
+    width: 100%;
+  }
 }
 
 .plugins-list {
-  position: relative;
-  flex-direction: column;
-  display: flex;
-  flex: 1;
+  @include column-container;
   margin-top: 8px;
+
+  .plugin-item {
+    background-color: $br-button-normal;
+    margin-bottom: 8px;
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    height: 48px;
+    font-size: 20px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+
+    &:hover { background-color: $br-element-hover; }
+    &:active, &.disabled { background-color: $br-element-pressed; }
+    &.router-link-active { background-color: $br-element-hover; }
+
+    .icon {
+      @include center;
+      height: 32px;
+      width: 32px;
+      margin-left: 8px;
+      margin-right: 8px;
+
+      &.running { background-color: $br-main-normal; }
+      &.bugged { background-color: $br-warn-normal; }
+      &.broken { background-color: $br-error-normal; }
+      &.disabled { background-color: $br-bg-primary; }
+    }
+  }
 }
 
-.plugins-list-container .input {
-  max-width: 300px;
-  margin-right: 8px;
-  flex: 1;
-  width: 100%;
-}
-
-.plugin-item {
-  background-color: $br-button-normal;
-  margin-bottom: 8px;
-  margin-right: 8px;
-  display: flex;
-  align-items: center;
-  height: 48px;
-  font-size: 20px;
-  color: white;
-  cursor: pointer;
-  font-weight: bold;
-  text-decoration: none;
-}
-
-.plugin-item .icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 32px;
-  width: 32px;
-  margin-left: 8px;
-  margin-right: 8px;
-}
-
-.plugin-item:hover { background-color: $br-element-hover; }
-.plugin-item:active, .plugin-item.disabled {background-color: $br-element-pressed; }
-.plugin-item.router-link-active { background-color: $br-element-hover; }
-
-.plugin-item .icon.running { background-color: $br-main-normal; }
-.plugin-item .icon.bugged { background-color: $br-warn-normal; }
-.plugin-item .icon.broken { background-color: $br-error-normal; }
-.plugin-item .icon.disabled { background-color: $br-bg-primary; }
 
 .plugin-inspector {
+  @include column;
   background-color: $br-element-popout-bg;
-  display: flex;
-  flex-direction: column;
   flex: 1;
   position: relative;
 }

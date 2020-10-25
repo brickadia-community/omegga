@@ -89,6 +89,7 @@ class NodeVmPlugin extends Plugin {
     };
 
     try {
+      const config = await this.storage.getConfig();
       this.createWorker();
 
       // tell the worker its name :)
@@ -114,8 +115,8 @@ class NodeVmPlugin extends Plugin {
       this.omegga.on('*', this.eventPassthrough);
 
       // actually start the plugin
-      if (!(await this.emit('start')))
-        throw '';
+      if (!(await this.emit('start', config)))
+        throw 'plugin failed start';
 
       this.emitStatus();
       return true;

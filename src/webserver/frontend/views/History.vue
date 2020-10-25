@@ -7,10 +7,7 @@
 }
 
 .chat-history {
-  position: relative;
-  flex-direction: column;
-  display: flex;
-  flex: 1;
+  @include column-container;
 }
 
 @media screen and (max-width: 600px) {
@@ -19,24 +16,22 @@
 
 .log-entry {
   text-decoration: none;
-}
 
-.log-entry:hover .log-row {
-  background: rgba(255, 255, 255, 0.2);
-}
+  &:hover .log-row {
+    background: rgba(255, 255, 255, 0.2);
+  }
 
-.log-entry.focused .log-row {
-  background: $br-main-normal;
-}
+  &.focused .log-row {
+    background: $br-main-normal;
+  }
 
-.log-row {
-  display: flex;
+  .log-row {
+    display: flex;
+  }
 }
 
 .chat-new-day {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  @include center;
   color: white;
   height: 32px;
   font-size: 24px;
@@ -52,80 +47,70 @@
 }
 
 .calendar-container {
+  @include column;
   margin-right: 8px;
   z-index: 100;
   min-height: 32px;
-  display: flex;
-  flex-direction: column;
   align-items: flex-end;
 }
 
-.calendar-container .button {
-  height: 32px;
-}
 
 .calendar {
   background-color: $br-element-footer-bg;
   min-width: 200px;
+
+  .year, .month {
+    @include center;
+    background-color: $br-bg-header;
+    justify-content: space-between;
+    padding: 0 8px;
+    padding-bottom: 8px;
+  }
+
+  .year {
+    padding-top: 8px;
+  }
+
+  .calendar-days {
+    font-size: 24px;
+    display: grid;
+    grid-template-columns: repeat(7, 40px);
+    grid-auto-rows: 40px;
+    text-align: center;
+
+    .days {
+      @include center;
+      color: $br-boring-button-fg;
+
+      &.header {
+        background-color: $br-bg-header;
+      }
+
+      &.available {
+        color: white;
+        background-color: $br-button-normal;
+        border-radius: 0;
+        cursor: pointer;
+
+        &:hover { background-color: $br-element-hover; }
+        &:active {background-color: $br-element-pressed; }
+        &.today:hover { background-color: $br-info-hover; }
+        &.today:active {background-color: $br-info-pressed; }
+      }
+
+      &.today {
+        color: white;
+        border: 2px solid $br-info-normal;
+      }
+
+      &:not(.today):not(.available) {
+        pointer-events: none;
+      }
+    }
+  }
 }
 
 
-.calendar .year, .calendar .month {
-  display: flex;
-  align-items: center;
-  background-color: $br-bg-header;
-  justify-content: space-between;
-  padding: 0 8px;
-  padding-bottom: 8px;
-}
-
-.calendar .year {
-  padding-top: 8px;
-}
-
-.calendar-days {
-  font-size: 24px;
-  display: grid;
-  grid-template-columns: repeat(7, 40px);
-  grid-auto-rows: 40px;
-  text-align: center;
-}
-
-.calendar-days .days {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: $br-boring-button-fg;
-}
-
-.calendar-days .days.header {
-  background-color: $br-bg-header;
-}
-
-.calendar-days .days.today {
-  border-radius: 50%;
-}
-
-.calendar-days .days.available {
-  color: white;
-  background-color: $br-button-normal;
-  border-radius: 0;
-  cursor: pointer;
-}
-
-.calendar-days .days.today {
-  color: white;
-  background-color: $br-info-normal;
-}
-
-.calendar-days .days.available:hover { background-color: $br-element-hover; }
-.calendar-days .days.available:active {background-color: $br-element-pressed; }
-.calendar-days .days.available.today:hover { background-color: $br-info-hover; }
-.calendar-days .days.available.today:active {background-color: $br-info-pressed; }
-
-.calendar-days .days:not(.today):not(.available) {
-  pointer-events: none;
-}
 
 </style>
 

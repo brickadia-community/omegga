@@ -1,57 +1,54 @@
-<style scoped>
-@import '../css/theme';
+<style scoped lang="scss">
+@import '../css/style';
 
 .status-widget {
-  display: flex;
+  @include column-stretch;
   flex: 1;
-  flex-direction: column;
   position: relative;
-  align-items: stretch;
   max-width: 100%;
   background-color: $br-bg-secondary;
-}
 
-.players-child {
-  display: flex;
-  flex-direction: column;
-}
+  .players {
+    .players-child {
+      @include column;
+    }
 
-.chat-widget .footer {
-}
+    table {
+      font-weight: bold;
+      border-collapse: collapse;
+      font-size: 24px;
 
-.players table {
-  font-weight: bold;
-  border-collapse: collapse;
-  font-size: 24px;
-}
+      thead th {
+        color: white;
+        height: 50px;
+        background-color: $br-bg-primary;
+      }
 
-.players table thead th {
-  color: white;
-  height: 50px;
-  background-color: $br-bg-primary;
-}
+      th, td,  {
+        padding: 0 10px;
+      }
 
-.players table thead th, .players table td,  {
-  padding: 0 10px;
-}
+      tr :first-child {
+        padding-left: 20px;
+      }
 
-.players tr :first-child {
-  padding-left: 20px;
-}
-.players tr :last-child {
-  padding-right: 20px;
-}
+      tr :last-child {
+        padding-right: 20px;
+      }
 
-.player-row td {
-  font-size: 20px;
-  background-color: $br-bg-secondary;
-  color: $br-boring-button-fg;
-  height: 50px;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.player-row:nth-child(even) td {
-  background-color: $br-bg-secondary-alt;
+      .player-row {
+        @include alternate(background-color, $br-bg-secondary, $br-bg-secondary-alt);
+        td {
+          font-size: 20px;
+          color: $br-boring-button-fg;
+          height: 50px;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+      }
+    }
+
+  }
 }
 
 </style>

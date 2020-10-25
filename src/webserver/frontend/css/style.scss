@@ -66,23 +66,26 @@ body {
 }
 
 .log-entry {
-  font-size: 24px;
-  text-shadow:  -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-  word-break: break-all;
+  & {
+    font-size: 24px;
+    text-shadow:  -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    word-break: break-all;
+  }
+
+  .user {
+    font-weight: bold;
+  }
+
+  .join-message {
+    color: #3477e3;
+  }
+
+  .chat-message {
+    color: #ffffff;
+  }
+
+  .server-message {
+    color: #ff00ff;
+  }
 }
 
-.log-entry .user {
-  font-weight: bold;
-}
-
-.log-entry .join-message {
-  color: #3477e3;
-}
-
-.log-entry .chat-message {
-  color: #ffffff;
-}
-
-.log-entry .server-message {
-  color: #ff00ff;
-}

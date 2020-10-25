@@ -103,7 +103,7 @@ module.exports = (server, io) => {
   // player join events
   omegga.on('join', async ({id, name}) => {
     // add the visit to the database
-    const isFirst = database.addVisit({id, name});
+    const isFirst = await database.addVisit({id, name});
 
     // tell web users a player joined (and if it's their first time joining)
     io.to('chat').emit('chat',

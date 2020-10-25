@@ -29,7 +29,6 @@ class Database {
     this.stores = {
       users: new Datastore({filename: path.join(omegga.dataPath, soft.USER_STORE), autoload: true}),
       chat: new Datastore({filename: path.join(omegga.dataPath, soft.CHAT_STORE), autoload: true}),
-      plugin: new Datastore({filename: path.join(omegga.dataPath, soft.PLUGIN_STORE), autoload: true}),
       players: new Datastore({filename: path.join(omegga.dataPath, soft.PLAYER_STORE), autoload: true}),
       status: new Datastore({filename: path.join(omegga.dataPath, soft.STATUS_STORE), autoload: true}),
       server: new Datastore({filename: path.join(omegga.dataPath, soft.SERVER_STORE), autoload: true}),
@@ -43,7 +42,6 @@ class Database {
     const storeVersions = {
       users: 1,
       chat: 1,
-      plugin: 1,
       players: 1,
       status: 1,
       server: 1,
@@ -56,7 +54,6 @@ class Database {
     const migrations = {
       users: [],
       chat: [],
-      plugin: [],
       players: [],
       status: [],
       server: [],

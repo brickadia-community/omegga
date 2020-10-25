@@ -59,7 +59,6 @@ export default {
       rpc.receiveAndSend(data);
     },
   },
-  template: '<router-view />',
   data() {
     return {
       loading: false,

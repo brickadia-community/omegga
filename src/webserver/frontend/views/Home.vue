@@ -66,36 +66,38 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+
+  .widgets-list {
+    background-color: $br-element-footer-bg;
+    margin-right: 8px;
+    min-width: 200px;
+
+    .widget-item {
+      background-color: $br-bg-primary;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 50px;
+      padding: 0 10px;
+
+      &:nth-child(even) {
+        background-color: $br-bg-primary-alt;
+      }
+
+      .name {
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+
+        .icon {
+          margin-right: 10px;
+        }
+      }
+    }
+  }
 }
 
-.widgets-list {
-  background-color: $br-element-footer-bg;
-  margin-right: 8px;
-  min-width: 200px;
-}
 
-.widget-item {
-  background-color: $br-bg-primary;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 50px;
-  padding: 0 10px;
-}
-
-.widget-item .name {
-  text-transform: uppercase;
-  display: flex;
-  align-items: center;
-}
-
-.widget-item .name .icon {
-  margin-right: 10px;
-}
-
-.widget-item:nth-child(even) {
-  background-color: $br-bg-primary-alt;
-}
 
 @media screen and (max-width: 600px) {
   .vue-grid-layout {

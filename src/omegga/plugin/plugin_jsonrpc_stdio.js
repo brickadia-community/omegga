@@ -59,6 +59,7 @@ class RpcPlugin extends Plugin {
     return Promise.race([
       (async() => {
         try {
+          const config = await this.storage.getConfig();
           this.#child = spawn(this.pluginFile);
           this.#child.stdin.setEncoding('utf8');
           this.#outInterface = readline.createInterface({input: this.#child.stdout, terminal: false});
@@ -79,7 +80,7 @@ class RpcPlugin extends Plugin {
 
           try {
           // tell the plugin to start
-            await this.emit('init');
+            await this.emit('init', config);
           } catch (e) {
             if (!e.message) return;
             Omegga.error('!>'.red, 'rpc plugin', name.brightRed.underline, 'missing start impl');

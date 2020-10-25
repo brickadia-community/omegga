@@ -154,9 +154,9 @@ parent.on('load', (resp, pluginPath, options) => {
 // start the plugin with a faux omegga
 // resp is an action sent back to the parent process
 // to coordinate async funcs
-parent.on('start', resp => {
+parent.on('start', (resp, config) => {
   try {
-    pluginInstance = new PluginClass(omegga);
+    pluginInstance = new PluginClass(omegga, config);
     pluginInstance.init();
     emit(resp, true);
   } catch (err) {

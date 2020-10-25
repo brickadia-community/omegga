@@ -1,5 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+
+const Datastore = require('nedb-promise');
+
 const soft = require('../softconfig.js');
 
 // Check if this plugin is disabled
@@ -35,6 +38,11 @@ class Plugin {
     this.path = pluginPath;
     this.omegga = omegga;
     this.shortPath = pluginPath.replace(path.join(omegga.path, soft.PLUGIN_PATH) + '/', '');
+  }
+
+  // assign plugin storage
+  setStorage(storage) {
+    this.storage = storage;
   }
 
   // check if the plugin is enabled
@@ -84,6 +92,96 @@ class Plugin {
   getInfo() { return {}; }
 }
 
+// key-value storage for a plugin
+class PluginStorage {
+  constructor(store, plugin) {
+    this.store = store;
+    this.plugin = plugin;
+    this.name = plugin.getName();
+  }
+
+  // get the initial config values
+  getDefaultConfig() {
+    const doc = this.plugin.getDocumentation();
+    // check if the documentation object exists and whether it has a config field
+    if (!doc) return {};
+    if (!doc.config) return {};
+
+    // insert values from default config values
+    const config = {};
+    for (const k in doc.config) {
+      config[k] = doc.config[k].default;
+    }
+
+    return config;
+  }
+
+  // set the config field for this plugin
+  async setConfig(value) {
+    const config = await this.store.findOne({type: 'config', plugin: this.name});
+    if (!config) {
+      await this.store.insert({
+        type: 'config',
+        plugin: this.name,
+        value,
+      });
+    } else {
+      await this.store.update({ _id: config._id }, {
+        $set: { value },
+      });
+    }
+  }
+
+  // get the config for this plugin
+  async getConfig() {
+    const config = await this.store.findOne({type: 'config', plugin: this.name});
+    if (!config) return null;
+    return config.value;
+  }
+
+  // initialize the plugin store
+  async init() {
+    // create config if it doesn't exist
+    if (!(await this.getConfig()))
+      await this.setConfig(this.getDefaultConfig());
+  }
+
+  // get a stored object
+  async get(key) {
+    const obj = await this.store.findOne({type: 'store', plugin: this.name, key});
+    if (!obj) return null;
+    return obj.value;
+  }
+
+  // delete a stored object
+  async delete(key) {
+    const obj = await this.store.findOne({type: 'store', plugin: this.name, key});
+    if (!obj) return;
+    await this.store.remove({ _id: obj._id });
+  }
+
+  // clear all stored values
+  async wipe() {
+    await this.store.remove({ type: 'store', plugin: this.name });
+  }
+
+  // count number of objects in store
+  async count() {
+    const objects = await this.store.find({ type: 'store', plugin: this.name });
+    return objects.length;
+  }
+
+  // set a stored value
+  async set(key, value) {
+    const obj = await this.store.findOne({type: 'store', plugin: this.name, key});
+    if (!obj) {
+      await this.store.insert({type: 'store', plugin: this.name, key, value});
+    } else {
+      await this.store.update({_id: obj._id}, {$set: {value}});
+    }
+  }
+}
+
 /*
   Plugin Loader and Scanner
     Allows omegga to scan in plugins and load them
@@ -92,6 +190,7 @@ class PluginLoader {
   constructor(pluginsPath, omegga) {
     this.path = pluginsPath;
     this.omegga = omegga;
+    this.store = new Datastore({filename: path.join(omegga.dataPath, soft.PLUGIN_STORE), autoload: true}),
     this.formats = [];
     this.plugins = [];
 
@@ -131,8 +230,9 @@ class PluginLoader {
         // load the plugin if it successfully unloaded
         if (!p.isLoaded()) {
           // only load it if it is enabled
-          if (p.isEnabled())
-            await p.load();
+          if (p.isEnabled()) {
+            ok = ok && await p.load();
+          }
         } else {
           Omegga.error('!>'.red, 'Did not successfully unload plugin', p.getName().brightRed.underline);
           ok = false;
@@ -165,7 +265,7 @@ class PluginLoader {
   }
 
   // find every loadable plugin
-  scan() {
+  async scan() {
     // plugin directory doesn't exist
     if (!fs.existsSync(this.path)) {
       return false;
@@ -178,12 +278,12 @@ class PluginLoader {
     }
 
     // find all directories in the plugin path
-    this.plugins = fs.readdirSync(this.path)
+    this.plugins = (await Promise.all(fs.readdirSync(this.path)
       .map(dir => path.join(this.path, dir)) // convert from local paths
       // every plugin must be in a directory
       .filter(dir => fs.existsSync(dir) && fs.lstatSync(dir).isDirectory())
       // every plugin must be loadable through some format
-      .map(dir => {
+      .map(async dir => {
         // find a plugin format that can load in this plugin
         const PluginFormat = this.formats.find(f => f.canLoad(dir));
 
@@ -191,14 +291,23 @@ class PluginLoader {
         if (!PluginFormat)
           Omegga.error('!>'.red, 'Missing plugin format for', dir);
         try {
+          // create the plugin format
+          const plugin = PluginFormat && new PluginFormat(dir, this.omegga);
+
+          // create its storage
+          const storage = new PluginStorage(this.store, plugin);
+          await storage.init();
+
+          // load the storage in
+          plugin.setStorage(storage);
+
           // if there is a plugin format, create the plugin instance (but don't load yet)
-          return PluginFormat && new PluginFormat(dir, this.omegga);
+          return plugin;
         } catch (e) {
           // if a plugin format fails to load, prevent omegga from dying
           Omegga.error('!>'.red, 'Error loading plugin', e.getName().brightRed.underline, PluginFormat, e);
         }
-
-      })
+      })))
       // remove plugins without formats
       .filter(p => p);
 

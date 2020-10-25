@@ -1,5 +1,5 @@
-<style>
-@import '../css/theme';
+<style lang="scss">
+@import '../css/style';
 
 .chat-widget {
   display: flex;
@@ -8,34 +8,21 @@
   position: relative;
   align-items: stretch;
   max-width: 100%;
-}
 
-.chat-widget .messages {
-  flex: 1;
-  position: relative;
-}
+  .messages {
+    flex: 1;
+    position: relative;
 
-.messages-parent {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow-y: scroll;
-}
+    .messages-child {
+      @include column;
+      margin: 8px;
+    }
+  }
 
-.messages-child {
-  display: flex;
-  flex-direction: column;
-  margin: 8px;
-}
-
-.chat-widget .input {
-  flex: 1;
-  width: calc(100% - 24px - 20px);
-}
-
-.chat-widget .footer {
+  .input {
+    flex: 1;
+    width: calc(100% - 24px - 20px);
+  }
 }
 
 </style>

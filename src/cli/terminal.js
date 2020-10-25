@@ -69,7 +69,7 @@ class Terminal {
 
       cmd: {
         desc: 'run a console command on the brickadia server. requires debug for log to show',
-        fn(args) {
+        fn(...args) {
           if (!this.omegga.started) {
             err('Omegga is not running');
             return;
@@ -111,6 +111,28 @@ class Terminal {
           log('Stopping server...');
           await this.omegga.stop();
           process.exit();
+        },
+      },
+
+      save: {
+        desc: 'Save bricks to a specified file',
+        async fn(...args) {
+          const name = args.join(' ');
+          if (!name.length)
+            return err('usage:', '/save <name>'.yellow);
+          log('Saving bricks');
+          this.omegga.saveBricks(name);
+        },
+      },
+
+      load: {
+        desc: 'Load bricks from a specified file',
+        async fn(...args) {
+          const name = args.join(' ');
+          if (!name.length)
+            return err('usage:', '/load <name>'.yellow);
+          log('Loading bricks');
+          this.omegga.loadBricks(name);
         },
       },
 
@@ -174,7 +196,7 @@ class Terminal {
         err(`unrecognized command /${cmd.underline}. Type /help for more info`.red);
       } else {
         try {
-          const res = this.commands[cmd].fn(args);
+          const res = this.commands[cmd].fn(...args);
           if (res instanceof Promise) {
             await res;
           }

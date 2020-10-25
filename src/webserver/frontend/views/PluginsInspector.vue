@@ -1,64 +1,113 @@
-<style>
-@import '../css/theme';
+<style lang="scss">
+@import '../css/style';
 
 .plugin-view, .plugin-info {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  @include column-container;
+
+  .scroll-scroller {
+    background-color: $br-bg-primary;
+  }
 }
 
 .plugin-info {
-}
-.command-list {
+
+  .section-header {
+    @include center;
+    color: white;
+    height: 32px;
+    font-size: 24px;
+    text-shadow: none;
+    font-weight: bold;
+    text-align: center;
+    background-color: $br-bg-header;
+    top: 0;
+    position: sticky;
+    text-transform: uppercase;
+  }
 }
 
-.command-item {
+.option-list {
+}
+
+.option-item {
+  @include alternate(background-color, $br-bg-secondary, $br-bg-secondary-alt);
   font-size: 20px;
-  background-color: $br-bg-secondary;
   color: $br-boring-button-fg;
   height: 50px;
   overflow: hidden;
   white-space: nowrap;
   display: flex;
   align-items: center;
-}
-.command-item:nth-child(even) {
-  background-color: $br-bg-secondary-alt;
-}
 
-.command-name {
-  font-size: 24px;
-  font-weight: bold;
-  margin-left: 8px;
-  margin-right: 8px;
-  cursor: default;
-}
+  &.config {
+    height: 80px;
+  }
 
-.command-args {
-  display: flex;
-  flex-flow: row-wrap;
-}
+  .option-name, .option-input {
+    margin-left: 8px;
+    margin-right: 8px;
+  }
 
-.plugin-view .scroll-scroller {
-  background-color: $br-bg-primary;
-}
+  .option-name {
+    font-size: 24px;
+    font-weight: bold;
+    cursor: default;
+  }
 
-.command-arg {
-  background-color: $br-button-normal;
-  height: 16px;
-  margin: 4px;
-  font-size: 16px;
-  padding: 4px 8px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: default;
-  color: white;
-}
+  .option-input {
+    @include column;
+    width: 100%;
 
-.command-arg.required {
-  background-color: $br-main-pressed;
+    .option-label {
+      font-weight: bold;
+      margin-bottom: 4px;
+
+      .saved-note {
+        color: $br-info-normal;
+        display: inline-flex;
+        align-items: center;
+        font-weight: normal;
+        font-size: 12px;
+        opacity: 0;
+        transition: 0.2s ease;
+
+        &.show {
+          opacity: 1;
+        }
+      }
+    }
+
+    .option-value {
+      @include row;
+      justify-content: space-between;
+
+      .reset-button {
+        color: white;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .option-args {
+    display: flex;
+    flex-flow: row wrap;
+
+    .option-arg {
+      @include center;
+      background-color: $br-button-normal;
+      height: 16px;
+      margin: 4px;
+      font-size: 16px;
+      padding: 4px 8px;
+      border-radius: 16px;
+      cursor: default;
+      color: white;
+
+      &.required {
+        background-color: $br-main-pressed;
+      }
+    }
+  }
 }
 
 </style>
@@ -66,25 +115,79 @@
 <template>
   <div class="plugin-view">
     <br-loader :active="loading" size="huge">Loading Status</br-loader>
-    <div class="plugin-info">
-      <div class="stats" v-if="!loading">
-        <div class="stat"><b>Name:</b> {{plugin.name}}</div>
-        <div class="stat"><b>Author:</b> {{plugin.documentation && plugin.documentation.author}}</div>
-        <div class="stat"><b>Description:</b> {{plugin.documentation && plugin.documentation.description || 'none'}}</div>
-        <div class="stat"><b data-tooltip="The folder this plugin runs in">Folder:</b> {{plugin.path}}</div>
-        <div class="stat"><b data-tooltip="The type of plugin this is">Format:</b> {{plugin.format}}</div>
-        <div class="stat"><b data-tooltip="Plugin can be started">Enabled:</b> {{plugin.isEnabled ? 'Yes' : 'No'}}</div>
-        <div class="stat"><b data-tooltip="Plugin is running">Loaded:</b> {{plugin.isLoaded ? 'Yes' : 'No'}}</div>
-        <div class="stat"><b>Commands:</b> ({{(plugin.documentation.commands || []).length}})</div>
-      </div>
+    <div class="plugin-info" v-if="!loading">
       <br-scroll>
-        <div class="command-list" v-if="!loading">
-          <div v-for="c in plugin.documentation.commands || []" class="command-item">
-            <div class="command-name" :data-tooltip="c.description">{{c.name}}</div>
-            <div class="command-args">
+        <div class="stats">
+          <div class="stat"><b data-tooltip="Plugin name">Name:</b> {{plugin.name}}</div>
+          <div class="stat"><b data-tooltip="Plugin creator">Author:</b> {{plugin.documentation && plugin.documentation.author}}</div>
+          <div class="stat"><b>Description:</b> {{plugin.documentation && plugin.documentation.description || 'none'}}</div>
+          <div class="stat"><b data-tooltip="The folder this plugin runs in">Folder:</b> {{plugin.path}}</div>
+          <div class="stat"><b data-tooltip="The type of plugin this is">Format:</b> {{plugin.format}}</div>
+          <div class="stat"><b data-tooltip="Number of objects in the plugin's storage">Stored Objects:</b> {{plugin.objCount}}</div>
+          <div class="stat"><b data-tooltip="Plugin can be started">Enabled:</b> {{plugin.isEnabled ? 'Yes' : 'No'}}</div>
+          <div class="stat"><b data-tooltip="Plugin is running">Loaded:</b> {{plugin.isLoaded ? 'Yes' : 'No'}}</div>
+        </div>
+        <div class="section-header" data-tooltip="Ways to configure the plugin. Changes take place the next time a plugin is loaded.">
+          Configs
+        </div>
+        <div class="option-list">
+          <div class="option-item" v-if="Object.keys(plugin.documentation.config || {}).length === 0">
+            <i class="option-name">None</i>
+          </div>
+          <div v-for="(conf, c) in plugin.documentation.config || {}" class="option-item config">
+            <div class="option-input">
+              <div class="option-label" :data-tooltip="conf.description">
+                {{c}}
+                <span :class="['saved-note', {show: showSave[c]}]">
+                  SAVED <CheckIcon size="20"/>
+                </span>
+              </div>
+              <div class="option-value">
+                <br-input
+                  v-if="conf.type === 'string'"
+                  :value="config[c]"
+                  @input="value => updateConfig(c, value)"
+                />
+                <br-input
+                  v-if="conf.type === 'password'"
+                  type="password"
+                  :value="config[c]"
+                  @input="value => updateConfig(c, value)"
+                />
+                <br-input
+                  v-if="conf.type === 'number'"
+                  type="number"
+                  :value="config[c]"
+                  @input="value => updateConfig(c, value)"
+                />
+                <br-toggle
+                  @input="value => updateConfig(c, value)"
+                  :value="config[c]"
+                  v-if="conf.type === 'boolean'"
+                />
+                <ArrowBackUpIcon
+                  v-if="conf.default !== config[c]"
+                  @click="updateConfig(c, conf.default)"
+                  class="reset-button"
+                  data-tooltip="Reset to default value"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="section-header" data-tooltip="Ways to control the plugin">
+          Commands
+        </div>
+        <div class="option-list">
+          <div class="option-item" v-if="(plugin.documentation.commands || []).length === 0">
+            <i class="option-name">None</i>
+          </div>
+          <div v-for="c in plugin.documentation.commands || []" class="option-item">
+            <div class="option-name" :data-tooltip="c.description">{{c.name}}</div>
+            <div class="option-args">
               <div v-for="a in c.args || []"
-                :class="['command-arg', { required: a.required }]"
-                :data-tooltip="a.description"
+                :class="['option-arg', { required: a.required }]"
+                :data-tooltip="(a.required ? '(required) ' : '') + a.description"
               >
                 {{a.name}}
               </div>
@@ -147,9 +250,16 @@ import PlayerStopIcon from 'vue-tabler-icons/icons/PlayerStopIcon';
 import RefreshIcon from 'vue-tabler-icons/icons/RefreshIcon';
 import PlusIcon from 'vue-tabler-icons/icons/PlusIcon';
 import MinusIcon from 'vue-tabler-icons/icons/MinusIcon';
+import ArrowBackUpIcon from 'vue-tabler-icons/icons/ArrowBackUpIcon';
+import CheckIcon from 'vue-tabler-icons/icons/CheckIcon';
+
+import debounce from 'lodash/debounce';
 
 export default {
-  components: { PlayerPlayIcon, PlayerStopIcon, RefreshIcon, PlusIcon, MinusIcon },
+  components: {
+    PlayerPlayIcon, PlayerStopIcon, RefreshIcon, PlusIcon,
+    MinusIcon, ArrowBackUpIcon, CheckIcon,
+  },
   sockets: {
     plugin([path, info]) {
       if (path === this.plugin.path)
@@ -157,9 +267,32 @@ export default {
     },
   },
   methods: {
+    saveConfig: debounce(async function() {
+      const diff = {};
+      for (const c in this.plugin.config) {
+        if (this.plugin.config[c] !== this.config[c])
+          diff[c] = true;
+      }
+      const config = this.config;
+      const ok = await this.$$request('plugin.config', this.$route.params.id, config);
+      if (ok) {
+        this.showSave = diff;
+        setTimeout(() => {
+          this.showSave = {};
+          this.plugin.config = config;
+        }, 1000);
+      }
+    }, 2000),
+    updateConfig(key, val) {
+      // update the object
+      this.config = {...this.config, [key]: val};
+      // save the config
+      this.saveConfig();
+    },
     async getPlugin() {
       this.loading = true;
       this.plugin = await this.$$request('plugin.get', this.$route.params.id) || {};
+      this.config = this.plugin.config;
       this.loading = false;
     },
     async unloadPlugin() {
@@ -196,6 +329,8 @@ export default {
   data() {
     return {
       plugin: {},
+      config: {},
+      showSave: {},
       loading: true,
       waiting: false,
     };
