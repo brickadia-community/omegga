@@ -263,7 +263,7 @@ The following **asynchronous** methods are provided:
 | `store.get` | key (string) | Get an object from plugin store |
 | `store.set` | key (string), value (any) | Store an object in plugin store |
 | `store.delete` | key (string) | Remove an object from plugin store |
-| `store.wipe` | _none_ | Remove all object from plugin store |
+| `store.wipe` | _none_ | Remove all objects from plugin store |
 | `store.count` | _none_ | Count number of objects in plugin store |
 | `store.keys` | _none_ | Get keys for all objects in plugin store |
 
@@ -445,7 +445,7 @@ The server communicates with the plugin by sending messages to `stdin` and expec
 | `store.get` | key (string) | Get an object from plugin store |
 | `store.set` | [key (string), value (any)] | Store an object in plugin store |
 | `store.delete` | key (string) | Remove an object from plugin store |
-| `store.wipe` | _none_ | Remove all object from plugin store |
+| `store.wipe` | _none_ | Remove all objects from plugin store |
 | `store.count` | _none_ | Count number of objects in plugin store |
 | `store.keys` | _none_ | Get keys for all objects in plugin store |
 | `exec` | cmd (string) | Writes a console command to Brickadia |

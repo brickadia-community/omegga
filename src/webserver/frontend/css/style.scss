@@ -89,3 +89,37 @@ body {
   }
 }
 
+table.br-table {
+  font-weight: bold;
+  border-collapse: collapse;
+  font-size: 24px;
+
+  thead th {
+    color: white;
+    height: 50px;
+    background-color: $br-bg-primary;
+  }
+
+  th, td,  {
+    padding: 0 10px;
+  }
+
+  tr :first-child {
+    padding-left: 20px;
+  }
+
+  tr :last-child {
+    padding-right: 20px;
+  }
+
+  tbody tr {
+    @include alternate(background-color, $br-bg-secondary, $br-bg-secondary-alt);
+    td {
+      font-size: 20px;
+      color: $br-boring-button-fg;
+      height: 50px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+  }
+}

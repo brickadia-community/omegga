@@ -118,18 +118,9 @@ class PluginStorage {
 
   // set the config field for this plugin
   async setConfig(value) {
-    const config = await this.store.findOne({type: 'config', plugin: this.name});
-    if (!config) {
-      await this.store.insert({
-        type: 'config',
-        plugin: this.name,
-        value,
-      });
-    } else {
-      await this.store.update({ _id: config._id }, {
-        $set: { value },
-      });
-    }
+    await this.store.update({type: 'config', plugin: this.name}, {
+      $set: { value },
+    }, { upsert: true });
   }
 
   // get the config for this plugin
@@ -148,6 +139,7 @@ class PluginStorage {
 
   // get a stored object
   async get(key) {
+    if (typeof key !== 'string' || key.length === 0) return;
     const obj = await this.store.findOne({type: 'store', plugin: this.name, key});
     if (!obj) return null;
     return obj.value;
@@ -155,9 +147,8 @@ class PluginStorage {
 
   // delete a stored object
   async delete(key) {
-    const obj = await this.store.findOne({type: 'store', plugin: this.name, key});
-    if (!obj) return;
-    await this.store.remove({ _id: obj._id });
+    if (typeof key !== 'string' || key.length === 0) return;
+    await this.store.remove({ type: 'store', plugin: this.name, key });
   }
 
   // clear all stored values
@@ -167,8 +158,7 @@ class PluginStorage {
 
   // count number of objects in store
   async count() {
-    const objects = await this.store.find({ type: 'store', plugin: this.name });
-    return objects.length;
+    return await this.store.count({ type: 'store', plugin: this.name });
   }
 
   // get keys of all objects in store
@@ -179,12 +169,12 @@ class PluginStorage {
 
   // set a stored value
   async set(key, value) {
-    const obj = await this.store.findOne({type: 'store', plugin: this.name, key});
-    if (!obj) {
-      await this.store.insert({type: 'store', plugin: this.name, key, value});
-    } else {
-      await this.store.update({_id: obj._id}, {$set: {value}});
-    }
+    if (typeof key !== 'string' || key.length === 0) return;
+    await this.store.update(
+      {type: 'store', plugin: this.name, key},
+      {$set: {value}},
+      {upsert: true},
+    );
   }
 }
 

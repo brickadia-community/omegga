@@ -12,42 +12,6 @@
     .players-child {
       @include column;
     }
-
-    table {
-      font-weight: bold;
-      border-collapse: collapse;
-      font-size: 24px;
-
-      thead th {
-        color: white;
-        height: 50px;
-        background-color: $br-bg-primary;
-      }
-
-      th, td,  {
-        padding: 0 10px;
-      }
-
-      tr :first-child {
-        padding-left: 20px;
-      }
-
-      tr :last-child {
-        padding-right: 20px;
-      }
-
-      .player-row {
-        @include alternate(background-color, $br-bg-secondary, $br-bg-secondary-alt);
-        td {
-          font-size: 20px;
-          color: $br-boring-button-fg;
-          height: 50px;
-          overflow: hidden;
-          white-space: nowrap;
-        }
-      }
-    }
-
   }
 }
 
@@ -63,7 +27,7 @@
           <div class="stat"><b>Bricks:</b> {{status.bricks}}</div>
           <div class="stat"><b>Players:</b> {{status.players.length}}</div>
         </div>
-        <table>
+        <table class="br-table">
           <thead>
             <tr>
               <th style="text-align: left; width: 100%">Name</th>
@@ -72,7 +36,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="player in status.players" class="player-row">
+            <tr v-for="player in status.players">
               <td>{{player.name}}</td>
               <td style="text-align: right;">{{duration(player.time)}}</td>
               <td style="text-align: right;">{{player.ping}}</td>

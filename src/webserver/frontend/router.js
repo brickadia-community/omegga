@@ -3,6 +3,7 @@ import VueRouter from 'vue-router';
 import Home from './views/Home.vue';
 import Plugins from './views/Plugins.vue';
 import PluginsInspector from './views/PluginsInspector.vue';
+import Players from './views/Players.vue';
 import History from './views/History.vue';
 import NotFound from './views/NotFound.vue';
 
@@ -27,6 +28,15 @@ const router = new VueRouter({
       path: '/plugins/:id',
       component: PluginsInspector
     }],
+  }, {
+    name: 'players',
+    path: '/players',
+    component: Players,
+    children: [/*{
+      name: 'players',
+      path: '/players/:id',
+      component: PlayersInspector
+    }*/],
   }, {
     name: 'home',
     path: '/',

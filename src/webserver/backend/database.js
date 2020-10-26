@@ -4,6 +4,7 @@ const Datastore = require('nedb-promise');
 const bcrypt = require('bcrypt');
 
 const soft = require('../../softconfig.js');
+const {pattern: {explode}} = require('../../util/index.js');
 
 const Calendar = require('./calendar.js');
 
@@ -25,15 +26,22 @@ class Database {
     this.omegga = omegga;
     this.calendar = new Calendar();
 
-    // create all the stores
-    this.stores = {
-      users: new Datastore({filename: path.join(omegga.dataPath, soft.USER_STORE), autoload: true}),
-      chat: new Datastore({filename: path.join(omegga.dataPath, soft.CHAT_STORE), autoload: true}),
-      players: new Datastore({filename: path.join(omegga.dataPath, soft.PLAYER_STORE), autoload: true}),
-      status: new Datastore({filename: path.join(omegga.dataPath, soft.STATUS_STORE), autoload: true}),
-      server: new Datastore({filename: path.join(omegga.dataPath, soft.SERVER_STORE), autoload: true}),
+    // database
+    const dbOpts = {
+      autoload: true,
+      // case insensitive string comparison
+      compareStrings: (a, b) =>
+        a.localeCompare(b, 'en', {ignorePunctuation: true}),
     };
 
+    // create all the stores
+    this.stores = {
+      users: new Datastore({filename: path.join(omegga.dataPath, soft.USER_STORE), ...dbOpts}),
+      chat: new Datastore({filename: path.join(omegga.dataPath, soft.CHAT_STORE), ...dbOpts}),
+      players: new Datastore({filename: path.join(omegga.dataPath, soft.PLAYER_STORE), ...dbOpts}),
+      status: new Datastore({filename: path.join(omegga.dataPath, soft.STATUS_STORE), ...dbOpts}),
+      server: new Datastore({filename: path.join(omegga.dataPath, soft.SERVER_STORE), ...dbOpts}),
+    };
   }
 
   // make sure all the databases have valid store versions
@@ -201,6 +209,40 @@ class Database {
       .sort({ created: !before && after ? 1 : -1 })
       .limit(count)
       .exec();
+  }
+
+  // get recent chat activity
+  async getPlayers({count=50, search='', page=0, sort='name', direction='1'}={}) {
+    const pattern = explode(search);
+
+    // the query used for finding which players are available
+    const query = {
+      type: 'userHistory',
+      // only filter if there's a query
+      ...(search.length > 0 ? {$or: [
+        // user's current name
+        {name: {$regex: pattern}},
+        // user's past name
+        {nameHistory: {$elemMatch: {name: {$regex: pattern}}}},
+      ]} : {}),
+    };
+
+    // count players and query players
+    const [total, players] = await Promise.all([
+      this.stores.players.count(query),
+      this.stores.players.cfind(query)
+        // TODO: add other sorts and sort directions
+        .sort({[sort]: direction})
+        .skip(count * page)
+        .limit(count)
+        .exec()
+    ]);
+
+    return {
+      pages: Math.ceil(total / count),
+      total,
+      players,
+    };
   }
 
   // add a user to the visit history, returns true if this is a first visit

@@ -38,9 +38,8 @@
     font-weight: bold;
     text-decoration: none;
 
-    &:hover { background-color: $br-element-hover; }
+    &:hover, .router-link-active { background-color: $br-element-hover; }
     &:active, &.disabled { background-color: $br-element-pressed; }
-    &.router-link-active { background-color: $br-element-hover; }
 
     .icon {
       @include center;

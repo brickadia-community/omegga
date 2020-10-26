@@ -190,6 +190,11 @@ module.exports = (server, io) => {
       };
     });
 
+    // get a paginated list of players
+    // TODO: add permission check
+    rpc.addMethod('players.list', ([{page=0, search='', sort='name', direction='1'}={}]) =>
+      database.getPlayers({ page, search, sort, direction }));
+
     // set plugin config
     // TODO: add permission check
     rpc.addMethod('plugin.config', async([shortPath, config]) => {
