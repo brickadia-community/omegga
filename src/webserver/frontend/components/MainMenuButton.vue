@@ -20,37 +20,40 @@ $icon-height: $btn-height - 16px;
   margin: 8px 0;
   text-decoration: none;
   width: 350px;
-}
 
-.menu-button-content {
-  display: flex;
-  text-align: center;
-  align-items: center;
-  justify-content: center;
-}
+  &:visited {
+    color: $br-button-fg;
+  }
 
-.menu-button .ti, .menu-button .icon {
-  display: flex;
-  width: $icon-height;
-  height: $icon-height;
-  margin-left: 8px;
-  align-items: center;
-  justify-content: center;
-  margin-right: 24px;
-}
+  .menu-button-content {
+    display: flex;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+  }
 
-.menu-button:hover { background-color: $br-element-hover; }
-.menu-button:active {background-color: $br-bg-footer; }
-.menu-button.active {background-color: $br-button-normal; }
+  .ti, .icon {
+    display: flex;
+    width: $icon-height;
+    height: $icon-height;
+    margin-left: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-right: 24px;
+  }
 
-.menu-button.disabled {
-  opacity: 50%;
-  cursor: default;
-  pointer-events: none;
-}
+  &:hover { background-color: $br-element-hover; }
+  &:active {background-color: $br-bg-footer; }
+  &.active {background-color: $br-button-normal; }
+  &.disabled {
+    opacity: 50%;
+    cursor: default;
+    pointer-events: none;
+  }
 
-.menu-button:not(.disabled):active .menu-button-content {
-  padding-top: 4px;
+  &:not(.disabled):active .menu-button-content {
+    padding-top: 4px;
+  }
 }
 
 </style>

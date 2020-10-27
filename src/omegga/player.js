@@ -26,42 +26,52 @@ class Player {
   clearBricks(quiet=false) { this.#omegga.clearBricks(this.id, quiet); }
 
   // get a player's roles, if any
-  getRoles() {
-    const data = this.#omegga.getRoleAssignments().savedPlayerRoles[this.id];
+  static getRoles(omegga, id) {
+    const data = omegga.getRoleAssignments().savedPlayerRoles[id];
     return Object.freeze(data && data.roles ? data.roles : []);
   }
 
+  // get a player's roles, if any
+  getRoles() {
+    return Player.getRoles(this.#omegga, this.id);
+  }
+
   // get a player's permissions
-  getPermissions() {
-    const { roles, defaultRole } = this.#omegga.getRoleSetup();
+  static getPermissions(omegga, id) {
+    const { roles, defaultRole } = omegga.getRoleSetup();
 
     // if the player is the host, the player has every permission
-    if (this.isHost()) {
+    if (omegga.host.id === id) {
       return Object.freeze(Object.fromEntries(defaultRole.permissions.map(p => [p.name, true])));
     }
 
     // get the player's roles
-    const playerRoles = this.getRoles().map(r => r.toLowerCase());
+    const playerRoles = Player.getRoles(omegga, id).map(r => r.toLowerCase());
 
     const permissions = {};
     // apply all permissions from default role
-    for (const p in defaultRole.permissions)
+    for (const p of defaultRole.permissions)
       permissions[p.name] = p.bEnabled;
 
     // loop through all the roles
-    for (const role in roles) {
+    for (const role of roles) {
       // ignore ones the player does not have
       if (!playerRoles.includes(role.name.toLowerCase()))
         continue;
 
       // add all the new permissions the player now has
-      for (const p in role.permissions) {
+      for (const p of role.permissions) {
         if (p.bEnabled)
           permissions[p.name] = p.bEnabled;
       }
     }
 
     return Object.freeze(permissions);
+  }
+
+  // get a player's permissions
+  getPermissions() {
+    Player.getPermissions(this.#omegga, this.id);
   }
 
   // get player's name color

@@ -46,9 +46,18 @@
         cursor: pointer;
         user-select: none;
 
-        .icon {
-          color: $br-boring-button-fg;
+        padding-left: 20px;
+
+        &.icon-cell {
+          padding-right: 0;
+        }
+
+        .label, .icon {
           padding: 0;
+        }
+
+        .icon:not(.label) {
+          color: $br-boring-button-fg;
           position: absolute;
           left: 16px;
           transform: translate(-100%);
@@ -131,16 +140,30 @@
                         <SortDescendingIcon v-if="sort === 'name' && direction === -1" />
                       </span>
                     </th>
-                    <th @click="setSort('heartbeats')">
+                    <th @click="setSort('heartbeats')" data-tooltip="Number of heartbeats the player has been part of (minutely)">
                       <span>
-                        Time
+                        Played
                         <SortAscendingIcon v-if="sort === 'heartbeats' && direction === 1" />
                         <SortDescendingIcon v-if="sort === 'heartbeats' && direction === -1" />
                       </span>
                     </th>
-                    <th @click="setSort('sessions')">
+                    <th @click="setSort('lastSeen')" data-tooltip="When the player was last seen">
                       <span>
-                        Visits
+                        Seen
+                        <SortAscendingIcon v-if="sort === 'lastSeen' && direction === 1" />
+                        <SortDescendingIcon v-if="sort === 'lastSeen' && direction === -1" />
+                      </span>
+                    </th>
+                    <th @click="setSort('created')" data-tooltip="When the player joined">
+                      <span>
+                        Joined
+                        <SortAscendingIcon v-if="sort === 'created' && direction === 1" />
+                        <SortDescendingIcon v-if="sort === 'created' && direction === -1" />
+                      </span>
+                    </th>
+                    <th @click="setSort('sessions')" data-tooltip="Number of Visits">
+                      <span class="icon-cell">
+                        <MapPinIcon class="label" size="30"/>
                         <SortAscendingIcon v-if="sort === 'sessions' && direction === 1" />
                         <SortDescendingIcon v-if="sort === 'sessions' && direction === -1" />
                       </span>
@@ -148,23 +171,23 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="player in players" @click="$router.push({path: `/players/${player.id}`})">
+                  <tr v-for="player in players" @click="clickPlayer(player)">
                     <td>{{player.name}}</td>
-                    <td style="text-align: right;">{{time(player.heartbeats)}}</td>
-                    <td style="text-align: right;">{{player.sessions}}</td>
+                    <td style="text-align: right;">
+                      {{heartbeatAgo(player.heartbeats)}}
+                    </td>
+                    <td style="text-align: right;" :data-tooltip="new Date(player.lastSeen)">
+                      {{duration(player.seenAgo)}}
+                    </td>
+                    <td style="text-align: right;" :data-tooltip="new Date(player.created)">
+                      {{duration(player.createdAgo)}}
+                    </td>
+                    <td style="text-align: right;">
+                      {{player.sessions}}
+                    </td>
                   </tr>
                 </tbody>
               </table>
-              <!-- <div is="router-link" v-for="plugin in plugins"
-                v-if="matches(plugin)"
-                :to="'/plugins/' + plugin.path"
-                :key="plugin.path"
-                :data-tooltip="plugin.documentation && plugin.documentation.description"
-                class="plugin-item"
-              >
-                <component :is="plugin.icon" :class="[plugin.status]" :data-tooltip="plugin.tooltip" />
-                {{plugin.name}}
-              </div> -->
             </br-scroll>
             <br-footer class="pagination-footer">
               <br-button
@@ -203,7 +226,7 @@
                 <ArrowBarToRightIcon/>
               </br-button>
             </br-footer>
-            <br-loader :active="loading" size="huge">Loading Plugins</br-loader>
+            <br-loader :active="loading" size="huge">Loading Players</br-loader>
           </div>
         </div>
         <div class="player-inspector-container">
@@ -211,7 +234,7 @@
             {{selectedPlayer}}
           </br-navbar>
           <div class="player-inspector">
-            <!-- <router-view :key="$route.params.id" /> -->
+            <router-view :key="$route.params.id" />
           </div>
         </div>
       </div>
@@ -227,11 +250,12 @@ import ArrowLeftIcon from 'vue-tabler-icons/icons/ArrowLeftIcon';
 import ArrowRightIcon from 'vue-tabler-icons/icons/ArrowRightIcon';
 import SortAscendingIcon from 'vue-tabler-icons/icons/SortAscendingIcon';
 import SortDescendingIcon from 'vue-tabler-icons/icons/SortDescendingIcon';
+import MapPinIcon from 'vue-tabler-icons/icons/MapPinIcon';
 
 import debounce from 'lodash/debounce';
 
 export default {
-  components: { RotateIcon, ArrowBarToLeftIcon, ArrowBarToRightIcon, ArrowLeftIcon, ArrowRightIcon, SortAscendingIcon, SortDescendingIcon },
+  components: { RotateIcon, ArrowBarToLeftIcon, ArrowBarToRightIcon, ArrowLeftIcon, ArrowRightIcon, SortAscendingIcon, SortDescendingIcon, MapPinIcon },
   created() {
     this.getPlayers();
   },
@@ -251,19 +275,17 @@ export default {
       this.loading = false;
     },
 
+    // redirect to a player page
+    clickPlayer(player) {
+      if (this.$route.params.id !== player.id)
+        this.$router.push({path: `/players/${player.id}`});
+    },
+
     // debounced search
     doSearch: debounce(function(){
       this.page = 0;
       this.getPlayers();
     }, 500),
-
-    time(mins) {
-      if (mins < 60) return mins + ' mins';
-      mins /= 60;
-      if (mins < 24) return Math.round(mins) + ' hours';
-      mins /= 24;
-      return Math.round(mins) + ' days';
-    },
 
     // update table sort direction
     setSort(sort) {
@@ -271,9 +293,10 @@ export default {
       if (this.sort === sort) {
         this.direction *= -1;
       } else {
-        // otherwise, use the new column and ascending order
+        // otherwise, use the new column
         this.sort = sort;
-        this.direction = 1;
+        // sort only name ascending on first click, all metrics are descending
+        this.direction = sort === 'name' ? 1 : -1;
       }
       this.getPlayers();
     }
@@ -290,8 +313,8 @@ export default {
   data() {
     return {
       search: '',
-      sort: 'name',
-      direction: 1,
+      sort: 'lastSeen',
+      direction: -1,
       pages: 0,
       total: 0,
       page: 0,

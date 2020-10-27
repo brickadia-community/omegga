@@ -99,7 +99,7 @@ You will have to delete your omegga data folders manually
     * [x] enable/disable plugins live
     * [x] live plugin reloading/unloading state
     * [x] browse chat history
-    * [ ] manage plugins config, perhaps by iframe
+    * [x] manage plugins config
     * [ ] start/stop server
     * [x] chat with players
     * [ ] view recent console logs

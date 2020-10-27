@@ -6,8 +6,8 @@ module.exports = omegga => {
       if (!logMatch) return;
 
       const { generator, data } = logMatch.groups;
-      // check if log is an auth log
-      return generator === 'LogServerList' && data === 'Deleting server.';
+      // check if log is the kill server log
+      return generator === 'LogExit' && data === 'Shutting down Auth Manager.';
     },
     // when there's a match, emit the chat message event
     callback() {

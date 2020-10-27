@@ -3,7 +3,9 @@ const express = require('express');
 const _ = require('lodash');
 const { JSONRPCServer, JSONRPCClient, JSONRPCServerAndClient } = require('json-rpc-2.0');
 
-const { chat: { sanitize } } = require('../../util/index.js');
+const Player = require('../../omegga/player.js');
+
+const {chat: {sanitize}, color: {rgbToHex}, time: {parseBrickadiaTime}} = require('../../util/index.js');
 
 module.exports = (server, io) => {
   const { database, omegga } = server;
@@ -192,8 +194,92 @@ module.exports = (server, io) => {
 
     // get a paginated list of players
     // TODO: add permission check
-    rpc.addMethod('players.list', ([{page=0, search='', sort='name', direction='1'}={}]) =>
-      database.getPlayers({ page, search, sort, direction }));
+    rpc.addMethod('players.list', async([{page=0, search='', sort='name', direction='1'}={}]) => {
+      const resp = await database.getPlayers({ page, search, sort, direction });
+      const now = Date.now();
+      for (const player of resp.players) {
+        player.seenAgo = now - player.lastSeen;
+        player.createdAgo = now - player.created;
+      }
+      return resp;
+    });
+
+    // get a specific player's info
+    // TODO: add permission check
+    rpc.addMethod('player.get', async([id]) => {
+      const entry = await database.getPlayer(id);
+      if (!entry)
+        return null;
+      const now = Date.now();
+
+      entry.seenAgo = now - entry.lastSeen;
+      entry.createdAgo = now - entry.created;
+      for (const n of entry.nameHistory)
+        n.ago = now - n.date;
+
+      // combine player roles with server roles
+      const playerRoles = Player.getRoles(omegga, id) || [];
+      const { roles: serverRoles } = omegga.getRoleSetup();
+
+      // Get banner name and duration from list of bans
+      for (const b of entry.banHistory) {
+        b.duration = b.expires - b.created;
+        // lookup banner name
+        b.bannerName = _.get(omegga.getNameCache(), ['savedPlayerNames', b.bannerId], '');
+      }
+
+      // Get kicker name from list of kicks
+      for (const b of entry.kickHistory) {
+        // lookup banner name
+        b.kickerName = _.get(omegga.getNameCache(), ['savedPlayerNames', b.kickerId], '');
+      }
+
+      let currentBan = omegga.getBanList().banList[id];
+      if (currentBan) {
+        // create a clone of the object
+        currentBan = {...currentBan};
+
+        // parse the times in the current ban
+        currentBan.created = parseBrickadiaTime(currentBan.created);
+        currentBan.expires = parseBrickadiaTime(currentBan.expires);
+        currentBan.duration = currentBan.expires - currentBan.created;
+        currentBan.remainingTime = now - currentBan.expires;
+
+        // lookup banner name
+        currentBan.bannerName = _.get(omegga.getNameCache(), ['savedPlayerNames', currentBan.bannerId], '');
+
+        // if the ban is expired, it should not be listed
+        if (currentBan.expires < now)
+          currentBan = null;
+      }
+
+      return {
+        // database results
+        ...entry,
+
+        // player is host
+        isHost: omegga.getHostId() === id,
+
+        // player's current ban state
+        currentBan,
+
+        // all player's roles  w/ colors
+        roles: playerRoles.map(r => {
+          // default role color is white
+          let color = 'ffffff';
+
+          // find the role (if it exists) and get the color
+          const role = serverRoles.find(sr => sr.name.toLowerCase() === r.toLowerCase());
+          if (role && role.bHasColor)
+            color = rgbToHex(role.color);
+
+          return {
+            name: r,
+            color: color,
+          };
+        }),
+      };
+    });
 
     // set plugin config
     // TODO: add permission check

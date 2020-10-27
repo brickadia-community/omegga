@@ -66,18 +66,6 @@ export default Vue.component('br-status-widget', {
     this.$$emit('unsubscribe', 'status');
   },
   methods: {
-    duration(ago) {
-      ago /= 1000;
-
-      if (ago < 5) return 'a moment';
-      if (ago < 60) return Math.round(ago) + ' secs';
-      ago /= 60;
-      if (ago < 60) return Math.round(ago) + ' mins';
-      ago /= 60;
-      if (ago < 24) return Math.round(ago) + ' hours';
-      ago /= 24;
-      return Math.round(ago) + ' days';
-    },
     getStatus() {
       this.$$emit('subscribe', 'status');
       this.$$request('server.status').then(status => {

@@ -210,7 +210,7 @@ class Omegga extends OmeggaWrapper {
   }
 
   // get the host
-  getHostId() { return this.host.id; }
+  getHostId() { return this.host ? this.host.id : ''; }
 
   // clear a user's bricks (by uuid, name, controller, or player object)
   // A5+ Only

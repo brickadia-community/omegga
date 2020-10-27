@@ -2,9 +2,10 @@ const path = require('path');
 
 const Datastore = require('nedb-promise');
 const bcrypt = require('bcrypt');
+const chokidar = require('chokidar');
 
 const soft = require('../../softconfig.js');
-const {pattern: {explode}} = require('../../util/index.js');
+const {pattern: {explode}, time: {parseBrickadiaTime}} = require('../../util/index.js');
 
 const Calendar = require('./calendar.js');
 
@@ -121,7 +122,33 @@ class Database {
       this.calendar.addDate(d);
     }
 
+    const watcher = chokidar.watch(path.join(this.omegga.configPath, 'BanList.json'), {persistent: false});
+    watcher
+      .on('add', () => setTimeout(this.syncBanList.bind(this), 1000))
+      .on('change', () => setTimeout(this.syncBanList.bind(this), 1000));
+    setTimeout(this.syncBanList.bind(this), 1000);
+
     return doc._id;
+  }
+
+  // synchronize the ban list with the one in the database
+  syncBanList() {
+    let banList = this.omegga.getBanList();
+    if (!banList) return;
+    banList = banList.banList;
+
+    // upsert all bans
+    for (const banned in banList) {
+      const entry = {
+        type: 'banHistory',
+        banned,
+        bannerId: banList[banned].bannerId,
+        created: parseBrickadiaTime(banList[banned].created),
+        expires: parseBrickadiaTime(banList[banned].expires),
+        reason: banList[banned].reason,
+      };
+      this.stores.players.update(entry, {$set: entry}, {upsert: true});
+    }
   }
 
   // determine if this user would be the first user (admin user)
@@ -220,6 +247,8 @@ class Database {
       type: 'userHistory',
       // only filter if there's a query
       ...(search.length > 0 ? {$or: [
+        // id was pasted in
+        {id: search},
         // user's current name
         {name: {$regex: pattern}},
         // user's past name
@@ -245,9 +274,33 @@ class Database {
     };
   }
 
+  // get an individual player, ban and kick history, and notes
+  async getPlayer(id) {
+    const [player, banHistory, kickHistory, notes] = await Promise.all([
+      this.stores.players.findOne({ type: 'userHistory', id }),
+      this.stores.players
+        .cfind({ type: 'banHistory', banned: id })
+        .sort({created: -1})
+        .limit(25)
+        .exec(),
+      this.stores.players
+        .cfind({ type: 'kickHistory', kicked: id })
+        .sort({created: -1})
+        .limit(25)
+        .exec(),
+      this.stores.players
+        .cfind({ type: 'note', id })
+        .sort({created: -1})
+        .limit(25)
+        .exec(),
+    ]);
+
+    return { ...player, banHistory, kickHistory, notes };
+  }
+
   // add a user to the visit history, returns true if this is a first visit
   async addVisit(user) {
-    const existing = await this.stores.players.findOne({ id: user.id });
+    const existing = await this.stores.players.findOne({ type: 'userHistory', id: user.id });
     const now = Date.now();
     const instanceId = await this.getInstanceId();
     if (!existing) {

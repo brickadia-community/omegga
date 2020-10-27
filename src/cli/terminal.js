@@ -96,7 +96,7 @@ class Terminal {
     Uptime: ${msToTime(status.time).yellow}
     Players: ${status.players.length === 0 ? 'none'.grey : ''}
       ${status.players
-    .map(p => `[${msToTime(p.time).grey}] ${p.name.yellow.underline}`)
+    .map(p => `[${msToTime(p.time).grey}] ${p.name.brightYellow}`)
     .join('\n      ')}
 `);
           } catch (e) {

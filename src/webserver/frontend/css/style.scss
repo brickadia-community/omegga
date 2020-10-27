@@ -98,17 +98,18 @@ table.br-table {
     color: white;
     height: 50px;
     background-color: $br-bg-primary;
+    white-space: nowrap;
   }
 
   th, td,  {
     padding: 0 10px;
   }
 
-  tr :first-child {
+  tr td:first-child, tr th:first-child {
     padding-left: 20px;
   }
 
-  tr :last-child {
+  tr td:last-child, tr th:last-child {
     padding-right: 20px;
   }
 
@@ -122,4 +123,8 @@ table.br-table {
       white-space: nowrap;
     }
   }
+}
+
+a, :visited {
+  color: #0ff;
 }
