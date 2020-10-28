@@ -12,6 +12,7 @@ Vue.prototype.logout = () =>
 
 Vue.prototype.user = {};
 Vue.prototype.roles = [];
+Vue.prototype.nameLookup = [];
 Vue.prototype.showLogout = false;
 
 // convert minutes into min/hour/day
@@ -25,6 +26,7 @@ Vue.prototype.heartbeatAgo = mins => {
 
 // convert ms into sec/min/hour
 Vue.prototype.duration = ago => {
+  if (ago < 0) return 'not yet';
   ago /= 1000;
 
   if (ago < 5) return 'a moment';
@@ -37,7 +39,13 @@ Vue.prototype.duration = ago => {
   return Math.round(ago) + ' days';
 };
 
+// only date
 Vue.prototype.isoDate = time => {
+  return Vue.prototype.isoTime(time).split(' ')[0];
+};
+
+// date time in semi-iso format
+Vue.prototype.isoTime = time => {
   const date = new Date(time);
   const pad = s => (s+'').padStart(2, '0');
   return date.getFullYear() +

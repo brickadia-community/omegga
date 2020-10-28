@@ -128,6 +128,39 @@ class Database {
       .on('change', () => setTimeout(this.syncBanList.bind(this), 1000));
     setTimeout(this.syncBanList.bind(this), 1000);
 
+    // kick history detection
+    this.omegga.on('cmd:kick', (name, ...args) => {
+      const target = args.join(' ');
+      // find the player doing the kicking
+      const kickerPlayer = this.omegga.getPlayer(name);
+
+      // kicker does not exist
+      if (!kickerPlayer) return;
+
+      // player is not capable of kicking
+      if (!kickerPlayer.getPermissions()['Players.Kick']) return;
+
+      // find the kicked player
+      const kickedPlayer = this.omegga.findPlayerByName(target);
+      if (!kickedPlayer) return;
+
+      // detect a single leave
+      this.omegga.once('leave', leavingPlayer => {
+        if (leavingPlayer.id === kickedPlayer.id) {
+          const entry = {
+            type: 'kickHistory',
+            kicked: kickedPlayer.id,
+            kickerId: kickerPlayer.id,
+            created: Date.now(),
+            reason: 'no reason given',
+          };
+
+          // depending on implementation, this could potentially be a kick event
+          this.stores.players.update(entry, {$set: entry}, {upsert: true});
+        }
+      });
+    });
+
     return doc._id;
   }
 
@@ -147,6 +180,9 @@ class Database {
         expires: parseBrickadiaTime(banList[banned].expires),
         reason: banList[banned].reason,
       };
+      // depending on implementation, this could potentially check
+      // if the ban was already added and emit some kind of
+      // new ban event
       this.stores.players.update(entry, {$set: entry}, {upsert: true});
     }
   }
@@ -294,6 +330,8 @@ class Database {
         .limit(25)
         .exec(),
     ]);
+
+    if (!player) return null;
 
     return { ...player, banHistory, kickHistory, notes };
   }

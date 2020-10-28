@@ -69,7 +69,7 @@
       cursor: pointer;
       user-select: none;
 
-      &:hover td, &.router-link-active td {
+      &:hover td, &.active td {
         background-color: $br-element-hover;
       }
 
@@ -171,7 +171,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="player in players" @click="clickPlayer(player)">
+                  <tr v-for="player in players" @click="clickPlayer(player)" :class="{active: player.id === $route.params.id}">
                     <td>{{player.name}}</td>
                     <td style="text-align: right;">
                       {{heartbeatAgo(player.heartbeats)}}
@@ -258,6 +258,11 @@ export default {
   components: { RotateIcon, ArrowBarToLeftIcon, ArrowBarToRightIcon, ArrowLeftIcon, ArrowRightIcon, SortAscendingIcon, SortDescendingIcon, MapPinIcon },
   created() {
     this.getPlayers();
+    setTimeout(() => {
+      if (this.nameLookup[this.$route.params.id]) {
+        this.update++;
+      }
+    }, 500);
   },
   methods: {
     // get a list of players
@@ -305,6 +310,10 @@ export default {
   },
   computed: {
     selectedPlayer() {
+      this.update;
+      if (this.nameLookup[this.$route.params.id]) {
+        return this.nameLookup[this.$route.params.id];
+      }
       const player = this.players.find(p => p.id === this.$route.params.id);
       if (player) return player.name;
       return 'SELECT A PLAYER';
@@ -318,6 +327,7 @@ export default {
       pages: 0,
       total: 0,
       page: 0,
+      update: 0,
       loading: true,
       players: [],
     };

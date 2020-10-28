@@ -14,7 +14,7 @@
 
 <template>
   <span class="chat-timestamp">
-    {{hours}}:{{minutes}}{{pm}}
+    {{hours}}:{{minutes}} {{pm}}
   </span>
 </template>
 <script>
@@ -26,7 +26,7 @@ export default Vue.component('chat-time', {
   created() {
     const date = new Date(this.time);
     this.hours = date.getHours();
-    this.pm = this.hours > 12 ? 'pm' : 'am';
+    this.pm = this.hours >= 12 ? 'PM' : 'AM';
     if (this.hours > 12) {
       this.hours -= 12;
     } else if (this.hours === 0) {

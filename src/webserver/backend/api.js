@@ -243,7 +243,7 @@ module.exports = (server, io) => {
         currentBan.created = parseBrickadiaTime(currentBan.created);
         currentBan.expires = parseBrickadiaTime(currentBan.expires);
         currentBan.duration = currentBan.expires - currentBan.created;
-        currentBan.remainingTime = now - currentBan.expires;
+        currentBan.remainingTime = currentBan.expires - now;
 
         // lookup banner name
         currentBan.bannerName = _.get(omegga.getNameCache(), ['savedPlayerNames', currentBan.bannerId], '');

@@ -63,32 +63,33 @@
             </span>
           </div>
           <div class="stat"><b data-tooltip="Number of status heartbeats this player has been part of">Time Played:</b> {{heartbeatAgo(player.heartbeats)}}</div>
-          <div class="stat"><b data-tooltip="Date player was last seen">Last Seen:</b> <span :data-tooltip="new Date(player.seenAgo)">
+          <div class="stat"><b data-tooltip="Date player was last seen">Last Seen:</b> <span :data-tooltip="new Date(player.lastSeen)">
             {{duration(player.seenAgo)}} ago
           </span></div>
-          <div class="stat"><b data-tooltip="Date player was first seen">First Seen:</b> <span :data-tooltip="new Date(player.createdAgo)">
+          <div class="stat"><b data-tooltip="Date player was first seen">First Seen:</b> <span :data-tooltip="new Date(player.created)">
             {{duration(player.createdAgo)}} ago
           </span></div>
           <div class="stat"><b data-tooltip="Number of times this player has visited the server (new visits are registered if the player joins 3 hours after last seen)">Visits:</b> {{player.sessions}}</div>
-          <div class="stat"><b data-tooltip="Number of server instances this player has joined">Servers:</b> {{player.instances}}</div>
+          <div class="stat"><b data-tooltip="Number of server instances this player has joined">Server Visits:</b> {{player.instances}}</div>
+          <div class="stat"><b>Bans:</b> {{player.banHistory.length}}</div>
         </div>
         <div class="section-header" data-tooltip="Roles this player has">
           Roles
         </div>
         <div class="option-list">
-          <div v-for="r in player.roles" class="option-item">
+          <div v-for="r in player.roles" class="option-item" :key="r.name">
             <div class="option-name" :style="{color: '#' + r.color}">{{r.name}}</div>
           </div>
           <div class="option-item">
             <div class="option-name" style="color: white;">Default</div>
           </div>
         </div>
-        <div class="section-header" data-tooltip="Notes for administrators">
-          Notes
+        <!-- <div class="section-header" data-tooltip="Notes for administrators">
+          Notes TODO
         </div>
         <div class="option-item" v-if="player.notes.length === 0">
           <i class="option-name">None</i>
-        </div>
+        </div> -->
         <div class="section-header" data-tooltip="Names this player has gone by historically">
           Name History
         </div>
@@ -98,43 +99,73 @@
               <th style="text-align: left; width: 100%">
                 <span>Name</span>
               </th>
-              <th>Last Seen</th>
+              <th>First Seen</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="h in player.nameHistory">
+            <tr v-for="h in player.nameHistory" :key="h.date + h.name">
               <td>{{h.name}}</td>
-              <td style="text-align: right;">{{duration(h.ago)}}</td>
+              <td style="text-align: right;" :data-tooltip="new Date(h.date)">
+                {{duration(h.ago)}}
+              </td>
             </tr>
           </tbody>
         </table>
-        <div class="section-header" data-tooltip="Times this player has been booted from the server">
-          Kick History
-        </div>
-        <div class="option-item" v-if="player.kickHistory.length === 0">
-          <i class="option-name">None</i>
-        </div>
         <div class="section-header" data-tooltip="Times this player has been banned from the server">
           Ban History
         </div>
         <table class="br-table">
           <thead>
             <tr>
-              <th style="width: 100%">Reason</th>
-              <th>Banner</th>
-              <th>Date</th>
+              <th style="width: 100%; text-align: left">Reason</th>
               <th>Length</th>
+              <th>Issuer</th>
+              <th>Date</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="player.banHistory.length === 0">
               <td colspan="4"><i>None</i></td>
             </tr>
-            <tr v-for="b in player.banHistory">
+            <tr v-for="b in player.banHistory" :key="b.created">
               <td class="reason">{{b.reason}}</td>
-              <td><router-link :to="'/players/'+b.bannerId">{{b.bannerName}}</router-link></td>
-              <td style="text-align: right;">{{isoDate(b.created)}}</td>
-              <td style="text-align: right;">{{duration(b.duration)}}</td>
+              <td style="text-align: right;"
+                :data-tooltip="'Expires ' + new Date(b.expires)"
+              >
+                {{duration(b.duration)}}
+              </td>
+              <td><router-link :to="'/players/'+b.bannerId">{{b.bannerName || 'missing name'}}</router-link></td>
+              <td style="text-align: right;"
+                :data-tooltip="new Date(b.created)"
+              >
+                {{isoDate(b.created)}}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="section-header" data-tooltip="Times this player has been booted from the server">
+          Kick History
+        </div>
+        <table class="br-table">
+          <thead>
+            <tr>
+              <th style="width: 100%; text-align: left">Reason</th>
+              <th>Issuer</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="player.kickHistory.length === 0">
+              <td colspan="4"><i>None</i></td>
+            </tr>
+            <tr v-for="b in player.kickHistory" :key="b.created">
+              <td class="reason">{{b.reason}}</td>
+              <td><router-link :to="'/players/'+b.kickerId">{{b.kickerName || 'missing name'}}</router-link></td>
+              <td style="text-align: right;"
+                :data-tooltip="new Date(b.created)"
+              >
+                {{isoDate(b.created)}}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -167,7 +198,9 @@ export default {
     async getPlayer() {
       this.loading = true;
       this.player = await this.$$request('player.get', this.$route.params.id) || {};
-      console.log(this.player);
+      if (!this.player)
+        this.$router.push('/players');
+      this.nameLookup[this.player.id] = this.player.name;
       this.loading = false;
     },
   },

@@ -42,8 +42,47 @@ class Player {
 
     // if the player is the host, the player has every permission
     if (omegga.host.id === id) {
-      return Object.freeze(Object.fromEntries(defaultRole.permissions.map(p => [p.name, true])));
+      return Object.freeze(Object.fromEntries(
+        [].concat(
+          defaultRole.permissions.map(p => [p.name, true]),
+          // sometimes the default role does not have every permission listed
+          ...roles.map(r => r.permissions.map(p => [p.name, true])),
+        ),
+      ));
     }
+
+    const DEFAULT_PERMS = {
+      moderator: [
+        'Bricks.ClearAll',
+        'Players.Kick',
+        'Players.TPOthers',
+        'Players.TPInMinigame',
+        'Minigame.AlwaysLeave',
+      ],
+      admin: [
+        'Bricks.Load',
+        'Bricks.ClearOwn',
+        'Bricks.ClearAll',
+        'Bricks.IgnoreTrust',
+        'Roles.Grant',
+        'Map.Environment',
+        'Players.Kick',
+        'Players.Ban',
+        'Players.TPOthers',
+        'Players.TPInMinigame',
+        'Minigame.AlwaysSwitchTeam',
+        'Minigame.AlwaysLeave',
+        'Minigame.AlwaysEdit',
+        'Minigame.MakePersistent',
+        'Minigame.MakeDefault',
+        'Minigame.UseAllBricks',
+        'Server.ChangeSettings',
+        'Server.ChangeRoles',
+        'Server.FreezeCamera',
+        'Tools.Selector.BypassLimits',
+        'Tools.Selector.BypassTimeouts',
+      ],
+    };
 
     // get the player's roles
     const playerRoles = Player.getRoles(omegga, id).map(r => r.toLowerCase());
@@ -59,10 +98,17 @@ class Player {
       if (!playerRoles.includes(role.name.toLowerCase()))
         continue;
 
+      const defaultPerms = DEFAULT_PERMS[role.name.toLowerCase()] || [];
+      // iterate through default permissions
+      for (const perm of defaultPerms) {
+        // if they are not overriden, set it to true
+        if (!role.permissions.find(r => r.name === perm))
+          permissions[perm] = true;
+      }
+
       // add all the new permissions the player now has
       for (const p of role.permissions) {
-        if (p.bEnabled)
-          permissions[p.name] = p.bEnabled;
+        permissions[p.name] = permissions[p.name] || p.bEnabled;
       }
     }
 
@@ -71,7 +117,7 @@ class Player {
 
   // get a player's permissions
   getPermissions() {
-    Player.getPermissions(this.#omegga, this.id);
+    return Player.getPermissions(this.#omegga, this.id);
   }
 
   // get player's name color
