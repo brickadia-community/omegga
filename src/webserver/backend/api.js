@@ -5,7 +5,7 @@ const { JSONRPCServer, JSONRPCClient, JSONRPCServerAndClient } = require('json-r
 
 const Player = require('../../omegga/player.js');
 
-const {chat: {sanitize}, color: {rgbToHex}, time: {parseBrickadiaTime}} = require('../../util/index.js');
+const {chat: {sanitize, parseLinks}, color: {rgbToHex}, time: {parseBrickadiaTime}} = require('../../util/index.js');
 
 module.exports = (server, io) => {
   const { database, omegga } = server;
@@ -127,7 +127,7 @@ module.exports = (server, io) => {
       io.to('chat').emit('chat', await database.addChatLog('msg', user, message));
 
       // broadcast to chat
-      server.omegga.broadcast(`"[<b><color=\\"ff00ff\\">${user.name}</></>]: ${sanitize(message)}"`);
+      server.omegga.broadcast(`"[<b><color=\\"ff00ff\\">${user.name}</></>]: ${parseLinks(sanitize(message))}"`);
 
       // broadcast to terminal
       Omegga.log(`[${user.name.brightMagenta.underline}]: ${message}`);

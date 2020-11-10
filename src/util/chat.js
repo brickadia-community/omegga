@@ -15,4 +15,9 @@ const sanitize = str => str
     return s;
   });
 
-module.exports = { sanitize, EMOTES };
+const parseLinks = message => {
+  const regex = /(\b(https?):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
+  return message.replace(regex, '<link="$1">$1</>');
+};
+
+module.exports = { sanitize, parseLinks, EMOTES };

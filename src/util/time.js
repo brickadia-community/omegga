@@ -1,3 +1,5 @@
+const debounce = require('lodash/debounce');
+
 const UNIT_CONVERSION = {
   ms: 1, // milliseconds
   s: 1000, // seconds
@@ -38,4 +40,5 @@ function parseBrickadiaTime(str) {
 module.exports = {
   parseDuration,
   parseBrickadiaTime,
+  debounce,
 };

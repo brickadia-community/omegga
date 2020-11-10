@@ -81,7 +81,7 @@ class NodeVmPlugin extends Plugin {
     });
     this.plugin.on('store.set', async(resp, key, value) => {
       try {
-        await this.storage.set(key, value);
+        await this.storage.set(key, JSON.parse(value));
       } catch (e) {
         Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.set of', key, value);
       }

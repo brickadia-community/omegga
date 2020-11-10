@@ -34,7 +34,7 @@
         <div v-for="log in chats" :key="log._id" class="log-entry">
           <div v-if="log.action === 'msg'" class="chat-message">
             {{log.user.web ? '[' : ''}}<span class="user" :style="{color: '#'+log.user.color}"
-            >{{log.user.name}}</span>{{log.user.web ? ']' : ''}}: {{log.message}}
+            >{{log.user.name}}</span>{{log.user.web ? ']' : ''}}: <span v-html="xss(log.message)" v-linkified />
           </div>
           <div v-if="log.action === 'leave'" class="join-message">
             <span class="user">{{log.user.name}}</span> left the game.

@@ -144,14 +144,21 @@ class Database {
       const kickedPlayer = this.omegga.findPlayerByName(target);
       if (!kickedPlayer) return;
 
+      // time the event listener should expire
+      const eventExpire = Date.now() + 100;
+
       // detect a single leave
       this.omegga.once('leave', leavingPlayer => {
+        const now = Date.now();
+        // if a player leaves more than 100ms from the kick command, it's bugged
+        if (now < eventExpire) return;
+
         if (leavingPlayer.id === kickedPlayer.id) {
           const entry = {
             type: 'kickHistory',
             kicked: kickedPlayer.id,
             kickerId: kickerPlayer.id,
-            created: Date.now(),
+            created: now,
             reason: 'no reason given',
           };
 

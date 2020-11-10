@@ -15,6 +15,12 @@ Vue.prototype.roles = [];
 Vue.prototype.nameLookup = [];
 Vue.prototype.showLogout = false;
 
+Vue.prototype.xss = str => str.replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&apos;');
+
 // convert minutes into min/hour/day
 Vue.prototype.heartbeatAgo = mins => {
   if (mins < 60) return mins + ' mins';

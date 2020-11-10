@@ -18,3 +18,9 @@ import './Toggle.vue';
 
 // chat timestamp
 import './ChatTime.vue';
+
+// external components
+import Vue from 'vue';
+import linkify from 'vue-linkify';
+
+Vue.directive('linkified', linkify);

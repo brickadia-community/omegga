@@ -17,17 +17,39 @@
 .log-entry {
   text-decoration: none;
 
+  .log-row {
+    display: flex;
+    align-items: center;
+
+    .user, .time-link {
+      text-decoration: none;
+    }
+
+    .time-link {
+      display: flex;
+      align-items: center;
+
+      .icon {
+        opacity: 0;
+        color: white;
+      }
+    }
+
+    .message {
+      flex: 1;
+    }
+  }
+
   &:hover .log-row {
     background: rgba(255, 255, 255, 0.2);
+
+    .icon { opacity: 1; }
   }
 
   &.focused .log-row {
     background: $br-main-normal;
   }
 
-  .log-row {
-    display: flex;
-  }
 }
 
 .chat-new-day {
@@ -182,28 +204,39 @@
             >
               <template v-for="log in chats">
                 <div v-if="log.newDay" class="chat-new-day" :key="log._id + 'day'">{{log.newDay}}</div>
-                <router-link
+                <div
                   :key="log._id"
                   :class="['log-entry', {focused: $route.params.time == log.created}]"
-                  :to="'/history/' + log.created"
                 >
                   <div class="log-row">
-                    <chat-time :time="log.created"/>
-                    <div v-if="log.action === 'msg'" class="chat-message">
-                      {{log.user.web ? '[' : ''}}<span class="user" :style="{color: '#'+log.user.color}"
-                      >{{log.user.name}}</span>{{log.user.web ? ']' : ''}}: {{log.message}}
+                    <router-link :to="'/history/' + log.created" class="time-link">
+                      <LinkIcon />
+                      <chat-time :time="log.created"/>
+                    </router-link>
+                    <div v-if="log.action === 'msg'" class="chat-message message">
+                      {{log.user.web ? '[' : ''}}<span v-if="log.user.web"
+                        class="user"
+                        :style="{color: '#'+log.user.color}"
+                      >{{log.user.name}}</span><router-link v-else :to="'/players/' + log.user.id"
+                        class="user"
+                        :style="{color: '#'+log.user.color}"
+                      >{{log.user.name}}</router-link>{{log.user.web ? ']' : ''}}: <span v-html="xss(log.message)" v-linkified />
                     </div>
-                    <div v-if="log.action === 'leave'" class="join-message">
-                      <span class="user">{{log.user.name}}</span> left the game.
+                    <div v-if="log.action === 'leave'" class="message join-message">
+                      <router-link class="user" :to="'/players/' + log.user.id">
+                        {{log.user.name}}
+                      </router-link> left the game.
                     </div>
-                    <div v-if="log.action === 'join'" class="join-message">
-                      <span class="user">{{log.user.name}}</span> joined the game{{log.user.isFirst ? ' for the first time' : ''}}.
+                    <div v-if="log.action === 'join'" class="message join-message">
+                      <router-link class="user" :to="'/players/' + log.user.id">
+                        {{log.user.name}}
+                      </router-link> joined the game{{log.user.isFirst ? ' for the first time' : ''}}.
                     </div>
-                    <div v-if="log.action === 'server'" class="server-message">
+                    <div v-if="log.action === 'server'" class="message server-message">
                       {{log.message}}
                     </div>
                   </div>
-                </router-link>
+                </div>
               </template>
             </v-infinite-scroll>
           </div>
@@ -218,9 +251,7 @@
 import CalendarIcon from 'vue-tabler-icons/icons/CalendarIcon';
 import ArrowLeftIcon from 'vue-tabler-icons/icons/ArrowLeftIcon';
 import ArrowRightIcon from 'vue-tabler-icons/icons/ArrowRightIcon';
-import BugIcon from 'vue-tabler-icons/icons/BugIcon';
-import CircleCheckIcon from 'vue-tabler-icons/icons/CircleCheckIcon';
-import RefreshAlertIcon from 'vue-tabler-icons/icons/RefreshAlertIcon';
+import LinkIcon from 'vue-tabler-icons/icons/LinkIcon';
 
 const MONTHS = [
   'January',
@@ -240,7 +271,7 @@ const MONTHS = [
 const sorted = (obj, reverse=false) => Object.keys(obj).map(Number).sort((a, b) => reverse ? b - a : a - b);
 
 export default {
-  components: { CalendarIcon, ArrowLeftIcon, ArrowRightIcon, BugIcon, CircleCheckIcon, RefreshAlertIcon },
+  components: { CalendarIcon, ArrowLeftIcon, ArrowRightIcon, LinkIcon },
   async created() {
     await this.getCalendar();
     const paramTime = this.$route.params.time

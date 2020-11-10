@@ -47,7 +47,7 @@ const omegga = new ProxyOmegga(exec);
 // interface with plugin store
 const store = {
   get: key => emit('store.get', key),
-  set: (key, value) => emit('store.set', key, value),
+  set: (key, value) => emit('store.set', key, JSON.stringify(value)),
   delete: key => emit('store.delete', key),
   wipe: () => emit('store.wipe'),
   count: () => emit('store.count'),
@@ -164,10 +164,10 @@ parent.on('load', (resp, pluginPath, options) => {
 // start the plugin with a faux omegga
 // resp is an action sent back to the parent process
 // to coordinate async funcs
-parent.on('start', (resp, config) => {
+parent.on('start', async (resp, config) => {
   try {
     pluginInstance = new PluginClass(omegga, config, store);
-    pluginInstance.init();
+    await pluginInstance.init();
     emit(resp, true);
   } catch (err) {
     emit('error', 'error starting plugin', err.toString());
@@ -176,10 +176,10 @@ parent.on('start', (resp, config) => {
 });
 
 // stop the plugin
-parent.on('stop', resp => {
+parent.on('stop', async resp => {
   try {
     if (pluginInstance) {
-      pluginInstance.stop();
+      await pluginInstance.stop();
     }
     pluginInstance = undefined;
     emit(resp, true);

@@ -5,6 +5,7 @@
   margin-right: 8px;
   font-weight: bold;
   text-align: right;
+  display: inline-block;
   width: 75px;
   min-width: 75px;
   color: #ccc;
@@ -13,9 +14,9 @@
 </style>
 
 <template>
-  <span class="chat-timestamp">
+  <div class="chat-timestamp">
     {{hours}}:{{minutes}} {{pm}}
-  </span>
+  </div>
 </template>
 <script>
 

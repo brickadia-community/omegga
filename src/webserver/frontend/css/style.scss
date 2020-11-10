@@ -76,8 +76,8 @@ body {
     font-weight: bold;
   }
 
-  .join-message {
-    color: #3477e3;
+  .join-message, .join-message .user {
+    color: #3477e3 !important;
   }
 
   .chat-message {
