@@ -18,6 +18,7 @@ import './Toggle.vue';
 
 // chat timestamp
 import './ChatTime.vue';
+import './ChatEntry.vue';
 
 // external components
 import Vue from 'vue';

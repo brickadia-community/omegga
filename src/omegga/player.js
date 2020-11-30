@@ -54,30 +54,32 @@ class Player {
     const DEFAULT_PERMS = {
       moderator: [
         'Bricks.ClearAll',
-        'Players.Kick',
-        'Players.TPOthers',
-        'Players.TPInMinigame',
         'Minigame.AlwaysLeave',
+        'Players.Kick',
+        'Players.TPInMinigame',
+        'Players.TPOthers',
+        'Self.Ghost',
       ],
       admin: [
-        'Bricks.Load',
-        'Bricks.ClearOwn',
         'Bricks.ClearAll',
+        'Bricks.ClearOwn',
         'Bricks.IgnoreTrust',
-        'Roles.Grant',
+        'Bricks.Load',
         'Map.Environment',
-        'Players.Kick',
-        'Players.Ban',
-        'Players.TPOthers',
-        'Players.TPInMinigame',
-        'Minigame.AlwaysSwitchTeam',
-        'Minigame.AlwaysLeave',
         'Minigame.AlwaysEdit',
-        'Minigame.MakePersistent',
+        'Minigame.AlwaysLeave',
+        'Minigame.AlwaysSwitchTeam',
         'Minigame.MakeDefault',
+        'Minigame.MakePersistent',
         'Minigame.UseAllBricks',
-        'Server.ChangeSettings',
+        'Players.Ban',
+        'Players.Kick',
+        'Players.TPInMinigame',
+        'Players.TPOthers',
+        'Roles.Grant',
+        'Self.Ghost',
         'Server.ChangeRoles',
+        'Server.ChangeSettings',
         'Server.FreezeCamera',
         'Tools.Selector.BypassLimits',
         'Tools.Selector.BypassTimeouts',
@@ -87,10 +89,44 @@ class Player {
     // get the player's roles
     const playerRoles = Player.getRoles(omegga, id).map(r => r.toLowerCase());
 
-    const permissions = {};
+    // default player permissions
+    const permissions = {
+      'Bricks.ClearAll': false,
+      'Bricks.ClearOwn': true,
+      'Bricks.Delete': true,
+      'Bricks.Edit': true,
+      'Bricks.IgnoreTrust': false,
+      'Bricks.Paint': true,
+      'Bricks.Place': true,
+      'BricksItems.Spawn': true,
+      'Map.Change': false,
+      'Map.Environment': false,
+      'Map.SetSpawn': false,
+      'Minigame.AlwaysEdit': false,
+      'Minigame.AlwaysLeave': false,
+      'Minigame.AlwaysSwitchTeam': false,
+      'Minigame.Create': true,
+      'Minigame.MakePersistent': false,
+      'Minigame.UseAllBricks': false,
+      'Players.Ban': false,
+      'Players.TPInMinigame': false,
+      'Players.TPOthers': false,
+      'Players.TPSelf': true,
+      'Roles.Grant': false,
+      'Self.Flashlight': true,
+      'Self.Fly': true,
+      'Self.FreezeCamera': false,
+      'Self.Ghost': false,
+      'Self.Sprint': true,
+      'Self.Suicide': true,
+      'Tools.Selector.Use': true,
+    };
+
     // apply all permissions from default role
-    for (const p of defaultRole.permissions)
-      permissions[p.name] = p.bEnabled;
+    for (const p of defaultRole.permissions) {
+      // technically this can never be Unchanged so it's always on enabled or allowed
+      permissions[p.name] = p.state === 'Unchanged' ? permissions[p.name] : !!p.bEnabled || p.state === 'Allowed';
+    }
 
     // loop through all the roles
     for (const role of roles) {
@@ -108,6 +144,11 @@ class Player {
 
       // add all the new permissions the player now has
       for (const p of role.permissions) {
+        // permission is disabled on forbidden, persisted on unchanged, and enabled on bEnabled or Allowed
+        permissions[p.name] = p.state !== 'Forbidden' && (
+          p.state === 'Unchanged'
+            ? permissions[p.name]
+            : (permissions[p.name] || p.bEnabled) || p.state === 'Allowed');
         permissions[p.name] = permissions[p.name] || p.bEnabled;
       }
     }

@@ -52,7 +52,7 @@
       Players
     </br-menu-button>
     <br-menu-button
-      :disabled="false"
+      :disabled="true"
       route="metrics"
       data-tooltip="View statistics and metrics for the server"
     >
@@ -60,12 +60,20 @@
       Metrics
     </br-menu-button>
     <br-menu-button
-      :disabled="false"
+      :disabled="true"
       route="saves"
       data-tooltip="Browse, create, load, and clear saves"
     >
       <DeviceFloppyIcon style="background: #1ed4d1;"/>
       Saves
+    </br-menu-button>
+    <br-menu-button
+      :disabled="true"
+      route="server"
+      data-tooltip="Server management settings and roles"
+    >
+      <ServerIcon style="background: #453d9c;"/>
+      Server
     </br-menu-button>
     <br-menu-button
       :disabled="false"
@@ -88,9 +96,11 @@ import UsersIcon from 'vue-tabler-icons/icons/UsersIcon';
 import ChartLineIcon from 'vue-tabler-icons/icons/ChartLineIcon';
 import DeviceFloppyIcon from 'vue-tabler-icons/icons/DeviceFloppyIcon';
 import AdjustmentsAltIcon from 'vue-tabler-icons/icons/AdjustmentsAltIcon';
+import ServerIcon from 'vue-tabler-icons/icons/ServerIcon';
 
 export default Vue.component('side-nav', {
-  components: { DashboardIcon, MessagesIcon, PlugIcon, UsersIcon, ChartLineIcon, DeviceFloppyIcon, AdjustmentsAltIcon },
+  components: { DashboardIcon, MessagesIcon, PlugIcon, UsersIcon, ChartLineIcon,
+    DeviceFloppyIcon, AdjustmentsAltIcon, ServerIcon },
   props: ['active'],
 });
 </script>

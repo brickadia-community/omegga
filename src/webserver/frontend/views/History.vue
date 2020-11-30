@@ -14,44 +14,6 @@
 
 }
 
-.log-entry {
-  text-decoration: none;
-
-  .log-row {
-    display: flex;
-    align-items: center;
-
-    .user, .time-link {
-      text-decoration: none;
-    }
-
-    .time-link {
-      display: flex;
-      align-items: center;
-
-      .icon {
-        opacity: 0;
-        color: white;
-      }
-    }
-
-    .message {
-      flex: 1;
-    }
-  }
-
-  &:hover .log-row {
-    background: rgba(255, 255, 255, 0.2);
-
-    .icon { opacity: 1; }
-  }
-
-  &.focused .log-row {
-    background: $br-main-normal;
-  }
-
-}
-
 .chat-new-day {
   @include center;
   color: white;
@@ -198,45 +160,16 @@
               :loading="loading"
               @top="prevPage"
               @bottom="nextPage"
+              @scroll="ev => logDir(ev)"
               :on-top-scrolls-to-bottom="false"
               :offset="offset"
               class="scroll-scroller"
             >
               <template v-for="log in chats">
-                <div v-if="log.newDay" class="chat-new-day" :key="log._id + 'day'">{{log.newDay}}</div>
-                <div
-                  :key="log._id"
-                  :class="['log-entry', {focused: $route.params.time == log.created}]"
-                >
-                  <div class="log-row">
-                    <router-link :to="'/history/' + log.created" class="time-link">
-                      <LinkIcon />
-                      <chat-time :time="log.created"/>
-                    </router-link>
-                    <div v-if="log.action === 'msg'" class="chat-message message">
-                      {{log.user.web ? '[' : ''}}<span v-if="log.user.web"
-                        class="user"
-                        :style="{color: '#'+log.user.color}"
-                      >{{log.user.name}}</span><router-link v-else :to="'/players/' + log.user.id"
-                        class="user"
-                        :style="{color: '#'+log.user.color}"
-                      >{{log.user.name}}</router-link>{{log.user.web ? ']' : ''}}: <span v-html="xss(log.message)" v-linkified />
-                    </div>
-                    <div v-if="log.action === 'leave'" class="message join-message">
-                      <router-link class="user" :to="'/players/' + log.user.id">
-                        {{log.user.name}}
-                      </router-link> left the game.
-                    </div>
-                    <div v-if="log.action === 'join'" class="message join-message">
-                      <router-link class="user" :to="'/players/' + log.user.id">
-                        {{log.user.name}}
-                      </router-link> joined the game{{log.user.isFirst ? ' for the first time' : ''}}.
-                    </div>
-                    <div v-if="log.action === 'server'" class="message server-message">
-                      {{log.message}}
-                    </div>
-                  </div>
+                <div v-if="log.newDay" class="chat-new-day" :key="log._id + 'day'">
+                  {{log.newDay}}
                 </div>
+                <br-chat-entry :log="log" :key="log._id" />
               </template>
             </v-infinite-scroll>
           </div>
@@ -251,7 +184,6 @@
 import CalendarIcon from 'vue-tabler-icons/icons/CalendarIcon';
 import ArrowLeftIcon from 'vue-tabler-icons/icons/ArrowLeftIcon';
 import ArrowRightIcon from 'vue-tabler-icons/icons/ArrowRightIcon';
-import LinkIcon from 'vue-tabler-icons/icons/LinkIcon';
 
 const MONTHS = [
   'January',
@@ -271,7 +203,7 @@ const MONTHS = [
 const sorted = (obj, reverse=false) => Object.keys(obj).map(Number).sort((a, b) => reverse ? b - a : a - b);
 
 export default {
-  components: { CalendarIcon, ArrowLeftIcon, ArrowRightIcon, LinkIcon },
+  components: { CalendarIcon, ArrowLeftIcon, ArrowRightIcon },
   async created() {
     await this.getCalendar();
     const paramTime = this.$route.params.time
@@ -316,31 +248,39 @@ export default {
       const time = new Date(year, month, day).getTime();
       await this.getChats({ after: time });
     },
-    handleChats(chats, {before, after}) {
+
+    handleChats(chats, {before, after}, dir) {
       if (!chats.length) return;
+
+      // add new chats and sort by create time
       this.chats = this.chats.concat(chats);
       this.chats.sort((a, b) => a.created - b.created);
-      let min = this.chats[0].created;
-      let max = this.chats[0].created;
+
+      // find the min and max times for message creation
+      const min = this.chats[0].created;
+      const max = this.chats[this.chats.length - 1].created;
+
       for (let i = 0; i < this.chats.length; i++) {
         const c = this.chats[i];
-        min = Math.min(min, c.created);
-        max = Math.max(max, c.created);
         const date = new Date(c.created);
         c.date = date.getDate();
+
+        // determine if the date between chat messages is a different day and insert that date
         if (i === 0 || c.date !== this.chats[i-1].date) {
           c.newDay = `${MONTHS[date.getMonth()]} ${c.date}, ${date.getFullYear()}`;
         } else {
           c.newDay = undefined;
         }
       }
+
       this.min = min;
       this.max = max;
     },
+
     async prevPage() {
       // check if this is absolute min pages (no results)
       if (this.absMin && this.min <= this.absMin) return;
-      const chats = await this.getChats({ before: this.min });
+      const chats = await this.getChats({ before: this.min }, 'top');
       if (chats.length === 0) {
         this.absMin = this.min;
       }
@@ -349,14 +289,24 @@ export default {
     async nextPage() {
       // check if this is absolute max pages (no results)
       if (this.absMax && this.max >= this.absMax) return;
-      const chats = await this.getChats({ after: this.max });
+      const chats = await this.getChats({ after: this.max }, 'bottom');
       if (chats.length === 0) this.absMax = this.max;
     },
 
-    async getChats({before, after}) {
+    async getChats({before, after}, dir) {
       this.loading = true;
       const chats = await this.$$request('chat.history', {before, after});
-      this.handleChats(chats, {before, after});
+      this.handleChats(chats, {before, after}, dir);
+
+      // remove chats that our off screen
+      requestAnimationFrame(() => {
+        if (dir === 'bottom' && this.chats.length > 200)
+          this.chats.splice(0, this.chats.length - 200).map(m => m.message);
+
+        if (dir === 'top' && this.chats.length > 200)
+          this.chats.splice(200, this.chats.length - 200).map(m => m.message);
+      })
+
       this.loading = false;
       this.firstLoad = false;
       return chats;
@@ -447,7 +397,7 @@ export default {
       MONTHS,
 
       // how close to the edge the user has to scroll before loading new messages
-      offset: 200,
+      offset: 500,
 
       date, month, year, day,
       nowYear: year,
