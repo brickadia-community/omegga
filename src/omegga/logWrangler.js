@@ -111,7 +111,7 @@ class LogWrangler {
   // first is a function or 'index' for the index capture group that determines if this is match is the first log
   // last is a function that determines if this match is the last log (and can terminate early)
   // aftermatch delay is borrowed from addWatcher
-  watchLogChunk(cmd, pattern, {first, last, afterMatchDelay=10}) {
+  watchLogChunk(cmd, pattern, {first, last, afterMatchDelay=10, timeoutDelay=100}) {
     // we're focused on the counter part of this, the rest will be passed to the pattern matcher
     const logLineRegExp = /\[(?<date>\d{4}\.\d\d.\d\d-\d\d.\d\d.\d\d:\d{3})\]\[\s*(?<counter>\d+)\](?<rest>.*)$/;
 
@@ -172,7 +172,7 @@ class LogWrangler {
       exec: () => this.exec(cmd),
       bundle: true,
       debounce: true,
-      timeoutDelay: 100,
+      timeoutDelay,
       afterMatchDelay,
     });
   }

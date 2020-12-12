@@ -74,7 +74,7 @@ module.exports = (server, io) => {
       await database.addHeartbeat(data);
     } catch (e) {
       // probably an issue getting server status
-      error('Error in heartbeat', e);
+      error('Server Not Responding...');
     }
 
   }, soft.METRIC_HEARTBEAT_INTERVAL);

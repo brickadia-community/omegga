@@ -13,13 +13,27 @@ const file = require('../util/file.js');
 const Terminal = require('../cli/terminal.js');
 
 const MATCHERS = [
-  require('./matchers/join.js'), // 'join' event => { name, id, state, controller }
-  require('./matchers/leave.js'), // 'leave' event => { name, id, state, controller }
-  require('./matchers/chat.js'), // 'chat' event => name, message; 'chatcmd:command' event => name, [...args]
-  require('./matchers/command.js'), // 'cmd:command' event => name, args (string)
-  require('./matchers/auth.js'), // assigns host 'host' event, 'start' event, 'unauthorized' event
-  require('./matchers/exit.js'), // 'exit' event
-  require('./matchers/version.js'), // 'version' event, check game version
+  require('./matchers/join.js'),
+  // 'join' event => { name, id, state, controller }
+
+  require('./matchers/leave.js'),
+  // 'leave' event => { name, id, state, controller }
+
+  require('./matchers/chat.js'),
+  // 'chat' event => name, message; 'chatcmd:command' event => name, [...args]
+  // 'kick' event => name, kicker, reason
+
+  require('./matchers/command.js'),
+  // 'cmd:command' event => name, args (string)
+
+  require('./matchers/auth.js'),
+  // assigns host, 'host' event, 'start' event, 'unauthorized' event
+
+  require('./matchers/exit.js'),
+  // 'exit' event
+
+  require('./matchers/version.js'),
+  // 'version' event, check game version
 ];
 
 // TODO: safe broadcast parsing
@@ -149,6 +163,7 @@ class Omegga extends OmeggaWrapper {
     this.stopping = false;
     this.started = false;
     this.starting = false;
+    this.players = [];
   }
 
   // if auth files exist, copy them

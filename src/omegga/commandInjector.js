@@ -9,7 +9,7 @@ const COMMANDS = {
     const statusLines = await this.watchLogChunk(
       'Server.Status',
       /^LogConsoleCommands: (.+)$/,
-      {first: match => match[1].startsWith('Server Name:')}
+      {first: match => match[1].startsWith('Server Name:'), timeoutDelay: 1000}
     );
 
     // the table lines all start with '* '

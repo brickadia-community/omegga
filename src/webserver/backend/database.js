@@ -128,9 +128,40 @@ class Database {
       .on('change', () => setTimeout(this.syncBanList.bind(this), 1000));
     setTimeout(this.syncBanList.bind(this), 1000);
 
-    // kick history detection
+    const handleKick = (kicked, kicker, reason) => {
+      // time the event listener should expire
+      const eventExpire = Date.now() + 100;
+
+      // detect a single leave
+      this.omegga.once('leave',async leavingPlayer => {
+        const now = Date.now();
+        // if a player leaves more than 100ms from the kick command, it's bugged
+        if (now > eventExpire) return;
+
+        if (leavingPlayer.id === kicked.id) {
+          const entry = {
+            type: 'kickHistory',
+            kicked: kicked.id,
+            kickerId: kicker.id,
+            created: now,
+            reason,
+          };
+
+          // depending on implementation, this could potentially be a kick event
+          await this.stores.players.update(entry, {$set: entry}, {upsert: true});
+        }
+      });
+    };
+
+    // game version is not known at init so we have to check version at command time
+    // alternatively,
+    // kick history detection for a4 is based on the chat command
     this.omegga.on('cmd:kick', (name, ...args) => {
+      if (this.omegga.version !== 'a4') return;
+
       const target = args.join(' ');
+      const reason = 'no reason given';
+
       // find the player doing the kicking
       const kickerPlayer = this.omegga.getPlayer(name);
 
@@ -144,28 +175,20 @@ class Database {
       const kickedPlayer = this.omegga.findPlayerByName(target);
       if (!kickedPlayer) return;
 
-      // time the event listener should expire
-      const eventExpire = Date.now() + 100;
+      handleKick(kickedPlayer, kickerPlayer, reason);
+    });
 
-      // detect a single leave
-      this.omegga.once('leave', leavingPlayer => {
-        const now = Date.now();
-        // if a player leaves more than 100ms from the kick command, it's bugged
-        if (now < eventExpire) return;
+    // for a5 is based on the chat event
+    this.omegga.on('kick', (kicked, kicker, reason) => {
+      if (this.omegga.version !== 'a5') return;
 
-        if (leavingPlayer.id === kickedPlayer.id) {
-          const entry = {
-            type: 'kickHistory',
-            kicked: kickedPlayer.id,
-            kickerId: kickerPlayer.id,
-            created: now,
-            reason: 'no reason given',
-          };
+      const kickedPlayer = this.omegga.findPlayerByName(kicked);
+      const kickerPlayer = this.omegga.findPlayerByName(kicker);
 
-          // depending on implementation, this could potentially be a kick event
-          this.stores.players.update(entry, {$set: entry}, {upsert: true});
-        }
-      });
+      // couldn't find kicked or kicker player
+      if (!kickedPlayer || !kickerPlayer) return;
+
+      handleKick(kickedPlayer, kickerPlayer, reason);
     });
 
     return doc._id;
@@ -207,6 +230,7 @@ class Database {
       // this is a user
       type: 'user',
       created: Date.now(),
+      lastOnline: Date.now(),
 
       // credentials
       username,
@@ -229,8 +253,11 @@ class Database {
     if (!user || user.isBanned) return null;
 
     // make sure the user's password hash is valid
-    if (await bcrypt.compare(password, user.hash))
+    if (await bcrypt.compare(password, user.hash)) {
+      // update last online status
+      await this.stores.users.update({ _id: user._id}, {$set: {lastOnline: Date.now()}});
       return user;
+    }
 
     // wrong password
     return null;
@@ -281,7 +308,7 @@ class Database {
       .exec();
   }
 
-  // get recent chat activity
+  // get paginated players
   async getPlayers({count=50, search='', page=0, sort='name', direction='1'}={}) {
     const pattern = explode(search);
 
@@ -314,6 +341,40 @@ class Database {
       pages: Math.ceil(total / count),
       total,
       players,
+    };
+  }
+
+  // get paginated users
+  async getUsers({count=50, search='', page=0, sort='name', direction='1'}={}) {
+    const pattern = explode(search);
+
+    // the query used for finding which players are available
+    const query = {
+      type: 'user',
+      // only filter if there's a query
+      ...(search.length > 0 ? {$or: [
+        // id was pasted in
+        {playerId: search},
+        // user's current name
+        {name: {$regex: pattern}},
+      ]} : {}),
+    };
+
+    // count players and query players
+    const [total, users] = await Promise.all([
+      this.stores.users.count(query),
+      this.stores.users.cfind(query)
+        // TODO: add other sorts and sort directions
+        .sort({[sort]: direction})
+        .skip(count * page)
+        .limit(count)
+        .exec()
+    ]);
+
+    return {
+      pages: Math.ceil(total / count),
+      total,
+      users,
     };
   }
 

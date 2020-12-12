@@ -5,6 +5,7 @@ import Plugins from './views/Plugins.vue';
 import PluginsInspector from './views/PluginsInspector.vue';
 import Players from './views/Players.vue';
 import PlayersInspector from './views/PlayersInspector.vue';
+import Users from './views/Users.vue';
 import History from './views/History.vue';
 import NotFound from './views/NotFound.vue';
 
@@ -38,6 +39,15 @@ const router = new VueRouter({
       path: '/players/:id',
       component: PlayersInspector
     }],
+  }, {
+    name: 'users',
+    path: '/users',
+    component: Users,
+    children: [/*{
+      name: 'users',
+      path: '/users/:id',
+      component: UsersInspector
+    }*/],
   }, {
     name: 'home',
     path: '/',

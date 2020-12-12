@@ -48,7 +48,7 @@
       route="players"
       data-tooltip="Browse player info and play time"
     >
-      <UsersIcon style="background: #b3006b;"/>
+      <ListIcon style="background: #b3006b;"/>
       Players
     </br-menu-button>
     <br-menu-button
@@ -76,12 +76,20 @@
       Server
     </br-menu-button>
     <br-menu-button
-      :disabled="false"
+      :disabled="true"
       route="settings"
       data-tooltip="Server management settings and roles"
     >
       <AdjustmentsAltIcon style="background: #c4bb02;"/>
       Settings
+    </br-menu-button>
+    <br-menu-button
+      :disabled="false"
+      route="users"
+      data-tooltip="Server users"
+    >
+      <UsersIcon style="background: #7f0b8a;"/>
+      Users
     </br-menu-button>
   </div>
 </template>
@@ -92,6 +100,7 @@ import Vue from 'vue';
 import DashboardIcon from 'vue-tabler-icons/icons/DashboardIcon';
 import MessagesIcon from 'vue-tabler-icons/icons/MessagesIcon';
 import PlugIcon from 'vue-tabler-icons/icons/PlugIcon';
+import ListIcon from 'vue-tabler-icons/icons/ListIcon';
 import UsersIcon from 'vue-tabler-icons/icons/UsersIcon';
 import ChartLineIcon from 'vue-tabler-icons/icons/ChartLineIcon';
 import DeviceFloppyIcon from 'vue-tabler-icons/icons/DeviceFloppyIcon';
@@ -100,7 +109,7 @@ import ServerIcon from 'vue-tabler-icons/icons/ServerIcon';
 
 export default Vue.component('side-nav', {
   components: { DashboardIcon, MessagesIcon, PlugIcon, UsersIcon, ChartLineIcon,
-    DeviceFloppyIcon, AdjustmentsAltIcon, ServerIcon },
+    DeviceFloppyIcon, AdjustmentsAltIcon, ServerIcon, ListIcon },
   props: ['active'],
 });
 </script>

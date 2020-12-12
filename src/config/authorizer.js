@@ -21,10 +21,10 @@ module.exports = (email, password) => new Promise(resolve => {
 
   // wait for the invalid auth line or valid auth line, then kill the server
   server.on('line', line => {
-    if (line.matches(invalidRegExp)) {
+    if (line.match(invalidRegExp)) {
       server.stop();
       resolve(false);
-    } else if (line.matches(validRegExp)) {
+    } else if (line.match(validRegExp)) {
       server.stop();
       resolve(true);
     }

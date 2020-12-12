@@ -362,6 +362,18 @@ module.exports = (server, io) => {
       }
     });
 
+    // get a paginated list of users
+    // TODO: add permission check
+    rpc.addMethod('users.list', async([{page=0, search='', sort='name', direction='1'}={}]) => {
+      const resp = await database.getUsers({ page, search, sort, direction });
+      const now = Date.now();
+      for (const user of resp.users) {
+        user.seenAgo = user.lastOnline ? now - user.lastOnline : Infinity;
+        user.createdAgo = now - user.created;
+      }
+      return resp;
+    });
+
     // send server status at request
     // TODO: server status permission check
     rpc.addMethod('server.status', () => {
