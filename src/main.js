@@ -45,7 +45,9 @@ const program = require('commander')
 
     // default working directory is the one specified in config
     let workDir = config.store.get('defaultOmegga');
-    const legacyBin = config.store.get('legacyBin'); // DEPRECATED
+
+    // check if a local install exists
+    const localInstall = fs.existsSync(soft.LOCAL_LAUNCHER);
 
     // if there's a config in the current directory, use that one instead
     if (config.find('.'))
@@ -75,7 +77,7 @@ const program = require('commander')
     }
 
     // if legacy config is provided
-    if (legacyBin) conf.server.__LEGACY = legacyBin; // DEPRECATED
+    if (localInstall) conf.server.__LOCAL = true; // DEPRECATED
 
     // check if the auth files don't exist
     if (!auth.exists(path.join(workDir, soft.DATA_PATH, 'Saved/Auth')) && !auth.exists()) {

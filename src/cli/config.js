@@ -43,43 +43,6 @@ const fields = {
       log('Set', 'default'.green, 'to', val.green);
     },
   },
-  legacy: {
-    desc: 'path to a4 binary for users without access to the brickadia launcher',
-    example: 'omegga config legacy path/to/Brickadia/Binaries/Linux/BrickadiaServer-Linux-Shipping',
-    default: '[not set]'.grey,
-    get() {
-      let val = store.get('legacyBin') || '';
-      if (val === '') val += 'disabled'.green;
-      return val;
-    },
-    set(val) {
-      if (!val || val === 'disabled') {
-        val = '';
-      } else {
-        // check if the path is valid
-        if (!path.isAbsolute(val)) {
-          err('setting must be an absolute path or "."');
-          process.exit(1);
-          return;
-        }
-        if (!fs.existsSync(val)) {
-          err('given path does not exist');
-          process.exit(1);
-          return;
-        }
-        if (!fs.statSync(val).isFile) {
-          err('given path is not for a file');
-          process.exit(1);
-          return;
-        }
-      }
-
-
-      // update the setting
-      store.set('legacyBin', val);
-      log('Set', 'legacy'.green, 'to', (val || 'disabled').green);
-    },
-  },
 };
 
 module.exports = (field, value, _opts={}) => {

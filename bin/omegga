@@ -2,15 +2,14 @@
 
 const isBrickInstalled = require('hasbin').sync('brickadia');
 
-// DEPRECATED
-const isLegacy = !isBrickInstalled && require('../src/config/index.js').store.get('legacy');
+// check if a local brickadia is installed
+const isLocal = !isBrickInstalled && require('fs').existsSync(require('../src/softconfig.js').LOCAL_LAUNCHER);
 
-if (!isBrickInstalled && !isLegacy) {
+if (!isBrickInstalled && !isLocal) {
   require('colors');
   console.error('!>'.red, 'brickadia launcher'.yellow.underline, 'must be installed for omegga to run');
 
-  // DEPRECATED
-  require('../src/cli/legacy.js');
+  require('../src/cli/installer.js');
 } else {
   require('../src/main.js');
 }

@@ -2,6 +2,8 @@ const path = require('path');
 const os = require('os');
 
 const PROJECT_NAME = 'omegga';
+const CONFIG_HOME = path.join(os.homedir(), '.config/' + PROJECT_NAME);
+
 
 module.exports = {
   DEFAULT_PORT: 8080,
@@ -17,7 +19,9 @@ module.exports = {
 
   // home directory for omegga config
   PROJECT_NAME,
-  CONFIG_HOME: path.join(os.homedir(), '.config/' + PROJECT_NAME),
+  CONFIG_HOME,
+  LOCAL_LAUNCHER: path.join(CONFIG_HOME, 'launcher/brickadia-launcher/main-brickadia-launcher'),
+
   // path to auth files
   CONFIG_AUTH_DIR: 'Auth',
   // files in Brickadia/Saved/Auth

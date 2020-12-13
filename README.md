@@ -2,16 +2,40 @@
 
 Similar to [n42k's brikkit](https://github.com/n42k/brikkit), wraps brickadia's server console to provide interactivity via plugins.
 
+Already supports a5 for when a5 comes out!
+
 ## Install
 
-You can run omegga in the Windows Subsystem for Linux or on an actual linux install.
+You can run omegga in the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) (I recommend Ubuntu) or on an actual linux install.
+
+### Quick Setup (automatically download launcher)
+
+1. Install linux if you haven't already ([Windows Install](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps))
+  * Ubuntu is sufficient ([Microsoft Store](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6))
+
+2. Run these commands (Installs a node installer, installs node, installs omegga):
+
+```sh
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+. ~/.nvm/nvm.sh
+nvm install 14
+npm i -g omegga
+```
+
+Then head over to [Running Omegga](#running)!
+
+### Manual Setup (you install stuff)
 
 Omegga depends on:
 
-  * Node v12+ ([windows](https://nodejs.org/en/download/), [ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions))
-  * one of:
-    * the **brickadia linux launcher** which is not available publicly at the moment.
-    * `apt install wget tar` (to download a4 binary)
+  * linux
+    * [Windows Install](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps)
+      * [Windows Ubuntu](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6)
+  * Node v14+ ([ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions))
+  * One of:
+    * `tar` (most linuxes come with this, though you can `sudo apt install tar`)
+    * [Brickadia linux launcher](https://brickadia.com/download)
+
 
 Omegga is installed as a global npm package
 
@@ -25,17 +49,47 @@ Alternatively, you can use a development/local omegga
     # point development omegga to global npm bin
     npm link
 
+If you have EACCES errors on WSL, you probably have a conflicting node install. Some people say just closing and re-opening the terminal is enough to fix it, this and deleting node wasn't enough for me. I think windows just has wonky permissions. LMK if you figure out a solution...
+
 ## Running
 
 To start a server, simply type the following in a linux shell after install:
 
     omegga
 
+It's recommend creating a folder first *before* starting your server:
+
+    mkdir brickadia && cd brickadia
+
 Omegga will prompt for credentials as necessary and only stores the auth tokens brickadia generates on login. **Omegga does not store your password**
+
+## Updating
+
+Omegga will tell you when it's out of date. You can update with this command:
+
+    npm i -g omegga
 
 ## Screenshots
 
 ![Generic omegga screenshot](https://i.imgur.com/AqJF2T0.png)
+
+## Uninstalling
+
+```sh
+# uninstall omegga
+npm uninstall -g omegga
+
+# remove omegga config
+rm -rf ~/.config/omegga
+
+# remove brickadia installs
+rm -rf ~/.local/share/brickadia-launcher
+
+# potentially remove extra brickadia config
+rm ~/.config/Epic
+```
+
+You will have to delete your omegga data folders manually
 
 # Planned Features
 
@@ -78,6 +132,12 @@ Omegga will prompt for credentials as necessary and only stores the auth tokens 
 Plugins are located in the `plugins` directory in an omegga config folder
 
 Plugins are most easily developed in Javascript at the moment using the Node VM Plugins and Node Plugins. You can use JSON RPC Plugins to write plugins in other languages.
+
+## Installing Plugins
+
+Usually you can run `git clone https://github.com/user/repo` inside your `plugins` folder (created when you run `omegga` for the first time):
+  * `cd plugins` to navigate to plugins folder
+  * Make sure to read the plugin's README file for after-install instructions
 
 ## Plugin Structure
 

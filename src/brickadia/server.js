@@ -29,10 +29,12 @@ class BrickadiaServer extends EventEmitter {
   start() {
     const { email, password } = this.config.credentials || {};
 
-    // handle non-launcher support
-    // DEPRECATED
-    const launchArgs = this.config.server.__LEGACY ? [
-      this.config.server.__LEGACY
+    // handle local launcher support
+    const launchArgs = this.config.server.__LOCAL ? [
+      path.join(__dirname, '../../tools/brickadia.sh'),
+      this.config.server.branch && `--branch=${this.config.server.branch}`,
+      '--server',
+      '--'
     ] : [
       'brickadia',
       this.config.server.branch && `--branch=${this.config.server.branch}`,
