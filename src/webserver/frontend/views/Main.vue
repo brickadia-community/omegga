@@ -51,6 +51,7 @@ export default {
     data(data) {
       console.log('data is', data);
       Vue.prototype.user = data.user;
+      Vue.prototype.omeggaData = data;
       Vue.prototype.roles = data.roles;
       Vue.prototype.showLogout = data.canLogOut;
       this.loading = false;

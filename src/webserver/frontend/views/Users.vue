@@ -113,7 +113,7 @@
       <span style="flex: 1"/>
       <br-button
         normal
-        v-if="!user.username"
+        v-if="omeggaData.userless"
         @click=""
         data-tooltip="Enable user sign-in"
       >
@@ -122,7 +122,7 @@
       </br-button>
       <br-button
         normal
-        v-if="user.username"
+        v-if="!omeggaData.userless"
         @click=""
         data-tooltip="Add a new user"
       >
@@ -159,9 +159,9 @@
                         <SortDescendingIcon v-if="sort === 'name' && direction === -1" />
                       </span>
                     </th>
-                    <th @click="setSort('lastOnline')" data-tooltip="When the user was last online">
+                    <th @click="setSort('lastOnline')" data-tooltip="When the user was last active">
                       <span>
-                        Online
+                        Active
                         <SortAscendingIcon v-if="sort === 'lastOnline' && direction === 1" />
                         <SortDescendingIcon v-if="sort === 'lastOnline' && direction === -1" />
                       </span>

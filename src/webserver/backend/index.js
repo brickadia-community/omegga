@@ -127,6 +127,7 @@ class Webserver {
         if (user && !user.isBanned) {
           // TODO: check if user is banned while connected to disconnect websocket
           socket.user = user;
+          await this.database.stores.users.update({ _id: user._id }, {$set: {lastOnline: Date.now()}});
           next();
         } else {
           next(new Error('unauthorized'));

@@ -14,6 +14,7 @@ Vue.prototype.user = {};
 Vue.prototype.roles = [];
 Vue.prototype.nameLookup = [];
 Vue.prototype.showLogout = false;
+Vue.prototype.omeggaData = {};
 
 Vue.prototype.xss = str => str.replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')

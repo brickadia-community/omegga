@@ -67,6 +67,7 @@ module.exports = (server, io) => {
     if (!user || user.isBanned)
       return next(new Error('unauthorized'));
     req.user = user;
+
     next();
   });
 
@@ -80,6 +81,7 @@ module.exports = (server, io) => {
         roles,
         canLogOut: socket.user.username !== '',
         now: Date.now(), // this can be used for the frontend to anticipate drift
+        userless: !socket.user.username,
         user: {
           username: socket.user.username || 'Admin',
           isOwner: socket.user.isOwner,

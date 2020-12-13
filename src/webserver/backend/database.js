@@ -255,7 +255,7 @@ class Database {
     // make sure the user's password hash is valid
     if (await bcrypt.compare(password, user.hash)) {
       // update last online status
-      await this.stores.users.update({ _id: user._id}, {$set: {lastOnline: Date.now()}});
+      await this.stores.users.update({ _id: user._id }, {$set: {lastOnline: Date.now()}});
       return user;
     }
 
