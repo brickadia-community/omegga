@@ -11,7 +11,7 @@ You can run omegga in the [Windows Subsystem for Linux](https://docs.microsoft.c
 ### Quick Setup (automatically download launcher)
 
 1. Install linux if you haven't already ([Windows Install](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps))
-  * Ubuntu is sufficient ([Microsoft Store](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6))
+    * Ubuntu is sufficient ([Microsoft Store](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6))
 
 2. Run these commands (Installs a node installer, installs node, installs omegga):
 
@@ -53,13 +53,14 @@ If you have EACCES errors on WSL, you probably have a conflicting node install. 
 
 ## Running
 
+It's recommend to create a folder first *before* starting your server:
+
+    mkdir myServer && cd myServer
+
 To start a server, simply type the following in a linux shell after install:
 
     omegga
 
-It's recommend creating a folder first *before* starting your server:
-
-    mkdir brickadia && cd brickadia
 
 Omegga will prompt for credentials as necessary and only stores the auth tokens brickadia generates on login. **Omegga does not store your password**
 

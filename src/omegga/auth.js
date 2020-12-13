@@ -39,7 +39,12 @@ async function genAuthFiles(email, password) {
 
   // dummy omegga config
   const config = {
-    server: {port: 7777, publiclyListed: false, name: 'omegga auth init'},
+    server: {
+      port: 7777,
+      publiclyListed: false,
+      name: 'omegga auth init',
+      __LOCAL: fs.existsSync(soft.LOCAL_LAUNCHER),
+    },
     credentials: { email, password },
   };
 

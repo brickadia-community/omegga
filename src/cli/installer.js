@@ -2,14 +2,12 @@
 const path = require('path');
 const readline = require('readline');
 const { spawn } = require('child_process');
-const soft = require('../softconfig.js');
 require('colors');
 
 const err = (...args) => console.error('!>'.red, ...args);
 const log = (...args) => console.log('>>'.green, ...args);
 
 const INSTALLER_PATH = path.join(__dirname, '../../tools/install_launcher.sh');
-const LEGACY_PATH = path.join(soft.CONFIG_HOME, '/Legacy/Brickadia/Binaries/Linux/BrickadiaServer-Linux-Shipping');
 
 // wait for user response
 function prompt() {

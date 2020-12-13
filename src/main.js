@@ -76,8 +76,8 @@ const program = require('commander')
       conf = config.read(configFile);
     }
 
-    // if legacy config is provided
-    if (localInstall) conf.server.__LOCAL = true; // DEPRECATED
+    // if local install is provided
+    if (localInstall) conf.server.__LOCAL = true;
 
     // check if the auth files don't exist
     if (!auth.exists(path.join(workDir, soft.DATA_PATH, 'Saved/Auth')) && !auth.exists()) {
