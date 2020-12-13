@@ -44,9 +44,14 @@ async function authFromPrompt() {
 
   // generate auth tokens
   console.log('>>'.green, 'Generating auth tokens...');
+  const timeout = setTimeout(() => {
+    console.log('>>'.green, 'Probably also installing the game...');
+  },  10000);
   try {
     files = await genAuthFiles(email, password);
+    clearTimeout(timeout);
   } catch (err) {
+    clearTimeout(timeout);
     console.error('!>'.red, 'Error generating tokens\n', err);
     return false;
   }
