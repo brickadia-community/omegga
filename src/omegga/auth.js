@@ -50,7 +50,7 @@ async function genAuthFiles(email, password) {
   // remove existing temporary install path
   await removeTempDir();
 
-  if (fs.existSync(soft.LOCAL_LAUNCHER)) {
+  if (fs.existsSync(soft.LOCAL_LAUNCHER)) {
     verboseLog('Generating auth with local launcher');
   }
 
@@ -102,12 +102,19 @@ async function genAuthFiles(email, password) {
       omegga.stop();
     });
 
-    // if the server closes and the promise hasn't resolved, reject
-    omegga.once('exit', () => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
       verboseLog('Brickadia closed');
       removeTempDir();
       if (!resolved) reject('temp server could not start');
-    });
+    };
+
+    // if the server closes and the promise hasn't resolved, reject
+    omegga.once('closed', finish);
+    omegga.once('exit', finish);
+    omegga.once('server:stopped', finish);
   });
 
   // read the auth files on success
