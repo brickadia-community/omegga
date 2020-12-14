@@ -15,12 +15,11 @@ Already supports a5 for when a5 comes out!
 
 ## Install
 
-You can run omegga in the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) (I recommend Ubuntu) or on an actual linux install.
+You can run omegga in the [Windows Subsystem for Linux](#wsl) (I recommend Ubuntu) or on an actual linux install.
 
 ### Quick Setup (automatically download launcher)
 
-1. Install linux if you haven't already ([Windows Install](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps))
-    * Ubuntu is sufficient ([Microsoft Store](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6))
+1. Install linux if you haven't already ([Windows Install](#wsl))
 
 2. Run these commands (Installs a node installer, installs node, installs omegga):
 
@@ -38,7 +37,7 @@ Then head over to [Running Omegga](#running)!
 Omegga depends on:
 
   * linux
-    * [Windows Install](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps)
+    * [Windows Install](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) (WSL 1)
       * [Windows Ubuntu](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6)
   * Node v14+ ([ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions))
   * One of:
@@ -59,6 +58,28 @@ Alternatively, you can use a development/local omegga
     npm link
 
 If you have EACCES errors on WSL, you probably have a conflicting node install. Some people say just closing and re-opening the terminal is enough to fix it, this and deleting node wasn't enough for me. I think windows just has wonky permissions. LMK if you figure out a solution...
+
+### WSL
+
+These are simple instructions to get Windows System for Linux installed.
+
+**Note**: WSL 2 at the moment does not work until the networking issue is figured out.
+
+To enable WSL, run this in powershell as an administrator:
+
+```powershell
+dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+```
+
+Then in the Microsoft Store, download a linux:
+    * [Ubuntu](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6)
+
+[More Advanced Instructions here](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) if the above is not sufficient.
+
+To set WSL version from 2 to 1:
+
+1. Check WSL version with `wsl -l -v` in cmd
+2. In Administator cmd, run `wsl --set-version <distribution name> 1` where `<distribution name>` is `Ubuntu`, `Debian`, etc. (From the NAME section of the previous command)
 
 ## Running
 
