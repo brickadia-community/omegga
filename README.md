@@ -98,6 +98,14 @@ server:
   branch: unstable
 ```
 
+## Troubleshooting
+
+Narrow down where the issue might be with the following options:
+
+* If your brickadia is crashing and omegga works, type `/debug` into omegga console or run with `omegga --debug`
+* If your omegga isn't starting, run with `omegga --verbose`
+* If a plugin is crashing, message the plugin developer
+
 ## Uninstalling
 
 ```sh

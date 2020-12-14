@@ -40,7 +40,7 @@ const MATCHERS = [
 // TODO: safe broadcast parsing
 
 const verboseLog = (...args) => {
-  if (!process.env.VERBOSE) return;
+  if (!global.VERBOSE) return;
   if (Omegga.log)
     Omegga.log('V>'.magenta, ...args);
   else
@@ -68,6 +68,7 @@ class Omegga extends OmeggaWrapper {
 
   constructor(serverPath, cfg, options={}) {
     super(serverPath, cfg);
+    this.verbose = global.VERBOSE;
 
     // inject commands
     verboseLog('Setting up command injector');

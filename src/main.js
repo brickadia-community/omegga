@@ -26,7 +26,7 @@ updateNotifier({pkg: pkg}).notify();
 const err = (...args) => console.error('!>'.red, ...args);
 const log = (...args) => console.log('>>'.green, ...args);
 const verboseLog = (...args) => {
-  if (!process.env.VERBOSE) return;
+  if (!global.VERBOSE) return;
   if (Omegga.log)
     Omegga.log('V>'.magenta, ...args);
   else
@@ -49,7 +49,7 @@ const program = require('commander')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async() => {
     const { debug, verbose } = program.opts();
-    process.env.VERBOSE = verbose;
+    global.VERBOSE = verbose;
 
     // default working directory is the one specified in config
     let workDir = config.store.get('defaultOmegga');

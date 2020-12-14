@@ -10,7 +10,7 @@ const stripAnsi = require('strip-ansi');
 require('colors');
 
 const verboseLog = (...args) => {
-  if (!process.env.VERBOSE) return;
+  if (!global.VERBOSE) return;
   if (Omegga.log)
     Omegga.log('V>'.magenta, ...args);
   else

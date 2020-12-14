@@ -11,6 +11,7 @@ const bootstrap = (omegga) => ({
   bootstrap: [{
     host: Object.freeze({...omegga.host}),
     version: omegga.version,
+    verbose: global.VERBOSE,
     savePath: omegga.savePath,
     path: omegga.path,
     configPath: omegga.configPath,
