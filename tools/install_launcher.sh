@@ -12,7 +12,7 @@ if ! [[ $(which tar) && $(which wget) ]]; then
   echo ">! Missing dependencies, please run:" >&2
   echo "  apt-get install wget tar" >&2
   echo
-  exit 0
+  exit 1
 fi;
 
 if ! [[ $(which omegga) ]]; then
