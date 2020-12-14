@@ -85,11 +85,14 @@ Omegga will tell you when it's out of date. You can update with this command:
 * Omegga config is located in a generated `omegga-config.yml`
 * Plugin config is handled by plugin or inside the web-ui's plugins tab.
 
-You can use the `unstable` brickadia branch by specifying `branch: unstable` in the `server` section of `omegga-config.yml`:
+Example available `omegga-config.yml` fields
 
 ```yaml
 omegga:
   port: 8080
+  webui: true
+  https: true
+  debug: false
 server:
   port: 7777
   branch: unstable
@@ -376,7 +379,7 @@ class PluginName {
     console.info('constructed my plugin!');
   }
 
-  init() {
+  async init() {
     Omegga
       .on('chatcmd:ping', (name, ...args) => {
         Omegga.broadcast(`pong @ ${name} + ${args.length} args`);
@@ -387,7 +390,7 @@ class PluginName {
       });
   }
 
-  stop() {
+  async stop() {
     // any remove events are not necessary because the VM removes the code
   }
 }
@@ -427,7 +430,7 @@ class PluginName {
     this.store = store;
   }
 
-  init() {
+  async init() {
     this.omegga
       .on('chatcmd:ping', (name, ...args) => {
         this.omegga.broadcast(`pong @ ${name} + ${args.length} args`);
@@ -438,7 +441,7 @@ class PluginName {
       });
   }
 
-  stop() {
+  async stop() {
     this.omegga
       .removeAllListeners('chatcmd:ping')
       .removeAllListeners('chatcmd:pos');

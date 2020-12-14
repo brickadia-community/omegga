@@ -18,7 +18,6 @@ updateNotifier({pkg: pkg}).notify();
 // TODO: update plugins via git pull if there's no pending changes
 // TODO: run plugin by either index.js or omegga.entrypoint file w/ stdio message passing
   json rpc?
-// TODO: web interface instead of blessed
 
 // TODO: let omegga bundle config (roles, bans, server config) to zip
 // TODO: let omegga unbundle config from zip to current omegga dir
@@ -26,6 +25,13 @@ updateNotifier({pkg: pkg}).notify();
 
 const err = (...args) => console.error('!>'.red, ...args);
 const log = (...args) => console.log('>>'.green, ...args);
+const verboseLog = (...args) => {
+  if (!process.env.VERBOSE) return;
+  if (Omegga.log)
+    Omegga.log('V>'.magenta, ...args);
+  else
+    console.log('V>'.magenta, ...args);
+};
 
 // write a default config file
 const createDefaultConfig = () => {
@@ -40,11 +46,14 @@ const program = require('commander')
   .description(pkg.description)
   .version(pkg.version)
   .option('-d, --debug', 'Print all console logs rather than just chat messages')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async() => {
-    const { debug } = program.opts();
+    const { debug, verbose } = program.opts();
+    process.env.VERBOSE = verbose;
 
     // default working directory is the one specified in config
     let workDir = config.store.get('defaultOmegga');
+    verboseLog('Using working directory', workDir.yellow);
 
     // check if a local install exists
     const localInstall = fs.existsSync(soft.LOCAL_LAUNCHER);
@@ -71,13 +80,18 @@ const program = require('commander')
 
     // create a default config file if it does not already exist, otherwise load in the existing one
     if (!configFile) {
+      verboseLog('Creating a new config');
       conf = createDefaultConfig();
     } else {
+      verboseLog('Reading config file from', configFile.yellow);
       conf = config.read(configFile);
     }
 
     // if local install is provided
-    if (localInstall) conf.server.__LOCAL = true;
+    if (localInstall) {
+      verboseLog('Using omegga\'s brickadia-launcher');
+      conf.server.__LOCAL = true;
+    }
 
     // check if the auth files don't exist
     if (!auth.exists(path.join(workDir, soft.DATA_PATH, 'Saved/Auth')) && !auth.exists()) {
@@ -99,8 +113,15 @@ const program = require('commander')
       debug,
     };
 
+    verboseLog('Launching with options', options);
+
     // setup the server
     const server = new Omegga(workDir, conf, options);
+    verboseLog('Created omegga object');
+
+    if (verbose) {
+      server.on('*', ev => ev !== 'line' && verboseLog('EVENT'.green, ev));
+    }
 
     // create a terminal
     Omegga.setTerminal(new Terminal(server, options));
@@ -108,6 +129,7 @@ const program = require('commander')
 
     // start the server
     server.start();
+    verboseLog('Running start');
   });
 
 program

@@ -73,7 +73,7 @@ class NodePlugin extends Plugin {
 
       // start the loaded plugin
       if (typeof this.loadedPlugin.init === 'function')
-        this.loadedPlugin.init();
+        await this.loadedPlugin.init();
 
       this.emitStatus();
       return true;
@@ -95,7 +95,7 @@ class NodePlugin extends Plugin {
     try {
       // run the stop func on the plugin if applicable
       if (typeof this.loadedPlugin.stop === 'function')
-        this.loadedPlugin.stop();
+        await this.loadedPlugin.stop();
 
       // unload the plugin
       disrequire(this.pluginFile);

@@ -38,6 +38,14 @@ const MATCHERS = [
 
 // TODO: safe broadcast parsing
 
+const verboseLog = (...args) => {
+  if (!process.env.VERBOSE) return;
+  if (Omegga.log)
+    Omegga.log('V>'.magenta, ...args);
+  else
+    console.log('V>'.magenta, ...args);
+};
+
 class Omegga extends OmeggaWrapper {
   // pluginloader is not private so plugins can potentially add more formats
   pluginLoader = undefined;
@@ -61,6 +69,7 @@ class Omegga extends OmeggaWrapper {
     super(serverPath, cfg);
 
     // inject commands
+    verboseLog('Setting up command injector');
     commandInjector(this, this.logWrangler);
 
     // launch options (disabling webserver)
@@ -73,23 +82,30 @@ class Omegga extends OmeggaWrapper {
     this.configPath = path.join(this.path, soft.DATA_PATH, 'Saved/Server');
 
     // create dir folders
+    verboseLog('Creating directories');
     file.mkdir(this.savePath);
     file.mkdir(this.configPath);
 
     // ignore auth file copy
-    if (!options.noauth)
+    if (!options.noauth) {
+      verboseLog('Copying auth files');
       this.copyAuthFiles();
+    }
 
     // create the webserver if it's enabled
     // the web interface provides access to server information while the server is running
     // and lets you view chat logs, disable plugins, etc
-    if (!options.noweb)
+    if (!options.noweb) {
+      verboseLog('Creating webserver');
       this.webserver = new Webserver(options, this);
+    }
 
     if (!options.noplugin) {
+      verboseLog('Creating plugin loader');
       // create the pluginloader
       this.pluginLoader = new PluginLoader(path.join(this.path, soft.PLUGIN_PATH), this);
 
+      verboseLog('Creating loading plugins');
       // load all the plugin formats in
       this.pluginLoader.loadFormats(path.join(__dirname, 'plugin'));
     }
@@ -108,12 +124,14 @@ class Omegga extends OmeggaWrapper {
     this.starting = false;
 
     // add all the matchers to the server
+    verboseLog('Adding matchers');
     for (const matcher of MATCHERS) {
       const {pattern, callback} = matcher(this);
       this.addMatcher(pattern, callback);
     }
 
     process.on('uncaughtException', async err => {
+      verboseLog('Uncaught exception', err);
       this.emit('error', err);
       // publish stop to database
       if (this.webserver && this.webserver.database) {
@@ -143,22 +161,37 @@ class Omegga extends OmeggaWrapper {
     if (this.webserver) await this.webserver.start();
     if (this.pluginLoader) {
       // scan for plugins
+      verboseLog('Scanning for plugins');
       await this.pluginLoader.scan();
+
       // load the plugins
+      verboseLog('Loading plugins');
       await this.pluginLoader.reload();
     }
+
     super.start();
     this.emit('server:starting');
   }
 
   // unload load plugins and stop the server
   async stop() {
-    if (!this.started && !this.starting) return;
-    if (this.stopping) return;
+    if (!this.started && !this.starting) {
+      verboseLog('Stop called while server wasn\'t started or was starting');
+      return;
+    }
+
+    if (this.stopping) {
+      verboseLog('Stop called while server was starting');
+      return;
+    }
+
     this.stopping = true;
     this.emit('server:stopping');
-    if (this.pluginLoader)
+    if (this.pluginLoader) {
+      verboseLog('Unloading plugins');
       await this.pluginLoader.unload();
+    }
+    verboseLog('Stopping server');
     super.stop();
     if (this.stopping)
       this.emit('server:stopped');
