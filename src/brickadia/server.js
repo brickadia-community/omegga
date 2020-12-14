@@ -17,6 +17,20 @@ const verboseLog = (...args) => {
     console.log('V>'.magenta, ...args);
 };
 
+const errorLog = (...args) => {
+  if (Omegga.error)
+    Omegga.error('!>'.red, ...args);
+  else
+    console.error('!>'.red, ...args);
+};
+
+// list of errors that can be solved by yelling at the user
+const knownErrors = [{
+  name: 'MISSING_LIBGL',
+  solution: 'apt-get install libgl1-mesa-glx',
+  match: /error while loading shared libraries: libGL\.so\.1: cannot open shared object file/,
+}];
+
 // Start a brickadia server
 class BrickadiaServer extends EventEmitter {
   #child = null;
@@ -139,6 +153,11 @@ class BrickadiaServer extends EventEmitter {
   errorListener(line) {
     verboseLog('ERROR'.red, line);
     this.emit('err', line);
+    for (const {match, solution, name, message} of knownErrors) {
+      if (line.match(match)) {
+        errorLog(`Encountered ${name.red}. ${solution ? 'Known fix:\n  ' + solution : message || 'Unknown error.'}`);
+      }
+    }
   }
 
   exitListener() {

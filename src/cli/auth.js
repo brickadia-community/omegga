@@ -52,7 +52,7 @@ async function authFromPrompt() {
     clearTimeout(timeout);
   } catch (err) {
     clearTimeout(timeout);
-    console.error('!>'.red, 'Error generating tokens\n', err);
+    console.error('!>'.red, 'Error generating tokens:', err);
     return false;
   }
 
