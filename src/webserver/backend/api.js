@@ -376,6 +376,90 @@ module.exports = (server, io) => {
       return resp;
     });
 
+    // create a new user (host only at the moment)
+    // TODO: add permission check
+    rpc.addMethod('users.create', async([username, password]) => {
+      if (!socket.user.isOwner)
+        return 'missing permission';
+
+      // body is username and password
+      if (typeof username !== 'string' || typeof password !== 'string')
+        return 'username/password not a string';
+
+      // validate username
+      if (!username.match(/^\w{0,32}$/))
+        return 'username is not allowed';
+
+      // this validation is here for _those_ people
+      if (password.length === 0 || password.length > 128)
+        return 'invalid password size';
+
+      // set owner's credential as the first user
+      if (socket.user.isOwner && socket.user.username === '') {
+        // set the owner's username and password
+        try {
+          await database.stores.users.update({ _id: socket.user._id }, {
+            username,
+            hash: await database.hash(password),
+          });
+        } catch (e) {
+          error('error setting owner password', e);
+          return 'error setting owner password';
+        }
+
+        log(`created account as "${username.yellow}"`);
+
+        // update
+        return '';
+      }
+
+      // check if user exists
+      if (await database.userExists(username))
+        return 'user already exists';
+
+      try {
+        await database.createUser(username, password);
+      } catch (e) {
+        error('error creating new user',e);
+        return 'error creating new user';
+      }
+
+      log(`created new user "${username.yellow}"`);
+
+      return '';
+    });
+
+    // change a user's password
+    // TODO: add permission check
+    rpc.addMethod('users.passwd', async([username, password]) => {
+      // the owner can change names and the user can change their own name
+      if (!socket.user.isOwner && username !== socket.user.username)
+        return 'missing permission';
+
+      // body is username and password
+      if (typeof username !== 'string' || typeof password !== 'string')
+        return 'username/password not a string';
+
+      // validate username
+      if (!username.match(/^\w{0,32}$/))
+        return 'username is not allowed';
+
+      // check if user exists
+      if (!await database.userExists(username))
+        return 'user does not exist';
+
+      try {
+        await database.userPasswd(username, password);
+      } catch (e) {
+        error('error setting user password', e);
+        return 'error setting user\'s password';
+      }
+
+      log(`changed password for "${username.yellow}"`);
+
+      return '';
+    });
+
     // send server status at request
     // TODO: server status permission check
     rpc.addMethod('server.status', () => {

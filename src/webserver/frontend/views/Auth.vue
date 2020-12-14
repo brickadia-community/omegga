@@ -43,15 +43,6 @@ body {
   }
 }
 
-.popout-inputs {
-  @include column;
-  background-color: $br-bg-secondary;
-
-  .input {
-    margin: 10px;
-  }
-}
-
 .turkey {
   filter: blur(10px);
   position: absolute;
@@ -142,7 +133,7 @@ export default {
   computed: {
     // check if entered credentials are okay
     ok() {
-      return this.username.match(/^\w{0,32}$/) && this.username.length != 0 && this.password.length != 0
+      return this.username.match(/^\w{0,32}$/) && this.username.length !== 0 && this.password.length !== 0
     },
     // check if entered credentials are blank
     blank() {

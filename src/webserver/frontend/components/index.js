@@ -7,6 +7,8 @@ import './PopoutContent.vue';
 import './NavBar.vue';
 
 import './Loader.vue';
+import './Modal.vue';
+import './Dimmer.vue';
 
 import './Scroll.vue';
 import './InfiniteScroll.vue';

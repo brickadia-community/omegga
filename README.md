@@ -104,10 +104,10 @@ You will have to delete your omegga data folders manually
     * [x] chat with players
     * [ ] view recent console logs
     * [x] view server status
-    * [ ] multiple users
+    * [x] multiple users
     * [ ] roles for each user
     * [ ] chatcmd history
-    * [ ] track players kicked/banned
+    * [x] track players kicked/banned
     * [ ] automated/scheduled server restarting (when noone is on)
   * [x] terminal interface
     * [x] reload plugins
@@ -116,7 +116,7 @@ You will have to delete your omegga data folders manually
     * [x] view server status
   * [ ] metrics
     * [ ] bricks over time charts
-    * [ ] player online time tracking
+    * [x] player online time tracking
     * [x] chat logs
     * [ ] chats/hour tracking
   * [x] plugins in other languages via JSON RPC over stdio

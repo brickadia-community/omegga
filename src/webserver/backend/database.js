@@ -35,6 +35,7 @@ class Database {
         a.localeCompare(b, 'en', {ignorePunctuation: true}),
     };
 
+
     // create all the stores
     this.stores = {
       users: new Datastore({filename: path.join(omegga.dataPath, soft.USER_STORE), ...dbOpts}),
@@ -108,6 +109,7 @@ class Database {
   // get the running instance id of this omegga
   async getInstanceId() {
     if (serverInstance) return serverInstance._id;
+
     const doc = await this.stores.server.insert({
       type: 'app:start',
       date: Date.now(),
@@ -222,9 +224,15 @@ class Database {
     return (await this.stores.users.count({type: 'user'})) === 0;
   }
 
+  // hash a password
+  async hash(password) {
+    return await bcrypt.hash(password, 10);
+  }
+
   // create an admin user account, username can be blank (no password)
   async createAdminUser(username, password) {
-    const hash = await bcrypt.hash(password, 10);
+    const hash = await this.hash(password);
+
     // create an owner user
     const user = this.stores.users.insert({
       // this is a user
@@ -244,6 +252,50 @@ class Database {
       playerId: '',
     });
     return user;
+  }
+
+  // determine if a user with this name exists
+  async userExists(username) {
+    return (await this.stores.users.count({type: 'user', username})) > 0;
+  }
+
+  // create a regular  user account
+  async createUser(username, password) {
+    if (await this.userExists(username))
+      throw new Error('user already exists');
+
+    const hash = await this.hash(password);
+    // create an owner user
+    const user = this.stores.users.insert({
+      // this is a user
+      type: 'user',
+      created: Date.now(),
+      lastOnline: 0,
+
+      // credentials
+      username,
+      hash,
+
+      // permissions
+      isOwner: false,
+      roles: [],
+
+      // brickadia player uuid
+      playerId: '',
+    });
+    return user;
+  }
+
+  // set a user's password
+  async userPasswd(username, password) {
+    const hash = await this.hash(password);
+
+    if (!this.userExists(username)) throw new Error('user does not exist');
+
+    await this.stores.users.update(
+      {type: 'user', username},
+      {$set: { hash }}
+    );
   }
 
   // get a user from credentials

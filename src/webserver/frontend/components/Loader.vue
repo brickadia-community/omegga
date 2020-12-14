@@ -61,10 +61,10 @@
 
 <template>
   <div :class="['loader', {
-    active: (typeof active !== 'undefined' && active),
-    inline: (typeof inline !== 'undefined'),
+    active,
+    inline,
   }]" @click="$emit('click', $event)">
-    <div :class="['loader-container', {blur: (typeof blur !== 'undefined')}]">
+    <div :class="['loader-container', { blur }]">
       <LoaderIcon :size="sizes[size || 'normal']" :class="['loader-icon']" />
       <div><slot /></div>
     </div>
@@ -77,7 +77,12 @@ import LoaderIcon from 'vue-tabler-icons/icons/LoaderIcon';
 
 export default Vue.component('br-loader', {
   components: { LoaderIcon },
-  props: ['active', 'size', 'blur', 'inline'],
+  props: {
+    active: Boolean,
+    size: String,
+    blur: Boolean,
+    inline: Boolean,
+  },
   data() {
     return {
       sizes: {

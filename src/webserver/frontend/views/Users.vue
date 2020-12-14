@@ -113,17 +113,17 @@
       <span style="flex: 1"/>
       <br-button
         normal
-        v-if="omeggaData.userless"
-        @click=""
+        @click="toggleCredentials()"
         data-tooltip="Enable user sign-in"
       >
-        <CirclePlusIcon />
-        Enable Users
+        <CirclePlusIcon v-if="omeggaData.userless"/>
+        <LockIcon v-else />
+        {{omeggaData.userless ? 'Enable Users' : 'Change Password'}}
       </br-button>
       <br-button
         normal
-        v-if="!omeggaData.userless"
-        @click=""
+        v-if="!omeggaData.userless && user.isOwner"
+        @click="toggleAddUser()"
         data-tooltip="Add a new user"
       >
         <UserPlusIcon />
@@ -151,12 +151,12 @@
                   <tr>
                     <th
                       style="text-align: left; width: 100%"
-                      @click="setSort('name')"
+                      @click="setSort('username')"
                     >
                       <span>
-                        Name
-                        <SortAscendingIcon v-if="sort === 'name' && direction === 1" />
-                        <SortDescendingIcon v-if="sort === 'name' && direction === -1" />
+                        Username
+                        <SortAscendingIcon v-if="sort === 'username' && direction === 1" />
+                        <SortDescendingIcon v-if="sort === 'username' && direction === -1" />
                       </span>
                     </th>
                     <th @click="setSort('lastOnline')" data-tooltip="When the user was last active">
@@ -176,15 +176,15 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="u in users" @click="clickUser(u)" :class="{active: u.id === $route.params.id}">
+                  <tr v-for="u in users" @click="clickUser(u)" :class="{active: u.username === $route.params.id}">
                     <td>
-                      {{u.name || 'Admin'}}
-                      <span v-if="(u.name || 'Admin') === user.username" style="font-size: 12px;">
+                      {{u.username || 'Admin'}}
+                      <span v-if="(u.username || 'Admin') === user.username" style="font-size: 12px;">
                         (You)
                       </span>
                     </td>
-                    <td style="text-align: right;" :data-tooltip="new Date(u.lastOnline)">
-                      {{duration(u.seenAgo)}}
+                    <td style="text-align: right;" :data-tooltip="u.lastOnline ? new Date(u.lastOnline) : 'Never'">
+                      {{u.lastOnline ? duration(u.seenAgo) : 'Never'}}
                     </td>
                     <td style="text-align: right;" :data-tooltip="new Date(u.created)">
                       {{duration(u.createdAgo)}}
@@ -234,13 +234,66 @@
           </div>
         </div>
         <div class="player-inspector-container">
-          <br-navbar>
-            {{selectedUser}}
-          </br-navbar>
+          <br-navbar>Not Implemented</br-navbar>
           <div class="player-inspector">
             <router-view :key="$route.params.id" />
           </div>
         </div>
+        <br-dimmer :visible="showCredentials || showCreateUser">
+          <br-loader :active="modalLoading" size="huge">Submitting</br-loader>
+          <br-modal :visible="!modalLoading">
+            <br-header>
+              {{showCreateUser ? 'Create New User' : 'Update Credentials'}}
+            </br-header>
+            <br-popout-content>
+              <p v-if="omeggaData.userless">This will require you to enter a password when you sign in.</p>
+              <p v-if="omeggaData.userless">This action cannot be undone.</p>
+              <p v-if="!omeggaData.userless && showCredentials">
+                Updating credentials for user &quot;{{username}}&quot;
+              </p>
+              <p v-if="showCreateUser">
+                Creating a new user. It&apos;s recommended to create a temporary password.
+              </p>
+              <p v-if="error" style="color: red">
+                Error: {{error}}
+              </p>
+            </br-popout-content>
+            <div class="popout-inputs">
+              <br-input
+                v-if="omeggaData.userless || showCreateUser"
+                placeholder="username"
+                type="text"
+                v-model="username"
+              />
+              <br-input
+                placeholder="password"
+                type="password"
+                v-model="password"
+              />
+              <br-input
+                placeholder="confirm password"
+                type="password"
+                v-model="confirm"
+              />
+            </div>
+            <br-footer>
+              <br-button main
+                :disabled="!ok || confirm !== password"
+                @click="submit(username, password)"
+              >
+                <UserPlusIcon v-if="showCreateUser" />
+                <LockIcon v-else />
+                {{showCreateUser ? 'Add' : 'Update'}}
+              </br-button>
+              <div style="flex: 1" />
+              <br-button warn
+                @click="hideModals"
+              >
+                <XIcon/>Cancel
+              </br-button>
+            </br-footer>
+          </br-modal>
+        </br-dimmer>
       </div>
     </page-content>
   </page>
@@ -256,20 +309,80 @@ import SortAscendingIcon from 'vue-tabler-icons/icons/SortAscendingIcon';
 import SortDescendingIcon from 'vue-tabler-icons/icons/SortDescendingIcon';
 import UserPlusIcon from 'vue-tabler-icons/icons/UserPlusIcon';
 import CirclePlusIcon from 'vue-tabler-icons/icons/CirclePlusIcon';
+import XIcon from 'vue-tabler-icons/icons/XIcon';
+import LockIcon from 'vue-tabler-icons/icons/LockIcon';
 
 import debounce from 'lodash/debounce';
 
 export default {
-  components: { RotateIcon, ArrowBarToLeftIcon, ArrowBarToRightIcon, ArrowLeftIcon, ArrowRightIcon, SortAscendingIcon, SortDescendingIcon, UserPlusIcon, CirclePlusIcon },
+  components: { RotateIcon, ArrowBarToLeftIcon, ArrowBarToRightIcon, ArrowLeftIcon, ArrowRightIcon, SortAscendingIcon, SortDescendingIcon, UserPlusIcon, CirclePlusIcon, XIcon, LockIcon, },
   created() {
     this.getUsers();
     setTimeout(() => {
-      if (this.nameLookup[this.$route.params.id]) {
+      if (this.userLookup[this.$route.params.id]) {
         this.update++;
       }
     }, 500);
   },
   methods: {
+    async submit(username, password) {
+      this.error = '';
+      if (password !== this.confirm)
+        return;
+
+      this.modalLoading = true;
+      let error;
+      try {
+        if (this.showCredentials) {
+          if (this.omeggaData.userless) {
+            error = await this.$$request('users.create', username, password);
+          } else {
+            error = await this.$$request('users.passwd', this.user.username, password);
+          }
+        } else if (this.showCreateUser) {
+          error = await this.$$request('users.create', username, password);
+        }
+
+        this.modalLoading = false;
+        if (!error) {
+          // if you are changing your credentials for the first time, it will force you to log back in
+          if (this.showCredentials && this.omeggaData.userless)
+            this.logout();
+          else
+            this.hideModals();
+          return;
+        }
+      } catch (e) {
+        console.error('error submitting form', e);
+      }
+
+      this.error = error;
+    },
+
+    toggleCredentials() {
+      this.showCredentials = !this.showCredentials;
+      this.showCreateUser = false;
+      if (!this.omeggaData.userless)
+        this.username = this.user.username;
+      this.error = '';
+    },
+
+    toggleAddUser() {
+      this.showCreateUser = !this.showCreateUser;
+      this.showCredentials = false;
+      this.username = '';
+      this.error = '';
+    },
+
+    hideModals() {
+      this.username = '';
+      this.password = '';
+      this.confirm = '';
+      this.showCredentials = false;
+      this.showCreateUser = false;
+      this.error = '';
+    },
+
     // get a list of users
     async getUsers() {
       this.loading = true;
@@ -287,8 +400,8 @@ export default {
 
     // redirect to a user page
     clickUser(user) {
-      if (this.$route.params.id !== user.id)
-        this.$router.push({path: `/users/${user.id}`});
+      if (this.$route.params.id !== user.username)
+        this.$router.push({path: `/users/${user.username}`});
     },
 
     // debounced search
@@ -314,13 +427,20 @@ export default {
   sockets: {
   },
   computed: {
+    ok() {
+      const nameOk = this.username.length !== 0 || !(this.showCredentials && !this.userless)
+      return this.username.match(/^\w{0,32}$/) && nameOk && this.password.length !== 0
+    },
+    blank() {
+      return this.username.length === 0 && this.password.length === 0
+    },
     selectedUser() {
       this.update;
-      if (this.nameLookup[this.$route.params.id]) {
-        return this.nameLookup[this.$route.params.id];
+      if (this.userLookup[this.$route.params.id]) {
+        return this.userLookup[this.$route.params.id];
       }
-      const user = this.users.find(p => p.id === this.$route.params.id);
-      if (user) return user.name;
+      const user = this.users.find(p => p.username === this.$route.params.id);
+      if (user) return user.username;
       return 'SELECT A USER';
     }
   },
@@ -335,6 +455,14 @@ export default {
       update: 0,
       loading: true,
       users: [],
+      showCredentials: false,
+      showCreateUser: false,
+      modalLoading: false,
+
+      error: '',
+      username: '',
+      password: '',
+      confirm: '',
     };
   },
 };

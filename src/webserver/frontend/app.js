@@ -13,6 +13,7 @@ Vue.prototype.logout = () =>
 Vue.prototype.user = {};
 Vue.prototype.roles = [];
 Vue.prototype.nameLookup = [];
+Vue.prototype.userLookup = [];
 Vue.prototype.showLogout = false;
 Vue.prototype.omeggaData = {};
 
