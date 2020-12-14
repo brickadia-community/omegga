@@ -4,6 +4,15 @@ Similar to [n42k's brikkit](https://github.com/n42k/brikkit), wraps brickadia's 
 
 Already supports a5 for when a5 comes out!
 
+## Screenshots
+
+![Generic omegga screenshot](https://i.imgur.com/AqJF2T0.png)
+
+[<img src="https://i.imgur.com/vGjKoB6.png" width="512"/>](https://i.imgur.com/vGjKoB6.png)
+[<img src="https://i.imgur.com/EhT1GBR.png" width="512"/>](https://i.imgur.com/EhT1GBR.png)
+[<img src="https://i.imgur.com/05K3dY3.png" width="512"/>](https://i.imgur.com/05K3dY3.png)
+
+
 ## Install
 
 You can run omegga in the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) (I recommend Ubuntu) or on an actual linux install.
@@ -70,9 +79,21 @@ Omegga will tell you when it's out of date. You can update with this command:
 
     npm i -g omegga
 
-## Screenshots
+## Configuration
 
-![Generic omegga screenshot](https://i.imgur.com/AqJF2T0.png)
+* CLI config via `omegga config`
+* Omegga config is located in a generated `omegga-config.yml`
+* Plugin config is handled by plugin or inside the web-ui's plugins tab.
+
+You can use the `unstable` brickadia branch by specifying `branch: unstable` in the `server` section of `omegga-config.yml`:
+
+```yaml
+omegga:
+  port: 8080
+server:
+  port: 7777
+  branch: unstable
+```
 
 ## Uninstalling
 
@@ -94,13 +115,13 @@ You will have to delete your omegga data folders manually
 
 # Planned Features
 
-  * [ ] web interface
+  * [ ] web interface (mostly done)
     * [x] reload plugins
     * [x] enable/disable plugins live
     * [x] live plugin reloading/unloading state
     * [x] browse chat history
     * [x] manage plugins config
-    * [ ] start/stop server
+    * [x] start/stop server
     * [x] chat with players
     * [ ] view recent console logs
     * [x] view server status
