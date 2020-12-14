@@ -67,10 +67,10 @@
   },
   "scripts": {
     "start": "node index.js",
-    "dist": "export MODE=production; npm run build",
     "lint": "npx eslint \"src/\"",
     "lint:fix": "npx eslint \"src/\" --fix",
-    "watch": "npx webpack --watch"
+    "watch": "npx webpack --watch",
+    "dist": "MODE=production npx webpack"
   },
   "author": "Meshiest",
   "license": "ISC",
