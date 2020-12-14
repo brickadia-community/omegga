@@ -137,6 +137,7 @@ class BrickadiaServer extends EventEmitter {
 
   // -- listeners for basic events (line, err, exit)
   errorListener(line) {
+    verboseLog('ERROR'.red, line);
     this.emit('err', line);
   }
 
