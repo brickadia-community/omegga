@@ -8,9 +8,9 @@ LAUNCHER_PATH=$HOME/.config/omegga/launcher
 FILE=$LAUNCHER_PATH/$TAR_FILE
 BINARY_PATH=$LAUNCHER_PATH/brickadia-launcher/main-brickadia-launcher
 
-if ! [[ $(which tar) && $(which wget) ]]; then
+if ! [[ $(which tar) && $(which wget) && $(which xz) ]]; then
   echo ">! Missing dependencies, please run:" >&2
-  echo "  apt-get install wget tar" >&2
+  echo "  apt-get install wget tar xz-utils" >&2
   echo
   exit 1
 fi;
