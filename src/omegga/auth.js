@@ -5,10 +5,21 @@ const Omegga = require('./server.js');
 const soft = require('../softconfig.js');
 const file = require('../util/file.js');
 const { write: writeConfig } = require('../brickadia/config.js');
+require('colors');
+
+const verboseLog = (...args) => {
+  if (!global.VERBOSE) return;
+  if (Omegga.log)
+    Omegga.log('V>'.magenta, ...args);
+  else
+    console.log('V>'.magenta, ...args);
+};
 
 // remove the temporary install
 async function removeTempDir() {
   if (fs.existsSync(soft.TEMP_DIR_NAME)) {
+    verboseLog('Removing temporary auth directory');
+
     // attempt to remove the temporary dir
     try { await file.rmdir(soft.TEMP_DIR_NAME); } catch (e) {
       // ignore fail - the directory probably doesn't exist
@@ -34,8 +45,14 @@ function writeAuthFiles(dstDir, files) {
 
 // from credentials, build brickadia auth tokens
 async function genAuthFiles(email, password) {
+  verboseLog('Generating auth files');
+
   // remove existing temporary install path
   await removeTempDir();
+
+  if (fs.existsSync(soft.LOCAL_LAUNCHER)) {
+    verboseLog('Generating auth with local launcher');
+  }
 
   // dummy omegga config
   const config = {
@@ -67,6 +84,7 @@ async function genAuthFiles(email, password) {
     let resolved = false;
     // auth succeeded if the server starts
     omegga.once('start', () => {
+      verboseLog('Auth succeeded');
       resolved = true;
       resolve(true);
 
@@ -76,6 +94,7 @@ async function genAuthFiles(email, password) {
 
     // auth failed if we get 'unauthorized'
     omegga.once('unauthorized', () => {
+      verboseLog('Auth failed');
       resolved = true;
       resolve(false);
 
@@ -83,11 +102,19 @@ async function genAuthFiles(email, password) {
       omegga.stop();
     });
 
-    // if the server closes and the promise hasn't resolved, reject
-    omegga.once('exit', () => {
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      verboseLog('Brickadia closed');
       removeTempDir();
       if (!resolved) reject('temp server could not start');
-    });
+    };
+
+    // if the server closes and the promise hasn't resolved, reject
+    omegga.once('closed', finish);
+    omegga.once('exit', finish);
+    omegga.once('server:stopped', finish);
   });
 
   // read the auth files on success
