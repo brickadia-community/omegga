@@ -67,7 +67,7 @@ class BrickadiaServer extends EventEmitter {
       `-port="${this.config.server.port}"`,
     ].filter(v => v)); // remove unused arguments
 
-    verboseLog('Spawned process');
+    verboseLog('Spawn process', this.#child ? this.#child.pid : 'failed'.red);
 
     this.#child.stdin.setEncoding('utf8');
     this.#outInterface = readline.createInterface({input: this.#child.stdout, terminal: false});
