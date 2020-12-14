@@ -72,7 +72,7 @@ dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux 
 ```
 
 Then in the Microsoft Store, download a linux:
-    * [Ubuntu](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6)
+* [Ubuntu](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6)
 
 [More Advanced Instructions here](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) if the above is not sufficient.
 
