@@ -27,8 +27,12 @@ const errorLog = (...args) => {
 // list of errors that can be solved by yelling at the user
 const knownErrors = [{
   name: 'MISSING_LIBGL',
-  solution: 'apt-get install libgl1-mesa-glx',
+  solution: 'apt-get install libgl1-mesa-glx libglib2.0-0',
   match: /error while loading shared libraries: libGL\.so\.1: cannot open shared object file/,
+}, {
+  name: 'MISSING_GLIB',
+  solution: 'apt-get install libgl1-mesa-glx libglib2.0-0',
+  match: /error while loading shared libraries: libgthread-2\.0\.so\.0: cannot open shared object file/,
 }];
 
 // Start a brickadia server
