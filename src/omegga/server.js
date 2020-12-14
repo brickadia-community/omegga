@@ -11,6 +11,7 @@ const soft = require('../softconfig.js');
 const { uuid, pattern } = require('../util/index.js');
 const file = require('../util/file.js');
 const Terminal = require('../cli/terminal.js');
+require('colors');
 
 const MATCHERS = [
   require('./matchers/join.js'),

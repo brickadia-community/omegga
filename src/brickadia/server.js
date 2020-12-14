@@ -7,6 +7,15 @@ const { spawn } = require('child_process');
 const readline = require('readline');
 const path = require('path');
 const stripAnsi = require('strip-ansi');
+require('colors');
+
+const verboseLog = (...args) => {
+  if (!process.env.VERBOSE) return;
+  if (Omegga.log)
+    Omegga.log('V>'.magenta, ...args);
+  else
+    console.log('V>'.magenta, ...args);
+};
 
 // Start a brickadia server
 class BrickadiaServer extends EventEmitter {
@@ -28,6 +37,8 @@ class BrickadiaServer extends EventEmitter {
   // start the server child process
   start() {
     const { email, password } = this.config.credentials || {};
+    verboseLog('Starting server', (!email && !password ? 'with' : 'without').yellow, 'credentials');
+    verboseLog('Running', (this.config.server.__LOCAL ? path.join(__dirname, '../../tools/brickadia.sh') : 'brickadia launcher').yellow);
 
     // handle local launcher support
     const launchArgs = this.config.server.__LOCAL ? [
@@ -55,16 +66,22 @@ class BrickadiaServer extends EventEmitter {
       password && `-Password="${password}"`, // remove password argument if not provided
       `-port="${this.config.server.port}"`,
     ].filter(v => v)); // remove unused arguments
+
+    verboseLog('Spawned process');
+
     this.#child.stdin.setEncoding('utf8');
     this.#outInterface = readline.createInterface({input: this.#child.stdout, terminal: false});
     this.#errInterface = readline.createInterface({input: this.#child.stderr, terminal: false});
     this.attachListeners();
+    verboseLog('Attached listeners');
   }
 
   // write a string to the child process
   write(line) {
-    if (this.#child)
+    if (this.#child) {
+      verboseLog('WRITE'.green, line.replace(/\n$/, ''));
       this.#child.stdin.write(line);
+    }
   }
 
   // write a line to the child process
@@ -74,9 +91,12 @@ class BrickadiaServer extends EventEmitter {
 
   // forcibly kills the server
   stop() {
-    if (!this.#child)
+    if (!this.#child) {
+      verboseLog('Cannot stop server as no subprocess exists');
       return;
+    }
 
+    verboseLog('Forcibly stopping server');
     // kill the process
     this.#child.kill('SIGINT');
 
@@ -88,6 +108,8 @@ class BrickadiaServer extends EventEmitter {
   cleanup() {
     if (!this.#child)
       return;
+
+    verboseLog('Cleaning up brickadia server');
 
     // detach listener
     this.detachListeners();
@@ -119,6 +141,7 @@ class BrickadiaServer extends EventEmitter {
   }
 
   exitListener() {
+    verboseLog('Exit listener fired');
     this.emit('closed');
     this.cleanup();
   }
