@@ -26,42 +26,139 @@ class Player {
   clearBricks(quiet=false) { this.#omegga.clearBricks(this.id, quiet); }
 
   // get a player's roles, if any
-  getRoles() {
-    const data = this.#omegga.getRoleAssignments().savedPlayerRoles[this.id];
+  static getRoles(omegga, id) {
+    const data = omegga.getRoleAssignments().savedPlayerRoles[id];
     return Object.freeze(data && data.roles ? data.roles : []);
   }
 
+  // get a player's roles, if any
+  getRoles() {
+    return Player.getRoles(this.#omegga, this.id);
+  }
+
   // get a player's permissions
-  getPermissions() {
-    const { roles, defaultRole } = this.#omegga.getRoleSetup();
+  static getPermissions(omegga, id) {
+    const { roles, defaultRole } = omegga.getRoleSetup();
 
     // if the player is the host, the player has every permission
-    if (this.isHost()) {
-      return Object.freeze(Object.fromEntries(defaultRole.permissions.map(p => [p.name, true])));
+    if (omegga.host.id === id) {
+      return Object.freeze(Object.fromEntries(
+        [].concat(
+          defaultRole.permissions.map(p => [p.name, true]),
+          // sometimes the default role does not have every permission listed
+          ...roles.map(r => r.permissions.map(p => [p.name, true])),
+        ),
+      ));
     }
 
-    // get the player's roles
-    const playerRoles = this.getRoles();
+    const DEFAULT_PERMS = {
+      moderator: [
+        'Bricks.ClearAll',
+        'Minigame.AlwaysLeave',
+        'Players.Kick',
+        'Players.TPInMinigame',
+        'Players.TPOthers',
+        'Self.Ghost',
+      ],
+      admin: [
+        'Bricks.ClearAll',
+        'Bricks.ClearOwn',
+        'Bricks.IgnoreTrust',
+        'Bricks.Load',
+        'Map.Environment',
+        'Minigame.AlwaysEdit',
+        'Minigame.AlwaysLeave',
+        'Minigame.AlwaysSwitchTeam',
+        'Minigame.MakeDefault',
+        'Minigame.MakePersistent',
+        'Minigame.UseAllBricks',
+        'Players.Ban',
+        'Players.Kick',
+        'Players.TPInMinigame',
+        'Players.TPOthers',
+        'Roles.Grant',
+        'Self.Ghost',
+        'Server.ChangeRoles',
+        'Server.ChangeSettings',
+        'Server.FreezeCamera',
+        'Tools.Selector.BypassLimits',
+        'Tools.Selector.BypassTimeouts',
+      ],
+    };
 
-    const permissions = {};
+    // get the player's roles
+    const playerRoles = Player.getRoles(omegga, id).map(r => r.toLowerCase());
+
+    // default player permissions
+    const permissions = {
+      'Bricks.ClearAll': false,
+      'Bricks.ClearOwn': true,
+      'Bricks.Delete': true,
+      'Bricks.Edit': true,
+      'Bricks.IgnoreTrust': false,
+      'Bricks.Paint': true,
+      'Bricks.Place': true,
+      'BricksItems.Spawn': true,
+      'Map.Change': false,
+      'Map.Environment': false,
+      'Map.SetSpawn': false,
+      'Minigame.AlwaysEdit': false,
+      'Minigame.AlwaysLeave': false,
+      'Minigame.AlwaysSwitchTeam': false,
+      'Minigame.Create': true,
+      'Minigame.MakePersistent': false,
+      'Minigame.UseAllBricks': false,
+      'Players.Ban': false,
+      'Players.TPInMinigame': false,
+      'Players.TPOthers': false,
+      'Players.TPSelf': true,
+      'Roles.Grant': false,
+      'Self.Flashlight': true,
+      'Self.Fly': true,
+      'Self.FreezeCamera': false,
+      'Self.Ghost': false,
+      'Self.Sprint': true,
+      'Self.Suicide': true,
+      'Tools.Selector.Use': true,
+    };
+
     // apply all permissions from default role
-    for (const p in defaultRole.permissions)
-      permissions[p.name] = p.bEnabled;
+    for (const p of defaultRole.permissions) {
+      // technically this can never be Unchanged so it's always on enabled or allowed
+      permissions[p.name] = p.state === 'Unchanged' ? permissions[p.name] : !!p.bEnabled || p.state === 'Allowed';
+    }
 
     // loop through all the roles
-    for (const role in roles) {
+    for (const role of roles) {
       // ignore ones the player does not have
-      if (!playerRoles.includes(role.name))
+      if (!playerRoles.includes(role.name.toLowerCase()))
         continue;
 
+      const defaultPerms = DEFAULT_PERMS[role.name.toLowerCase()] || [];
+      // iterate through default permissions
+      for (const perm of defaultPerms) {
+        // if they are not overriden, set it to true
+        if (!role.permissions.find(r => r.name === perm))
+          permissions[perm] = true;
+      }
+
       // add all the new permissions the player now has
-      for (const p in role.permissions) {
-        if (p.bEnabled)
-          permissions[p.name] = p.bEnabled;
+      for (const p of role.permissions) {
+        // permission is disabled on forbidden, persisted on unchanged, and enabled on bEnabled or Allowed
+        permissions[p.name] = p.state !== 'Forbidden' && (
+          p.state === 'Unchanged'
+            ? permissions[p.name]
+            : (permissions[p.name] || p.bEnabled) || p.state === 'Allowed');
+        permissions[p.name] = permissions[p.name] || p.bEnabled;
       }
     }
 
     return Object.freeze(permissions);
+  }
+
+  // get a player's permissions
+  getPermissions() {
+    return Player.getPermissions(this.#omegga, this.id);
   }
 
   // get player's name color
@@ -73,18 +170,19 @@ class Player {
       return color.rgbToHex(ownerRoleColor);
 
     // get the player's role
-    const playerRoles = this.getRoles();
+    const playerRoles = this.getRoles().map(r => r.toLowerCase());
 
     // only if the player actually has roles...
     if (playerRoles.length > 0) {
       // check the role list in reverse for the player's role (highest tier first)
-      for (const role in roles.reverse()) {
-        if (playerRoles.includes(role.name) && role.bHasColor)
-          return color.rgbToHex(role.color);
-      }
+      const found = roles.slice().reverse().find(role =>
+        role.bHasColor && playerRoles.includes(role.name.toLowerCase()));
+
+      if (found)
+        return color.rgbToHex(found.color);
     }
 
-    return Object.freeze(color.rgbToHex(defaultRole.bHasColor ? defaultRole.color : {r: 255, g: 255, b: 255, a: 255}));
+    return color.rgbToHex(defaultRole.bHasColor ? defaultRole.color : {r: 255, g: 255, b: 255, a: 255});
   }
 
   // get player's position
@@ -117,5 +215,3 @@ class Player {
 }
 
 module.exports = Player;
-
-// GetAll BRPlayerState PermissionsRoles Owner=BP_PlayerController_C_214782500

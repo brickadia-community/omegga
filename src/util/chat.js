@@ -6,6 +6,7 @@ const EMOTES = 'egg boiascended banleft gun omegga dableft cry sweat soon shrug 
 const sanitize = str => str
   // .replace(/&/g, '&')
   .replace(/>/g, '&gt;')
+  .replace(/_/g, '&und;')
   .replace(/</g, '&lt;')
   .replace(/"/g, '\\"')
   .replace(/:\w+:/g, s => {
@@ -14,5 +15,9 @@ const sanitize = str => str
       return `<emoji>${emote}</>`;
     return s;
   });
+const parseLinks = message => {
+  const regex = /(\b(https?):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
+  return message.replace(regex, '<link="$1">$1</>');
+};
 
-module.exports = { sanitize, EMOTES };
+module.exports = { sanitize, parseLinks, EMOTES };

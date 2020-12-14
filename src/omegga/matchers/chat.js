@@ -1,6 +1,19 @@
 module.exports = omegga => {
   // pattern to get PlayerController from a leave message
   const chatRegExp = /^(?<name>.+?): (?<message>.+)$/;
+  const kickRegExp = /^(?<name>.+?) was kicked by (?<kicker>.+?) \((?<reason>.+?)\)$/;
+
+  const exists = name => omegga.players.some(p => p.name === name);
+
+  const sanitizeMsg = msg => msg.toString()
+    .replace(/&gt;/g, '>')
+    .replace(/&und;/g, '_')
+    .replace(/&lt;/g, '<')
+    .replace(/&scl;/g, ';');
+
+  const sanitizeName = name => name.toString()
+    .replace(/&und;/g, '_');
+
   return {
     // listen for chat messages
     pattern(_line, logMatch) {
@@ -12,36 +25,49 @@ module.exports = omegga => {
       if (generator !== 'LogChat') return;
 
       // match the chat log to the chat message pattern
-      const match = data.match(chatRegExp);
-      if (!match) return null;
+      const chatMatch = data.match(chatRegExp);
+      const kickMatch = data.match(kickRegExp);
 
-      let { name, message } = match.groups;
+      if (chatMatch) {
+        let { name, message } = chatMatch.groups;
 
-      if (omegga.version === 'a5') {
-        message = message.toString()
-          .replace(/&scl;/g, ';')
-          .replace(/&gt;/g, '>')
-          .replace(/&lt;/g, '<');
+        if (omegga.version === 'a5') {
+          name = sanitizeName(name);
+          message = sanitizeMsg(message);
+        }
+
+        // no player has this name. probably a bug
+        if (!exists(name)) return;
+
+        // return the player with the corresponding controller
+        return { type: 'chat', name, message };
+      } else if (kickMatch) {
+        let { name, kicker, reason } = kickMatch.groups;
+        name = sanitizeName(name);
+        kicker = sanitizeName(kicker);
+        reason = sanitizeMsg(reason);
+
+        if (!exists(name) || !exists(kicker)) return;
+
+        return { type: 'kick', name, kicker, reason };
       }
 
-      // no player has this name. probably a bug
-      if (!omegga.players.some(p => p.name === name))
-        return;
-
-      // return the player with the corresponding controller
-      return { name, message };
     },
     // when there's a match, emit the chat message event
-    callback({ name, message }) {
-      omegga.emit('chat', name, message);
+    callback({ type, name, kicker, message, reason }) {
+      if (type === 'chat') {
+        omegga.emit('chat', name, message);
 
-      // chat command parsing, emit `chatcmd:test` when `!test` is sent in chat
-      if (message.startsWith('!')) {
-        const [cmd, ...args] = message.slice(1).split(' ');
-        if (cmd.length > 0) {
-          omegga.emit('chatcmd:' + cmd.toLowerCase(), name, ...args);
-          omegga.emit('chatcmd', cmd.toLowerCase(), name, ...args);
+        // chat command parsing, emit `chatcmd:test` when `!test` is sent in chat
+        if (message.startsWith('!')) {
+          const [cmd, ...args] = message.slice(1).split(' ');
+          if (cmd.length > 0) {
+            omegga.emit('chatcmd:' + cmd.toLowerCase(), name, ...args);
+            omegga.emit('chatcmd', cmd.toLowerCase(), name, ...args);
+          }
         }
+      } else if (type === 'kick') {
+        omegga.emit('kick', name, kicker, reason);
       }
     },
   };

@@ -2,14 +2,14 @@
 @import '../css/theme';
 
 .footer {
-  text-transform: uppercase;
-  display: flex;
-  height: $br-footer-height - 20px;
-  font-size: $br-footer-font;
-  color: $br-fg-footer;
   background-color: $br-bg-footer;
+  color: $br-fg-footer;
+  display: flex;
+  font-size: $br-footer-font;
   font-weight: bold;
+  height: $br-footer-height - 20px;
   padding: 10px;
+  text-transform: uppercase;
 }
 
 </style>

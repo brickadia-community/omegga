@@ -37,7 +37,7 @@ class Terminal {
     omegga.on('start', () => log('Server has started. Type', '/help'.yellow, 'for more commands'));
     omegga.on('unauthorized', () => err('Server failed authentication check'));
     omegga.on('error', e => err('Server caught unhandled exception:\n' + e));
-    omegga.on('exit', () => log('Server has closed, type', '/stop'.yellow, 'to close omegga'));
+    omegga.on('server:stopped', () => log('Server has closed. Type', '/stop'.yellow, 'to close omegga'));
 
     this.rl.on('line', this.handleLine.bind(this));
 
@@ -69,7 +69,7 @@ class Terminal {
 
       cmd: {
         desc: 'run a console command on the brickadia server. requires debug for log to show',
-        fn(args) {
+        fn(...args) {
           if (!this.omegga.started) {
             err('Omegga is not running');
             return;
@@ -96,7 +96,7 @@ class Terminal {
     Uptime: ${msToTime(status.time).yellow}
     Players: ${status.players.length === 0 ? 'none'.grey : ''}
       ${status.players
-    .map(p => `[${msToTime(p.time).grey}] ${p.name.yellow.underline}`)
+    .map(p => `[${msToTime(p.time).grey}] ${p.name.brightYellow}`)
     .join('\n      ')}
 `);
           } catch (e) {
@@ -111,6 +111,28 @@ class Terminal {
           log('Stopping server...');
           await this.omegga.stop();
           process.exit();
+        },
+      },
+
+      save: {
+        desc: 'Save bricks to a specified file',
+        async fn(...args) {
+          const name = args.join(' ');
+          if (!name.length)
+            return err('usage:', '/save <name>'.yellow);
+          log('Saving bricks');
+          this.omegga.saveBricks(name);
+        },
+      },
+
+      load: {
+        desc: 'Load bricks from a specified file',
+        async fn(...args) {
+          const name = args.join(' ');
+          if (!name.length)
+            return err('usage:', '/load <name>'.yellow);
+          log('Loading bricks');
+          this.omegga.loadBricks(name);
         },
       },
 
@@ -171,10 +193,10 @@ class Terminal {
     if (line.startsWith('/')) {
       const [cmd, ...args] = line.slice(1).split(' ');
       if (!this.commands[cmd]) {
-        err(`unrecognized command /${cmd.underline}. type /help for more info`.red);
+        err(`unrecognized command /${cmd.underline}. Type /help for more info`.red);
       } else {
         try {
-          const res = this.commands[cmd].fn(args);
+          const res = this.commands[cmd].fn(...args);
           if (res instanceof Promise) {
             await res;
           }
@@ -188,6 +210,14 @@ class Terminal {
         this.omegga.broadcast(`"[<b><color=\\"ff00ff\\">SERVER</></>]: ${sanitize(line)}"`);
         process.stdout.clearLine();
         this.log(`[${'SERVER'.brightMagenta.underline}]: ${line}`);
+
+        // if omegga is running a webserver - send this message in the chat log
+        if (this.omegga.webserver) {
+          const user = {name: 'SERVER', id: '', web: true, color: 'ff00ff'};
+          // create database entry, send to web ui
+          this.omegga.webserver.io.to('chat').emit('chat',
+            await this.omegga.webserver.database.addChatLog('msg', user, line));
+        }
       } else {
         err('Server is not started yet. type'.red,'/help'.yellow,'for more info'.red);
       }

@@ -4,6 +4,14 @@ Similar to [n42k's brikkit](https://github.com/n42k/brikkit), wraps brickadia's 
 
 Already supports a5 for when a5 comes out!
 
+## Screenshots
+
+[<img src="https://i.imgur.com/AqJF2T0.png" width="512"/>](https://i.imgur.com/AqJF2T0.png)
+[<img src="https://i.imgur.com/vGjKoB6.png" width="512"/>](https://i.imgur.com/vGjKoB6.png)
+[<img src="https://i.imgur.com/EhT1GBR.png" width="512"/>](https://i.imgur.com/EhT1GBR.png)
+[<img src="https://i.imgur.com/PLwgVlx.png" width="512"/>](https://i.imgur.com/PLwgVlx.png)
+
+
 ## Install
 
 You can run omegga in the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) (I recommend Ubuntu) or on an actual linux install.
@@ -70,9 +78,21 @@ Omegga will tell you when it's out of date. You can update with this command:
 
     npm i -g omegga
 
-## Screenshots
+## Configuration
 
-![Generic omegga screenshot](https://i.imgur.com/AqJF2T0.png)
+* CLI config via `omegga config`
+* Omegga config is located in a generated `omegga-config.yml`
+* Plugin config is handled by plugin or inside the web-ui's plugins tab.
+
+You can use the `unstable` brickadia branch by specifying `branch: unstable` in the `server` section of `omegga-config.yml`:
+
+```yaml
+omegga:
+  port: 8080
+server:
+  port: 7777
+  branch: unstable
+```
 
 ## Uninstalling
 
@@ -94,13 +114,21 @@ You will have to delete your omegga data folders manually
 
 # Planned Features
 
-  * [ ] web interface
-    * [ ] reload plugins
-    * [ ] enable/disable plugins live
-    * [ ] manage plugins config, perhaps by iframe
-    * [ ] chat with players
+  * [ ] web interface (mostly done)
+    * [x] reload plugins
+    * [x] enable/disable plugins live
+    * [x] live plugin reloading/unloading state
+    * [x] browse chat history
+    * [x] manage plugins config
+    * [x] start/stop server
+    * [x] chat with players
     * [ ] view recent console logs
-    * [ ] view server status
+    * [x] view server status
+    * [x] multiple users
+    * [ ] roles for each user
+    * [ ] chatcmd history
+    * [x] track players kicked/banned
+    * [ ] automated/scheduled server restarting (when noone is on)
   * [x] terminal interface
     * [x] reload plugins
     * [x] chat with players
@@ -108,8 +136,8 @@ You will have to delete your omegga data folders manually
     * [x] view server status
   * [ ] metrics
     * [ ] bricks over time charts
-    * [ ] player online time tracking
-    * [ ] chat logs
+    * [x] player online time tracking
+    * [x] chat logs
     * [ ] chats/hour tracking
   * [x] plugins in other languages via JSON RPC over stdio
     * [ ] LogWrangler impl for other languages
@@ -157,6 +185,28 @@ Every plugin requires a `doc.json` file to document which briefly describes the 
   "name": "My Plugin",
   "description": "Example Plugin",
   "author": "cake",
+  "config": {
+    "example-text": {
+      "description": "This is an example text input",
+      "default": "default value",
+      "type": "string"
+    },
+    "example-password": {
+      "description": "This is example text input hidden as a password",
+      "default": "hidden password value",
+      "type": "password"
+    },
+    "example-number": {
+      "description": "This is an example numerical input",
+      "default": 5,
+      "type": "number"
+    },
+    "example-bool": {
+      "description": "This is an example boolean input",
+      "default": false,
+      "type": "boolean"
+    }
+  },
   "commands": [
     {
       "name": "!ping",
@@ -179,6 +229,100 @@ Every plugin requires a `doc.json` file to document which briefly describes the 
   ]
 }
 ```
+
+## Plugin Config
+
+This is an example config section of a `doc.json`. The web ui provides an interface for editing these configs.
+
+```json
+  "config": {
+    "example-text": {
+      "description": "This is an example text input",
+      "default": "default value",
+      "type": "string"
+    },
+    "example-password": {
+      "description": "This is example text input hidden as a password",
+      "default": "hidden password value",
+      "type": "password"
+    },
+    "example-number": {
+      "description": "This is an example numerical input",
+      "default": 5,
+      "type": "number"
+    },
+    "example-bool": {
+      "description": "This is an example boolean input",
+      "default": false,
+      "type": "boolean"
+    }
+  }
+```
+
+That config section would generate the following default config:
+
+```json
+{
+  "example-text": "default value",
+  "example-password": "hidden password value",
+  "example-number": 5,
+  "example-bool": false,
+}
+```
+
+This is provided to plugins in the constructor or the RPC init function.
+
+## Plugin Store
+
+All plugins have the capability to get/set values in a very lightweight "database"
+
+The following **asynchronous** methods are provided:
+
+| Method | Arguments | Description |
+| ------ | --------- | ----------- |
+| `store.get` | key (string) | Get an object from plugin store |
+| `store.set` | key (string), value (any) | Store an object in plugin store |
+| `store.delete` | key (string) | Remove an object from plugin store |
+| `store.wipe` | _none_ | Remove all objects from plugin store |
+| `store.count` | _none_ | Count number of objects in plugin store |
+| `store.keys` | _none_ | Get keys for all objects in plugin store |
+
+### Example usage:
+
+```javascript
+// simple add function
+async function add() {
+  const a = await store.get('foo');
+  const b = await store.get('bar');
+  await store.set('baz', a + b);
+  await store.delete('foo');
+  await store.delete('bar');
+}
+
+(async () => {
+  // store foo and bar in the plugin store
+  await Promise.all([
+    store.set('foo', 5),
+    store.set('bar', 2),
+  ]);
+
+  // add foo and bar
+  await add();
+
+  // baz should be equal to 7
+  console.log('assert', await store.get('baz') === 7);
+
+  // demo of storing an object
+  await store.set('example object', {
+    foo: 'you can store objects in the store too',
+    bar: 'just don\'t expect it to work with anything recursive (cannot serialize)',
+  })
+})();
+````
+
+For Node Plugins, the `store` is the third argument passed into the constructor. For JSONRPC Plugins, the `"store.get"`/etc methods can be used.
+
+**JSONRPC Note:** `store.set` has an array of arguments (`[key, value]`)
 
 ## Node VM Plugins
 
@@ -223,8 +367,11 @@ Access to only `fs`, (`const fs = require('fs');`)
 ```javascript
 class PluginName {
   // the constructor also contains an omegga if you don't want to use the global one
-  constructor(omegga) {
+  // config and store variables are optional but provide access to the plugin data store
+  constructor(omegga, config, store) {
     this.omegga = omegga;
+    this.config = config;
+    this.store = store;
     console.info('constructed my plugin!');
   }
 
@@ -272,8 +419,11 @@ In a `plugins` directory create the following folder structure:
 
 ```javascript
 class PluginName {
-  constructor(omegga) {
+  // config and store variables are optional but provide access to the plugin data store
+  constructor(omegga, config, store) {
     this.omegga = omegga;
+    this.config = config;
+    this.store = store;
   }
 
   init() {
@@ -312,6 +462,12 @@ The server communicates with the plugin by sending messages to `stdin` and expec
 | `info` | line (string) | Same as `log` but with different colors |
 | `warn` | line (string) | Same as `log` but with different colors |
 | `trace` | line (string) | Same as `log` but with different colors |
+| `store.get` | key (string) | Get an object from plugin store |
+| `store.set` | [key (string), value (any)] | Store an object in plugin store |
+| `store.delete` | key (string) | Remove an object from plugin store |
+| `store.wipe` | _none_ | Remove all objects from plugin store |
+| `store.count` | _none_ | Count number of objects in plugin store |
+| `store.keys` | _none_ | Get keys for all objects in plugin store |
 | `exec` | cmd (string) | Writes a console command to Brickadia |
 | `writeln` | cmd (string) | Same as `exec` |
 | `broadcast` | line (string) | Broadcasts a message to the server|
@@ -333,7 +489,7 @@ The server communicates with the plugin by sending messages to `stdin` and expec
 
 | Method | Arguments | Description | Required |
 | ------ | --------- | ----------- | -------- |
-| `init` | _none_ | Returns _something_, called when plugin starts | &#9745; |
+| `init` | config object | Returns _something_, called when plugin starts | &#9745; |
 | `stop` | _none_ | Returns _something_, called when plugin is stopped | &#9745; |
 | `bootstrap` | [{ object full of omegga info (`host`, `version`, etc) }] | Run when plugin is started for base data | |
 | `plugin:players:raw` | [[... [player `name`, `id`, `controller`, `state`] ]] | Lists players on the server | |
@@ -474,7 +630,8 @@ rpc.addMethod('line', ([line]) => {
   ev.emit('line', line);
 });
 
-rpc.addMethod('init', async () => 'ok');
+// receive config object in init
+rpc.addMethod('init', async ([config]) => 'ok');
 rpc.addMethod('stop', async () => 'ok');
 
 

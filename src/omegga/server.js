@@ -7,20 +7,33 @@ const OmeggaWrapper = require('./wrapper.js');
 const { PluginLoader } = require('./plugin.js');
 const commandInjector = require('./commandInjector.js');
 const { Webserver } = require('../webserver/index.js');
-const Database = require('../database/index.js');
 const soft = require('../softconfig.js');
 const { uuid, pattern } = require('../util/index.js');
 const file = require('../util/file.js');
 const Terminal = require('../cli/terminal.js');
 
 const MATCHERS = [
-  require('./matchers/join.js'), // 'join' event => { name, id, state, controller }
-  require('./matchers/leave.js'), // 'leave' event => { name, id, state, controller }
-  require('./matchers/chat.js'), // 'chat' event => name, message; 'chatcmd:command' event => name, [...args]
-  require('./matchers/command.js'), // 'cmd:command' event => name, args (string)
-  require('./matchers/auth.js'), // assigns host 'host' event, 'start' event, 'unauthorized' event
-  require('./matchers/exit.js'), // 'exit' event
-  require('./matchers/version.js'), // 'version' event, check game version
+  require('./matchers/join.js'),
+  // 'join' event => { name, id, state, controller }
+
+  require('./matchers/leave.js'),
+  // 'leave' event => { name, id, state, controller }
+
+  require('./matchers/chat.js'),
+  // 'chat' event => name, message; 'chatcmd:command' event => name, [...args]
+  // 'kick' event => name, kicker, reason
+
+  require('./matchers/command.js'),
+  // 'cmd:command' event => name, args (string)
+
+  require('./matchers/auth.js'),
+  // assigns host, 'host' event, 'start' event, 'unauthorized' event
+
+  require('./matchers/exit.js'),
+  // 'exit' event
+
+  require('./matchers/version.js'),
+  // 'version' event, check game version
 ];
 
 // TODO: safe broadcast parsing
@@ -67,16 +80,11 @@ class Omegga extends OmeggaWrapper {
     if (!options.noauth)
       this.copyAuthFiles();
 
-    // the database provides omegga with metrics, chat logs, and more
-    // to help administrators keep track of their users and server
-    if (!options.nodb)
-      this.#database = new Database(options, this);
-
-    // create the webserver if it's enabled (requires the database to be enabled too)
+    // create the webserver if it's enabled
     // the web interface provides access to server information while the server is running
     // and lets you view chat logs, disable plugins, etc
-    if (!options.noweb && !options.nodb)
-      this.webserver = new Webserver(options, this.#database, this);
+    if (!options.noweb)
+      this.webserver = new Webserver(options, this);
 
     if (!options.noplugin) {
       // create the pluginloader
@@ -84,9 +92,6 @@ class Omegga extends OmeggaWrapper {
 
       // load all the plugin formats in
       this.pluginLoader.loadFormats(path.join(__dirname, 'plugin'));
-
-      // scan all available plugins
-      this.pluginLoader.scan();
     }
 
     // list of online players
@@ -108,9 +113,13 @@ class Omegga extends OmeggaWrapper {
       this.addMatcher(pattern, callback);
     }
 
-    process.on('uncaughtException', err => {
+    process.on('uncaughtException', async err => {
       this.emit('error', err);
-      try { this.stop(); } catch (e) { Omegga.error(e); }
+      // publish stop to database
+      if (this.webserver && this.webserver.database) {
+        this.database.addChatLog('server', {}, 'Server error');
+      }
+      try { await this.stop(); } catch (e) { Omegga.error(e); }
       process.exit();
     });
 
@@ -132,7 +141,12 @@ class Omegga extends OmeggaWrapper {
   async start() {
     this.starting = true;
     if (this.webserver) await this.webserver.start();
-    if (this.pluginLoader) await this.pluginLoader.reload();
+    if (this.pluginLoader) {
+      // scan for plugins
+      await this.pluginLoader.scan();
+      // load the plugins
+      await this.pluginLoader.reload();
+    }
     super.start();
     this.emit('server:starting');
   }
@@ -140,12 +154,18 @@ class Omegga extends OmeggaWrapper {
   // unload load plugins and stop the server
   async stop() {
     if (!this.started && !this.starting) return;
+    if (this.stopping) return;
+    this.stopping = true;
+    this.emit('server:stopping');
     if (this.pluginLoader)
       await this.pluginLoader.unload();
     super.stop();
-    this.emit('server:stopped');
+    if (this.stopping)
+      this.emit('server:stopped');
+    this.stopping = false;
     this.started = false;
     this.starting = false;
+    this.players = [];
   }
 
   // if auth files exist, copy them
@@ -207,7 +227,7 @@ class Omegga extends OmeggaWrapper {
   }
 
   // get the host
-  getHostId() { return this.host.id; }
+  getHostId() { return this.host ? this.host.id : ''; }
 
   // clear a user's bricks (by uuid, name, controller, or player object)
   // A5+ Only
@@ -217,7 +237,7 @@ class Omegga extends OmeggaWrapper {
       target = target.id;
 
     // if the target isn't a uuid already, find the player by name or controller and use that uuid
-    else  if (typeof target === 'string' && !uuid.match(target)) {
+    else if (typeof target === 'string' && !uuid.match(target)) {
       // only set the target if the player exists
       const player = this.getPlayer(target);
       target = player && player.id;

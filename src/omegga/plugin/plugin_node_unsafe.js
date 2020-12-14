@@ -44,10 +44,13 @@ class NodePlugin extends Plugin {
     const stopPlugin = reason => {
       Omegga.error('error launching node plugin', this.getName(), ':', reason);
       try{disrequire(this.pluginFile);}catch(e){Omegga.error('error unloading node plugin (2)', this.getName(), e);}
+      this.emitStatus();
       return false;
     };
 
     try {
+      const config = await this.storage.getConfig();
+
       // require the plugin itself
       const Plugin = require(this.pluginFile);
 
@@ -55,16 +58,28 @@ class NodePlugin extends Plugin {
       if (typeof Plugin.prototype !== 'object' || typeof Plugin.prototype.constructor !== 'function')
         return stopPlugin();
 
+      // interface with plugin store
+      const store = {
+        get: key => this.storage.get(key),
+        set: (key, value) => this.storage.set(key, value),
+        delete: key => this.storage.delete(key),
+        wipe: () => this.storage.wipe(),
+        count: () => this.storage.count(),
+        keys: () => this.storage.keys(),
+      };
+
       // create the loaded plugin
-      this.loadedPlugin = new Plugin(this.omegga);
+      this.loadedPlugin = new Plugin(this.omegga, config, store);
 
       // start the loaded plugin
       if (typeof this.loadedPlugin.init === 'function')
         this.loadedPlugin.init();
 
+      this.emitStatus();
       return true;
     } catch (e) {
       Omegga.error('error loading node plugin', this.getName(), e);
+      this.emitStatus();
       return false;
     }
   }
@@ -72,8 +87,10 @@ class NodePlugin extends Plugin {
   // disrequire the plugin into the system, run the stop func
   async unload() {
     // can't unload the plugin if it hasn't been loaded
-    if (typeof this.loadedPlugin === 'undefined')
+    if (typeof this.loadedPlugin === 'undefined') {
+      this.emitStatus();
       return false;
+    }
 
     try {
       // run the stop func on the plugin if applicable
@@ -83,9 +100,11 @@ class NodePlugin extends Plugin {
       // unload the plugin
       disrequire(this.pluginFile);
       this.loadedPlugin = undefined;
+      this.emitStatus();
       return true;
     } catch (e) {
       Omegga.error('error unloading node plugin', this.getName(), e);
+      this.emitStatus();
       return false;
     }
   }

@@ -124,11 +124,13 @@ program
   });
 
 program
-  .command('config <field> [value]')
+  .command('config [field] [value]')
   .description('Configure Omegga\'s default behavior.\n' +
     'Type ' + 'omegga config list'.yellow.underline + ' for current settings and available fields'
   )
   .action((field, value) => {
+    if (!field)
+      field = 'list';
     omeggaConfig(field, value, program.opts());
   });
 

@@ -2,15 +2,16 @@
 @import '../css/theme';
 
 .header {
-  text-transform: uppercase;
+  align-items: center;
+  background-color: $br-bg-header;
+  color: $br-fg-header;
   display: flex;
   font-size: $br-header-font;
-  color: $br-fg-header;
-  background-color: $br-bg-header;
   font-weight: bold;
   height: $br-header-height;
-  align-items: center;
   padding-left: 20px;
+  padding-right: 10px;
+  text-transform: uppercase;
 }
 
 </style>

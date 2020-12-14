@@ -35,12 +35,16 @@ class OmeggaWrapper extends EventEmitter {
   // passthrough to server
   write(str) { this.#server.write(str); }
   writeln(str) { this.#server.writeln(str); }
-  start() { this.#server.start(); }
-  stop() { this.#server.stop(); }
+  start() { return this.#server.start(); }
+  stop() { return this.#server.stop(); }
 
   // event emitter to catch everything
   emit(type, ...args) {
-    super.emit('*', type, ...args);
+    try {
+      super.emit('*', type, ...args);
+    } catch (e) {
+      // error emitting
+    }
     return super.emit(type, ...args);
   }
 }

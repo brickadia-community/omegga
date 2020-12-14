@@ -7,7 +7,124 @@ html, body {
   padding: 0;
 }
 
+html {
+  width: 100%;
+  height: 100%;
+  display: table;
+}
+
 body {
+  width: 100%;
+  display: table-cell;
+  position: relative;
+  overflow: hidden;
   font-family: 'Glacial Indifference';
 }
 
+@media screen and (max-width: 600px) {
+  body {
+    overflow-y: auto;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: $br-element-footer-bg;
+}
+
+::-webkit-scrollbar-thumb {
+  background: $br-element-bg;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #fff;
+}
+
+.generic-container {
+  flex: 1;
+  position: relative;
+  margin-left: 8px;
+}
+
+.stat {
+  color: white;
+  font-weight: bold;
+}
+
+.stats {
+  padding: 8px;
+  font-size: 24px;
+  word-break: break-all;
+  background-color: $br-element-popout-bg;
+}
+
+.stat b {
+  color: $br-boring-button-fg;
+}
+
+.log-entry {
+  & {
+    font-size: 24px;
+    text-shadow:  -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    word-break: break-all;
+  }
+
+  .user {
+    font-weight: bold;
+  }
+
+  .join-message, .join-message .user {
+    color: #3477e3 !important;
+  }
+
+  .chat-message {
+    color: #ffffff;
+  }
+
+  .server-message {
+    color: #ff00ff;
+  }
+}
+
+table.br-table {
+  font-weight: bold;
+  border-collapse: collapse;
+  font-size: 24px;
+
+  thead th {
+    color: white;
+    height: 50px;
+    background-color: $br-bg-primary;
+    white-space: nowrap;
+  }
+
+  th, td,  {
+    padding: 0 10px;
+  }
+
+  tr td:first-child, tr th:first-child {
+    padding-left: 20px;
+  }
+
+  tr td:last-child, tr th:last-child {
+    padding-right: 20px;
+  }
+
+  tbody tr {
+    @include alternate(background-color, $br-bg-secondary, $br-bg-secondary-alt);
+    td {
+      font-size: 20px;
+      color: $br-boring-button-fg;
+      height: 50px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+  }
+}
+
+a, :visited {
+  color: #0ff;
+}

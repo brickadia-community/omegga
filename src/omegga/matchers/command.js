@@ -1,7 +1,8 @@
 module.exports = omegga => {
   // pattern to get PlayerController from a leave message
   const commandRegExp = /^Player (?<name>.+?) is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
-  const a4commandRegExp = /(?<name>.+?) tried to call nonexistent command "(?<command>.*?)"$/;
+  const a4missingCommandRegExp = /(?<name>.+?) tried to call nonexistent command "(?<command>.*?)".$/;
+  const a4commandRegExp = /(?<name>.+?) called command "(?<command>.+?)" with parameters "(?<args>.*?)".$/;
 
   return {
     // listen for commands messages
@@ -14,7 +15,7 @@ module.exports = omegga => {
       if (generator !== 'LogChatCommands') return;
 
       // match log to argument-less a4 commands
-      const a4match = data.match(a4commandRegExp);
+      const a4match = data.match(a4missingCommandRegExp);
       if (a4match) {
         const { name, command } = a4match.groups;
 
@@ -27,7 +28,7 @@ module.exports = omegga => {
       }
 
       // match the log to the command pattern
-      const match = data.match(commandRegExp);
+      const match = data.match(commandRegExp) || data.match(a4commandRegExp);
       if (match) {
         const { name, command, args } = match.groups;
 

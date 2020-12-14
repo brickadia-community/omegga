@@ -51,7 +51,6 @@ async function genAuthFiles(email, password) {
   // dummy omegga launch options
   const options = {
     noauth: true,
-    nodb: true,
     noplugin: true,
     noweb: true,
   };

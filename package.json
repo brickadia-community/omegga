@@ -1,7 +1,7 @@
 {
   "name": "omegga",
-  "version": "0.0.18",
-  "description": "Brickadia server wrapper, configurator, and automator",
+  "version": "0.1.0",
+  "description": "Brickadia server installer, manager, wrapper, configurator, and automator",
   "main": "index.js",
   "bin": {
     "omegga": "./bin/omegga"
@@ -9,7 +9,7 @@
   "dependencies": {
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
-    "brs-js": "^1.2.4",
+    "brs-js": "^1.2.5",
     "child_process": "^1.0.2",
     "chokidar": "^3.4.2",
     "colors": "^1.4.0",
@@ -35,10 +35,12 @@
     "socket.io": "^2.3.0",
     "strip-ansi": "^6.0.0",
     "update-notifier": "^5.0.0",
-    "vm2": "^3.9.2"
+    "vm2": "^3.9.2",
+    "vue-grid-layout": "^2.3.9"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
+    "babel-helper-vue-jsx-merge-props": "^2.0.3",
     "bufferutil": "^4.0.1",
     "css-loader": "^4.3.0",
     "eslint": "^7.10.0",
@@ -53,20 +55,22 @@
     "url-loader": "^4.1.1",
     "utf-8-validate": "^5.0.2",
     "vue": "^2.6.12",
+    "vue-linkify": "^1.0.1",
     "vue-loader": "^15.9.3",
     "vue-router": "^3.4.5",
     "vue-socket.io": "^3.0.10",
     "vue-style-loader": "^4.1.2",
+    "vue-tabler-icons": "^1.5.0",
     "vue-template-compiler": "^2.6.12",
     "webpack": "^4.44.2",
     "webpack-cli": "^3.3.12"
   },
   "scripts": {
     "start": "node index.js",
-    "dist": "export MODE=production; npm run build",
     "lint": "npx eslint \"src/\"",
     "lint:fix": "npx eslint \"src/\" --fix",
-    "watch": "npx webpack --watch"
+    "watch": "npx webpack --watch",
+    "dist": "MODE=production npx webpack"
   },
   "author": "Meshiest",
   "license": "ISC",
