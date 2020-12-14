@@ -9,7 +9,7 @@ Already supports a5 for when a5 comes out!
 [<img src="https://i.imgur.com/AqJF2T0.png" width="512"/>](https://i.imgur.com/AqJF2T0.png)
 [<img src="https://i.imgur.com/vGjKoB6.png" width="512"/>](https://i.imgur.com/vGjKoB6.png)
 [<img src="https://i.imgur.com/EhT1GBR.png" width="512"/>](https://i.imgur.com/EhT1GBR.png)
-[<img src="https://i.imgur.com/8TYQpJ2.png" width="512"/>](https://i.imgur.com/8TYQpJ2.png)
+[<img src="https://i.imgur.com/PLwgVlx.png" width="512"/>](https://i.imgur.com/PLwgVlx.png)
 
 
 ## Install
