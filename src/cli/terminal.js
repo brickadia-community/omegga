@@ -37,7 +37,7 @@ class Terminal {
     omegga.on('start', () => log('Server has started. Type', '/help'.yellow, 'for more commands'));
     omegga.on('unauthorized', () => err('Server failed authentication check'));
     omegga.on('error', e => err('Server caught unhandled exception:\n' + e));
-    omegga.on('exit', () => log('Server has closed. Type', '/stop'.yellow, 'to close omegga'));
+    omegga.on('server:stopped', () => log('Server has closed. Type', '/stop'.yellow, 'to close omegga'));
 
     this.rl.on('line', this.handleLine.bind(this));
 

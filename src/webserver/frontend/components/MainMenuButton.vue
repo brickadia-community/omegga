@@ -73,7 +73,11 @@ $icon-height: $btn-height - 16px;
 import Vue from 'vue';
 
 export default Vue.component('br-menu-button', {
-  props: ['disabled', 'route', 'name'],
+  props: {
+    disabled: Boolean,
+    route: String,
+    name: String,
+  },
 });
 
 </script>

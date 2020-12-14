@@ -156,10 +156,12 @@ class Omegga extends OmeggaWrapper {
     if (!this.started && !this.starting) return;
     if (this.stopping) return;
     this.stopping = true;
+    this.emit('server:stopping');
     if (this.pluginLoader)
       await this.pluginLoader.unload();
     super.stop();
-    this.emit('server:stopped');
+    if (this.stopping)
+      this.emit('server:stopped');
     this.stopping = false;
     this.started = false;
     this.starting = false;

@@ -15,7 +15,6 @@ const sanitize = str => str
       return `<emoji>${emote}</>`;
     return s;
   });
-
 const parseLinks = message => {
   const regex = /(\b(https?):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/gim;
   return message.replace(regex, '<link="$1">$1</>');

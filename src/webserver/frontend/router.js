@@ -7,6 +7,7 @@ import Players from './views/Players.vue';
 import PlayersInspector from './views/PlayersInspector.vue';
 import Users from './views/Users.vue';
 import History from './views/History.vue';
+import Server from './views/Server.vue';
 import NotFound from './views/NotFound.vue';
 
 const router = new VueRouter({
@@ -52,6 +53,10 @@ const router = new VueRouter({
     name: 'home',
     path: '/',
     component: Home,
+  }, {
+    name: 'server',
+    path: '/server',
+    component: Server,
   }, {
     name: 'notfound',
     path: '*',

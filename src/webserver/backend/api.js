@@ -466,6 +466,43 @@ module.exports = (server, io) => {
       return server.lastReportedStatus;
     });
 
+    // get server run status
+    // TODO: server status permission check
+    rpc.addMethod('server.started', () => {
+      return {
+        started: omegga.started,
+        starting: omegga.starting,
+        stopping: omegga.stopping,
+      };
+    });
+
+    // start the server if it's not already started
+    // TODO: server status permission check
+    rpc.addMethod('server.start', async() => {
+      if (omegga.starting || omegga.stopping || omegga.started) return;
+      log('Starting server...');
+      await omegga.start();
+    });
+
+    // stop the server if it's not already stopped
+    // TODO: server status permission check
+    rpc.addMethod('server.stop', async() => {
+      if (omegga.starting || omegga.stopping || !omegga.started) return;
+      log('Stopping server...');
+      await omegga.stop();
+    });
+
+    // restart the server if it's running, start the server if it's stopped
+    // TODO: server status permission check
+    rpc.addMethod('server.restart', async() => {
+      if (omegga.starting || omegga.stopping) return;
+      log('Restarting server...');
+      if (omegga.started)
+        await omegga.stop();
+      await omegga.start();
+
+    });
+
     // subscribe and unsubscribe to events
     socket.on('subscribe', room => {
       // TODO: permission check for certain rooms

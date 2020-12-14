@@ -140,7 +140,7 @@ class Webserver {
     this.app.use('/public', express.static(ASSET_PATH));
     this.app.use(bodyParser.json());
 
-    this.rooms = ['chat', 'status', 'plugins'];
+    this.rooms = ['chat', 'status', 'plugins', 'server'];
 
     // setup the api
     setupApi(this, io);

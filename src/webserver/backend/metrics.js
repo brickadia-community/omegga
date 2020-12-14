@@ -114,4 +114,14 @@ module.exports = (server, io) => {
   omegga.on('plugin:status', (shortPath, info) => {
     io.to('plugins').emit('plugin', shortPath, info);
   });
+
+  // server status events
+  omegga.on('start', () =>
+    io.to('server').emit('status', {started: true, starting: false, stopping: false}));
+  omegga.on('server:starting', () =>
+    io.to('server').emit('status', {started: false, starting: true, stopping: false}));
+  omegga.on('server:stopped', () =>
+    io.to('server').emit('status', {started: false, starting: false, stopping: false}));
+  omegga.on('server:stopping', () =>
+    io.to('server').emit('status', {started: true, starting: false, stopping: true}));
 };

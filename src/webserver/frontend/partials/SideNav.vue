@@ -69,19 +69,19 @@
     </br-menu-button>
     <br-menu-button
       :disabled="true"
-      route="server"
-      data-tooltip="Server management settings and roles"
-    >
-      <ServerIcon style="background: #453d9c;"/>
-      Server
-    </br-menu-button>
-    <br-menu-button
-      :disabled="true"
       route="settings"
       data-tooltip="Server management settings and roles"
     >
       <AdjustmentsAltIcon style="background: #c4bb02;"/>
       Settings
+    </br-menu-button>
+    <br-menu-button
+      :disabled="false"
+      route="server"
+      data-tooltip="Server management"
+    >
+      <ServerIcon style="background: #453d9c;"/>
+      Server
     </br-menu-button>
     <br-menu-button
       :disabled="false"
