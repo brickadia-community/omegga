@@ -291,7 +291,7 @@ class Omegga extends OmeggaWrapper {
   saveBricks(name) { this.writeln(`Bricks.Save ${name}`); }
 
   // load bricks
-  loadBricks(name, {offX=0, offY=0, offZ=0, quiet=false}={}) { this.writeln(`Bricks.Load ${name} ${offX} ${offY} ${offZ} ${quiet && this.version !== 'a4' ? 1 : ''}`); }
+  loadBricks(name, {offX=0, offY=0, offZ=0, quiet=false}={}) { this.writeln(`Bricks.Load "${name}" ${offX} ${offY} ${offZ} ${quiet && this.version !== 'a4' ? 1 : ''}`); }
 
   // get all saves in the save folder
   getSaves() { return fs.existsSync(this.savePath) ? glob.sync(this.savePath + '/**/*.brs') : []; }
