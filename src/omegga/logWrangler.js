@@ -24,6 +24,7 @@ class LogWrangler {
     this.addWatcher = this.addWatcher.bind(this);
     this.watchLogArray = this.watchLogArray.bind(this);
     this.watchLogChunk = this.watchLogChunk.bind(this);
+    this.omegga = omegga;
   }
 
   // add a new matcher to listen in on the logs

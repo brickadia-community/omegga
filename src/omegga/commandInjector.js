@@ -28,7 +28,8 @@ const COMMANDS = {
       serverName: statusLines[0][1].match(/^Server Name: (.*)$/)[1],
       description: statusLines[1][1].match(/^Description: (.*)$/)[1],
       bricks: Number(statusLines[2][1].match(/^Bricks: (\d+)$/)[1]),
-      time: time.parseDuration(statusLines[3][1].match(/^Time: (.*)$/)[1]),
+      ...(this.omegga.version === 'a4' ? {} : {components: Number(statusLines[3][1].match(/^Components: (\d+)$/)[1])}),
+      time: time.parseDuration(statusLines[this.omegga.version === 'a4' ? 3 : 4][1].match(/^Time: (.*)$/)[1]),
       // extract players using the generated table regex
       players: tableLines.map(l => {
         // match the player row with the generated regex
