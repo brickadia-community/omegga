@@ -61,6 +61,9 @@ Alternatively, you can use a development/local omegga
     # point development omegga to global npm bin
     npm link
 
+    # build the web ui (once)
+    npm run dist
+
 If you have EACCES errors on WSL, you probably have a conflicting node install. Some people say just closing and re-opening the terminal is enough to fix it, this and deleting node wasn't enough for me. I think windows just has wonky permissions. LMK if you figure out a solution...
 
 ### WSL
