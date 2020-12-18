@@ -153,7 +153,8 @@ class Omegga extends OmeggaWrapper {
     this.on('closed', () => {
       if (this.started)
         this.emit('exit');
-      this.stop();
+      if (!this.stopping)
+        this.stop();
     });
   }
 
