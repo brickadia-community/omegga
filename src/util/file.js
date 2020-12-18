@@ -14,6 +14,8 @@ function updateJSONCache(file) {
   try {
     // check if the file contents exist
     body = fs.readFileSync(file, 'utf8');
+    // sometimes json files start with unicode for some reason. who knows!
+    if (!body.startsWith('{') && body.length > 4) body.replace(/^[^{]+/, '');
     if (!body) return cachedJSON[file];
 
     // parse them as  json
