@@ -10,9 +10,10 @@ const cachedJSON = {};
 
 // read a file and write it to cache, return the json object
 function updateJSONCache(file) {
+  let body;
   try {
     // check if the file contents exist
-    const body = fs.readFileSync(file, 'utf8');
+    body = fs.readFileSync(file, 'utf8');
     if (!body) return cachedJSON[file];
 
     // parse them as  json
@@ -21,6 +22,8 @@ function updateJSONCache(file) {
   } catch (err) {
     const log = global.Omegga && global.Omegga.error || console.error;
     log('Error updating JSON cache for file', file, err);
+    if (body)
+      log('File contents:', body);
   }
   return cachedJSON[file];
 }
