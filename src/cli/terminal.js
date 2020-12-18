@@ -23,6 +23,7 @@ class Terminal {
     // shortand fns
     log = (...args) => this.log('>>'.green, ...args);
     err = (...args) => this.error('!>'.red, ...args);
+    // warn = (...args) => this.warn('W>'.yellow, ...args);
 
     // print log line if debug is enabled
     omegga.on('line', l => options.debug && this.log('::'.blue, l));
@@ -229,6 +230,14 @@ class Terminal {
     process.stdout.clearLine();
     process.stdout.cursorTo(0);
     console.log(...args);
+    this.rl.prompt(true);
+  }
+
+  // let readline render a warning log without interrupting user input
+  warn(...args) {
+    process.stdout.clearLine();
+    process.stdout.cursorTo(0);
+    console.warn(...args);
     this.rl.prompt(true);
   }
 

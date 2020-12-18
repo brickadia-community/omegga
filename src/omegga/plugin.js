@@ -330,9 +330,22 @@ class PluginLoader {
     // no arguments
     if (!args.length) {
       send('"Use <code>!help plugin</> or <code>!help !command</> for more information"');
-      send(`"<b>Installed Plugins</b>: ${
-        Object.keys(docs).map(d => `<color=\\"${docs[d]._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa'}\\">${d}</>`).join(', ')
-      }"`);
+      const plugins = Object.keys(docs).map(d => `<color=\\"${docs[d]._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa'}\\">${d}</>`);
+      if (!plugins.length) {
+        send('"<b>No Installed Plugins</>"');
+      } else {
+        const lines = [];
+        while (plugins.length > 0) {
+          const [ plugin ] = plugins.splice(0, 1);
+          if (!lines.length || lines[lines.length - 1].length + plugin.length > 150)
+            lines.push(plugin);
+          else
+            lines[lines.length - 1] += ', ' + plugin;
+        }
+        send(`"<b>Installed Plugins</>: ${lines[0]}"`);
+        for(let i = 1; i < lines.length; i++)
+          send(`"${lines[i]}"`);
+      }
 
     // plugin or command argument
     } else if (args.length > 0) {

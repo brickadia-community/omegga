@@ -61,6 +61,7 @@ class Omegga extends OmeggaWrapper {
   static terminal = undefined;
   static log(...args) { (Omegga.terminal || console).log(...args); }
   static error(...args) { (Omegga.terminal || console).error(...args); }
+  static warn(...args) { (Omegga.terminal || console).warn(...args); }
   static setTerminal(term) {
     if (term instanceof Terminal)
       Omegga.terminal = term;

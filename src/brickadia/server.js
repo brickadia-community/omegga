@@ -24,6 +24,13 @@ const errorLog = (...args) => {
     console.error('!>'.red, ...args);
 };
 
+const warnLog = (...args) => {
+  if (Omegga.error)
+    Omegga.warn('W>'.yellow, ...args);
+  else
+    console.warn('W>'.yellow, ...args);
+};
+
 // list of errors that can be solved by yelling at the user
 const knownErrors = [{
   name: 'MISSING_LIBGL',
@@ -96,6 +103,18 @@ class BrickadiaServer extends EventEmitter {
 
   // write a string to the child process
   write(line) {
+    if (line.length >= 512) {
+      // show a warning
+      warnLog('WARNING'.yellow, 'The following line was called and is', 'longer than allowed limit'.red);
+      warnLog(line.replace(/\n$/, ''));
+      // throw a fake error to get the line number
+      try {
+        throw new Error('Console Line Too Long');
+      } catch(err) {
+        warnLog(err);
+      }
+      return;
+    }
     if (this.#child) {
       verboseLog('WRITE'.green, line.replace(/\n$/, ''));
       this.#child.stdin.write(line);
