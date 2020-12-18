@@ -19,6 +19,8 @@ Already supports a5 for when a5 comes out!
 
 You can run omegga in the [Windows Subsystem for Linux](#wsl) (I recommend Ubuntu) or on an actual linux install.
 
+**Do not install omegga or brickadia as root/superuser**
+
 ### Quick Setup (automatically download launcher)
 
 1. Install linux if you haven't already ([Windows Install](#wsl))
