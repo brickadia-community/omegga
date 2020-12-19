@@ -198,6 +198,7 @@ class Player {
     const [{groups: { pawn }}] = await omegga.addWatcher(pawnRegExp, {
       // request the pawn for this player's controller (should only be one)
       exec: () =>  omegga.writeln(`GetAll BP_PlayerController_C Pawn Name=${this.controller}`),
+      timeoutDelay: 100,
     });
 
     // given a player's pawn, match the player's position
@@ -207,6 +208,7 @@ class Player {
     const [{groups: { x, y, z }}] = await omegga.addWatcher(posRegExp, {
       // request the position for this player's pawn
       exec: () =>  omegga.writeln(`GetAll SceneComponent RelativeLocation Name=CollisionCylinder Outer=${pawn}`),
+      timeoutDelay: 100,
     });
 
     // return the player's position as an array of numbers
