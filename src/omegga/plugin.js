@@ -73,7 +73,7 @@ class Plugin {
   // get the plugin name, usually based on documentation data
   getName() {
     const doc = this.getDocumentation();
-    return doc ? doc.name : path.basename(this.path);
+    return (doc ? doc.name : path.basename(this.path)) || 'unnamed plugin';
   }
 
   // get the documentation object for this plugin
@@ -132,9 +132,17 @@ class PluginStorage {
 
   // initialize the plugin store
   async init() {
-    // create config if it doesn't exist
-    if (!(await this.getConfig()))
-      await this.setConfig(this.getDefaultConfig());
+    // get default and configured values
+    const defaultConf = this.getDefaultConfig();
+    const config = await this.getConfig();
+
+    await this.setConfig({
+      // use default config
+      ...defaultConf,
+
+      // override with actual config values
+      ...(config ? config : {}),
+    });
   }
 
   // get a stored object
@@ -327,6 +335,18 @@ class PluginLoader {
     const commands = this.commands;
     const docs = this.documentation;
 
+    const splitHelper = objs => {
+      const lines = [];
+      while (objs.length > 0) {
+        const [ item ] = objs.splice(0, 1);
+        if (!lines.length || lines[lines.length - 1].length + item.length > 150)
+          lines.push(item);
+        else
+          lines[lines.length - 1] += ', ' + item;
+      }
+      return lines;
+    };
+
     // no arguments
     if (!args.length) {
       send('"Use <code>!help plugin</> or <code>!help !command</> for more information"');
@@ -334,14 +354,7 @@ class PluginLoader {
       if (!plugins.length) {
         send('"<b>No Installed Plugins</>"');
       } else {
-        const lines = [];
-        while (plugins.length > 0) {
-          const [ plugin ] = plugins.splice(0, 1);
-          if (!lines.length || lines[lines.length - 1].length + plugin.length > 150)
-            lines.push(plugin);
-          else
-            lines[lines.length - 1] += ', ' + plugin;
-        }
+        const lines = splitHelper(plugins);
         send(`"<b>Installed Plugins</>: ${lines[0]}"`);
         for(let i = 1; i < lines.length; i++)
           send(`"${lines[i]}"`);
@@ -360,8 +373,12 @@ class PluginLoader {
         if (doc.author)
           send(`"<b>Author</>: <color=\\"c4d7f5\\"><b>${doc.author}</></>"`);
 
-        if (doc.commands && doc.commands.length > 0)
-          send(`"<b>Commands</>: ${doc.commands.map(c => `<code>${c.name}</>`).join(', ')}"`);
+        if (doc.commands && doc.commands.length > 0) {
+          const lines = splitHelper(doc.commands.map(c => `<code>${c.name}</>`));
+          send(`"<b>Commands</>: ${lines[0]}"`);
+          for(let i = 1; i < lines.length; i++)
+            send(`"${lines[i]}"`);
+        }
 
       // argument is a command
       } else if (commands[target]) {
