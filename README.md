@@ -493,7 +493,7 @@ module.exports = PluginName;
 
 ## JSON RPC Plugins
 
-JSON RPC Plugins let you use any language you desire, as long as you can run it from a single execuable file. They follow the [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification)
+JSON RPC Plugins let you use any language you desire, as long as you can run it from a single executable file. They follow the [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification)
 
 The server communicates with the plugin by sending messages to `stdin` and expects responses in `stdout`. All `stderr` is printed to the console.
 
