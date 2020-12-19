@@ -237,7 +237,7 @@ class Omegga extends OmeggaWrapper {
     messages
       .flatMap(m => m.toString().split('\n'))
       .filter(m => m.length < 512)
-      .forEach(m => this.writeln(`Chat.Whisper ${target.name} ${m}`));
+      .forEach(m => this.writeln(`Chat.Whisper "${target.name}" ${m}`));
   }
 
   // get a list of players
