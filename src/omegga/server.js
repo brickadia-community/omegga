@@ -141,7 +141,7 @@ class Omegga extends OmeggaWrapper {
       this.emit('error', err);
       // publish stop to database
       if (this.webserver && this.webserver.database) {
-        this.database.addChatLog('server', {}, 'Server error');
+        this.webserver.database.addChatLog('server', {}, 'Server error');
       }
       try { await this.stop(); } catch (e) { Omegga.error(e); }
       process.exit();

@@ -103,18 +103,18 @@ async function genAuthFiles(email, password) {
     });
 
     let finished = false;
-    const finish = () => {
+    const finish = name => (...args) => {
       if (finished) return;
       finished = true;
-      verboseLog('Brickadia closed');
+      verboseLog('Brickadia', name, 'with code', ...args);
       removeTempDir();
       if (!resolved) reject('temp server could not start');
     };
 
     // if the server closes and the promise hasn't resolved, reject
-    omegga.once('closed', finish);
-    omegga.once('exit', finish);
-    omegga.once('server:stopped', finish);
+    omegga.once('closed', finish('closed'));
+    omegga.once('exit', finish('exited'));
+    omegga.once('server:stopped', finish('stopped'));
   });
 
   // read the auth files on success

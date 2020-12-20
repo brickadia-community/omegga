@@ -183,9 +183,9 @@ class BrickadiaServer extends EventEmitter {
     }
   }
 
-  exitListener() {
+  exitListener(...args) {
     verboseLog('Exit listener fired');
-    this.emit('closed');
+    this.emit('closed', ...args);
     this.cleanup();
   }
 

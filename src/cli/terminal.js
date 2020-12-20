@@ -26,7 +26,37 @@ class Terminal {
     // warn = (...args) => this.warn('W>'.yellow, ...args);
 
     // print log line if debug is enabled
-    omegga.on('line', l => options.debug && this.log('::'.blue, l));
+    let launcherDone = false;
+    omegga.on('line', l => {
+      if (options.debug)
+        this.log('::'.blue, l);
+      else if (!launcherDone) {
+        if (l.startsWith('DOWNLOADING')) {
+          // TOOD: if someone is proactive enough in the future, you could turn these steps into a legitimate progress bar
+          /* Here's some launcher log lines that might be helpful
+            Grabbing manifest and checking game files...
+            DOWNLOADING MANIFEST | Hold on...
+            DOWNLOADING MANIFEST (100%) | Hold on...
+            DOWNLOADING MANIFEST (100%) | 0 B/s - 13 KiB / 13 KiB (Unknown time remaining...)
+            DOWNLOADING MANIFEST (100%) | Done!
+            Checking launcher and downloading version info...
+            Installing patches and booting...
+            DOWNLOADING BRICKADIA (0%) | Done!
+            DOWNLOADING BRICKADIA (100%) | 110 MiB/s - 584 MiB / 584 MiB (1 second remaining...)
+            DOWNLOADING BRICKADIA (100%) | Nearly done...
+            DOWNLOADING BRICKADIA (100%), INSTALLING BRICKADIA (86%) | Nearly done...
+          */
+          process.stdout.clearLine();
+          process.stdout.cursorTo(0);
+          process.stdout.write(l);
+          if (l.match(/Done!/)) {
+            process.stdout.write('\n');
+          }
+        } else if (l.match(/Disabling core dumps./)) {
+          launcherDone = true;
+        }
+      }
+    });
 
     // print debug events regardless of debug status
     omegga.on('debug', l => this.log('?>'.magenta, l));
