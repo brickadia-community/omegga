@@ -28,8 +28,8 @@ const COMMANDS = {
       serverName: statusLines[0][1].match(/^Server Name: (.*)$/)[1],
       description: statusLines[1][1].match(/^Description: (.*)$/)[1],
       bricks: Number(statusLines[2][1].match(/^Bricks: (\d+)$/)[1]),
-      ...(this.omegga.version === 'a4' ? {} : {components: Number(statusLines[3][1].match(/^Components: (\d+)$/)[1])}),
-      time: time.parseDuration(statusLines[this.omegga.version === 'a4' ? 3 : 4][1].match(/^Time: (.*)$/)[1]),
+      components: Number(statusLines[3][1].match(/^Components: (\d+)$/)[1]),
+      time: time.parseDuration(statusLines[4][1].match(/^Time: (.*)$/)[1]),
       // extract players using the generated table regex
       players: tableLines.map(l => {
         // match the player row with the generated regex
@@ -89,7 +89,6 @@ const COMMANDS = {
     const ruleNameRegExp = /^(?<index>\d+)\) BP_Ruleset_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.RulesetName = (?<name>.*)$/;
     const ruleMembersRegExp = /^(?<index>\d+)\) BP_Ruleset_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.MemberStates =$/;
     const teamNameRegExp = /^(?<index>\d+)\) BP_Team(_\w+)?_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.(?<team>BP_Team(_\w+)?_C_\d+)\.TeamName = (?<name>.*)$/;
-    const teamColorIdRegExp = /^(?<index>\d+)\) BP_Team(_\w+)?_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.(?<team>BP_Team(_\w+)?_C_\d+)\.TeamColorId = (?<color>\d+)$/;
     const teamColorRegExp = /^(?<index>\d+)\) BP_Team(_\w+)?_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.(?<team>BP_Team(_\w+)?_C_\d+)\.TeamColor = \(B=(?<b>\d+),G=(?<g>\d+),R=(?<r>\d+),A=(?<a>\d+)\)$/;
     const teamMembersRegExp = /^(?<index>\d+)\) BP_Team(_\w+)?_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.(?<team>BP_Team(_\w+)?_C_\d+)\.MemberStates =$/;
     const playerStateRegExp = /^\t(?<index>\d+): BP_PlayerState_C'(.+):PersistentLevel\.(?<state>BP_PlayerState_C_\d+)'$/;
@@ -101,12 +100,8 @@ const COMMANDS = {
         this.watchLogArray('GetAll BP_Ruleset_C MemberStates', ruleMembersRegExp, playerStateRegExp),
         this.watchLogArray('GetAll BP_Team_C MemberStates', teamMembersRegExp, playerStateRegExp),
         this.watchLogChunk('GetAll BP_Team_C TeamName', teamNameRegExp, {first: 'index'}),
-        {
-          // team color in a4 is based on colorset id
-          a4: () => this.watchLogChunk('GetAll BP_Team_C TeamColorId', teamColorIdRegExp, {first: 'index'}),
-          // team color in a5 is based on (B=255,G=255,R=255,A=255)
-          a5: () => this.watchLogChunk('GetAll BP_Team_C TeamColor', teamColorRegExp, {first: 'index'}),
-        }[this.getVersion()](),
+        // team color in a5 is based on (B=255,G=255,R=255,A=255)
+        this.watchLogChunk('GetAll BP_Team_C TeamColor', teamColorRegExp, {first: 'index'}),
       ]);
 
       // figure out what to do with the matched color results
@@ -137,10 +132,8 @@ const COMMANDS = {
             team: m.item.team,
 
             // get the colors (different for a4 and a5)
-            color: handleColor(_.pick(teamColors.find(t => t.groups.team === m.item.team).groups, {
-              a4: ['color'],
-              a5: ['r', 'g', 'b', 'a'],
-            }[this.version])),
+            color: handleColor(_.pick(teamColors.find(t => t.groups.team === m.item.team).groups,
+              ['r', 'g', 'b', 'a'])),
 
             // get the players from the team
             members: m.members.map(m => this.getPlayer(m.state)),

@@ -94,6 +94,7 @@ class Terminal {
             this.log(`
   ${status.serverName.yellow}
     Bricks: ${(status.bricks+'').yellow}
+    Components: ${(status.components+'').yellow}
     Uptime: ${msToTime(status.time).yellow}
     Players: ${status.players.length === 0 ? 'none'.grey : ''}
       ${status.players

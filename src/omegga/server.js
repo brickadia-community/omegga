@@ -35,6 +35,9 @@ const MATCHERS = [
 
   require('./matchers/version.js'),
   // 'version' event, check game version
+
+  require('./matchers/init.js'),
+  // watch loginit for any funny business
 ];
 
 // TODO: safe broadcast parsing
@@ -119,8 +122,8 @@ class Omegga extends OmeggaWrapper {
     // host player info
     this.host = undefined;
 
-    // game version (defaults to a4, updates in a matcher)
-    this.version = 'a4';
+    // game version
+    this.version = 'a5';
 
     // server has started
     this.started = false;
@@ -283,17 +286,17 @@ class Omegga extends OmeggaWrapper {
     if (!target)
       return;
 
-    this.writeln(`Bricks.Clear ${target} ${quiet && this.version !== 'a4' ? 1 : ''}`);
+    this.writeln(`Bricks.Clear ${target} ${quiet ? 1 : ''}`);
   }
 
   // save bricks
-  clearAllBricks(quiet=false) { this.writeln(`Bricks.ClearAll ${quiet && this.version !== 'a4' ? 1 : ''}`); }
+  clearAllBricks(quiet=false) { this.writeln(`Bricks.ClearAll ${quiet ? 1 : ''}`); }
 
   // save bricks
   saveBricks(name) { this.writeln(`Bricks.Save ${name}`); }
 
   // load bricks
-  loadBricks(name, {offX=0, offY=0, offZ=0, quiet=false}={}) { this.writeln(`Bricks.Load "${name}" ${offX} ${offY} ${offZ} ${quiet && this.version !== 'a4' ? 1 : ''}`); }
+  loadBricks(name, {offX=0, offY=0, offZ=0, quiet=false}={}) { this.writeln(`Bricks.Load "${name}" ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`); }
 
   // get all saves in the save folder
   getSaves() { return fs.existsSync(this.savePath) ? glob.sync(this.savePath + '/**/*.brs') : []; }
@@ -335,7 +338,7 @@ class Omegga extends OmeggaWrapper {
 
     // wait for the server to finish reading the save
     await this.watchLogChunk(
-      `Bricks.Load ${saveFile} ${offX} ${offY} ${offZ} ${quiet && this.version !== 'a4' ? 1 : ''}`,
+      `Bricks.Load ${saveFile} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`,
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '...'),
