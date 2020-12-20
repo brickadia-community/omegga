@@ -86,9 +86,9 @@ class BrickadiaServer extends EventEmitter {
       '--',
       ...launchArgs,
       '-NotInstalled', '-log',
-      this.path && `-UserDir="${this.path}"`,
-      email && `-User="${email}"`, // remove email argument if not provided
-      password && `-Password="${password}"`, // remove password argument if not provided
+      this.path ? `-UserDir="${this.path}"` : null,
+      email ? `-User="${email}"` : null, // remove email argument if not provided
+      password ? `-Password="${password}"` : null, // remove password argument if not provided
       `-port="${this.config.server.port}"`,
     ].filter(v => v)); // remove unused arguments
 
