@@ -133,7 +133,7 @@ const program = require('commander')
       Omegga.log('>>'.green, `Update is available (${('v'+notifier.update.latest).yellow})! Run`, 'npm i -g omegga'.yellow, 'to update!');
     }
 
-    Omegga.log('>>'.green, 'Starting server...');
+    Omegga.log('>>'.green, `Launching brickadia server on port ${(''+(conf.server.port || 7777)).green}...`);
 
     // start the server
     server.start();

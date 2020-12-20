@@ -167,7 +167,7 @@ class Webserver {
     await this.created;
     return await new Promise(resolve => {
       this.server.listen(this.port, () => {
-        log(`${'>>'.green} Started webserver at`, `http${this.https ? 's' : ''}://127.0.0.1:${this.port}`.green);
+        log(`${'>>'.green} Web UI available at`, `http${this.https ? 's' : ''}://127.0.0.1:${this.port}`.green);
         this.started = true;
         this.database.addChatLog('server', {}, 'Server started');
         resolve();
