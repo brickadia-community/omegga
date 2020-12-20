@@ -1,4 +1,4 @@
-<style scoped>
+<style scoped lang="scss">
 @import '../css/theme';
 
 .background {
@@ -26,11 +26,29 @@
   object-fit: cover;
 }
 
+
+@media (prefers-color-scheme: dark) {
+  .background {
+    background-image: url('/public/img/dark_bg.webp');
+
+    .light {
+      display: none;
+    }
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .dark {
+    display: none;
+  }
+}
+
 </style>
 
 <template>
   <div class="background">
-    <img class="bg-img" src="/public/img/auth_bg.webp">
+    <img class="bg-img dark" src="/public/img/dark_bg.webp">
+    <img class="bg-img light" src="/public/img/auth_bg.webp">
     <slot />
   </div>
 </template>
