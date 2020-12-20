@@ -7,7 +7,7 @@ module.exports = omegga => {
 
       const { generator, data } = logMatch.groups;
       // check if log is the kill server log
-      return generator.match(/^Log(Exit|AuthManager)$/) && data.match(/^(Shutting down Auth Manager|Exiting).$/);
+      return generator.match(/^LogExit$/) && data.match(/^Game engine shut down$/);
     },
     // when there's a match, emit the chat message event
     callback() {
