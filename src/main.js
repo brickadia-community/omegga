@@ -10,7 +10,10 @@ const { Terminal, auth, config: omeggaConfig } = require('./cli/index.js');
 const file = require('./util/file.js');
 
 const updateNotifier = require('update-notifier');
-updateNotifier({pkg: pkg}).notify();
+const notifier = updateNotifier({
+  pkg: pkg,
+  updateCheckInterval: 1000 * 60 * 60 * 24,
+}).notify();
 
 /*
 
@@ -125,6 +128,11 @@ const program = require('commander')
 
     // create a terminal
     Omegga.setTerminal(new Terminal(server, options));
+
+    if (notifier.update) {
+      Omegga.log('>>'.green, `Update is available (${('v'+notifier.update.latest).yellow})! Run`, 'npm i -g omegga'.yellow, 'to update!');
+    }
+
     Omegga.log('>>'.green, 'Starting server...');
 
     // start the server
