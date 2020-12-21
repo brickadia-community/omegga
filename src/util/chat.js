@@ -5,6 +5,8 @@ const EMOTES = 'egg boiascended banleft gun omegga dableft cry sweat soon shrug 
 // chat sanitize
 const sanitize = str => str
   // .replace(/&/g, '&')
+  .replace(/\\/g, '\\\\')
+  .replace(/;/g, '&scl;')
   .replace(/>/g, '&gt;')
   .replace(/_/g, '&und;')
   .replace(/</g, '&lt;')
