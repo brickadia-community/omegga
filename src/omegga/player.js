@@ -3,6 +3,15 @@ const { color } = require('../util/');
 class Player {
   #omegga = null;
 
+  /**
+   * players are not to be constructed
+   * @constructor
+   * @param  {Omegga} - Omegga Instance
+   * @param  {String} - Player Name
+   * @param  {String} - Player Id
+   * @param  {String} - Player Controller
+   * @param  {String} - Player State
+   */
   constructor(omegga, name, id, controller, state) {
     this.#omegga = omegga;
     this.name = name;
@@ -11,32 +20,57 @@ class Player {
     this.state = state;
   }
 
-  // clone the player
+  /**
+   * Clone a player
+   * @return {Player}
+   */
   clone() {
     return new Player(this.#omegga, this.name, this.id, this.controller, this.state);
   }
 
-  // get raw player info (to feed into a constructor)
+  /**
+   * Get raw player info (to feed into a constructor)
+   * @return {Array<String>}
+   */
   raw() { return [this.name, this.id, this.controller, this.state]; }
 
-  // true if the player is the host
+  /**
+   * true if the player is the host
+   * @return {Boolean}
+   */
   isHost() { return this.#omegga.host.id === this.id; }
 
-  // clear this player's bricks
+  /**
+   * clear this player's bricks
+   * @param  {Boolean} - quiet mode
+   */
   clearBricks(quiet=false) { this.#omegga.clearBricks(this.id, quiet); }
 
-  // get a player's roles, if any
+  /**
+   * get a player's roles, if any
+   * @param  {Omegga} - omegga instance
+   * @param  {String} - player uuid
+   * @return {Array<String>} - list of roles
+   */
   static getRoles(omegga, id) {
     const data = omegga.getRoleAssignments().savedPlayerRoles[id];
     return Object.freeze(data && data.roles ? data.roles : []);
   }
 
-  // get a player's roles, if any
+  /**
+   * get a player's roles, if any
+   * @return {Array<String>}
+   */
   getRoles() {
     return Player.getRoles(this.#omegga, this.id);
   }
 
-  // get a player's permissions
+  /**
+   * get a player's permissions in a map like `{"Bricks.ClearOwn": true, ...}`
+   * @param  {Omegga} - Omegga instance
+   * @param  {String} - player uuid
+   * @return {Object} - permissions map
+   */
   static getPermissions(omegga, id) {
     const { roles, defaultRole } = omegga.getRoleSetup();
 
@@ -156,12 +190,18 @@ class Player {
     return Object.freeze(permissions);
   }
 
-  // get a player's permissions
+  /**
+   * get a player's permissions in a map like `{"Bricks.ClearOwn": true, ...}`
+   * @return {Object} - permissions map
+   */
   getPermissions() {
     return Player.getPermissions(this.#omegga, this.id);
   }
 
-  // get player's name color
+  /**
+   * get player's name color
+   * @return {String} - 6 character hex string
+   */
   getNameColor() {
     const { roles, defaultRole, ownerRoleColor, bOwnerRoleHasColor } = this.#omegga.getRoleSetup();
 
@@ -185,7 +225,10 @@ class Player {
     return color.rgbToHex(defaultRole.bHasColor ? defaultRole.color : {r: 255, g: 255, b: 255, a: 255});
   }
 
-  // get player's position
+  /**
+   * get player's position
+   * @return {Promise<List<Number>>} - [x, y, z] coordinates
+   */
   async getPosition() {
     // this is here because my text editor had weird syntax highlighting glitches when the other omeggas were replaced with this.#omegga...
     // guess the code is "too new" :egg:

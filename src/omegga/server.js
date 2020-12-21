@@ -54,22 +54,45 @@ class Omegga extends OmeggaWrapper {
   // pluginloader is not private so plugins can potentially add more formats
   pluginLoader = undefined;
 
-  // prevent omegga from saving over the same file
+  /** The save counter prevents omegga from saving over the same file */
   _tempSaveCounter = 0;
+  /** The save prefix is prepended to all temporary saves */
   _tempSavePrefix = 'omegga_temp_';
-
-  #database = undefined;
 
   // allow a terminal to be used instead of console log
   static terminal = undefined;
+
+  /**
+   * send a console log to the readline terminal or stdout
+   * @param {...args} - things to print out
+   */
   static log(...args) { (Omegga.terminal || console).log(...args); }
+
+  /**
+   * send a console error to the readline terminal or stderr
+   * @param {...args} - things to print out
+   */
   static error(...args) { (Omegga.terminal || console).error(...args); }
+
+  /**
+   * send a console warn to the readline terminal or stdout
+   * @param {...args} - things to print out
+   */
   static warn(...args) { (Omegga.terminal || console).warn(...args); }
+
+  /**
+   * send a console log to the readline terminal or console
+   * @param {...args} - things to print out
+   */
   static setTerminal(term) {
     if (term instanceof Terminal)
       Omegga.terminal = term;
   }
 
+  /**
+   * Omegga instance
+   * @constructor
+   */
   constructor(serverPath, cfg, options={}) {
     super(serverPath, cfg);
     this.verbose = global.VERBOSE;
@@ -116,17 +139,18 @@ class Omegga extends OmeggaWrapper {
       this.pluginLoader.loadFormats(path.join(__dirname, 'plugin'));
     }
 
-    // list of online players
+    /** list of online players */
     this.players = [];
 
-    // host player info
+    /** host player info `{id: uuid, name: player name}` */
     this.host = undefined;
 
-    // game version
+    /** current game version - may later be turned into CL#### versions */
     this.version = 'a5';
 
-    // server has started
+    /** whether server has started */
     this.started = false;
+    /** whether server is starting up */
     this.starting = false;
 
     // add all the matchers to the server
@@ -147,13 +171,18 @@ class Omegga extends OmeggaWrapper {
       process.exit();
     });
 
+    // when brickadia starts, mark the server as started
     this.on('start', () => {
       this.started = true;
       this.starting = false;
     });
+
+    // when brickadia exits, stop omegga
     this.on('exit', () => {
       this.stop();
     });
+
+    // when the process closes, emit the exit signal and stop
     this.on('closed', () => {
       if (this.started)
         this.emit('exit');
@@ -162,7 +191,12 @@ class Omegga extends OmeggaWrapper {
     });
   }
 
-  // start load plugins and start the server
+  /**
+   * start webserver, load plugins, start the brickadia server
+   * this should not be called by a plugin
+   * @returns {Promise}
+   */
+  //
   async start() {
     this.starting = true;
     if (this.webserver) await this.webserver.start();
@@ -180,7 +214,11 @@ class Omegga extends OmeggaWrapper {
     this.emit('server:starting');
   }
 
-  // unload load plugins and stop the server
+  /**
+   * unload plugins and stop the server
+   * this should not be called by a plugin
+   * @returns {Promise}
+   */
   async stop() {
     if (!this.started && !this.starting) {
       verboseLog('Stop called while server wasn\'t started or was starting');
@@ -208,7 +246,10 @@ class Omegga extends OmeggaWrapper {
     this.players = [];
   }
 
-  // if auth files exist, copy them
+  /**
+   * Copies auth files from home config dir
+   * this should never be called by a plugin
+   */
   copyAuthFiles() {
     const authPath = path.join(this.path, soft.DATA_PATH, 'Saved/Auth');
     const homeAuthPath = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
@@ -216,11 +257,16 @@ class Omegga extends OmeggaWrapper {
     file.copyFiles(homeAuthPath, authPath, soft.BRICKADIA_AUTH_FILES);
   }
 
-  // broadcast messages to chat
-  // messages are broken by new line
-  // multiple arguments are additional lines
   // TODO: split messages that longer than 512 characters
   // TODO: delete characters that are known to crash the game
+  /**
+   * broadcast messages to chat
+   * messages are broken by new line
+   * multiple arguments are additional lines
+   * all messages longer than 512 characters are deleted automatically, though omegga wouldn't have sent them anyway
+   * @param {...messages} - unescaped chat messages to send. may need to wrap messages with quotes
+   */
+  //
   broadcast(...messages) {
     messages
       .flatMap(m => m.toString().split('\n'))
@@ -228,9 +274,14 @@ class Omegga extends OmeggaWrapper {
       .forEach(m => this.writeln(`Chat.Broadcast ${m}`));
   }
 
-  // broadcast messages to a player
-  // messages are broken by new line
-  // multiple arguments are additional lines
+  /**
+   * whisper messages to chat
+   * messages are broken by new line
+   * multiple arguments are additional lines
+   * all messages longer than 512 characters are deleted automatically, though omegga wouldn't have sent them anyway
+   * @param {...messages} - unescaped chat messages to send. may need to wrap messages with quotes
+   */
+  //
   whisper(target, ...messages) {
     // find the target player
     if (typeof target !== 'object')
@@ -243,21 +294,50 @@ class Omegga extends OmeggaWrapper {
       .forEach(m => this.writeln(`Chat.Whisper "${target.name}" ${m}`));
   }
 
-  // get a list of players
+  /**
+   * get a list of players
+   * @return {players} - list of players {id: uuid, name: name} objects
+   */
   getPlayers() { return this.players.map(p => ({...p})); }
 
-  // read the server json files (the values automatically update when the files change)
+  /**
+   * Get up-to-date role setup from RoleSetup.json
+   * @return {object}
+   */
   getRoleSetup() { return file.readWatchedJSON(path.join(this.configPath, 'RoleSetup.json')); }
+
+  /**
+   * Get up-to-date role assignments from RoleAssignment.json
+   * @return {object}
+   */
   getRoleAssignments() { return file.readWatchedJSON(path.join(this.configPath, 'RoleAssignments.json')); }
+
+  /**
+   * Get up-to-date ban list from BanList.json
+   * @return {object}
+   */
   getBanList() { return file.readWatchedJSON(path.join(this.configPath, 'BanList.json')); }
+
+  /**
+   * Get up-to-date name cache from PlayerNameCache.json
+   * @return {object}
+   */
   getNameCache() { return file.readWatchedJSON(path.join(this.configPath, 'PlayerNameCache.json')); }
 
-  // find a player by name, id, controller, or state
+  /**
+   * find a player by name, id, controller, or state
+   * @param  {String} - name, id, controller, or state
+   * @return {Player}
+   */
   getPlayer(arg) {
     return this.players.find(p => p.name === arg || p.id === arg || p.controller === arg || p.state === arg);
   }
 
-  // find a player by rough name, prioritize exact matches and get fuzzier
+  /**
+   * find a player by rough name, prioritize exact matches and get fuzzier
+   * @param  {String} - player name, fuzzy
+   * @return {Player}
+   */
   findPlayerByName(name) {
     name = name.toLowerCase();
     const exploded = pattern.explode(name);
@@ -266,11 +346,17 @@ class Omegga extends OmeggaWrapper {
       || this.players.find(p => p.name.match(exploded)); // find by exploded regex match (ck finds cake, tbp finds TheBlackParrot)
   }
 
-  // get the host
+  /**
+   * get the host's ID
+   * @return {String} - Host Id
+   */
   getHostId() { return this.host ? this.host.id : ''; }
 
-  // clear a user's bricks (by uuid, name, controller, or player object)
-  // A5+ Only
+  /**
+   * clear a user's bricks (by uuid, name, controller, or player object)
+   * @param  {String|Object} - player or player identifier
+   * @param  {Boolean} - quietly clear bricks
+   */
   clearBricks(target, quiet=false) {
     // target is a player object, just use that id
     if (typeof target === 'object' && target.id)
@@ -289,25 +375,60 @@ class Omegga extends OmeggaWrapper {
     this.writeln(`Bricks.Clear ${target} ${quiet ? 1 : ''}`);
   }
 
-  // save bricks
+  /**
+   * Clear all bricks on the server
+   * @param  {Boolean} - quietly clear bricks
+   */
   clearAllBricks(quiet=false) { this.writeln(`Bricks.ClearAll ${quiet ? 1 : ''}`); }
 
-  // save bricks
-  saveBricks(name) { this.writeln(`Bricks.Save ${name}`); }
+  /**
+   * Save bricks under a name
+   * @param  {String} - save file name
+   */
+  saveBricks(name) {
+    // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
+    if (!(name.startsWith('"') && name.endsWith('"')))
+      name = `"${name}"`;
+    this.writeln(`Bricks.Save ${name}`);
+  }
 
-  // load bricks
-  loadBricks(name, {offX=0, offY=0, offZ=0, quiet=false}={}) { this.writeln(`Bricks.Load "${name}" ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`); }
+  /**
+   * Load bricks on the server
+   * @param  {String} - save name
+   * @param  {Number} - world X offset
+   * @param  {Number} - world Y offset
+   * @param  {Number} - world Z offset
+   * @param  {Boolean} - quiet mode
+   */
+  loadBricks(name, {offX=0, offY=0, offZ=0, quiet=false}={}) {
+    // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
+    if (!(name.startsWith('"') && name.endsWith('"')))
+      name = `"${name}"`;
 
-  // get all saves in the save folder
+    this.writeln(`Bricks.Load ${name} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`);
+  }
+
+  /**
+   * get all saves in the save folder and child folders
+   * @return {Array<String>}
+   */
   getSaves() { return fs.existsSync(this.savePath) ? glob.sync(this.savePath + '/**/*.brs') : []; }
 
-  // returns the path to a save given a save name
+  /**
+   * Checks if a save exists and returns an absolute path
+   * @param  {String} - Save filename
+   * @return {String} - Path to string
+   */
   getSavePath(name) {
     const file = path.join(this.savePath, name.endsWith('.brs') ? name : name + '.brs');
     return fs.existsSync(file) ? file : undefined;
   }
 
-  // unsafely load save data (use try/catch)
+  /**
+   * unsafely load save data (wrap in try/catch)
+   * @param  {String} - save file name
+   * @param  {SaveData} - BRS JS Save data
+   */
   writeSaveData(name, data) {
     if (typeof name !== 'string')
       throw 'expected name argument for writeSaveData';
@@ -318,7 +439,11 @@ class Omegga extends OmeggaWrapper {
     fs.writeFileSync(file, new Uint8Array(brs.write(data)));
   }
 
-  // unsafely read save data (use try/catch)
+  /**
+   * unsafely read save data (wrap in try/catch)
+   * @param  {String} - save file name
+   * @return {SaveData} - BRS JS Save Data
+   */
   readSaveData(name) {
     if (typeof name !== 'string')
       throw 'expected name argument for readSaveData';
@@ -329,8 +454,15 @@ class Omegga extends OmeggaWrapper {
     if (file) return brs.read(fs.readFileSync(file));
   }
 
-  // load bricks from save data
-  // A5+ only
+  /**
+   * load bricks from save data and resolve when game finishes loading
+   * @param  {SaveData} - BRS JS Save data
+   * @param  {Number} - save load X offset
+   * @param  {Number} - save load Y offset
+   * @param  {Number} - save load Z offset
+   * @param  {Boolean} - quiet mode
+   * @return {Promise}
+   */
   async loadSaveData(data, {offX=0, offY=0, offZ=0, quiet=false}={}) {
     const saveFile = this._tempSavePrefix + Date.now() + '_' + (this._tempSaveCounter++);
     // write savedata to file
@@ -353,8 +485,10 @@ class Omegga extends OmeggaWrapper {
     }
   }
 
-  // get current bricks as save data
-  // A5+ only
+  /**
+   * get current bricks as save data
+   * @return {Promise<SaveData>} - BRS JS Save Data
+   */
   async getSaveData() {
     const saveFile = this._tempSavePrefix + Date.now() + '_' + (this._tempSaveCounter++);
 

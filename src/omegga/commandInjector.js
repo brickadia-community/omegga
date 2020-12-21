@@ -2,9 +2,16 @@ const { color, time } = require('../util/index.js');
 const _ = require('lodash');
 
 // A list of commands that can be injected to things with the log wrangler
+/**
+ * List of injected commands
+ * @type {Object}
+ */
 const COMMANDS = {
 
-  // Get a server status object containing bricks, time, players, player ping, player roles, etc
+  /**
+   * Get a server status object containing bricks, time, players, player ping, player roles, etc
+   * @return {Promise<Object>} - Server Status
+   */
   async getServerStatus() {
     const statusLines = await this.watchLogChunk(
       'Server.Status',
@@ -49,7 +56,10 @@ const COMMANDS = {
     return status;
   },
 
-  // get every player's position
+  /**
+   * get every player's position and alive states
+   * @return {Array<Object>}
+   */
   async getAllPlayerPositions() {
     const pawnRegExp = /(?<index>\d+)\) BP_PlayerController_C .+?PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+)'$/;
     const posRegExp = /(?<index>\d+)\) CapsuleComponent .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.CollisionCylinder\.RelativeLocation = \(X=(?<x>[\d.-]+),Y=(?<y>[\d.-]+),Z=(?<z>[\d.-]+)\)$/;
@@ -83,7 +93,10 @@ const COMMANDS = {
       }));
   },
 
-  // get all minigames and their players (and the player's teams)
+  /**
+   * get all minigames and their players (and the player's teams)
+   * @return {Array<Object>}
+   */
   async getMinigames() {
     // patterns to match the console logs
     const ruleNameRegExp = /^(?<index>\d+)\) BP_Ruleset_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.RulesetName = (?<name>.*)$/;
