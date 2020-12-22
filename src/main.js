@@ -11,6 +11,7 @@ const file = require('./util/file.js');
 
 const updateNotifier = require('update-notifier');
 const notifier = updateNotifier({
+  isGlobal: true,
   pkg: pkg,
   updateCheckInterval: 1000 * 60 * 60 * 24,
 }).notify();
