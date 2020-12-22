@@ -442,16 +442,17 @@ class Omegga extends OmeggaWrapper {
   /**
    * unsafely read save data (wrap in try/catch)
    * @param  {String} - save file name
+   * @param  {Boolean} - only read save header data
    * @return {SaveData} - BRS JS Save Data
    */
-  readSaveData(name) {
+  readSaveData(name, nobricks=false) {
     if (typeof name !== 'string')
       throw 'expected name argument for readSaveData';
 
     const file = this.getSavePath(name);
     if (!file.startsWith(this.savePath))
       throw 'save file not in Saved/Builds directory';
-    if (file) return brs.read(fs.readFileSync(file));
+    if (file) return brs.read(fs.readFileSync(file), {preview: false, bricks: !nobricks});
   }
 
   /**
