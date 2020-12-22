@@ -1,5 +1,5 @@
 // all chat emotes
-const EMOTES = 'egg boiascended banleft gun omegga dableft cry sweat soon shrug smallbrain house oof weary brickboi bigbrain angry smiley tm dead cowboy clown angery deadinthewater pikachu key bevel ban goldturkey whip hue horse eyes orb gold boileft galaxybrain facepalm dab hearteyes boi blush thinking'
+const EMOTES = 'bevel pikachu shrug infeggted egghammer key banright egg flushed impeneggtrable brickbot cute banleft deadinthewater yay boibrick indestreggtable eggpty boileft tm smiley ingreggted eggangery horse dab realistegg eyes cry launcher yellegg gregg dableft unstable wink galaxybrain blush pegg goldturkey boiascended chocolate bigbrain smallbrain boi cowboy soon greggory redhouse oregg server hue windegg thumbsup clown smileyupsidedown gun facepalm angry gold hearteyes tinybrain degg sweat washinghands omegga ping pog orb eggtb tinyface dead smoothbrain thinking proteggted gunleft leon scuffed brickblue oof brick peabrain pensegg blindegged regg weary what laugh whip bregg blegg purpegg defeneggstrated'
   .split(' ');
 
 // chat sanitize
