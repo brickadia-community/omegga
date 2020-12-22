@@ -69,6 +69,11 @@
       cursor: pointer;
       user-select: none;
 
+      .ban {
+        color: $br-error-normal;
+        vertical-align: center;
+      }
+
       &:hover td, &.active td {
         background-color: $br-element-hover;
       }
@@ -93,6 +98,42 @@
   }
 }
 
+.widgets-container {
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  .widgets-list {
+    background-color: $br-element-footer-bg;
+    margin-right: 8px;
+    min-width: 200px;
+
+    .widget-item {
+      background-color: $br-bg-primary;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 50px;
+      padding: 0 10px;
+
+      &:nth-child(even) {
+        background-color: $br-bg-primary-alt;
+      }
+
+      .name {
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+
+        .icon {
+          margin-right: 10px;
+        }
+      }
+    }
+  }
+}
+
 
 .player-inspector {
   @include column;
@@ -110,6 +151,27 @@
 <template>
   <page>
     <nav-header title="Players">
+      <div class="widgets-container">
+        <br-button normal boxy
+          data-tooltip="Player list filters"
+          @click="showFilters = !showFilters"
+        >
+          <FilterIcon />
+          Filters
+        </br-button>
+        <div class="widgets-list" :style="{display: showFilters ? 'block' : 'none'}">
+          <div class="widget-item" data-tooltip="Filter by banned players">
+            <div class="name">
+              <BanIcon />
+              Banned
+            </div>
+            <br-toggle
+              @input="value => doSearch()"
+              v-model="filterBanned"
+            />
+          </div>
+        </div>
+      </div>
     </nav-header>
     <page-content>
       <side-nav :active="$route.name" />
@@ -172,7 +234,10 @@
                 </thead>
                 <tbody>
                   <tr v-for="player in players" @click="clickPlayer(player)" :class="{active: player.id === $route.params.id}">
-                    <td>{{player.name}}</td>
+                    <td :class="{ban: !!player.ban}">
+                      {{player.name}}
+                      <BanIcon v-if="player.ban" size="18"/>
+                    </td>
                     <td style="text-align: right;">
                       {{heartbeatAgo(player.heartbeats)}}
                     </td>
@@ -251,11 +316,13 @@ import ArrowRightIcon from 'vue-tabler-icons/icons/ArrowRightIcon';
 import SortAscendingIcon from 'vue-tabler-icons/icons/SortAscendingIcon';
 import SortDescendingIcon from 'vue-tabler-icons/icons/SortDescendingIcon';
 import MapPinIcon from 'vue-tabler-icons/icons/MapPinIcon';
+import BanIcon from 'vue-tabler-icons/icons/BanIcon';
+import FilterIcon from 'vue-tabler-icons/icons/FilterIcon';
 
 import debounce from 'lodash/debounce';
 
 export default {
-  components: { RotateIcon, ArrowBarToLeftIcon, ArrowBarToRightIcon, ArrowLeftIcon, ArrowRightIcon, SortAscendingIcon, SortDescendingIcon, MapPinIcon },
+  components: { RotateIcon, ArrowBarToLeftIcon, ArrowBarToRightIcon, ArrowLeftIcon, ArrowRightIcon, SortAscendingIcon, SortDescendingIcon, MapPinIcon, BanIcon, FilterIcon },
   created() {
     this.getPlayers();
     setTimeout(() => {
@@ -273,6 +340,7 @@ export default {
         search: this.search,
         sort: this.sort,
         direction: this.direction,
+        filter: this.filterBanned ? 'banned' : '',
       });
       this.pages = pages;
       this.total = total;
@@ -329,6 +397,8 @@ export default {
       page: 0,
       update: 0,
       loading: true,
+      filterBanned: false,
+      showFilters: false,
       players: [],
     };
   },

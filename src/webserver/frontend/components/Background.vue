@@ -26,6 +26,16 @@
   object-fit: cover;
 }
 
+.version {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-weight: 200;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
 
 @media (prefers-color-scheme: dark) {
   .background {
@@ -49,6 +59,7 @@
   <div class="background">
     <img class="bg-img dark" src="/public/img/dark_bg.webp">
     <img class="bg-img light" src="/public/img/auth_bg.webp">
+    <div class="version" v-if="version">Omegga v{{version}}</div>
     <slot />
   </div>
 </template>
@@ -57,6 +68,16 @@
 import Vue from 'vue';
 
 export default Vue.component('br-background', {
+  sockets: {
+    data(data) {
+      this.version = data.version;
+    }
+  },
+  data() {
+    return {
+      version: this.omeggaData.version,
+    };
+  }
 });
 
 </script>

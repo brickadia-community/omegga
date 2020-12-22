@@ -82,7 +82,10 @@
 import Vue from 'vue';
 
 export default Vue.component('br-toggle', {
-  props: ['disabled', 'value'],
+  props: {
+    disabled: Boolean,
+    value: Boolean,
+  },
 });
 
 </script>

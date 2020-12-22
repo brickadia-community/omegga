@@ -4,6 +4,7 @@ const _ = require('lodash');
 const { JSONRPCServer, JSONRPCClient, JSONRPCServerAndClient } = require('json-rpc-2.0');
 
 const Player = require('../../omegga/player.js');
+const pkg = require('../../../package');
 
 const {chat: {sanitize, parseLinks}, color: {rgbToHex}, time: {parseBrickadiaTime}} = require('../../util/index.js');
 
@@ -79,6 +80,7 @@ module.exports = (server, io) => {
     database.getRoles().then(roles => {
       socket.emit('data', {
         roles,
+        version: pkg.version,
         canLogOut: socket.user.username !== '',
         now: Date.now(), // this can be used for the frontend to anticipate drift
         userless: !socket.user.username,
@@ -196,12 +198,44 @@ module.exports = (server, io) => {
 
     // get a paginated list of players
     // TODO: add permission check
-    rpc.addMethod('players.list', async([{page=0, search='', sort='name', direction='1'}={}]) => {
-      const resp = await database.getPlayers({ page, search, sort, direction });
+    rpc.addMethod('players.list', async([{page=0, search='', sort='name', direction='1', filter=''}={}]) => {
+      const { banList } = omegga.getBanList();
+
+      // get the ban list
       const now = Date.now();
+
+      let limitId;
+
+      // if the filter is set to banned players only, limit player results by ids in the current ban list
+      if (filter === 'banned') {
+        limitId = Object.keys(banList).filter(b => parseBrickadiaTime(banList[b].expires) > Date.now());
+      }
+
+      const resp = await database.getPlayers({ page, search, sort, direction, limitId });
       for (const player of resp.players) {
         player.seenAgo = now - player.lastSeen;
         player.createdAgo = now - player.created;
+
+        let currentBan = banList[player.id];
+        if (currentBan) {
+          // create a clone of the object
+          currentBan = {...currentBan};
+
+          // parse the times in the current ban
+          currentBan.created = parseBrickadiaTime(currentBan.created);
+          currentBan.expires = parseBrickadiaTime(currentBan.expires);
+          currentBan.duration = currentBan.expires - currentBan.created;
+          currentBan.remainingTime = currentBan.expires - now;
+
+          // lookup banner name
+          currentBan.bannerName = _.get(omegga.getNameCache(), ['savedPlayerNames', currentBan.bannerId], '');
+
+          // if the ban is expired, it should not be listed
+          if (currentBan.expires < now)
+            currentBan = null;
+          player.ban = currentBan;
+        }
+
       }
       return resp;
     });

@@ -7,8 +7,6 @@ new Vue({
   el: '#app',
   data() {
     return {
-      connected: false,
-      disconnected: false,
     };
   },
   render(h) {

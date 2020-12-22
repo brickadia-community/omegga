@@ -361,21 +361,27 @@ class Database {
   }
 
   // get paginated players
-  async getPlayers({count=50, search='', page=0, sort='name', direction='1'}={}) {
+  async getPlayers({count=50, search='', page=0, sort='name', direction='1', limitId=undefined}={}) {
     const pattern = explode(search);
 
     // the query used for finding which players are available
     const query = {
       type: 'userHistory',
       // only filter if there's a query
-      ...(search.length > 0 ? {$or: [
-        // id was pasted in
-        {id: search},
-        // user's current name
-        {name: {$regex: pattern}},
-        // user's past name
-        {nameHistory: {$elemMatch: {name: {$regex: pattern}}}},
-      ]} : {}),
+      $and: [
+        // if a limitId is passed in, the id must be in it
+        ...(limitId ? [{id: {$in: limitId}}] : []),
+
+        // if there's a search, the search matches...
+        ...(search.length > 0 ? [{$or: [
+          // id was pasted in
+          {id: search},
+          // user's current name
+          {name: {$regex: pattern}},
+          // user's past name
+          {nameHistory: {$elemMatch: {name: {$regex: pattern}}}},
+        ]}] : []),
+      ],
     };
 
     // count players and query players
