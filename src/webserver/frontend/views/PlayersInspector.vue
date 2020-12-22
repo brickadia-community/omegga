@@ -55,7 +55,10 @@
           </a></div>
           <div class="stat"><b>Host:</b> {{player.isHost ? 'Yes' : 'No'}}</div>
           <div class="stat"><b>Banned:</b>
-            <span v-if="player.currentBan">
+            <span v-if="player.currentBan && player.currentBan.duration === 0">
+              Perma
+            </span>
+            <span v-else-if="player.currentBan">
               {{duration(player.currentBan.remainingTime)}} of {{duration(player.currentBan.duration)}} remaining
             </span>
             <span v-else>
@@ -132,7 +135,7 @@
               <td style="text-align: right;"
                 :data-tooltip="'Expires ' + new Date(b.expires)"
               >
-                {{duration(b.duration)}}
+                {{b.duration === 0 ? 'Perma' : duration(b.duration)}}
               </td>
               <td><router-link :to="'/players/'+b.bannerId">{{b.bannerName || 'missing name'}}</router-link></td>
               <td style="text-align: right;"
