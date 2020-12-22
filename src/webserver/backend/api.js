@@ -199,7 +199,7 @@ module.exports = (server, io) => {
     // get a paginated list of players
     // TODO: add permission check
     rpc.addMethod('players.list', async([{page=0, search='', sort='name', direction='1', filter=''}={}]) => {
-      const { banList } = omegga.getBanList();
+      const banList = (omegga.getBanList() || {banList: {}}).banList;
 
       // get the ban list
       const now = Date.now();
@@ -271,7 +271,7 @@ module.exports = (server, io) => {
         b.kickerName = _.get(omegga.getNameCache(), ['savedPlayerNames', b.kickerId], '');
       }
 
-      let currentBan = omegga.getBanList().banList[id];
+      let currentBan = (omegga.getBanList() || {banList: {}}).banList[id];
       if (currentBan) {
         // create a clone of the object
         currentBan = {...currentBan};
