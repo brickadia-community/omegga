@@ -208,7 +208,7 @@ module.exports = (server, io) => {
 
       // if the filter is set to banned players only, limit player results by ids in the current ban list
       if (filter === 'banned') {
-        limitId = Object.keys(banList).filter(b => banList[b].expires === banList[b].created ||
+        limitId = Object.keys(banList).filter(b => banList[b].expires <= banList[b].created ||
           parseBrickadiaTime(banList[b].expires) > Date.now());
       }
 
@@ -232,7 +232,7 @@ module.exports = (server, io) => {
           currentBan.bannerName = _.get(omegga.getNameCache(), ['savedPlayerNames', currentBan.bannerId], '');
 
           // if the ban is expired, it should not be listed
-          if (currentBan.expires < now && currentBan.created !== currentBan.expires)
+          if (currentBan.expires < now && currentBan.duration > 0)
             currentBan = null;
           player.ban = currentBan;
         }
@@ -286,7 +286,7 @@ module.exports = (server, io) => {
         currentBan.bannerName = _.get(omegga.getNameCache(), ['savedPlayerNames', currentBan.bannerId], '');
 
         // if the ban is expired, it should not be listed
-        if (currentBan.expires < now && currentBan.created !== currentBan.expires)
+        if (currentBan.expires < now && currentBan.duration > 0)
           currentBan = null;
       }
 
