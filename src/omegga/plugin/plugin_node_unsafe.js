@@ -31,6 +31,9 @@ class NodePlugin extends Plugin {
     // TODO: validate documentation
     this.documentation = Plugin.readJSON(path.join(pluginPath, DOC_FILE));
     this.pluginFile = path.join(pluginPath, MAIN_FILE);
+
+    // list of registered comands
+    this.commands = [];
   }
 
   // documentation is based on doc.json file
@@ -47,6 +50,7 @@ class NodePlugin extends Plugin {
       this.emitStatus();
       return false;
     };
+    this.commands = [];
 
     try {
       const config = await this.storage.getConfig();
@@ -72,8 +76,18 @@ class NodePlugin extends Plugin {
       this.loadedPlugin = new Plugin(this.omegga, config, store);
 
       // start the loaded plugin
-      if (typeof this.loadedPlugin.init === 'function')
-        await this.loadedPlugin.init();
+      if (typeof this.loadedPlugin.init === 'function') {
+        const result = await this.loadedPlugin.init();
+
+        // plugins can return a result object
+        if (typeof result === 'object' && result) {
+
+          // if registeredCommands is in the results, register the provided strings as commands
+          const cmds = result.registeredCommands;
+          if (cmds && (cmds instanceof Array) && cmds.every(i => typeof i === 'string'))
+            this.commands = cmds;
+        }
+      }
 
       this.emitStatus();
       return true;
@@ -101,6 +115,7 @@ class NodePlugin extends Plugin {
       disrequire(this.pluginFile);
       this.loadedPlugin = undefined;
       this.emitStatus();
+      this.commands = [];
       return true;
     } catch (e) {
       Omegga.error('error unloading node plugin', this.getName(), e);

@@ -66,13 +66,10 @@ class BrickadiaServer extends EventEmitter {
     verboseLog('Running', (this.config.server.__LOCAL ? path.join(__dirname, '../../tools/brickadia.sh') : 'brickadia launcher').yellow);
 
     // handle local launcher support
-    const launchArgs = this.config.server.__LOCAL ? [
-      path.join(__dirname, '../../tools/brickadia.sh'),
-      this.config.server.branch && `--branch=${this.config.server.branch}`,
-      '--server',
-      '--'
-    ] : [
-      'brickadia',
+    const launchArgs =  [
+      this.config.server.__LOCAL
+        ? path.join(__dirname, '../../tools/brickadia.sh')
+        : 'brickadia',
       this.config.server.branch && `--branch=${this.config.server.branch}`,
       '--server',
       '--',

@@ -82,6 +82,9 @@ class Plugin {
   // return true if this plugin is loaded
   isLoaded() { return false; }
 
+  // return true if the command exists
+  isCommand(_cmd) { return false; }
+
   // start the plugin, returns true if plugin successfully loaded
   async load() { return false; }
 
@@ -198,7 +201,11 @@ class PluginLoader {
     this.formats = [];
     this.plugins = [];
 
+    // soon to be deprecated !help
     omegga.on('chatcmd:help', this.showHelp.bind(this));
+
+    // use /plugins to get help
+    omegga.on('cmd:plugins', this.showHelp.bind(this));
   }
 
   // let the plugin loader scan another kind of plugin in
@@ -207,6 +214,11 @@ class PluginLoader {
       throw 'provided plugin format is not a plugin';
 
     this.formats.push(format);
+  }
+
+  // determine if this command is a command on the plugin
+  isCommand(cmd) {
+    return cmd === 'plugins' || this.plugins.some(p => p.isCommand(cmd));
   }
 
   // scan a folder and load in formats
@@ -329,7 +341,7 @@ class PluginLoader {
   // show helptext
   showHelp(player, ...args) {
     // send the message to the player
-    const send = msg => this.omegga.version === 'a4' ? this.omegga.broadcast(msg) : this.omegga.whisper(player, msg);
+    const send = msg => this.omegga.whisper(player, msg);
 
     // available commands and documentation from the plugin system
     const commands = this.commands;
@@ -349,7 +361,7 @@ class PluginLoader {
 
     // no arguments
     if (!args.length) {
-      send('"Use <code>!help plugin</> or <code>!help !command</> for more information"');
+      send('"Use <code>/plugins plugin</>, <code>/plugins !command</>, <code>/plugins /command</> for more information"');
       const plugins = Object.keys(docs).map(d => `<color=\\"${docs[d]._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa'}\\">${d}</>`);
       if (!plugins.length) {
         send('"<b>No Installed Plugins</>"');
@@ -399,8 +411,8 @@ class PluginLoader {
         }
 
         // user takes the helptext literally
-      } else if (args[0] === '!command' || args[0] === 'plugin') {
-        send('"Use <code>!help [name of plugin]</> or <code>!help [name of !command]</> for more help for the respective plugin or command"');
+      } else if (args[0] === '!command' || args[0] === '/command' || args[0] === 'plugin') {
+        send('"Use <code>/plugins [name of plugin]</> or <code>/plugins [name of !command or /command]</> for more help for the respective plugin or command"');
 
       // argument is not found
       } else {
@@ -409,7 +421,7 @@ class PluginLoader {
 
     // too many arguments
     } else {
-      send('"Use <code>!help</> to list plugins and <code>!help plugin</> or <code>!help !command</> for more information"');
+      send('"Use <code>/plugins</> to list plugins and <code>/plugins plugin</> or <code>!help !command or /command</> for more information"');
     }
   }
 

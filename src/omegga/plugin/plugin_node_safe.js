@@ -50,6 +50,9 @@ class NodeVmPlugin extends Plugin {
     // can be ['*'] for everything
     this.access = Plugin.readJSON(path.join(pluginPath, ACCESS_FILE)) || [];
 
+    // list of registered commands
+    this.commands = [];
+
     // verify access is an array of strings
     if (!(this.access instanceof Array) || !this.access.every(s => typeof s === 'string')) {
       throw new Error('access list not a string array');
@@ -118,6 +121,16 @@ class NodeVmPlugin extends Plugin {
       }
     });
 
+    // command registration
+    this.plugin.on('command.registers', async(_, blob) => {
+      if (typeof blob !== 'string') return;
+      const registers = JSON.parse(blob);
+      // ensure registers is an array of strings
+      if (!(registers instanceof Array) || registers.some(i => typeof i !== 'string')) return;
+
+      this.commands = registers;
+    });
+
     // listen on every message, post them to to the worker
     this.eventPassthrough = this.eventPassthrough.bind(this);
   }
@@ -128,13 +141,23 @@ class NodeVmPlugin extends Plugin {
   // loaded state is based on if a worker exists
   isLoaded() { return !!this.#worker; }
 
+  // determing if a command is registered
+  isCommand(cmd) {
+    return this.commands.includes(cmd);
+  }
+
   // require the plugin into the system, run the init func
   async load() {
+    // can't load the plugin if it's already loaded
+    if (typeof this.#worker !== 'undefined')
+      return false;
+
     // vm restriction settings, default is access to everything
     const vmOptions = {
       builtin: this.access, // TODO: reference access file
       external: true, // TODO: reference access file
     };
+    this.commands = [];
 
     try {
       const config = await this.storage.getConfig();
@@ -210,6 +233,7 @@ class NodeVmPlugin extends Plugin {
           frozen = false;
           if (timed) return;
           this.emitStatus();
+          this.commands = [];
           return true;
         } catch (e) {
           frozen = false;

@@ -167,10 +167,19 @@ parent.on('load', (resp, pluginPath, options) => {
 parent.on('start', async (resp, config) => {
   try {
     pluginInstance = new PluginClass(omegga, config, store);
-    await pluginInstance.init();
+    const result = await pluginInstance.init();
+    // if a plugin init returns a list of strings, treat them as the list of commands
+    if (typeof result === 'object' && result) {
+
+      // if registeredCommands is in the results, register the provided strings as commands
+      const cmds = result.registeredCommands;
+      if (cmds && (cmds instanceof Array) && cmds.every(i => typeof i === 'string')) {
+        emit('command.registers', JSON.stringify(cmds));
+      }
+    }
     emit(resp, true);
   } catch (err) {
-    emit('error', 'error starting plugin', err.toString());
+    emit('error', 'error starting plugin', err);
     emit(resp, false);
   }
 });

@@ -374,6 +374,8 @@ Node VM Plugins are what you should be using. They are run inside a VM inside a 
 
 These plugins receive a "proxy" reference to `omegga` and have limited reach for what they can touch.
 
+Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` (registers command `/foo` and `/bar`) in the `async init()` method.
+
 ### Globals
 
 * `OMEGGA_UTIL` - access to the `src/util/index.js` module
@@ -447,6 +449,8 @@ These plugins receive a direct reference to the `omegga` that wraps the brickadi
 
 Cleanup is important as code can still be running after the plugin is unloaded resulting in strange and undefined behavior. Make sure to run `clearInterval` and `clearTimeout`
 
+Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` (registers command `/foo` and `/bar`) in the `async init()` method.
+
 ### Globals
 
   * `OMEGGA_UTIL` - access to the `src/util/index.js` module
@@ -497,6 +501,8 @@ JSON RPC Plugins let you use any language you desire, as long as you can run it 
 
 The server communicates with the plugin by sending messages to `stdin` and expects responses in `stdout`. All `stderr` is printed to the console.
 
+Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` (registers command `/foo` and `/bar`) in the `init` method.
+
 ### Omegga Methods (You can access these)
 
 | Method | Arguments | Description |
@@ -533,7 +539,7 @@ The server communicates with the plugin by sending messages to `stdin` and expec
 
 | Method | Arguments | Description | Required |
 | ------ | --------- | ----------- | -------- |
-| `init` | config object | Returns _something_, called when plugin starts | &#9745; |
+| `init` | config object | Returns a start result, called when plugin starts | &#9745; |
 | `stop` | _none_ | Returns _something_, called when plugin is stopped | &#9745; |
 | `bootstrap` | [{ object full of omegga info (`host`, `version`, etc) }] | Run when plugin is started for base data | |
 | `plugin:players:raw` | [[... [player `name`, `id`, `controller`, `state`] ]] | Lists players on the server | |

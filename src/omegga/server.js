@@ -13,6 +13,9 @@ const file = require('../util/file.js');
 const Terminal = require('../cli/terminal.js');
 require('colors');
 
+const DEFAULT_COMMANDS = require('../info/default_commands.json');
+const MISSING_CMD = '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
+
 const MATCHERS = [
   require('./matchers/join.js'),
   // 'join' event => { name, id, state, controller }
@@ -139,18 +142,18 @@ class Omegga extends OmeggaWrapper {
       this.pluginLoader.loadFormats(path.join(__dirname, 'plugin'));
     }
 
-    /** list of online players */
+    /** @type {Array<Player>}list of online players */
     this.players = [];
 
     /** host player info `{id: uuid, name: player name}` */
     this.host = undefined;
 
-    /** current game version - may later be turned into CL#### versions */
+    /** @type {String} current game version - may later be turned into CL#### versions */
     this.version = 'a5';
 
-    /** whether server has started */
+    /** @type {Boolean} whether server has started */
     this.started = false;
-    /** whether server is starting up */
+    /** @type {Boolean} whether server is starting up */
     this.starting = false;
 
     // add all the matchers to the server
@@ -175,6 +178,7 @@ class Omegga extends OmeggaWrapper {
     this.on('start', () => {
       this.started = true;
       this.starting = false;
+      this.writeln('Chat.MessageForUnknownCommands 0');
     });
 
     // when brickadia exits, stop omegga
@@ -188,6 +192,15 @@ class Omegga extends OmeggaWrapper {
         this.emit('exit');
       if (!this.stopping)
         this.stop();
+    });
+
+    // detect when a missing command is sent
+    this.on('cmd', (cmd, name) => {
+      // if it's not in the default commands and it's not registered to a plugin,
+      // it's okay to send the missing command message
+      if (!DEFAULT_COMMANDS.includes(cmd) && (!this.pluginLoader || !this.pluginLoader.isCommand(cmd))) {
+        this.whisper(name, MISSING_CMD);
+      }
     });
   }
 
@@ -264,7 +277,7 @@ class Omegga extends OmeggaWrapper {
    * messages are broken by new line
    * multiple arguments are additional lines
    * all messages longer than 512 characters are deleted automatically, though omegga wouldn't have sent them anyway
-   * @param {...messages} - unescaped chat messages to send. may need to wrap messages with quotes
+   * @param {...String} - unescaped chat messages to send. may need to wrap messages with quotes
    */
   //
   broadcast(...messages) {
@@ -275,11 +288,12 @@ class Omegga extends OmeggaWrapper {
   }
 
   /**
-   * whisper messages to chat
+   * whisper messages to a player's chat
    * messages are broken by new line
    * multiple arguments are additional lines
    * all messages longer than 512 characters are deleted automatically, though omegga wouldn't have sent them anyway
-   * @param {...messages} - unescaped chat messages to send. may need to wrap messages with quotes
+   * @param {String} - player identifier or player object
+   * @param {...String} - unescaped chat messages to send. may need to wrap messages with quotes
    */
   //
   whisper(target, ...messages) {

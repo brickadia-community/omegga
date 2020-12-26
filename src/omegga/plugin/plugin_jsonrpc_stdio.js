@@ -45,16 +45,27 @@ class RpcPlugin extends Plugin {
     this.pluginFile = path.join(pluginPath, MAIN_FILE);
 
     this.eventPassthrough = this.eventPassthrough.bind(this);
+    this.commands = [];
 
     this.initRPC();
   }
 
   isLoaded() { return !!this.#child && !this.#child.exitCode; }
 
+  // determing if a command is registered
+  isCommand(cmd) {
+    return this.commands.includes(cmd);
+  }
+
   // spawn the plugin as a child process
   load() {
     let frozen = true, timed = false;
     const name = this.getName();
+    this.commands = [];
+
+    // can't load the plugin if the child is still running
+    if (typeof this.#child !== 'undefined')
+      return false;
 
     return Promise.race([
       (async() => {
@@ -79,8 +90,17 @@ class RpcPlugin extends Plugin {
           this.omegga.on('*', this.eventPassthrough);
 
           try {
-          // tell the plugin to start
-            await this.emit('init', config);
+            // tell the plugin to start
+            const result = await this.emit('init', config);
+
+            // plugins can return a result object
+            if (typeof result === 'object' && result) {
+
+              // if registeredCommands is in the results, register the provided strings as commands
+              const cmds = result.registeredCommands;
+              if (cmds && (cmds instanceof Array) && cmds.every(i => typeof i === 'string'))
+                this.commands = cmds;
+            }
           } catch (e) {
             if (!e.message) return;
             Omegga.error('!>'.red, 'rpc plugin', name.brightRed.underline, 'missing start impl');
@@ -146,6 +166,7 @@ class RpcPlugin extends Plugin {
           frozen = false;
           if (timed) return;
           this.emitStatus();
+          this.commands = [];
           return true;
         } catch (e) {
           if (timed) return;
@@ -275,6 +296,8 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('store.delete', (key) => this.storage.delete(key));
     rpc.addMethod('store.wipe', () => this.storage.wipe());
     rpc.addMethod('store.count', () => this.storage.count());
+    rpc.addMethod('store.keys', () => this.storage.keys());
+
     rpc.addMethod('store.keys', () => this.storage.keys());
 
     // server can run console commands
