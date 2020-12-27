@@ -56,7 +56,7 @@ const rgbToHex = (r, g, b) => {
     r = r.r;
   }
 
-  return [r, g, b].map(v => Number(v).toString(16).padStart(2, '0')).join('');
+  return [r, g, b].map(v => Math.round(Number(v)).toString(16).padStart(2, '0')).join('');
 };
 
 const DEFAULT_COLORSET = [
