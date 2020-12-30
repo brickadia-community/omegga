@@ -146,6 +146,14 @@ class Terminal {
         },
       },
 
+      kill: {
+        desc: 'forcefully kill brickadia server process without closing omegga',
+        async fn() {
+          log('Stopping server...');
+          await this.omegga.stop();
+        },
+      },
+
       save: {
         desc: 'Save bricks to a specified file',
         async fn(...args) {
