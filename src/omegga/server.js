@@ -488,8 +488,10 @@ class Omegga extends OmeggaWrapper {
       `Bricks.Load ${saveFile} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`,
       /^LogBrickSerializer: (.+)$/,
       {
-        first: match => match[0].endsWith(saveFile + '...'),
-        last: match => match[1].match(/Read \d+ bricks/),
+        first: match => match[0].endsWith(saveFile + '.brs...'),
+        last: match => match[1].match(/Read .+ bricks/),
+        afterMatchDelay: 0,
+        timeoutDelay: 30000
       }
     );
 
@@ -512,8 +514,10 @@ class Omegga extends OmeggaWrapper {
       `Bricks.Save ${saveFile}`,
       /^LogBrickSerializer: (.+)$/,
       {
-        first: match => match[0].endsWith(saveFile + '...'),
-        last: match => match[1].match(/Saved \d+ bricks/),
+        first: match => match[0].endsWith(saveFile + '.brs...'),
+        last: match => match[1].match(/Saved .+ bricks and .+ components from .+ owners/),
+        afterMatchDelay: 0,
+        timeoutDelay: 30000
       },
     );
 
