@@ -464,7 +464,7 @@ class Omegga extends OmeggaWrapper {
       throw 'expected name argument for readSaveData';
 
     const file = this.getSavePath(name);
-    if (!file.startsWith(this.savePath))
+    if (!file || !file.startsWith(this.savePath))
       throw 'save file not in Saved/Builds directory';
     if (file) return brs.read(fs.readFileSync(file), {preview: false, bricks: !nobricks});
   }

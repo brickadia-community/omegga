@@ -17,6 +17,7 @@ const bootstrap = (omegga) => ({
     configPath: omegga.configPath,
     starting: omegga.starting,
     started: omegga.started,
+    config: omegga.config,
   }],
 });
 

@@ -27,12 +27,19 @@ parentPort.on('message', ({action, args}) => parent.emit(action, ...args));
 const emit = (action, ...args) => {
   const messageId = 'message:' + (messageCounter ++);
 
+  let rejectFn;
   // promise waits for the message to resolve
-  const promise = new Promise(resolve =>
-    parent.once(messageId, resolve));
+  const promise = new Promise((resolve, reject) => {
+    parent.once(messageId, resolve);
+    rejectFn = reject;
+  });
 
-  // post the message
-  parentPort.postMessage({action, args: [messageId, ...args]});
+  try {
+    // post the message
+    parentPort.postMessage({action, args: [messageId, ...args]});
+  } catch (err) {
+    rejectFn(err);
+  }
 
   // return the promise
   return promise;
@@ -179,7 +186,7 @@ parent.on('start', async (resp, config) => {
     }
     emit(resp, true);
   } catch (err) {
-    emit('error', 'error starting plugin', err);
+    emit('error', 'error starting plugin', JSON.stringify(err));
     emit(resp, false);
   }
 });
