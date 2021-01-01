@@ -21,7 +21,7 @@ const verboseLog = (...args) => {
 // plugin url transformers
 const transformers = [{
   // github transformer
-  pattern: /^gh@(?<owner>[^/]+)\/(?<repo>[^/]+)$/,
+  pattern: /^gh:(?<owner>[^/]+)\/(?<repo>[^/]+)$/,
   fn: ({owner, repo}) => ({
     type: 'short',
     name: repo,
@@ -29,7 +29,7 @@ const transformers = [{
   }),
 }, {
   // gitlab transformer
-  pattern: /^gl@(?<owner>[^/]+)\/(?<repo>[^/]+)$/,
+  pattern: /^gl:(?<owner>[^/]+)\/(?<repo>[^/]+)$/,
   fn: ({owner, repo}) => ({
     type: 'short',
     name: repo,
