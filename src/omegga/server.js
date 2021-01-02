@@ -515,7 +515,7 @@ class Omegga extends OmeggaWrapper {
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),
-        last: match => match[1].match(/Saved .+ bricks and .+ components from .+ owners/),
+        last: match => match[1].match(/Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/),
         afterMatchDelay: 0,
         timeoutDelay: 30000
       },
