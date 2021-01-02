@@ -42,6 +42,11 @@ class NodePlugin extends Plugin {
   // loaded state is based on if the loadedPlugin object is created
   isLoaded() { return !!this.loadedPlugin; }
 
+  // determing if a command is registered
+  isCommand(cmd) {
+    return this.commands.includes(cmd);
+  }
+
   // require the plugin into the system, run the init func
   async load() {
     const stopPlugin = reason => {
