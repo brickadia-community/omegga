@@ -39,7 +39,7 @@ const sRGB = linear =>
   linear.map((c, i) => i === 3
     ? c
     : Math.round(((c/255) > 0.0031308
-      ? Math.pow((c/255) * 1.055, 1/2.4) - 0.055
+      ? 1.055 * Math.pow((c/255), 1/2.4) - 0.055
       : c / 255 * 12.92)*255)
   );
 
