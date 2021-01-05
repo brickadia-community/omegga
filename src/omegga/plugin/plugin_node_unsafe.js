@@ -51,7 +51,7 @@ class NodePlugin extends Plugin {
   async load() {
     const stopPlugin = reason => {
       Omegga.error('error launching node plugin', this.getName(), ':', reason);
-      try{disrequire(this.pluginFile);}catch(e){Omegga.error('error unloading node plugin (2)', this.getName(), e);}
+      try{this.disrequireAll();}catch(e){Omegga.error('error unloading node plugin (2)', this.getName(), e);}
       this.emitStatus();
       return false;
     };
@@ -117,7 +117,7 @@ class NodePlugin extends Plugin {
         await this.loadedPlugin.stop();
 
       // unload the plugin
-      disrequire(this.pluginFile);
+      this.disrequireAll();
       this.loadedPlugin = undefined;
       this.emitStatus();
       this.commands = [];
@@ -127,6 +127,14 @@ class NodePlugin extends Plugin {
       this.emitStatus();
       return false;
     }
+  }
+
+  // disrequire all that match plugin path in require.cache
+  disrequireAll() {
+    // get all files in plugin directory from require cache
+    const requiredFiles = Object.keys(require.cache).filter(requiredFile => requiredFile.includes(this.path));
+    // disrequire all the files
+    requiredFiles.forEach(file => disrequire(file));
   }
 }
 
