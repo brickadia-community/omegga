@@ -34,7 +34,7 @@
   font-size: 20px;
   color: $br-boring-button-fg;
   min-height: 50px;
-  overflow: hidden;
+  overflow: visible;
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -151,7 +151,14 @@
                 />
                 <br-list-input
                   v-if="conf.type === 'list'"
+                  :options="conf.options"
                   :type="conf.itemType"
+                  :value="config[c]"
+                  @input="value => updateConfig(c, value)"
+                />
+                <br-dropdown
+                  v-if="conf.type === 'enum'"
+                  :options="conf.options"
                   :value="config[c]"
                   @input="value => updateConfig(c, value)"
                 />

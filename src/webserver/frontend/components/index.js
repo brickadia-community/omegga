@@ -17,6 +17,7 @@ import './InfiniteScroll.vue';
 import './Button.vue';
 import './Input.vue';
 import './ListInput.vue';
+import './Dropdown.vue';
 import './Toggle.vue';
 
 // chat timestamp

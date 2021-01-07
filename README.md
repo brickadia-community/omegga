@@ -249,6 +249,29 @@ Every plugin requires a `doc.json` file to document which briefly describes the 
       "description": "This is an example boolean input",
       "default": false,
       "type": "boolean"
+    },
+    "example-list": {
+      "description": "This is an example list input. List type can be string, password, number, or enum",
+      "type": "list",
+      "itemType": "string",
+      "default": ["hello"]
+    },
+    "example-enum": {
+      "description": "This is an example enum/dropdown input",
+      "type": "enum",
+      "options": [
+        "foo", "bar", "baz", 1, 2, 3
+      ],
+      "default": "foo"
+    },
+    "example-enum-list": {
+      "description": "This is an example list of enums.",
+      "type": "list",
+      "itemType": "enum",
+      "options": [
+        "foo", "bar", "baz"
+      ],
+      "default": ["foo"]
     }
   },
   "commands": [

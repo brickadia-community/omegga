@@ -7,6 +7,7 @@
   flex-direction: column;
   align-items: stretch;
   user-select: none;
+  width: 100%;
 
   &.disabled {
     pointer-events: none;
@@ -17,6 +18,7 @@
   .br-list-item {
     @include row;
     margin-bottom: 8px;
+    width: 100%;
 
     .button {
       margin-left: 8px;
@@ -35,12 +37,18 @@
     disabled,
   }]">
     <div v-for="(v, i) in value || []" class="br-list-item">
-      <br-input
+      <br-input v-if="['string', 'password', 'number'].includes(type)"
         :key="i"
         :value="value[i]"
         @input="val => updateItem(i, val)"
         :placeholder="placeholder ? placeholder.toString() : ''"
         :type="type"
+      />
+      <br-dropdown v-if="type === 'enum'"
+        :key="i"
+        :value="value[i]"
+        :options="options"
+        @input="val => updateItem(i, val)"
       />
       <br-button icon warn
         data-tooltip="Remove this item from the list"
@@ -68,11 +76,12 @@ export default Vue.component('br-list-input', {
   },
   methods: {
     updateItem(index, val) {
-      this.value[index] = val;
-      this.$emit('input', this.value);
+      const clone = this.value.slice();
+      clone[index] = val;
+      this.$emit('input', clone);
     },
     addItem() {
-      this.value.push({string: '', number: 0, password: ''}[this.type])
+      this.value.push({string: '', number: 0, password: '', enum: this.options[0]}[this.type])
     },
     removeItem(index) {
       this.value.splice(index, 1);
@@ -84,6 +93,7 @@ export default Vue.component('br-list-input', {
     disabled: Boolean,
     type: String,
     value: Array,
+    options: Array,
   },
 });
 

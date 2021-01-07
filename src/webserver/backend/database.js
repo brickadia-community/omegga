@@ -384,16 +384,45 @@ class Database {
       ],
     };
 
+    // the query used for finding a specific player
+    const exactQuery = {
+      type: 'userHistory',
+      // only filter if there's a query
+      $or: [
+        // id was pasted in
+        {id: search},
+        // user's current name
+        {name: search},
+      ],
+    };
+
     // count players and query players
-    const [total, players] = await Promise.all([
+    const [total, players, exactResult] = await Promise.all([
       this.stores.players.count(query),
       this.stores.players.cfind(query)
         // TODO: add other sorts and sort directions
         .sort({[sort]: direction})
         .skip(count * page)
         .limit(count)
-        .exec()
+        .exec(),
+
+      // exact match detection
+      search.length > 0 && page === 0
+        ? this.stores.players.find(exactQuery)
+        : [],
     ]);
+
+    // add exact matches to the beginning
+    if (exactResult.length > 0) {
+      // remove duplicates
+      for (const res of exactResult) {
+        const index = players.findIndex(p => p._id === res._id);
+        players.splice(index, 1);
+      }
+
+      // add results to the beginning
+      players.splice(0, 0, ...exactResult);
+    }
 
     return {
       pages: Math.ceil(total / count),
