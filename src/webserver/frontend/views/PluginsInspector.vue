@@ -33,14 +33,14 @@
   @include alternate(background-color, $br-bg-secondary, $br-bg-secondary-alt);
   font-size: 20px;
   color: $br-boring-button-fg;
-  height: 50px;
+  min-height: 50px;
   overflow: hidden;
   white-space: nowrap;
   display: flex;
   align-items: center;
 
   &.config {
-    height: 80px;
+    min-height: 80px;
   }
 
   .option-name, .option-input {
@@ -144,26 +144,21 @@
               </div>
               <div class="option-value">
                 <br-input
-                  v-if="conf.type === 'string'"
+                  v-if="['string', 'password', 'number'].includes(conf.type)"
+                  :type="conf.type"
                   :value="config[c]"
                   @input="value => updateConfig(c, value)"
                 />
-                <br-input
-                  v-if="conf.type === 'password'"
-                  type="password"
-                  :value="config[c]"
-                  @input="value => updateConfig(c, value)"
-                />
-                <br-input
-                  v-if="conf.type === 'number'"
-                  type="number"
+                <br-list-input
+                  v-if="conf.type === 'list'"
+                  :type="conf.itemType"
                   :value="config[c]"
                   @input="value => updateConfig(c, value)"
                 />
                 <br-toggle
+                  v-if="conf.type === 'boolean'"
                   @input="value => updateConfig(c, value)"
                   :value="config[c]"
-                  v-if="conf.type === 'boolean'"
                 />
                 <ArrowBackUpIcon
                   v-if="conf.default !== config[c]"
