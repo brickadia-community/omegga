@@ -19,6 +19,7 @@ import './Input.vue';
 import './ListInput.vue';
 import './Dropdown.vue';
 import './Toggle.vue';
+import './PlayerDropdown.vue';
 
 // chat timestamp
 import './ChatTime.vue';

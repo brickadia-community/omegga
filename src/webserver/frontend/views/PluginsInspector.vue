@@ -156,6 +156,11 @@
                   :value="config[c]"
                   @input="value => updateConfig(c, value)"
                 />
+                <br-player-list
+                  v-if="conf.type === 'players'"
+                  :value="config[c]"
+                  @input="value => updateConfig(c, value)"
+                />
                 <br-dropdown
                   v-if="conf.type === 'enum'"
                   :options="conf.options"

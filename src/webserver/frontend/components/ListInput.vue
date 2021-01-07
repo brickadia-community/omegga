@@ -36,16 +36,14 @@
   <div :class="['br-list-input', {
     disabled,
   }]">
-    <div v-for="(v, i) in value || []" class="br-list-item">
+    <div v-for="(v, i) in value || []" class="br-list-item" :key="i">
       <br-input v-if="['string', 'password', 'number'].includes(type)"
-        :key="i"
         :value="value[i]"
         @input="val => updateItem(i, val)"
         :placeholder="placeholder ? placeholder.toString() : ''"
         :type="type"
       />
       <br-dropdown v-if="type === 'enum'"
-        :key="i"
         :value="value[i]"
         :options="options"
         @input="val => updateItem(i, val)"
@@ -81,11 +79,14 @@ export default Vue.component('br-list-input', {
       this.$emit('input', clone);
     },
     addItem() {
-      this.value.push({string: '', number: 0, password: '', enum: this.options[0]}[this.type])
+      const clone = this.value.slice();
+      clone.push({string: '', number: 0, password: '', enum: this.options[0]}[this.type]);
+      this.$emit('input', clone);
     },
     removeItem(index) {
-      this.value.splice(index, 1);
-      this.$emit('input', this.value);
+      const clone = this.value.slice();
+      clone.splice(index, 1);
+      this.$emit('input', clone);
     }
   },
   props: {

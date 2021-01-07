@@ -272,6 +272,11 @@ Every plugin requires a `doc.json` file to document which briefly describes the 
         "foo", "bar", "baz"
       ],
       "default": ["foo"]
+    },
+    "example-players-list": {
+      "description": "This is an example list of players.",
+      "type": "players",
+      "default": [{"id":"fa577b9e-f2be-493f-a30a-3789b02ba70b", "name":"Aware"}]
     }
   },
   "commands": [

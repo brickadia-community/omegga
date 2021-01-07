@@ -102,13 +102,6 @@
       <div class="value">{{value}}</div>
       <CaretDownIcon/>
     </div>
-    <!-- <input
-      spellcheck="false"
-      :value="value"
-      @input="$emit('input', $event.target.value)"
-      :placeholder="placeholder ? placeholder.toString() : ''"
-      :type="type"
-    /> -->
   </div>
 </template>
 <script>
@@ -131,7 +124,7 @@ export default Vue.component('br-dropdown', {
   methods: {
     handleClick(e) {
       // basically anytime there's a click, this component should be closed
-      if (open) {
+      if (open && !this.$refs.self.contains(e.target)) {
         this.open = false;
       }
     }
