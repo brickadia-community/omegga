@@ -192,37 +192,53 @@ program
 
 
 program
-  .command('install <pluginUrl...>') // TODO: implement install command
+  .command('install <pluginUrl...>')
   .alias('i')
   .description('Installs a plugin to the current brickadia server')
   .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement install --force
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action((plugins) => {
     if (!config.find('.')) {
-      err('Not an omegga directory, run ', 'omegga init'.yellow);
+      err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
       process.exit(1);
       return;
     }
     const { verbose, force } = program.opts();
     global.VERBOSE = verbose;
-    pluginUtil.install(plugins, { force });
+    pluginUtil.install(plugins, { verbose, force });
   });
 
 program
-  .command('update [pluginNames...]') // TODO: implement update plugins command
+  .command('update [pluginNames...]')
   .alias('u')
   .description('Updates all or selected installed plugins to latest versions')
-  .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement update --force
+  .option('-f, --force', 'Forcefully re-upgrade existing plugin') // TODO: implement update --force
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action((plugins) => {
     if (!config.find('.')) {
-      err('Not an omegga directory, run ', 'omegga init'.yellow);
+      err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
       process.exit(1);
       return;
     }
     const { verbose, force } = program.opts();
     global.VERBOSE = verbose;
-    pluginUtil.update(plugins, { force });
+    pluginUtil.update(plugins, { verbose, force });
+    // TODO: automatically fetch and install plugins
+  });
+
+program
+  .command('check [pluginNames...]')
+  .description('Checks plugins for compatibility issues')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .action((plugins) => {
+    if (!config.find('.')) {
+      err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+      process.exit(1);
+      return;
+    }
+    const { verbose } = program.opts();
+    global.VERBOSE = verbose;
+    pluginUtil.check(plugins, { verbose });
     // TODO: automatically fetch and install plugins
   });
 
