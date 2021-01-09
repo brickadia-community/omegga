@@ -60,7 +60,7 @@
 
 <template>
   <div :class="['input', {
-    disabled: typeof disabled !== 'undefined' && disabled,
+    disabled,
   }]">
     <input
       spellcheck="false"
@@ -76,7 +76,12 @@
 import Vue from 'vue';
 
 export default Vue.component('br-input', {
-  props: ['placeholder', 'disabled', 'type', 'value'],
+  props: {
+    placeholder: String,
+    disabled: Boolean,
+    type: String,
+    value: [String, Number],
+  },
 });
 
 </script>

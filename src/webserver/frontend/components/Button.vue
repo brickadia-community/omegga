@@ -33,6 +33,7 @@
     border-radius: 0;
     padding: 0;
     width: $br-element-height;
+    min-width: $br-element-height;
   }
 
   &.disabled {
