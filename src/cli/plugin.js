@@ -12,13 +12,6 @@ const soft = require('../softconfig.js');
 const pkg = require('../../package.json');
 const config = require('../config/index');
 
-const err = (...args) => console.error('!>'.red, ...args);
-const log = (...args) => console.log('>>'.green, ...args);
-const verboseLog = (...args) => {
-  if (!global.VERBOSE) return;
-  console.log('V>'.magenta, ...args);
-};
-
 // get the working directory for omegga
 function getWorkDir() {
   // default working directory is the one specified in config
@@ -61,11 +54,67 @@ const transformUrl = url => {
 };
 
 let padding = 0;
+let needsNL = false;
+
+// rewrite a console line
+const rewriteLine = (...args) => {
+  process.stdout.clearLine();
+  process.stdout.cursorTo(0);
+  process.stdout.write(args.join(' '));
+  needsNL = true;
+};
 
 // logging helper functions
-const plg = (plugin, ...args) => console.log(plugin.name.padStart(padding), '>>'.green, ...args);
-const plgErr = (plugin, ...args) => console.error(plugin.name.padStart(padding), '!>'.red, ...args);
-const plgWarn = (plugin, ...args) => console.warn(plugin.name.padStart(padding), 'W>'.yellow, ...args);
+const plg = (plugin, ...args) => {
+  if (needsNL) {
+    needsNL = false;
+    console.log();
+  }
+  console.log(plugin.name.padStart(padding), '>>'.green, ...args);
+};
+const plgLog = (plugin, ...args) => {
+  if (global.VERBOSE)
+    plg(plugin, ...args);
+  else
+    rewriteLine(plugin.name.padStart(padding), '>>'.green, ...args);
+};
+const plgWarn = (plugin, ...args) => {
+  if (needsNL) {
+    needsNL = false;
+    console.warn();
+  }
+  console.warn(plugin.name.padStart(padding), 'W>'.yellow, ...args);
+};
+const plgErr = (plugin, ...args) => {
+  if (needsNL) {
+    needsNL = false;
+    console.error();
+  }
+  console.error(plugin.name.padStart(padding), '!>'.red, ...args);
+};
+
+const err = (...args) => {
+  if (needsNL) {
+    needsNL = false;
+    console.error();
+  }
+  console.error('!>'.red, ...args);
+};
+const log = (...args) => {
+  if (needsNL) {
+    needsNL = false;
+    console.log();
+  }
+  console.log('>>'.green, ...args);
+};
+const verboseLog = (...args) => {
+  if (!global.VERBOSE) return;
+  if (needsNL) {
+    needsNL = false;
+    console.log();
+  }
+  console.log('V>'.magenta, ...args);
+};
 
 function checkPlugin(omeggaPath, plugin) {
   const pluginPath = path.join(omeggaPath, soft.PLUGIN_PATH, plugin.name);
@@ -97,7 +146,7 @@ function checkPlugin(omeggaPath, plugin) {
       return false;
     }
 
-    plg(plugin, 'Plugin file', 'OK'.green);
+    plgLog(plugin, 'Plugin file', 'OK'.green);
     return true;
   }
 
@@ -152,7 +201,7 @@ module.exports = {
 
       // clone the plugin from git
       try {
-        plg(plugin, 'Cloning...');
+        plgLog(plugin, 'Cloning...');
         const git = simpleGit(pluginPath);
         await git.clone(plugin.url, pluginPath);
       } catch (e) {
@@ -165,7 +214,7 @@ module.exports = {
 
       const postInstallPath = fs.existsSync(path.join(pluginPath, soft.PLUGIN_POSTINSTALL));
       if (fs.existsSync(postInstallPath)) {
-        plg(plugin, 'Running post install script...');
+        plgLog(plugin, 'Running post install script...');
         try {
           let {stdout, stderr} = await exec(postInstallPath, {
             cwd: pluginPath,
@@ -173,7 +222,7 @@ module.exports = {
           });
 
           if (stderr.length)
-            console.error(stderr);
+            plgErr(plugin, stderr);
 
           verboseLog(stdout);
         } catch (e) {
@@ -216,7 +265,11 @@ module.exports = {
     let pluginsToUpdate = [];
 
     for (const plugin of plugins) {
-      plg(plugin, 'Checking...');
+      if (needsNL) {
+        console.log();
+        needsNL = false;
+      }
+      plgLog(plugin, 'Checking...');
       const pluginPath = path.join(pluginFolder, plugin.name);
       plugin.path = pluginPath;
       const git = simpleGit(pluginPath);
@@ -253,7 +306,7 @@ module.exports = {
         // try to correct a weird detached branch
         if (remotes.length === 1 && remotes[0].name === 'origin' &&
           branches.current === 'master' && !status.tracking && branches.branches['remotes/origin/master']) {
-          plg(plugin, 'Correcting upstream...');
+          plgLog(plugin, 'Correcting upstream...');
           try {
             await git.branch({'--set-upstream-to': 'origin/master'});
             status = await git.status();
@@ -276,7 +329,7 @@ module.exports = {
         }
 
         try {
-          plg(plugin, 'Fetching...');
+          plgLog(plugin, 'Fetching...');
           await git.fetch();
           status = await git.status();
         } catch (e) {
@@ -290,11 +343,11 @@ module.exports = {
         }
 
         if (status.behind === 0) {
-          plg(plugin, 'Already up-to-date!'.green);
+          plgLog(plugin, 'Already up-to-date!'.green);
           continue;
         }
 
-        plg(plugin, 'Update available');
+        plgLog(plugin, 'Update available');
         pluginsToUpdate.push(plugin);
       } catch (e) {
         plgErr(plugin, 'Error', e);
@@ -311,26 +364,30 @@ module.exports = {
 
     for (const plugin of pluginsToUpdate) {
       const { git } = plugin;
-      plg(plugin, 'Creating backup branch...');
+      if (needsNL) {
+        console.log();
+        needsNL = false;
+      }
+      plgLog(plugin, 'Creating backup branch...');
       try {
         const branches = await git.branch();
         if (branches.branches['omegga-upgrade-backup']) {
-          plg(plugin, 'Deleting leftover backup branch...');
+          plgLog(plugin, 'Deleting leftover backup branch...');
           await git.deleteLocalBranch('omegga-upgrade-backup', true);
         }
         await git.checkoutBranch('omegga-upgrade-backup', 'master');
         await git.branch({'--set-upstream-to': 'origin/master'});
         await git.checkout('master');
-        plg(plugin, 'Pulling update...');
+        plgLog(plugin, 'Pulling update...');
         await git.pull();
         if ((await git.status()).behind > 0) {
           throw '- still behind?';
         }
-        plg(plugin, 'Checking plugin versions...');
+        plgLog(plugin, 'Checking plugin versions...');
         if (!checkPlugin(omeggaPath, plugin)) {
           throw 'Incompatible';
         }
-        plg(plugin, 'Updated!'.green);
+        plgLog(plugin, 'Updated!'.green);
         updates ++;
       } catch (e) {
         plgErr(plugin, 'Error updating - attempting to restore from backup branch', e);
@@ -342,11 +399,12 @@ module.exports = {
 
           plg(plugin, 'Resetting current branch');
           await git.reset('hard');
-          plg(plugin, 'Attempting to checkout backup branch');
+          plgLog(plugin, 'Attempting to checkout backup branch');
           await git.checkout('omegga-upgrade-backup');
-          plg(plugin, 'Replacing master with backup');
+          plgLog(plugin, 'Replacing master with backup');
           await git.deleteLocalBranch('master');
           await git.checkoutBranch('master', 'omegga-upgrade-backup');
+          plgLog(plugin, 'Restored to backup branch');
 
           if ((await git.branch()) !== 'master') {
             plgErr(plugin, 'Failed to checkout newly created master');
