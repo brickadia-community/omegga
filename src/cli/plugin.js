@@ -294,6 +294,7 @@ module.exports = {
           continue;
         }
 
+        plg(plugin, 'Update available');
         pluginsToUpdate.push(plugin);
       } catch (e) {
         plgErr(plugin, 'Error', e);
