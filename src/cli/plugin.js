@@ -102,7 +102,7 @@ function checkPlugin(omeggaPath, plugin) {
   }
 
   // no plugin file, no problem!
-  plgWarn(plugin, 'WARNING - Plugin is missing plugin file, this may be a problem in future versions');
+  plgWarn(plugin, `WARNING - Plugin is missing plugin file (${soft.PLUGIN_FILE}), this may be a problem in future versions`);
   return true;
 }
 

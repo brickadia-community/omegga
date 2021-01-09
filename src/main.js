@@ -223,7 +223,6 @@ program
     const { verbose, force } = program.opts();
     global.VERBOSE = verbose;
     pluginUtil.update(plugins, { verbose, force });
-    // TODO: automatically fetch and install plugins
   });
 
 program
@@ -239,7 +238,6 @@ program
     const { verbose } = program.opts();
     global.VERBOSE = verbose;
     pluginUtil.check(plugins, { verbose });
-    // TODO: automatically fetch and install plugins
   });
 
 program.parse(process.argv);
