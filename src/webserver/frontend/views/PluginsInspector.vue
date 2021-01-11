@@ -173,7 +173,7 @@
                   :value="config[c]"
                 />
                 <ArrowBackUpIcon
-                  v-if="conf.default !== config[c]"
+                  v-if="!eq(conf.default, config[c])"
                   @click="updateConfig(c, conf.default)"
                   class="reset-button"
                   data-tooltip="Reset to default value"
@@ -330,6 +330,10 @@ export default {
       await this.getPlugin();
       this.waiting = false;
     },
+    eq(a, b) {
+      // super stupidly not performant equality but it's okay because it doesn't happen often
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
   },
   created() {
     this.getPlugin();
