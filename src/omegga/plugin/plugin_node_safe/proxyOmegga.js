@@ -18,6 +18,7 @@ const bootstrap = (omegga) => ({
     starting: omegga.starting,
     started: omegga.started,
     config: omegga.config,
+    currentMap: omegga.currentMap,
   }],
 });
 

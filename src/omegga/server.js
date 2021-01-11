@@ -561,7 +561,7 @@ class Omegga extends OmeggaWrapper {
       /^.*(LogLoad: Took .+ seconds to LoadMap\((?<map>.+)\))|(ERROR: The map .+)$/,
       {
         timeoutDelay: 30000,
-        exec: this.writeln(`ServerTravel ${brName}`)
+        exec: () => this.writeln(`ServerTravel ${brName}`)
       },
     ); 
     const success = !!(match && match[0] && match[0].groups && match[0].groups.map);
