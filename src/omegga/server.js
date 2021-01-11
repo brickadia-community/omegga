@@ -181,7 +181,7 @@ class Omegga extends OmeggaWrapper {
     });
 
     // when brickadia starts, mark the server as started
-    this.on('start', (map) => {
+    this.on('start', ({ map }) => {
       this.started = true;
       this.starting = false;
       this.currentMap = map;

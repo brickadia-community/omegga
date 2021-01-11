@@ -75,7 +75,7 @@ class ProxyOmegga extends EventEmitter {
     this.on('plugin:players:raw', players =>
       this.players = players.map(p => new Player(this, ...p)));
 
-    this.on('start', (map) => {
+    this.on('start', ({ map }) => {
       this.started = true;
       this.starting = false;
       this.currentMap = map;
@@ -84,7 +84,7 @@ class ProxyOmegga extends EventEmitter {
       this.started = false;
       this.starting = false;
     });
-    this.on('mapchange', (map) => {
+    this.on('mapchange', ({ map }) => {
       this.currentMap = map;
     });
   }

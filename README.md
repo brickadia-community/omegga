@@ -574,7 +574,7 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `bootstrap` | [{ object full of omegga info (`host`, `version`, etc) }] | Run when plugin is started for base data | |
 | `plugin:players:raw` | [[... [player `name`, `id`, `controller`, `state`] ]] | Lists players on the server | |
 | `line` | [brickadiaLog string] | A brickadia console log | |
-| `start` | map | Run when the brickadia server starts | |
+| `start` | [{map}] | Run when the brickadia server starts | |
 | `host` | [{name, id}] | Run when the brickadia server detects the host | |
 | `version` | ['a4' or 'a5'] | Run when the brickadia server detects the version | |
 | `unauthorized` | _none_ | Run when the brickadia server fails an auth check | |
@@ -583,7 +583,7 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `cmd:command` | [playerName, ...args] | (a5 only) Runs when a player runs a `/command args` | |
 | `chatcmd:command` | [playerName, ...args] | Runs when a player runs a `!command args` | |
 | `chat` | [playerName, message] | Runs when a player sends a chat message | |
-| `mapchange` | map | Runs when the map changes | |
+| `mapchange` | [{map}] | Runs when the map changes | |
 
 ### Folder Structure
 

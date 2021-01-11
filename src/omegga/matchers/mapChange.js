@@ -27,7 +27,7 @@ module.exports = omegga => {
       if (map) {
         // dont emit on startup or when there is no current map
         if (omegga.started && omegga.currentMap)
-          omegga.emit('mapchange', map);
+          omegga.emit('mapchange', { map });
 
         // set omegga's current map
         omegga.currentMap = map;
