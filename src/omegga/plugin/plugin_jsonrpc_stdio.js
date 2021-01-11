@@ -319,6 +319,8 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('getSaveData', () => this.omegga.getSaveData());
     rpc.addMethod('loadSaveData', ({data, offX=0, offY=0, offZ=0, quiet=false}) =>
       this.omegga.loadSaveData(data, {offX, offY, offZ, quiet}));
+    rpc.addMethod('changeMap', (map) =>
+      this.omegga.changeMap(map));
   }
 
   // emit a message to the plugin via the jsonrpc client and expect a response

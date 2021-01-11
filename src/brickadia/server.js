@@ -82,6 +82,7 @@ class BrickadiaServer extends EventEmitter {
       '--output=L',
       '--',
       ...launchArgs,
+      this.config.server.map && `${this.config.server.map}`,
       '-NotInstalled', '-log',
       this.path ? `-UserDir="${this.path}"` : null,
       email ? `-User="${email}"` : null, // remove email argument if not provided

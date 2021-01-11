@@ -8,7 +8,7 @@ const { PluginLoader } = require('./plugin.js');
 const commandInjector = require('./commandInjector.js');
 const { Webserver } = require('../webserver/index.js');
 const soft = require('../softconfig.js');
-const { uuid, pattern } = require('../util/index.js');
+const { uuid, pattern, map: mapUtils } = require('../util/index.js');
 const file = require('../util/file.js');
 const Terminal = require('../cli/terminal.js');
 require('colors');
@@ -41,6 +41,9 @@ const MATCHERS = [
 
   require('./matchers/init.js'),
   // watch loginit for any funny business
+
+  require('./matchers/mapChange.js'),
+  // 'mapchange' event
 ];
 
 // TODO: safe broadcast parsing
@@ -156,6 +159,9 @@ class Omegga extends OmeggaWrapper {
     /** @type {Boolean} whether server is starting up */
     this.starting = false;
 
+    /** @type {String} current map */
+    this.currentMap = '';
+
     // add all the matchers to the server
     verboseLog('Adding matchers');
     for (const matcher of MATCHERS) {
@@ -175,9 +181,10 @@ class Omegga extends OmeggaWrapper {
     });
 
     // when brickadia starts, mark the server as started
-    this.on('start', () => {
+    this.on('start', ({ map }) => {
       this.started = true;
       this.starting = false;
+      this.currentMap = map;
       this.writeln('Chat.MessageForUnknownCommands 0');
     });
 
@@ -535,6 +542,30 @@ class Omegga extends OmeggaWrapper {
     }
 
     return undefined;
+  }
+
+  /**
+   * Change server map
+   * @param  {String} - Map name
+   * @return {Promise}
+   */
+  async changeMap(map) {
+    if(!map) 
+      return;
+
+    // ServerTravel requires /Game/Maps/Plate/Plate instead of Plate
+    const brName = mapUtils.n2brn(map);
+    
+    // wait for the server to change maps
+    const match = await this.addWatcher(
+      /^.*(LogLoad: Took .+ seconds to LoadMap\((?<map>.+)\))|(ERROR: The map .+)$/,
+      {
+        timeoutDelay: 30000,
+        exec: () => this.writeln(`ServerTravel ${brName}`)
+      },
+    ); 
+    const success = !!(match && match[0] && match[0].groups && match[0].groups.map);
+    return success;
   }
 }
 
