@@ -134,7 +134,14 @@ class NodePlugin extends Plugin {
     // get all files in plugin directory from require cache
     const requiredFiles = Object.keys(require.cache).filter(requiredFile => requiredFile.includes(this.path));
     // disrequire all the files
-    requiredFiles.forEach(file => disrequire(file));
+    requiredFiles.forEach(file => {
+      try {
+        disrequire(file);
+      } catch (e) {
+        if (e.code !== 'MODULE_NOT_FOUND') // ignore error thrown if a module was deleted
+          throw e;
+      }
+    });
   }
 }
 
