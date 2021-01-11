@@ -21,6 +21,14 @@ class Player {
   }
 
   /**
+   * Returns omegga
+   * @return {Omegga}
+   */
+  getOmegga() {
+    return this.#omegga;
+  }
+
+  /**
    * Clone a player
    * @return {Player}
    */
@@ -258,5 +266,7 @@ class Player {
     return [x, y, z].map(Number);
   }
 }
+
+global.Player = Player;
 
 module.exports = Player;
