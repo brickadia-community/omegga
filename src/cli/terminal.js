@@ -66,6 +66,7 @@ class Terminal {
     omegga.on('leave', p => this.log(`${p.name.underline} left.`.brightBlue));
     omegga.on('chat', (name, message) => this.log(`${name.brightYellow.underline}: ${message}`));
     omegga.on('start', () => log('Server has started. Type', '/help'.yellow, 'for more commands'));
+    omegga.on('mapchange', (map) => log('Map changed to', (map.charAt(0).toUpperCase()+map.slice(1)).green));
     omegga.on('unauthorized', () => err('Server failed authentication check'));
     omegga.on('error', e => err('Server caught unhandled exception:\n' + e));
     omegga.on('server:stopped', () => log('Server has closed. Type', '/stop'.yellow, 'to close omegga'));

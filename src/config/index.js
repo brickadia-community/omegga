@@ -36,6 +36,7 @@ module.exports = {
     },
     server: {
       port: 7777,
+      map: 'Plate'
     },
   },
 

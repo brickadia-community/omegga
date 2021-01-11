@@ -13,4 +13,7 @@ module.exports = {
 
   // time parsing utils
   time: require('./time.js'),
+
+  // map parsing utils
+  map: require('./map.js'),
 };

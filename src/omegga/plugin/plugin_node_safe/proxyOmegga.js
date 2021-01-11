@@ -29,6 +29,7 @@ const STEAL_PROTOTYPES = [
   'getSavePath', 'getSaves',
   'writeSaveData', 'readSaveData', 'loadSaveData', 'getSaveData',
   'getRoleSetup', 'getRoleAssignments', 'getBanList', 'getNameCache',
+  'changeMap'
 ];
 
 // this is a "soft" omegga
@@ -73,13 +74,17 @@ class ProxyOmegga extends EventEmitter {
     this.on('plugin:players:raw', players =>
       this.players = players.map(p => new Player(this, ...p)));
 
-    this.on('start', () => {
+    this.on('start', (map) => {
       this.started = true;
       this.starting = false;
+      this.currentMap = map;
     });
     this.on('exit', () => {
       this.started = false;
       this.starting = false;
+    });
+    this.on('mapchange', (map) => {
+      this.currentMap = map;
     });
   }
 }
