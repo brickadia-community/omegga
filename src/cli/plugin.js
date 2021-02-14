@@ -230,7 +230,6 @@ module.exports = {
           plgErr(plugin, 'Error running post install script:', e);
         }
       }
-
     }
   },
 
@@ -388,6 +387,26 @@ module.exports = {
         if (!checkPlugin(omeggaPath, plugin)) {
           throw 'Incompatible';
         }
+
+        const postInstallPath = path.join(plugin.path, soft.PLUGIN_POSTINSTALL);
+        if (fs.existsSync(postInstallPath)) {
+          plgLog(plugin, 'Running post install script...');
+          try {
+            fs.chmodSync(postInstallPath, '0755');
+            let {stdout, stderr} = await exec(postInstallPath, {
+              cwd: plugin.path,
+              shell: true,
+            });
+
+            if (stderr.length)
+              plgErr(plugin, stderr);
+
+            verboseLog(stdout);
+          } catch (e) {
+            plgErr(plugin, 'Error running post install script:', e);
+          }
+        }
+
         plgLog(plugin, 'Updated!'.green);
         updates ++;
       } catch (e) {
