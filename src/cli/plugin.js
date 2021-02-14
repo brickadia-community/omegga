@@ -138,7 +138,7 @@ function checkPlugin(omeggaPath, plugin) {
     }
 
     // check the omeggaVersion field of the plugin file
-    if (!data.omeggaVersion || !semver.valid(semver.clean(data.omeggaVersion))) {
+    if (!data.omeggaVersion || !semver.validRange(data.omeggaVersion)) {
       plgWarn(plugin, 'WARNING - Plugin file has invalid', 'omeggaVersion'.yellow + '. Expected semver expression');
       return false;
     } else if (!semver.satisfies(pkg.version, data.omeggaVersion)) {

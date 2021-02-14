@@ -372,12 +372,12 @@ This is an example `plugin.json`, located inside of a plugin folder. The plugin 
 ```json
 {
   "formatVersion": 1,
-  "omeggaVersion": "^0.1.32"
+  "omeggaVersion": ">=0.1.32"
 }
 ```
 
 * `formatVersion` - indicates the plugin file format version
-* `omeggaVersion` - indicates compatible omegga versions ([semver cheatsheet](https://devhints.io/semver))
+* `omeggaVersion` - indicates compatible omegga versions ([semver cheatsheet](https://www.npmjs.com/package/semver#user-content-ranges))
 
 ## Plugin Store
 
