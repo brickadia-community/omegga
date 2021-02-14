@@ -6,7 +6,7 @@ const pkg = require('../package');
 const soft = require('./softconfig.js');
 const Omegga = require('./omegga/server.js');
 const config = require('./config/index.js');
-const { Terminal, auth, config: omeggaConfig } = require('./cli/index.js');
+const { Terminal, auth, config: omeggaConfig, pluginUtil } = require('./cli/index.js');
 const file = require('./util/file.js');
 
 const updateNotifier = require('update-notifier');
@@ -17,12 +17,6 @@ const notifier = updateNotifier({
 }).notify();
 
 /*
-
-// TODO: download plugins from git using simple-git
-// TODO: update plugins via git pull if there's no pending changes
-// TODO: run plugin by either index.js or omegga.entrypoint file w/ stdio message passing
-  json rpc?
-
 // TODO: let omegga bundle config (roles, bans, server config) to zip
 // TODO: let omegga unbundle config from zip to current omegga dir
 */
@@ -190,27 +184,54 @@ program
     // TODO: implement config parsing
   });
 
+
 program
-  .command('install <plugin url> [...otherPlugins]') // TODO: implement install command
+  .command('install <pluginUrl...>')
   .alias('i')
   .description('Installs a plugin to the current brickadia server')
   .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement install --force
-  .option('-c, --config', 'JSON default config') // TODO: implement install --config
-  .arguments('<pluginUrl> [morePlugins...]')
-  .action((_plugin, _otherPlugins) => {
-    err('not implemented yet');
-    // TODO: automatically fetch and install plugins
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .action((plugins) => {
+    if (!config.find('.')) {
+      err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+      process.exit(1);
+      return;
+    }
+    const { verbose, force } = program.opts();
+    global.VERBOSE = verbose;
+    pluginUtil.install(plugins, { verbose, force });
   });
 
 program
-  .command('update [...pluginNames]') // TODO: implement update plugins command
+  .command('update [pluginNames...]')
   .alias('u')
   .description('Updates all or selected installed plugins to latest versions')
-  .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement update --force
-  .option('-c, --config', 'JSON default config') // TODO: implement update --config
-  .action((_plugins) => {
-    err('not implemented yet');
-    // TODO: automatically fetch and install plugins
+  .option('-f, --force', 'Forcefully re-upgrade existing plugin') // TODO: implement update --force
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .action((plugins) => {
+    if (!config.find('.')) {
+      err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+      process.exit(1);
+      return;
+    }
+    const { verbose, force } = program.opts();
+    global.VERBOSE = verbose;
+    pluginUtil.update(plugins, { verbose, force });
+  });
+
+program
+  .command('check [pluginNames...]')
+  .description('Checks plugins for compatibility issues')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .action((plugins) => {
+    if (!config.find('.')) {
+      err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+      process.exit(1);
+      return;
+    }
+    const { verbose } = program.opts();
+    global.VERBOSE = verbose;
+    pluginUtil.check(plugins, { verbose });
   });
 
 program.parse(process.argv);

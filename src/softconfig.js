@@ -38,6 +38,11 @@ module.exports = {
   DATA_PATH: './data',
   PLUGIN_PATH: './plugins',
 
+  // plugin data
+  PLUGIN_FILE: './plugin.json',
+  // post install file
+  PLUGIN_POSTINSTALL: './setup.sh',
+
   // databases
   CHAT_STORE: 'chat.db',
   PLAYER_STORE: 'players.db',
