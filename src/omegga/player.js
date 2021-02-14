@@ -277,8 +277,8 @@ class Player {
     const transformParamsRegExp = /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.TransformParameters = \(TargetGrid=("(?<targetGrid>.+)"|None),Position=\(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\),Orientation=(?<orientation>.+)\)$/;
 
     const [owners, transformParams] = await Promise.all([
-      await this.#omegga.watchLogChunk('GetAll BrickGridPreviewActor Owner', ownerRegExp, {first: 'index', timeoutDelay: 500}),
-      await this.#omegga.watchLogChunk('GetAll BrickGridPreviewActor TransformParameters', transformParamsRegExp, {first: 'index', timeoutDelay: 500}),
+      this.#omegga.watchLogChunk('GetAll BrickGridPreviewActor Owner', ownerRegExp, {first: 'index', timeoutDelay: 500}),
+      this.#omegga.watchLogChunk('GetAll BrickGridPreviewActor TransformParameters', transformParamsRegExp, {first: 'index', timeoutDelay: 500}),
     ]);
 
     // get BrickGridPreviewActor by controller
@@ -318,10 +318,10 @@ class Player {
     const materialAlphaRegExp = /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.SelectedMaterialAlpha = (?<materialAlpha>\d+)$/;
 
     const [owners, colorMatch, materialMatch, materialAlphaMatch] = await Promise.all([
-      await this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C Owner', ownerRegExp, {first: 'index', timeoutDelay: 500}),
-      await this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C SelectedColor', colorRegExp, {first: 'index', timeoutDelay: 500}),
-      await this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C SelectedMaterialId', materialRegExp, {first: 'index', timeoutDelay: 500}),
-      await this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C SelectedMaterialAlpha', materialAlphaRegExp, {first: 'index', timeoutDelay: 500}),
+      this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C Owner', ownerRegExp, {first: 'index', timeoutDelay: 500}),
+      this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C SelectedColor', colorRegExp, {first: 'index', timeoutDelay: 500}),
+      this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C SelectedMaterialId', materialRegExp, {first: 'index', timeoutDelay: 500}),
+      this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C SelectedMaterialAlpha', materialAlphaRegExp, {first: 'index', timeoutDelay: 500}),
     ]);
 
     // get BrickGridPreviewActor by controller
@@ -367,10 +367,10 @@ class Player {
     const centerRegExp = /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.Center = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
 
     const [template, minBounds, maxBounds, centers] = await Promise.all([
-      await this.#omegga.watchLogChunk(`GetAll BP_PlayerController_C TEMP_BrickTemplate_Server Name=${controller}`, brickTemplateRegExp, {first: 'index'}),
-      await this.#omegga.watchLogChunk('GetAll BrickBuildingTemplate MinBounds', minBoundsRegExp, {first: 'index'}),
-      await this.#omegga.watchLogChunk('GetAll BrickBuildingTemplate MaxBounds', maxBoundsRegExp, {first: 'index'}),
-      await this.#omegga.watchLogChunk('GetAll BrickBuildingTemplate Center', centerRegExp, {first: 'index'}),
+      this.#omegga.watchLogChunk(`GetAll BP_PlayerController_C TEMP_BrickTemplate_Server Name=${controller}`, brickTemplateRegExp, {first: 'index'}),
+      this.#omegga.watchLogChunk('GetAll BrickBuildingTemplate MinBounds', minBoundsRegExp, {first: 'index'}),
+      this.#omegga.watchLogChunk('GetAll BrickBuildingTemplate MaxBounds', maxBoundsRegExp, {first: 'index'}),
+      this.#omegga.watchLogChunk('GetAll BrickBuildingTemplate Center', centerRegExp, {first: 'index'}),
     ]);
 
     if (!template.length || !minBounds.length || !maxBounds.length || !centers.length)
