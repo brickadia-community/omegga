@@ -16,4 +16,7 @@ module.exports = {
 
   // map parsing utils
   map: require('./map.js'),
+
+  // brick utils
+  brick: require('./brick'), 
 };
