@@ -343,11 +343,10 @@ class Player {
       +color.groups.r,
       +color.groups.g,
       +color.groups.b,
-      +color.groups.a,
     ];
     return {
       materialIndex: material.groups.materialIndex,
-      materialAlpha: material.groups.materialAlpha,
+      materialAlpha: materialAlpha.groups.materialAlpha,
       material: brickUtils.BRICK_CONSTANTS.DEFAULT_MATERIALS[material.groups.materialIndex],
       color: colorRaw,
     };
