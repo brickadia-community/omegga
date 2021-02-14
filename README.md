@@ -194,8 +194,8 @@ You will have to delete your omegga data folders manually
     * [x] partial omegga spec (events, some features)
     * [x] full omegga spec
     * [ ] _good_ access restrictions (ask user for permission)
-  * [ ] plugin installation by `omegga install gh@user/repo`
-  * [ ] plugin updates by `omegga update`
+  * [x] plugin installation by `omegga install gh:user/repo`
+  * [x] plugin updates by `omegga update`
   * [ ] server config bundling (making it easier to transfer configs)
     * [ ] omegga.server.json
       * [ ] list of installed omegga plugins, versions, and download urls
@@ -209,9 +209,23 @@ Plugins are most easily developed in Javascript at the moment using the Node VM 
 
 ## Installing Plugins
 
+### CLI Installation
+
+You can install plugins with the `omegga install https://github.com/user/repo` command.
+
+You can install plugins using a shortand `omegga install gh:user/repo` which will install the plugin located at `https://github.com/user/omegga-repo`
+
+### Manual Installation
+
 Usually you can run `git clone https://github.com/user/repo` inside your `plugins` folder (created when you run `omegga` for the first time):
   * `cd plugins` to navigate to plugins folder
   * Make sure to read the plugin's README file for after-install instructions
+
+## Updating Plugins
+
+Plugins can be updated with `omegga update` or `omegga update pluginName anotherPluginName`
+
+Plugins may also need to be updated based on the project's README file.
 
 ## Plugin Structure
 
@@ -219,6 +233,7 @@ All plugins are located in a `plugins` directory where you are running Omegga:
 
 * `plugins/myPlugin` - plugin folder (required)
 * `plugins/myPlugin/doc.json` - plugin information (required)
+* `plugins/myPlugin/plugin.json` - plugin version information (optional, for now)
 * `plugins/myPlugin/disable.omegga` - empty file only present if the plugin should be disabled (optional)
 
 Every plugin requires a `doc.json` file to document which briefly describes the plugin and its commands. In the future.
@@ -250,34 +265,6 @@ Every plugin requires a `doc.json` file to document which briefly describes the 
       "description": "This is an example boolean input",
       "default": false,
       "type": "boolean"
-    },
-    "example-list": {
-      "description": "This is an example list input. List type can be string, password, number, or enum",
-      "type": "list",
-      "itemType": "string",
-      "default": ["hello"]
-    },
-    "example-enum": {
-      "description": "This is an example enum/dropdown input",
-      "type": "enum",
-      "options": [
-        "foo", "bar", "baz", 1, 2, 3
-      ],
-      "default": "foo"
-    },
-    "example-enum-list": {
-      "description": "This is an example list of enums.",
-      "type": "list",
-      "itemType": "enum",
-      "options": [
-        "foo", "bar", "baz"
-      ],
-      "default": ["foo"]
-    },
-    "example-players-list": {
-      "description": "This is an example list of players.",
-      "type": "players",
-      "default": [{"id":"fa577b9e-f2be-493f-a30a-3789b02ba70b", "name":"Aware"}]
     }
   },
   "commands": [
@@ -328,6 +315,34 @@ This is an example config section of a `doc.json`. The web ui provides an interf
       "description": "This is an example boolean input",
       "default": false,
       "type": "boolean"
+    },
+    "example-list": {
+      "description": "This is an example list input. List type can be string, password, number, or enum",
+      "type": "list",
+      "itemType": "string",
+      "default": ["hello"]
+    },
+    "example-enum": {
+      "description": "This is an example enum/dropdown input",
+      "type": "enum",
+      "options": [
+        "foo", "bar", "baz", 1, 2, 3
+      ],
+      "default": "foo"
+    },
+    "example-enum-list": {
+      "description": "This is an example list of enums.",
+      "type": "list",
+      "itemType": "enum",
+      "options": [
+        "foo", "bar", "baz"
+      ],
+      "default": ["foo"]
+    },
+    "example-players-list": {
+      "description": "This is an example list of players.",
+      "type": "players",
+      "default": [{"id":"fa577b9e-f2be-493f-a30a-3789b02ba70b", "name":"Aware"}]
     }
   }
 ```
@@ -340,10 +355,28 @@ That config section would generate the following default config:
   "example-password": "hidden password value",
   "example-number": 5,
   "example-bool": false,
+  "example-list": ["hello"],
+  "example-enum": "foo",
+  "example-enum-list": ["foo"],
+  "example-players-list": [{"id":"fa577b9e-f2be-493f-a30a-3789b02ba70b", "name":"Aware"}]
 }
 ```
 
 This is provided to plugins in the constructor or the RPC init function.
+
+## Plugin File
+
+This is an example `plugin.json`, located inside of a plugin folder. The plugin file helps omegga know if the plugin is compatible with the current installation. Plugin files can be validated with the `omegga check` command.
+
+```json
+{
+  "formatVersion": 1,
+  "omeggaVersion": "^0.1.32"
+}
+```
+
+* `formatVersion` - indicates the plugin file format version
+* `omeggaVersion` - indicates compatible omegga versions ([semver cheatsheet](https://devhints.io/semver))
 
 ## Plugin Store
 
