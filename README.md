@@ -233,7 +233,8 @@ All plugins are located in a `plugins` directory where you are running Omegga:
 
 * `plugins/myPlugin` - plugin folder (required)
 * `plugins/myPlugin/doc.json` - plugin information (required)
-* `plugins/myPlugin/plugin.json` - plugin version information (optional, for now)
+* `plugins/myPlugin/plugin.json` - plugin version information, validated with `omegga check` (optional, for now)
+* `plugins/myPlugin/setup.sh` - plugin setup script, run after installed by `omegga install` (optional)
 * `plugins/myPlugin/disable.omegga` - empty file only present if the plugin should be disabled (optional)
 
 Every plugin requires a `doc.json` file to document which briefly describes the plugin and its commands.
