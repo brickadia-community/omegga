@@ -41,7 +41,7 @@ Then head over to [Running Omegga](#running)!
 Omegga depends on:
 
   * linux
-    * [Windows Install](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) (WSL 1)
+    * [Windows Install](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) (WSL 1 or WSL 2)
       * [Windows Ubuntu](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6)
   * Node v14+ ([ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions))
   * One of:
@@ -70,7 +70,7 @@ If you have EACCES errors on WSL, see the [troubleshooting](#troubleshooting) se
 
 These are simple instructions to get Windows System for Linux installed.
 
-**Note**: WSL 2 at the moment does not work until the networking issue is figured out.
+**Note**: WSL 2 at the moment requires the [wsl2binds plugin](https://github.com/Meshiest/omegga-wsl2binds). You can install it with `omegga install gh:meshiest/wsl2binds`
 
 To enable WSL, run this in powershell as an administrator:
 
@@ -134,7 +134,7 @@ Narrow down where the issue might be with the following options:
 * If your brickadia is crashing and omegga works, type `/debug` into omegga console or run with `omegga --debug`
 * If your omegga isn't starting, run with `omegga --verbose`
 * If a plugin is crashing, message the plugin developer
-* If you're getting an EACCES error when running `npm i -g omegga`:
+* If you're getting an EACCES error when running `npm i -g omegga` in WSL 1:
     1. Set your WSL to WSL 2
     2. `npm i -g omegga`
     3. Set your WSL back to WSL 1
