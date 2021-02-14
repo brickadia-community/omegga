@@ -212,10 +212,11 @@ module.exports = {
       // TODO: if force is passed in, ignore the plugin check
       if (!checkPlugin(omeggaPath, plugin)) continue;
 
-      const postInstallPath = fs.existsSync(path.join(pluginPath, soft.PLUGIN_POSTINSTALL));
+      const postInstallPath = path.join(pluginPath, soft.PLUGIN_POSTINSTALL);
       if (fs.existsSync(postInstallPath)) {
         plgLog(plugin, 'Running post install script...');
         try {
+          fs.chmodSync(postInstallPath, '0755');
           let {stdout, stderr} = await exec(postInstallPath, {
             cwd: pluginPath,
             shell: true,
