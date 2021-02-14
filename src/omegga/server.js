@@ -550,12 +550,12 @@ class Omegga extends OmeggaWrapper {
    * @return {Promise}
    */
   async changeMap(map) {
-    if(!map) 
+    if(!map)
       return;
 
     // ServerTravel requires /Game/Maps/Plate/Plate instead of Plate
     const brName = mapUtils.n2brn(map);
-    
+
     // wait for the server to change maps
     const match = await this.addWatcher(
       /^.*(LogLoad: Took .+ seconds to LoadMap\((?<map>.+)\))|(ERROR: The map .+)$/,
@@ -563,10 +563,30 @@ class Omegga extends OmeggaWrapper {
         timeoutDelay: 30000,
         exec: () => this.writeln(`ServerTravel ${brName}`)
       },
-    ); 
+    );
     const success = !!(match && match[0] && match[0].groups && match[0].groups.map);
     return success;
   }
+
+  /* Command injector methods are overwritten, this code is here for the doc */
+
+  /**
+   * Get a server status object containing bricks, time, players, player ping, player roles, etc
+   * @return {Promise<Object>} - Server Status
+   */
+  async getServerStatus() {}
+
+  /**
+   * get every player's position and alive states
+   * @return {Promise<Array<Object>>}
+   */
+  async getAllPlayerPositions() {}
+
+  /**
+   * get all minigames and their players (and the player's teams)
+   * @return {Promise<Array<Object>>}
+   */
+  async getMinigames() {}
 }
 
 global.Omegga = Omegga;

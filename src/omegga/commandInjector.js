@@ -58,7 +58,7 @@ const COMMANDS = {
 
   /**
    * get every player's position and alive states
-   * @return {Array<Object>}
+   * @return {Promise<Array<Object>>}
    */
   async getAllPlayerPositions() {
     const pawnRegExp = /(?<index>\d+)\) BP_PlayerController_C .+?PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+)'$/;
@@ -95,7 +95,7 @@ const COMMANDS = {
 
   /**
    * get all minigames and their players (and the player's teams)
-   * @return {Array<Object>}
+   * @return {Promise<Array<Object>>}
    */
   async getMinigames() {
     // patterns to match the console logs
