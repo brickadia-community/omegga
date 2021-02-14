@@ -17,12 +17,6 @@ const notifier = updateNotifier({
 }).notify();
 
 /*
-
-// TODO: download plugins from git using simple-git
-// TODO: update plugins via git pull if there's no pending changes
-// TODO: run plugin by either index.js or omegga.entrypoint file w/ stdio message passing
-  json rpc?
-
 // TODO: let omegga bundle config (roles, bans, server config) to zip
 // TODO: let omegga unbundle config from zip to current omegga dir
 */
