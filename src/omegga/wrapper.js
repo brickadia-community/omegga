@@ -13,6 +13,7 @@ class OmeggaWrapper extends EventEmitter {
 
   constructor(serverPath, cfg) {
     super();
+    this.setMaxListeners(Infinity);
 
     this.config = cfg;
     this.path = path.isAbsolute(serverPath) || serverPath.startsWith('/') ? serverPath : path.join(process.cwd(), serverPath);

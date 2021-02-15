@@ -42,6 +42,7 @@ class ProxyOmegga extends EventEmitter {
 
   constructor(exec) {
     super();
+    this.setMaxListeners(Infinity);
 
     this.writeln = exec;
 
