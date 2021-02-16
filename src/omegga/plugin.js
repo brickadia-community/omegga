@@ -164,7 +164,7 @@ class PluginStorage {
 
   // clear all stored values
   async wipe() {
-    await this.store.remove({ type: 'store', plugin: this.name });
+    await this.store.remove({ type: 'store', plugin: this.name }, {multi: true});
   }
 
   // count number of objects in store
