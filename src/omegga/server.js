@@ -88,7 +88,7 @@ class Omegga extends OmeggaWrapper {
 
   /**
    * send a console log to the readline terminal or console
-   * @param {...args} - things to print out
+   * @param {terminal} - readline terminal instance
    */
   static setTerminal(term) {
     if (term instanceof Terminal)

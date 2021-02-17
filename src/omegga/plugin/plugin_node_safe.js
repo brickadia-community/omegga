@@ -213,11 +213,11 @@ class NodeVmPlugin extends Plugin {
           return false;
 
         try {
-          // remove listeners
-          this.omegga.off('*', this.eventPassthrough);
-
           // stop the plugin (cleanly)
           await this.emit('stop');
+
+          // remove listeners
+          this.omegga.off('*', this.eventPassthrough);
 
           // let the unload function wait for the worker to properly cleanup
           const promise = new Promise(res => {
@@ -329,8 +329,14 @@ class NodeVmPlugin extends Plugin {
 
     // when the worker exits - set its variable to undefined this knows it's stopped
     this.#worker.on('exit', () => {
+      this.omegga.off('*', this.eventPassthrough);
       this.#outInterface.removeAllListeners('line');
       this.#errInterface.removeAllListeners('line');
+      try {
+        this.#worker.terminate();
+      } catch (err) {
+        Omegga.error('!>'.red, 'Error terminating worker for', this.getName().brightRed.underline, err);
+      }
       this.#worker = undefined;
       this.emitStatus();
     });

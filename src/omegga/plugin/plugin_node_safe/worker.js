@@ -16,7 +16,6 @@ const MAIN_FILE = 'omegga.plugin.js';
 let vm, PluginClass, pluginInstance;
 let pluginName = 'unnamed plugin';
 let messageCounter = 0;
-
 // emitter that receives messages from the parent
 const parent = new EventEmitter();
 
