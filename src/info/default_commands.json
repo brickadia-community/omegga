@@ -20,5 +20,6 @@
   "clearcheckpoint",
   "spectator",
   "ghost",
-  "ping"
+  "ping",
+  "gettransform"
 ]
