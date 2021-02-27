@@ -2,9 +2,7 @@
 
 [Join the discord](https://discord.gg/UcdwTYhS75) to browse plugins and get support. Read the README first before asking questions!
 
-Similar to [n42k's brikkit](https://github.com/n42k/brikkit), wraps brickadia's server console to provide interactivity via plugins.
-
-Already supports a5 for when a5 comes out!
+Omegga wraps brickadia's server console to provide interactivity and utility via plugins.
 
 ## Screenshots
 
