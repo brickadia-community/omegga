@@ -248,7 +248,7 @@ class NodeVmPlugin extends Plugin {
         // check if the worker is frozen (while true)
         setTimeout(() => {
           if (!frozen) return;
-          this.plugin.emit('error', 0, 'I appear to be in unresponsive - terminating worker');
+          this.plugin.emit('error', 0, 'I appear to be in an unresponsive state - terminating worker');
 
           // remove listeners
           this.omegga.off('*', this.eventPassthrough);

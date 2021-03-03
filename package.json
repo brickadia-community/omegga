@@ -1,12 +1,13 @@
 {
   "name": "omegga",
-  "version": "0.1.41",
+  "version": "0.1.42",
   "description": "Brickadia server installer, manager, wrapper, configurator, and automator",
   "main": "index.js",
   "bin": {
     "omegga": "./bin/omegga"
   },
   "dependencies": {
+    "@interactjs/interactjs": "^1.10.3",
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
     "brs-js": "^1.4.1",
