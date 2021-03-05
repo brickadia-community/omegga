@@ -41,6 +41,7 @@
     "vue-grid-layout": "^2.3.9"
   },
   "devDependencies": {
+    "@babel/core": "^7.13.8",
     "@babel/eslint-parser": "^7.13.8",
     "@babel/plugin-proposal-class-properties": "^7.13.0",
     "@tabler/icons": "^1.39.1",
