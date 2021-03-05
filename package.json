@@ -42,6 +42,7 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.13.8",
+    "@babel/plugin-proposal-class-properties": "^7.13.0",
     "@tabler/icons": "^1.39.1",
     "babel-helper-vue-jsx-merge-props": "^2.0.3",
     "bufferutil": "^4.0.1",
