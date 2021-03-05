@@ -492,7 +492,7 @@ class Omegga extends OmeggaWrapper {
 
     // wait for the server to finish reading the save
     await this.watchLogChunk(
-      `Bricks.Load ${saveFile} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`,
+      `Bricks.Load "${saveFile}" ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`,
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),
@@ -518,7 +518,7 @@ class Omegga extends OmeggaWrapper {
 
     // wait for the server to save the file
     await this.watchLogChunk(
-      `Bricks.Save ${saveFile}`,
+      `Bricks.Save "${saveFile}"`,
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),

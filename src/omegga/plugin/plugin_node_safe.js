@@ -333,7 +333,8 @@ class NodeVmPlugin extends Plugin {
       this.#outInterface.removeAllListeners('line');
       this.#errInterface.removeAllListeners('line');
       try {
-        this.#worker.terminate();
+        if (this.#worker)
+          this.#worker.terminate();
       } catch (err) {
         Omegga.error('!>'.red, 'Error terminating worker for', this.getName().brightRed.underline, err);
       }
