@@ -60,6 +60,7 @@ const orientationMap = {
 };
 
 const DEFAULT_MATERIALS = [
+  'BMC_Hidden',
   'BMC_Ghost',
   'BMC_Ghost_Fail',
   'BMC_Plastic',
