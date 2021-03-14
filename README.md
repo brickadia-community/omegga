@@ -342,7 +342,12 @@ This is an example config section of a `doc.json`. The web ui provides an interf
       "description": "This is an example list of players.",
       "type": "players",
       "default": [{"id":"fa577b9e-f2be-493f-a30a-3789b02ba70b", "name":"Aware"}]
-    }
+    },
+    "example-role": {
+      "description": "This is an example role dropdown",
+      "type": "role",
+      "default": "Admin"
+    },
   }
 ```
 

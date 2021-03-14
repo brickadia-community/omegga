@@ -399,6 +399,12 @@ module.exports = (server, io) => {
       }
     });
 
+    // get a list of roles
+    // TODO: add permission check
+    rpc.addMethod('roles.list', () => {
+      return _.sortBy(omegga.getRoleSetup().roles, p => p.name.toLowerCase());
+    });
+
     // get a paginated list of users
     // TODO: add permission check
     rpc.addMethod('users.list', async([{page=0, search='', sort='name', direction='1'}={}]) => {
