@@ -6,6 +6,7 @@ extends:
 parser: "@babel/eslint-parser"
 parserOptions:
   ecmaVersion: 12
+  requireConfigFile: false
 globals:
   Omegga: readonly
   VERBOSE: readonly

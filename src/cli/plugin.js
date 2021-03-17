@@ -166,8 +166,6 @@ module.exports = {
     log('Attempting to install', (plugins.length+'').yellow, 'plugins...');
 
     for (const plugin of plugins) {
-      log('Installing plugin', plugin.name.yellow, 'from', plugin.url.yellow + '...');
-
       // if the plugin wasn't transformed, try to extract its name from the git url
       if (!plugin.name) {
         try {
@@ -178,6 +176,8 @@ module.exports = {
           continue;
         }
       }
+
+      log('Installing plugin', plugin.name.yellow, 'from', plugin.url.yellow + '...');
 
       // update padding for plugin names
       padding = Math.max(...plugins.map(p => p.name.length));

@@ -162,7 +162,7 @@ parent.on('load', (resp, pluginPath, options) => {
     createVm(pluginPath, options);
     emit(resp, true);
   } catch (err) {
-    console.log('error creating vm', err);
+    console.error('error creating vm', err);
     emit(resp, false);
   }
 });
@@ -187,6 +187,7 @@ parent.on('start', async (resp, config) => {
   } catch (err) {
     emit('error', 'error starting plugin', JSON.stringify(err));
     emit(resp, false);
+    console.error(err);
   }
 });
 
