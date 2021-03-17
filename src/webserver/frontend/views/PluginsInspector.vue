@@ -161,6 +161,11 @@
                   :value="config[c]"
                   @input="value => updateConfig(c, value)"
                 />
+                <br-role-dropdown
+                  v-if="conf.type === 'role'"
+                  :value="config[c]"
+                  @input="value => updateConfig(c, value)"
+                />
                 <br-dropdown
                   v-if="conf.type === 'enum'"
                   :options="conf.options"

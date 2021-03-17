@@ -48,6 +48,10 @@
         :options="options"
         @input="val => updateItem(i, val)"
       />
+      <br-role-dropdown v-if="type === 'role'"
+        :value="value[i]"
+        @input="val => updateItem(i, val)"
+      />
       <br-button icon warn
         data-tooltip="Remove this item from the list"
         @click="removeItem(i)">
@@ -80,7 +84,7 @@ export default Vue.component('br-list-input', {
     },
     addItem() {
       const clone = this.value.slice();
-      clone.push({string: '', number: 0, password: '', enum: this.options[0]}[this.type]);
+      clone.push({string: '', number: 0, password: '', role: '', enum: this.options && this.options[0]}[this.type]);
       this.$emit('input', clone);
     },
     removeItem(index) {
