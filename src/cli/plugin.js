@@ -165,18 +165,21 @@ module.exports = {
     plugins = plugins.map(transformUrl);
     log('Attempting to install', (plugins.length+'').yellow, 'plugins...');
 
-    for (const plugin of plugins) {
+    plugins = plugins.filter(plugin => {
       // if the plugin wasn't transformed, try to extract its name from the git url
       if (!plugin.name) {
         try {
           const { name } = path.parse(plugin.url);
           plugin.name = name.replace(/^omegga-/, '');
+          return true;
         } catch (e) {
-          plgErr(plugin, 'Error parsing name from url');
-          continue;
+          console.error('!>'.red, 'Error parsing name from url', plugin.url);
+          return false;
         }
       }
+    });
 
+    for (const plugin of plugins) {
       log('Installing plugin', plugin.name.yellow, 'from', plugin.url.yellow + '...');
 
       // update padding for plugin names
