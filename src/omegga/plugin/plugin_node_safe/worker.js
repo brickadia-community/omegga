@@ -96,8 +96,9 @@ function createVm(pluginPath, {builtin=['*'], external=true}={}) {
   vm.on('console.warn', ezLog('warn', pluginName.brightYellow, ':>'.yellow));
   vm.on('console.trace', ezLog('trace', pluginName, 'T>'.grey));
 
+  global.OMEGGA_UTIL = require('../../../util/index.js');
   // pass in util functions
-  vm.freeze(require('../../../util/index.js'), 'OMEGGA_UTIL');
+  vm.freeze(global.OMEGGA_UTIL, 'OMEGGA_UTIL');
   vm.freeze(omegga, 'Omegga');
 
   const file = path.join(pluginPath, MAIN_FILE);
