@@ -77,6 +77,7 @@ function mkdir(path) {
 
 // rm -rf a path
 function rmdir(dir) {
+  if (!fs.existsSync(dir)) return;
   return new Promise((resolve, reject) => {
     rimraf(dir, error => {
       if (error)

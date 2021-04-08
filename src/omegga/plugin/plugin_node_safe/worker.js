@@ -114,7 +114,7 @@ function createVm(pluginPath, {builtin=['*'], external=true}={}) {
   // proxy the plugin out of the vm
   // potential for performance improvement by using VM.script to precompile plugins
   try {
-    PluginClass = vm.run(pluginCode, file);
+    PluginClass = vm.run(pluginCode.toString(), file);
   } catch (e) {
     emit('error', 'plugin failed to init');
     console.log(e);

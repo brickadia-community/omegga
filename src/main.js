@@ -163,13 +163,17 @@ program
   .command('auth')
   .option('-c, --clean', 'Remove old auth files')
   .option('-f, --force', 'Forcefully regenerate auth token')
+  .option('-l, --local', 'Remove local auth files')
   .description('Generates server auth tokens from brickadia account email+password')
   .action(() => {
-    const { clean, force } = program.opts();
-    if (clean || force) {
+    const { clean, force, local } = program.opts();
+    if (clean || force || local) {
       log('Clearing old auth files');
-      auth.deleteAuthFiles();
-      if (clean)
+      if (clean || force)
+        auth.deleteAuthFiles();
+      if (local)
+        file.rmdir(path.join(__dirname, 'data/Saved/Auth'));
+      if (clean || local)
         return;
     }
     auth.prompt();
