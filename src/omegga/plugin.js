@@ -237,6 +237,7 @@ class PluginLoader {
   // unload and load all installed plugins
   async reload() {
     let ok = true;
+    Omegga.verbose('Reloading plugins');
     for (const p of this.plugins) {
       try {
         // unload the plugin if it's loaded
@@ -247,30 +248,38 @@ class PluginLoader {
         if (!p.isLoaded()) {
           // only load it if it is enabled
           if (p.isEnabled()) {
-            ok = ok && await p.load();
+            Omegga.verbose('Loading plugin', p.constructor.getFormat(), p.getName().underline);
+            ok = (await p.load()) || ok;
           }
         } else {
           Omegga.error('!>'.red, 'Did not successfully unload plugin', p.getName().brightRed.underline);
           ok = false;
         }
       } catch (err) {
-        Omegga.error('!>'.red, 'Error reloading plugin', p.getName().brightRed.underline);
+        Omegga.error('!>'.red, 'Error loading plugin', p.getName().brightRed.underline, err);
         ok = false;
       }
     }
+    Omegga.verbose('Finished reloading plugins');
     return ok;
   }
 
   // stop all plugins from running
   async unload() {
+    Omegga.verbose('Unloading plugins');
     let ok = true;
     // potentually use Promise.all
     for (const p of this.plugins) {
       try {
         // unload the plugin if it's loaded
-        if (p.isLoaded() && !(await p.unload())) {
-          Omegga.error('!>'.red, 'Could not unloading plugin', p.getName().brightRed.underline);
-          ok = false;
+        if (p.isLoaded()) {
+          if (!(await p.unload())) {
+            Omegga.error('!>'.red, 'Could not unloading plugin', p.getName().brightRed.underline);
+            ok = false;
+            continue;
+          } else {
+            Omegga.verbose('Unloaded', p.getName().underline);
+          }
         }
       } catch (e) {
         Omegga.error('!>'.red, 'Error unloading plugin', p.getName().brightRed.underline);
@@ -282,8 +291,10 @@ class PluginLoader {
 
   // find every loadable plugin
   async scan() {
+    Omegga.verbose('Scanning plugin directory');
     // plugin directory doesn't exist
     if (!fs.existsSync(this.path)) {
+      Omegga.verbose('Plugin directory is missing');
       return false;
     }
 

@@ -87,6 +87,12 @@ class Omegga extends OmeggaWrapper {
   static warn(...args) { (Omegga.terminal || console).warn(...args); }
 
   /**
+   * send a console log when omegga is launched when --verbose
+   * @param  {...args} message to print
+   */
+  static verbose(...args) { verboseLog(...args); }
+
+  /**
    * send a console log to the readline terminal or console
    * @param {terminal} - readline terminal instance
    */

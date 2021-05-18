@@ -58,41 +58,58 @@ class RpcPlugin extends Plugin {
   }
 
   // spawn the plugin as a child process
-  load() {
-    let frozen = true, timed = false;
+  async load() {
     const name = this.getName();
+    const verbose = (...msg) => Omegga.verbose(name.underline, ...msg);
+    verbose('Load method invoked');
+    let frozen = true, timed = false;
     this.commands = [];
 
     // can't load the plugin if the child is still running
-    if (typeof this.#child !== 'undefined')
+    if (this.#child) {
+      verbose('Plugin already has child process');
       return false;
+    }
+
+    try {
+      verbose('Spawning child process');
+      this.#child = spawn(this.pluginFile);
+      this.#child.stdin.setEncoding('utf8');
+      this.#outInterface = readline.createInterface({input: this.#child.stdout, terminal: false});
+      this.#errInterface = readline.createInterface({input: this.#child.stderr, terminal: false});
+      this.attachListeners();
+    } catch (err) {
+      Omegga.error('!>'.red, 'error loading stdio rpc plugin', name.brightRed.underline, err);
+      await this.kill();
+      this.emitStatus();
+      return false;
+    }
 
     return Promise.race([
       (async() => {
         try {
-          const config = await this.storage.getConfig();
-          this.#child = spawn(this.pluginFile);
-          this.#child.stdin.setEncoding('utf8');
-          this.#outInterface = readline.createInterface({input: this.#child.stdout, terminal: false});
-          this.#errInterface = readline.createInterface({input: this.#child.stderr, terminal: false});
-          this.attachListeners();
-
           // get some initial information to create an omegga proxy
           const initialData = bootstrap(this.omegga);
 
+          verbose('Sending initial data');
           // send all of the mock events to the proxy omegga
           for (const ev in initialData) {
             // send some initial information
             this.notify(ev, initialData[ev]);
           }
 
+          verbose('Initializing event passthrough');
           // pass events through
           this.omegga.on('*', this.eventPassthrough);
 
           try {
+            verbose('Getting plugin config');
+            const config = await this.storage.getConfig();
             // tell the plugin to start
+            verbose('Waiting for plugin to start...');
             const result = await this.emit('init', config);
 
+            verbose('Initialized with result:', result);
             // plugins can return a result object
             if (typeof result === 'object' && result) {
 
@@ -103,7 +120,7 @@ class RpcPlugin extends Plugin {
             }
           } catch (e) {
             if (!e.message) return;
-            Omegga.error('!>'.red, 'rpc plugin', name.brightRed.underline, 'missing start impl');
+            Omegga.error('!>'.red, name.brightRed.underline, 'error starting: ', e);
           }
 
           // plugin is not frozen, resolve that it has loaded
@@ -113,7 +130,7 @@ class RpcPlugin extends Plugin {
           return true;
         } catch(e) {
           if (timed) return;
-          Omegga.error('!>'.red, 'error loading stdio rpc plugin', this.getName().brightRed.underline, e);
+          Omegga.error('!>'.red, 'error loading stdio rpc plugin', name.brightRed.underline, e);
           await this.kill();
           frozen = false;
           this.emitStatus();
@@ -124,6 +141,7 @@ class RpcPlugin extends Plugin {
         // let user know if the child quit while launching
         this.#child.once('exit', () => {
           if (!frozen || timed) return;
+          verbose('Plugin exited during init');
           frozen = false;
           this.emitStatus();
           resolve(false);
