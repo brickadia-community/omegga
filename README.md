@@ -749,7 +749,7 @@ rpc.addMethod('line', ([line]) => {
 });
 
 // receive config object in init
-rpc.addMethod('init', async ([config]) => 'ok');
+rpc.addMethod('init', async ([config]) => ({registeredCommands: []}));
 rpc.addMethod('stop', async () => 'ok');
 
 
