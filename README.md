@@ -589,6 +589,8 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `broadcast` | line (string) | Broadcasts a message to the server|
 | `whisper` | {target: string, line: string} | (a5 only) Sends a message to a specific client |
 | `getPlayers` | _none_ | Gets online players |
+| `getPlayerPosition` | target (string) | Gets the position of the player with the given name/ID |
+| `getAllPlayerPositions` | _none_ | Gets an array of objects with fields `pos` and `player`, representing the position and player object of each player in the server |
 | `getRoleSetup` | _none_ | Gets server roles |
 | `getBanList` | _none_ | Gets list of bans |
 | `getSaves` | _none_ | Gets saves in the saves directory |
