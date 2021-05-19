@@ -324,6 +324,8 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('broadcast', line => this.omegga.broadcast(line));
     rpc.addMethod('whisper', ({target, line}) => this.omegga.whisper(target, line));
     rpc.addMethod('getPlayers', () => this.omegga.getPlayers());
+    rpc.addMethod('getPlayerPosition', (name) => this.omegga.getPlayer(name)?.getPosition());
+    rpc.addMethod('getAllPlayerPositions', () => this.omegga.getAllPlayerPositions());
     rpc.addMethod('getRoleSetup', () => this.omegga.getRoleSetup());
     rpc.addMethod('getBanList', () => this.omegga.getBanList());
     rpc.addMethod('getSaves', () => this.omegga.getBanList());
