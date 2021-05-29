@@ -316,8 +316,6 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('store.count', () => this.storage.count());
     rpc.addMethod('store.keys', () => this.storage.keys());
 
-    rpc.addMethod('store.keys', () => this.storage.keys());
-
     // server can run console commands
     rpc.addMethod('exec', line => this.omegga.writeln(line));
     rpc.addMethod('writeln', line => this.omegga.writeln(line));
@@ -341,6 +339,11 @@ class RpcPlugin extends Plugin {
       this.omegga.loadSaveData(data, {offX, offY, offZ, quiet}));
     rpc.addMethod('changeMap', (map) =>
       this.omegga.changeMap(map));
+    rpc.addMethod('unload', () => this.unload());
+    rpc.addMethod('reload', async () => {
+      await this.unload();
+      await this.load();
+    });
   }
 
   // emit a message to the plugin via the jsonrpc client and expect a response
