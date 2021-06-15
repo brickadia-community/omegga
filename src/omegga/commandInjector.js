@@ -61,7 +61,7 @@ const COMMANDS = {
    * @return {Promise<Array<Object>>}
    */
   async getAllPlayerPositions() {
-    const pawnRegExp = /(?<index>\d+)\) BP_PlayerController_C .+?PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.Pawn = (?:(?<pawn>None)|BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+))'$/;
+    const pawnRegExp = /(?<index>\d+)\) BP_PlayerController_C .+?PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.Pawn = (?:(?<nopawn>None)|BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+))'$/;
     const posRegExp = /(?<index>\d+)\) CapsuleComponent .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.CollisionCylinder\.RelativeLocation = \(X=(?<x>[\d.-]+),Y=(?<y>[\d.-]+),Z=(?<z>[\d.-]+)\)$/;
     const deadFigureRegExp = /(?<index>\d+)\) BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.bIsDead = (?<dead>(True|False))$/;
 
@@ -87,7 +87,7 @@ const COMMANDS = {
       // turn the position into a [x, y, z] number array (last 3 items in the array)
       .map(p => ({
         player: p.player,
-        pawn: p.pawn.groups.pawn === 'None' ? null : p.pawn.groups.pawn,
+        pawn: p.pawn.groups.nopawn ? null : p.pawn.groups.pawn,
         pos: p.pos ? p.pos.slice(3).map(Number) : null,
         isDead: p.isDead ? p.isDead.groups.dead === 'True' : true,
       }));
