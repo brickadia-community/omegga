@@ -61,7 +61,7 @@ const COMMANDS = {
    * @return {Promise<Array<Object>>}
    */
   async getAllPlayerPositions() {
-    const pawnRegExp = /(?<index>\d+)\) BP_PlayerController_C .+?PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+)'$/;
+    const pawnRegExp = /(?<index>\d+)\) BP_PlayerController_C .+?PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.Pawn = (?:None|BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+)')?$/;
     const posRegExp = /(?<index>\d+)\) CapsuleComponent .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.CollisionCylinder\.RelativeLocation = \(X=(?<x>[\d.-]+),Y=(?<y>[\d.-]+),Z=(?<z>[\d.-]+)\)$/;
     const deadFigureRegExp = /(?<index>\d+)\) BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.bIsDead = (?<dead>(True|False))$/;
 
@@ -82,14 +82,14 @@ const COMMANDS = {
         isDead: deadFigures.find(dead => pawn.groups.pawn === dead.groups.pawn),
         pawn,
       }))
-      // filter by only those who have both player and position
-      .filter(p => p.player && p.pos)
+      // filter by only those who have both player. previously we filtered by position but this breaks for players without a pawn, instead it's preferable to pass null
+      .filter(p => p.player)
       // turn the position into a [x, y, z] number array (last 3 items in the array)
       .map(p => ({
         player: p.player,
-        pawn: p.pawn.groups.pawn,
-        pos: p.pos.slice(3).map(Number),
-        isDead: p.isDead && p.isDead.groups.dead === 'True',
+        pawn: p.pawn.groups.pawn || null,
+        pos: p.pos ? p.pos.slice(3).map(Number) : null,
+        isDead: p.isDead ? p.isDead.groups.dead === 'True' : true,
       }));
   },
 
