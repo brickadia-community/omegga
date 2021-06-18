@@ -14,11 +14,17 @@ module.exports = {
     filename: '[name].bundle.js',
     publicPath: '/public/',
   },
+  performance: {
+    hints: false,
+    maxEntrypointSize: Infinity,
+    maxAssetSize: Infinity,
+  },
   module: {
     rules: [
       {
         test: /\.vue$/,
         use: 'vue-loader',
+        exclude: /node_modules/,
       },
       {
         test: /\.s?css$/,
@@ -39,7 +45,10 @@ module.exports = {
       },
       {
         test: /\.(svg|woff2|woff|ttf|eot)$/,
-        loader: 'file-loader?limit=100000',
+        loader: 'file-loader',
+        options: {
+          limit: 100000,
+        },
       },
     ]
   },

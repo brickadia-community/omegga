@@ -8,7 +8,7 @@
   text-transform: uppercase;
   height: $br-element-height;
   font-size: $br-element-font;
-  border-radius: $br-element-height/2;
+  border-radius: 16px;
   box-sizing: border-box;
   color: $br-button-fg;
   font-weight: bold;
