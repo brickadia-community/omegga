@@ -30,7 +30,12 @@ module.exports = {
         test: /\.s?css$/,
         use: [
           'vue-style-loader',
-          MiniCssExtractPlugin.loader,
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {
+              esModule: false,
+            },
+          },
           {
             loader: 'css-loader',
             options: {
