@@ -75,7 +75,7 @@ export default Vue.component('br-background', {
   },
   data() {
     return {
-      version: this.omeggaData.version,
+      version: this.omeggaData && this.omeggaData.version,
     };
   }
 });
