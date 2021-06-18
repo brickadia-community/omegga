@@ -176,6 +176,8 @@ module.exports = {
           console.error('!>'.red, 'Error parsing name from url', plugin.url);
           return false;
         }
+      } else {
+        return true;
       }
     });
 
