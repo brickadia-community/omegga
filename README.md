@@ -166,10 +166,12 @@ Narrow down where the issue might be with the following options:
 * If your brickadia is crashing and omegga works, type `/debug` into omegga console or run with `omegga --debug`
 * If your omegga isn't starting, run with `omegga --verbose`
 * If a plugin is crashing, message the plugin developer
-* If you're getting an EACCES error when running `npm i -g omegga` in WSL 1:
-    1. Set your WSL to WSL 2
-    2. `npm i -g omegga`
-    3. Set your WSL back to WSL 1
+* If you're getting an EACCES error when running `npm i -g omegga`:
+    1. First, try [this](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally).
+    2. If that doesn't work, try this horrible bodge method for WSL:
+        1. Set your WSL to WSL 2
+        2. `npm i -g omegga`
+        3. Set your WSL back to WSL 1
 
 ## Uninstalling
 
