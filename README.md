@@ -17,20 +17,37 @@ Omegga wraps brickadia's server console to provide interactivity and utility via
 
 You can run omegga in the [Windows Subsystem for Linux](#wsl) (I recommend Ubuntu) or on an actual linux install.
 
-**Do not install omegga or run brickadia/omegga as root/superuser**
+<font size="5" color="red">Do not install omegga or run brickadia/omegga as root/superuser</font>:
+* running `whoami` should NOT print "root"
+* your terminal prompt should NOT end with #
+* you should NOT be typing `sudo npm i -g omegga`
+* running `echo $EUID` should NOT print "0"
+
+If any of the above are true, [create a new user](#creating-a-new-user) and continue from there.
 
 ### Quick Setup (automatically download launcher)
 
 1. Install linux if you haven't already ([Windows Install](#wsl))
 
-2. Run these commands (Installs a node installer, installs node, installs omegga):
+2. If you type `whoami` and it says "root", [create a new user](#creating-a-new-user) and come back. This step is usually only necessary for people using a VPS.
 
-```sh
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
-. ~/.nvm/nvm.sh
-nvm install 14
-npm i -g omegga
-```
+
+3. Run these commands (Installs a node installer, installs node, installs omegga):
+
+    ```sh
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+    . ~/.nvm/nvm.sh
+    nvm install 16
+    npm i -g omegga
+    ```
+
+    If you are having trouble installing with nvm and are running Ubuntu/Debian, run the following commands (installs node, installs omegga) instead or install node&npm from [NodeSource Binary Distributions](https://github.com/nodesource/distributions/blob/master/README.md).
+
+    ```sh
+    curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    npm i -g omegga
+    ```
 
 Then head over to [Running Omegga](#running)!
 
@@ -85,6 +102,23 @@ To set WSL version from 2 to 1:
 
 1. Check WSL version with `wsl -l -v` in cmd
 2. In Administator cmd, run `wsl --set-version <distribution name> 1` where `<distribution name>` is `Ubuntu`, `Debian`, etc. (From the NAME section of the previous command)
+
+### Creating a New User
+
+If you are running as root (terminal prompt ends with '#' instead of '$' or running `whoami` says "root"), create a new user.
+
+The following commands will create a user named `brickadia`. Feel free to replace it to `user` or your own name.
+
+```sh
+# create the user
+useradd -m brickadia
+# set the new user's password
+passwd brickadia
+# allow "sudo apt install ...." to work in this user
+usermod -aG sudo brickadia
+# become this user
+su brickadia
+```
 
 ## Running
 
