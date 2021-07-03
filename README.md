@@ -68,16 +68,21 @@ Omegga is installed as a global npm package
 
     npm i -g omegga
 
-Alternatively, you can use a development/local omegga
+Alternatively, you can use a development/local omegga.
 
     # clone omegga
     git clone https://github.com/brickadia-community/omegga.git && cd omegga
+
+    # install dependencies
+    npm i
 
     # point development omegga to global npm bin
     npm link
 
     # build the web ui (once)
     npm run dist
+
+If you accidentally install both from github and `npm i -g omegga`, you can run `npm unlink omegga` to stop npm from using the git one.
 
 If you have EACCES errors on WSL, see the [troubleshooting](#troubleshooting) section for a potential fix.
 
@@ -172,6 +177,7 @@ Narrow down where the issue might be with the following options:
         1. Set your WSL to WSL 2
         2. `npm i -g omegga`
         3. Set your WSL back to WSL 1
+* If you're getting a "gyp ERR! stack Error: not found: make" install [build-essential](https://wiki.gnucash.org/wiki/Install_Build_Tools)
 
 ## Uninstalling
 
