@@ -3,7 +3,7 @@
 # This file automatically downloads the brickadia launcher
 
 TAR_FILE=brickadia-launcher.tar.xz
-BRICKADIA_URL=https://static.brickadia.com/launcher/1.4/$TAR_FILE
+BRICKADIA_URL=https://github.com/brickadia-community/omegga/raw/old-launcher/$TAR_FILE
 LAUNCHER_PATH=$HOME/.config/omegga/launcher
 FILE=$LAUNCHER_PATH/$TAR_FILE
 BINARY_PATH=$LAUNCHER_PATH/brickadia-launcher/main-brickadia-launcher
