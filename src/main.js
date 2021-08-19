@@ -196,6 +196,12 @@ program
   .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement install --force
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action((plugins) => {
+    if (!require('hasbin').sync('git')) {
+      err('git'.yellow, 'must be installed to install plugins.');
+      process.exit(1);
+      return;
+    }
+
     if (!config.find('.')) {
       err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
       process.exit(1);
