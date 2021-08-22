@@ -418,11 +418,13 @@ This is an example `plugin.json`, located inside of a plugin folder. The plugin 
 {
   "formatVersion": 1,
   "omeggaVersion": ">=0.1.32"
+  "emitConfig": "config.json"
 }
 ```
 
 * `formatVersion` - indicates the plugin file format version
 * `omeggaVersion` - indicates compatible omegga versions ([semver cheatsheet](https://www.npmjs.com/package/semver#user-content-ranges))
+* `emitConfig` - optional, a path to a json file where plugin config will be saved to before the plugin starts.
 
 ## Plugin Store
 
