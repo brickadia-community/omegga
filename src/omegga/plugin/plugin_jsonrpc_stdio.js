@@ -359,6 +359,7 @@ class RpcPlugin extends Plugin {
 
     // player related operations
     const addPlayerMethod = (name) => rpc.addMethod(`player.${name}`, (player) => this.omegga.getPlayer(player)?.[name]());
+    addPlayerMethod('getRoles');
     addPlayerMethod('getPermissions');
     addPlayerMethod('getNameColor');
     addPlayerMethod('getPosition');
