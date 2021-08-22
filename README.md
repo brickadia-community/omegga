@@ -417,7 +417,7 @@ This is an example `plugin.json`, located inside of a plugin folder. The plugin 
 ```json
 {
   "formatVersion": 1,
-  "omeggaVersion": ">=0.1.32"
+  "omeggaVersion": ">=0.1.32",
   "emitConfig": "config.json"
 }
 ```
