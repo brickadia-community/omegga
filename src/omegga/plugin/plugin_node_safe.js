@@ -19,6 +19,7 @@ const MAIN_FILE = 'omegga.plugin.js';
 // Documentation file (contains name, description, author, command helptext)
 const DOC_FILE = 'doc.json';
 const ACCESS_FILE = 'access.json';
+const PLUGIN_FILE = 'plugin.json';
 
 class NodeVmPlugin extends Plugin {
   #worker = undefined;
@@ -45,6 +46,7 @@ class NodeVmPlugin extends Plugin {
 
     // TODO: validate documentation
     this.documentation = Plugin.readJSON(path.join(pluginPath, DOC_FILE));
+    this.pluginConfig = Plugin.readJSON(path.join(pluginPath, PLUGIN_FILE));
 
     // access list is a list of builtin requires
     // can be ['*'] for everything
@@ -161,6 +163,9 @@ class NodeVmPlugin extends Plugin {
 
     try {
       const config = await this.storage.getConfig();
+      if (this.pluginConfig?.emitConfig) {
+        await fs.promises.writeFile(path.join(this.path, this.pluginConfig.emitConfig), JSON.stringify(config));
+      }
       this.createWorker();
 
       // tell the worker its name :)
