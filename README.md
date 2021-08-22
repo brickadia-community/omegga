@@ -631,7 +631,6 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `broadcast` | line (string) | Broadcasts a message to the server|
 | `whisper` | {target: string, line: string} | (a5 only) Sends a message to a specific client |
 | `getPlayers` | _none_ | Gets online players |
-| `getPlayerPosition` | target (string) | Gets the position of the player with the given name/ID |
 | `getAllPlayerPositions` | _none_ | Gets an array of objects with fields `pos` and `player`, representing the position and player object of each player in the server |
 | `getRoleSetup` | _none_ | Gets server roles |
 | `getBanList` | _none_ | Gets list of bans |
@@ -645,6 +644,14 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `readSaveData` | name (string) | Parses save into a brs-js save object, returns the object |
 | `loadSaveData` | {data: object, offX=0 (Number), offY=0 (Number), offY=0 (Number), quiet: bool (a5 only)} | Loads brs-js save data object to the server |
 | `changeMap` | map (string) | Change map to specified map name, returns if succeeded |
+| `player.getPermissions` | target (string) | Gets the target's permissions |
+| `player.getNameColor` | target (string) | Gets the target's name color |
+| `player.getPosition` | target (string) | Gets the target's position |
+| `player.getGhostBrick` | target (string) | Gets info on the target's ghost brick |
+| `player.getPaint` | target (string) | Gets info on the target's current paint selection |
+| `player.getTemplateBounds` | target (string) | Gets the target's template/selection bounds |
+| `player.getTemplateBoundsData` | target (string) | Gets the target's template/selection as brs-js save data |
+| `player.loadDataAtGhostBrick` | {target: string, data: object, rotate=true (bool), offX=0 (number), offY=0 (number), offZ=0 (number), quiet=false (bool)} | Loads brs-js save data at the target's template/selection bounds |
 
 ### Plugin Methods (You implement these)
 

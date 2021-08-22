@@ -12,7 +12,7 @@ const { bootstrap } = require('./plugin_node_safe/proxyOmegga.js');
 
 // TODO: check if version is compatible (v1 -> v2) from file
 // TODO: write jsonrpc wrappers in a few languages, implement a few simple plugins
-// TODO: languages: [ python, rust, go ]
+// TODO: languages: [ python, go ]
 
 const MAIN_FILE = 'omegga_plugin';
 const DOC_FILE = 'doc.json';
@@ -322,7 +322,7 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('broadcast', line => this.omegga.broadcast(line));
     rpc.addMethod('whisper', ({target, line}) => this.omegga.whisper(target, line));
     rpc.addMethod('getPlayers', () => this.omegga.getPlayers());
-    rpc.addMethod('getPlayerPosition', (name) => this.omegga.getPlayer(name)?.getPosition());
+    rpc.addMethod('getPlayerPosition', (name) => this.omegga.getPlayer(name)?.getPosition()); // included for compatibility
     rpc.addMethod('getAllPlayerPositions', () => this.omegga.getAllPlayerPositions());
     rpc.addMethod('getRoleSetup', () => this.omegga.getRoleSetup());
     rpc.addMethod('getBanList', () => this.omegga.getBanList());
@@ -344,6 +344,18 @@ class RpcPlugin extends Plugin {
       await this.unload();
       await this.load();
     });
+
+    // player related operations
+    const addPlayerMethod = (name) => rpc.addMethod(`player.${name}`, (player) => this.omegga.getPlayer(player)?.[name]());
+    addPlayerMethod('getPermissions');
+    addPlayerMethod('getNameColor');
+    addPlayerMethod('getPosition');
+    addPlayerMethod('getGhostBrick');
+    addPlayerMethod('getPaint');
+    addPlayerMethod('getTemplateBounds');
+    addPlayerMethod('getTemplateBoundsData');
+    rpc.addMethod('player.loadDataAtGhostBrick', ({target, data, rotate=true, offX=0, offY=0, offZ=0, quiet=false}) =>
+      this.omegga.getPlayer(target)?.loadDataAtGhostBrick(data, {rotate, offX, offY, offZ, quiet}));
   }
 
   // emit a message to the plugin via the jsonrpc client and expect a response
