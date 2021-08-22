@@ -16,6 +16,7 @@ const { bootstrap } = require('./plugin_node_safe/proxyOmegga.js');
 
 const MAIN_FILE = 'omegga_plugin';
 const DOC_FILE = 'doc.json';
+const PLUGIN_FILE = 'plugin.json';
 
 class RpcPlugin extends Plugin {
   #child = null;
@@ -42,6 +43,7 @@ class RpcPlugin extends Plugin {
 
     // TODO: validate documentation
     this.documentation = Plugin.readJSON(path.join(pluginPath, DOC_FILE));
+    this.pluginConfig = Plugin.readJSON(path.join(pluginPath, PLUGIN_FILE));
     this.pluginFile = path.join(pluginPath, MAIN_FILE);
 
     this.eventPassthrough = this.eventPassthrough.bind(this);
@@ -70,8 +72,20 @@ class RpcPlugin extends Plugin {
       verbose('Plugin already has child process');
       return false;
     }
+    
+    let config;
+    try {
+      verbose('Getting plugin config');
+      config = await this.storage.getConfig();
+    } catch (e) {
+      return false;
+    }
 
     try {
+      if (this.pluginConfig?.emitConfig) {
+        verbose('Emitting plugin config');
+        await fs.promises.writeFile(path.join(this.path, this.pluginConfig.emitConfig), JSON.stringify(config));
+      }
       verbose('Spawning child process');
       this.#child = spawn(this.pluginFile);
       this.#child.stdin.setEncoding('utf8');
@@ -103,8 +117,6 @@ class RpcPlugin extends Plugin {
           this.omegga.on('*', this.eventPassthrough);
 
           try {
-            verbose('Getting plugin config');
-            const config = await this.storage.getConfig();
             // tell the plugin to start
             verbose('Waiting for plugin to start...');
             const result = await this.emit('init', config);
