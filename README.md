@@ -644,6 +644,7 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `readSaveData` | name (string) | Parses save into a brs-js save object, returns the object |
 | `loadSaveData` | {data: object, offX=0 (Number), offY=0 (Number), offY=0 (Number), quiet: bool (a5 only)} | Loads brs-js save data object to the server |
 | `changeMap` | map (string) | Change map to specified map name, returns if succeeded |
+| `player.get` | target (string) | Gets the player by their name or UUID. Returned is the player in the format `{name: string, id: string, controller: string, state: string, host: bool}?`. |
 | `player.getRoles` | target (string) | Gets the target's roles |
 | `player.getPermissions` | target (string) | Gets the target's permissions |
 | `player.getNameColor` | target (string) | Gets the target's name color |
