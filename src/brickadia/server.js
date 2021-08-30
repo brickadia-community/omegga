@@ -62,7 +62,7 @@ class BrickadiaServer extends EventEmitter {
   // start the server child process
   start() {
     const { email, password } = this.config.credentials || {};
-    verboseLog('Starting server', (!email && !password ? 'with' : 'without').yellow, 'credentials');
+    verboseLog('Starting server', (!email && !password ? 'without' : 'with').yellow, 'credentials');
     verboseLog('Running', (this.config.server.__LOCAL ? path.join(__dirname, '../../tools/brickadia.sh') : 'brickadia launcher').yellow);
 
     // handle local launcher support

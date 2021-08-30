@@ -12,6 +12,8 @@ const soft = require('../softconfig.js');
 const pkg = require('../../package.json');
 const config = require('../config/index');
 
+const MAIN_BRANCHES = ['master', 'main'];
+
 // get the working directory for omegga
 function getWorkDir() {
   // default working directory is the one specified in config
@@ -121,7 +123,11 @@ function checkPlugin(omeggaPath, plugin) {
 
   // check for the plugin file, whatever it's called
   if (fs.existsSync(path.join(pluginPath, soft.PLUGIN_FILE))) {
-    plg(plugin, 'Checking plugin file...');
+    if (needsNL) {
+      console.log();
+      needsNL = false;
+    }
+    plgLog(plugin, 'Checking plugin file...');
     let data;
     try {
       data = JSON.parse(fs.readFileSync(path.join(pluginPath, soft.PLUGIN_FILE), 'utf8'));
@@ -303,22 +309,29 @@ module.exports = {
         const branches = await git.branch();
 
         // check if we're on a weird branch
-        if (branches.current !== 'master') {
-          plgErr(plugin, 'Not on master branch - ignoring');
+        if (!MAIN_BRANCHES.includes(branches.current)) {
+          plgErr(plugin, 'Not on a main branch - ignoring');
           continue;
         }
 
         // try to correct a weird detached branch
-        if (remotes.length === 1 && remotes[0].name === 'origin' &&
-          branches.current === 'master' && !status.tracking && branches.branches['remotes/origin/master']) {
-          plgLog(plugin, 'Correcting upstream...');
-          try {
-            await git.branch({'--set-upstream-to': 'origin/master'});
-            status = await git.status();
-          } catch (e) {
-            plgErr(plugin, 'Error getting status/fixing upstream branch', e);
-            continue;
+        if (remotes.length === 1 && remotes[0].name === 'origin' && !status.tracking) {
+          let skip = false;
+          for (const branch of MAIN_BRANCHES) {
+            if (branches.current === branch && branches.branches[`remotes/origin/${branch}`]) {
+              plgLog(plugin, 'Correcting upstream...');
+              try {
+                await git.branch({'--set-upstream-to': `origin/${branch}`});
+                status = await git.status();
+                break;
+              } catch (e) {
+                plgErr(plugin, 'Error getting status/fixing upstream branch', e);
+                skip = true;
+                break;
+              }
+            }
           }
+          if (skip) continue;
         }
 
         // this should be corrected by the above check, though if it's not I am not fighting git lol
@@ -376,13 +389,14 @@ module.exports = {
       plgLog(plugin, 'Creating backup branch...');
       try {
         const branches = await git.branch();
+        const mainBranch = MAIN_BRANCHES.find(b => branches.branches[b]) ?? MAIN_BRANCHES[0];
         if (branches.branches['omegga-upgrade-backup']) {
           plgLog(plugin, 'Deleting leftover backup branch...');
           await git.deleteLocalBranch('omegga-upgrade-backup', true);
         }
-        await git.checkoutBranch('omegga-upgrade-backup', 'master');
-        await git.branch({'--set-upstream-to': 'origin/master'});
-        await git.checkout('master');
+        await git.checkoutBranch('omegga-upgrade-backup', mainBranch);
+        await git.branch({'--set-upstream-to': `origin/${mainBranch}`});
+        await git.checkout(mainBranch);
         plgLog(plugin, 'Pulling update...');
         await git.pull();
         if ((await git.status()).behind > 0) {
@@ -417,22 +431,25 @@ module.exports = {
       } catch (e) {
         plgErr(plugin, 'Error updating - attempting to restore from backup branch', e);
         try {
-          if ((await git.branch()) !== 'master') {
+          if (!MAIN_BRANCHES.includes(await git.branch())) {
             plgErr(plugin, 'Not on expected branch - exiting before I break more things');
             continue;
           }
+
+          const branches = await git.branch();
+          const mainBranch = MAIN_BRANCHES.find(b => branches.branches[b]) ?? MAIN_BRANCHES[0];
 
           plg(plugin, 'Resetting current branch');
           await git.reset('hard');
           plgLog(plugin, 'Attempting to checkout backup branch');
           await git.checkout('omegga-upgrade-backup');
-          plgLog(plugin, 'Replacing master with backup');
-          await git.deleteLocalBranch('master');
-          await git.checkoutBranch('master', 'omegga-upgrade-backup');
+          plgLog(plugin, `Replacing ${mainBranch} with backup`);
+          await git.deleteLocalBranch(mainBranch);
+          await git.checkoutBranch(mainBranch, 'omegga-upgrade-backup');
           plgLog(plugin, 'Restored to backup branch');
 
-          if ((await git.branch()) !== 'master') {
-            plgErr(plugin, 'Failed to checkout newly created master');
+          if ((await git.branch()) !== mainBranch) {
+            plgErr(plugin, `Failed to checkout newly created ${mainBranch} branch`);
             continue;
           } else {
             plgWarn(plugin, 'Restored from backup and plugin not updated...');
@@ -487,5 +504,6 @@ module.exports = {
       }
       checkPlugin(omeggaPath, plugin);
     }
+    console.log();
   }
 };
