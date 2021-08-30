@@ -373,6 +373,36 @@ class RpcPlugin extends Plugin {
     addPlayerMethod('getTemplateBoundsData');
     rpc.addMethod('player.loadDataAtGhostBrick', ({target, data, rotate=true, offX=0, offY=0, offZ=0, quiet=false}) =>
       this.omegga.getPlayer(target)?.loadDataAtGhostBrick(data, {rotate, offX, offY, offZ, quiet}));
+
+    // plugin related operations
+    rpc.addMethod('plugin.get', async (name) => {
+      const plugin = this.omegga.pluginLoader.plugins.find(p => p.getName() === name);
+
+      if (plugin) {
+        return {
+          name,
+          documentation: plugin.getDocumentation(),
+          loaded: plugin.isLoaded()
+        };
+      } else {
+        return null;
+      }
+    });
+
+    rpc.addMethod('plugin.emit', async ([name, event, ...args]) => {
+      const plugin = this.omegga.pluginLoader.plugins.find(p => p.getName() === name);
+
+      if (plugin) {
+        return plugin.emitPlugin(event, this.getName(), args);
+      } else {
+        return null;
+      }
+    });
+  }
+
+  // emit a custom plugin event
+  async emitPlugin(event, from, args) {
+    return await this.emit("plugin:emit", [event, from, ...args]);
   }
 
   // emit a message to the plugin via the jsonrpc client and expect a response

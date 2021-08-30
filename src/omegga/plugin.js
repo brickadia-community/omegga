@@ -70,6 +70,9 @@ class Plugin {
     });
   }
 
+  // emit a custom event from another plugin
+  async emitPlugin(_ev, _from, _args) {}
+
   // get the plugin name, usually based on documentation data
   getName() {
     const doc = this.getDocumentation();
