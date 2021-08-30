@@ -472,7 +472,7 @@ async function add() {
     bar: 'just don\'t expect it to work with anything recursive (cannot serialize)',
   })
 })();
-````
+```
 
 For Node Plugins, the `store` is the third argument passed into the constructor. For JSONRPC Plugins, the `"store.get"`/etc methods can be used.
 
@@ -485,6 +485,8 @@ Node VM Plugins are what you should be using. They are run inside a VM inside a 
 These plugins receive a "proxy" reference to `omegga` and have limited reach for what they can touch.
 
 Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` (registers command `/foo` and `/bar`) in the `async init()` method.
+
+By defining an `async pluginEvent(event, from, ...args)` method in your plugin class, you can respond to events from other plugins, where `from` is the name of the other plugin, `event` is the name of the custom event, and `args` is an array of any passed arguments.
 
 ### Globals
 
@@ -656,6 +658,8 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `player.getTemplateBounds` | target (string) | Gets the target's template/selection bounds |
 | `player.getTemplateBoundsData` | target (string) | Gets the target's template/selection as brs-js save data |
 | `player.loadDataAtGhostBrick` | {target: string, data: object, rotate=true (bool), offX=0 (number), offY=0 (number), offZ=0 (number), quiet=false (bool)} | Loads brs-js save data at the target's template/selection bounds |
+| `plugin.get` | target (string) | Gets info on the target plugin |
+| `plugin.emit` | [target (string), event (string), ...args (any)] | Emit a custom event to the target plugin |
 
 ### Plugin Methods (You implement these)
 
@@ -665,6 +669,7 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `stop` | _none_ | Returns _something_, called when plugin is stopped | &#9745; |
 | `bootstrap` | [{ object full of omegga info (`host`, `version`, etc) }] | Run when plugin is started for base data | |
 | `plugin:players:raw` | [[... [player `name`, `id`, `controller`, `state`] ]] | Lists players on the server | |
+| `plugin:emit` | [event, from, ...args] | Fired when a plugin sends this one a custom event | |
 | `line` | [brickadiaLog string] | A brickadia console log | |
 | `start` | [{map}] | Run when the brickadia server starts | |
 | `host` | [{name, id}] | Run when the brickadia server detects the host | |

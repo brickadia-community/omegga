@@ -50,6 +50,19 @@ const exec = cmd => emit('exec', cmd);
 // create the proxy omegga
 const omegga = new ProxyOmegga(exec);
 
+// add plugin fetcher
+omegga.getPlugin = async (name) => {
+  let plugin = await emit('getPlugin', name);
+  if (plugin) {
+    plugin.emit = async (ev, ...args) => {
+      return await emit('emitPlugin', name, ev, args);
+    }
+    return plugin;
+  } else {
+    return null;
+  }
+}
+
 // interface with plugin store
 const store = {
   get: key => emit('store.get', key),
@@ -206,3 +219,11 @@ parent.on('stop', async resp => {
   }
 });
 
+// handle emitPlugins
+parent.on('emitPlugin', async (resp, ev, from, args) => {
+  if (pluginInstance?.pluginEvent) {
+    emit(resp, await pluginInstance.pluginEvent(ev, from, ...args));
+  } else {
+    emit(resp, null);
+  }
+});

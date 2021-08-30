@@ -9,6 +9,7 @@ const {
 
 const { Plugin } = require('../plugin.js');
 const { bootstrap } = require('./plugin_node_safe/proxyOmegga.js');
+const Omegga = require('../server.js');
 
 // Main plugin file (like index.js)
 // this isn't named 'index.js' or 'plugin.js' because those may be filenames
@@ -123,6 +124,32 @@ class NodeVmPlugin extends Plugin {
       }
     });
 
+    // plugin fetching
+    this.plugin.on('getPlugin', async (resp, name) => {
+      const plugin = this.omegga.pluginLoader.plugins.find(p => p.getName() === name);
+
+      if (plugin) {
+        this.notify(resp, {
+          name,
+          documentation: plugin.getDocumentation(),
+          loaded: plugin.isLoaded()
+        });
+      } else {
+        this.notify(resp);
+      }
+    });
+
+    this.plugin.on('emitPlugin', async (resp, target, ev, args) => {
+      const plugin = this.omegga.pluginLoader.plugins.find(p => p.getName() === target);
+
+      if (plugin) {
+        let r = await plugin.emitPlugin(ev, name, args);
+        this.notify(resp, r);
+      } else {
+        Omegga.error(name.brightRed.underline, '!>'.red, 'error in emitPlugin');
+      }
+    });
+
     // command registration
     this.plugin.on('command.registers', async(_, blob) => {
       if (typeof blob !== 'string') return;
@@ -135,6 +162,12 @@ class NodeVmPlugin extends Plugin {
 
     // listen on every message, post them to to the worker
     this.eventPassthrough = this.eventPassthrough.bind(this);
+  }
+
+  // emit a custom plugin event
+  async emitPlugin(ev, from, args) {
+    const [r] = await this.emit("emitPlugin", ev, from, args);
+    return r;
   }
 
   // documentation is based on doc.json file
@@ -172,7 +205,7 @@ class NodeVmPlugin extends Plugin {
       await this.emit('name', this.getName());
 
       // create the vm, export the plugin's class
-      if (!(await this.emit('load', this.path, vmOptions)))
+      if (!(await this.emit('load', this.path, vmOptions))[0])
         throw '';
 
       // get some initial information to create an omegga proxy
@@ -191,7 +224,7 @@ class NodeVmPlugin extends Plugin {
       this.omegga.on('*', this.eventPassthrough);
 
       // actually start the plugin
-      if (!(await this.emit('start', config)))
+      if (!(await this.emit('start', config))[0])
         throw 'plugin failed start';
 
       this.emitStatus();
@@ -280,7 +313,7 @@ class NodeVmPlugin extends Plugin {
 
     // promise waits for the message to resolve
     const promise = new Promise(resolve =>
-      this.plugin.once(messageId, resolve));
+      this.plugin.once(messageId, (_, ...x) => resolve(x)));
 
     // post the message
     try {
