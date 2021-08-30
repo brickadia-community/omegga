@@ -166,7 +166,7 @@ class NodeVmPlugin extends Plugin {
 
   // emit a custom plugin event
   async emitPlugin(ev, from, args) {
-    const [r] = await this.emit("emitPlugin", ev, from, args);
+    const [r] = await this.emit('emitPlugin', ev, from, args);
     return r;
   }
 

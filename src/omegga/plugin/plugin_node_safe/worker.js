@@ -56,12 +56,12 @@ omegga.getPlugin = async (name) => {
   if (plugin) {
     plugin.emit = async (ev, ...args) => {
       return await emit('emitPlugin', name, ev, args);
-    }
+    };
     return plugin;
   } else {
     return null;
   }
-}
+};
 
 // interface with plugin store
 const store = {

@@ -72,7 +72,7 @@ class RpcPlugin extends Plugin {
       verbose('Plugin already has child process');
       return false;
     }
-    
+
     let config;
     try {
       verbose('Getting plugin config');
@@ -402,7 +402,7 @@ class RpcPlugin extends Plugin {
 
   // emit a custom plugin event
   async emitPlugin(event, from, args) {
-    return await this.emit("plugin:emit", [event, from, ...args]);
+    return await this.emit('plugin:emit', [event, from, ...args]);
   }
 
   // emit a message to the plugin via the jsonrpc client and expect a response
