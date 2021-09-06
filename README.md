@@ -31,7 +31,6 @@ If any of the above are true, [create a new user](#creating-a-new-user) and cont
 
 2. If you type `whoami` and it says "root", [create a new user](#creating-a-new-user) and come back. This step is usually only necessary for people using a VPS.
 
-
 3. Run these commands (Installs a node installer, installs node, installs omegga):
 
     ```sh
@@ -40,6 +39,8 @@ If any of the above are true, [create a new user](#creating-a-new-user) and cont
     nvm install 16
     npm i -g omegga
     ```
+
+    If you get an error like "gyp info find Python using Python version 3.8.10 found at /usr/bin/python3" you need to install python3: `sudo apt install python3` and re-run `npm i -g omegga`
 
     If you are having trouble installing with nvm and are running Ubuntu/Debian, run the following commands (installs node, installs omegga) instead or install node&npm from [NodeSource Binary Distributions](https://github.com/nodesource/distributions/blob/master/README.md).
 
