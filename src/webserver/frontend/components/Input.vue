@@ -13,7 +13,6 @@
     margin-bottom: 0;
   }
 
-
   &.icon {
     border-radius: 0;
     padding: 0;
@@ -55,24 +54,32 @@
 .header > .input input {
   height: 32px !important;
 }
-
 </style>
 
 <template>
-  <div :class="['input', {
-    disabled,
-  }]">
+  <div
+    :class="[
+      'input',
+      {
+        disabled
+      }
+    ]"
+  >
     <input
       spellcheck="false"
       :value="value"
-      @input="$emit('input', $event.target.value)"
+      @input="
+        $emit(
+          'input',
+          type === 'number' ? Number($event.target.value) : $event.target.value
+        )
+      "
       :placeholder="placeholder ? placeholder.toString() : ''"
       :type="type"
     />
   </div>
 </template>
 <script>
-
 import Vue from 'vue';
 
 export default Vue.component('br-input', {
@@ -80,8 +87,7 @@ export default Vue.component('br-input', {
     placeholder: String,
     disabled: Boolean,
     type: String,
-    value: [String, Number],
-  },
+    value: [String, Number]
+  }
 });
-
 </script>
