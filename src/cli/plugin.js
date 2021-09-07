@@ -492,7 +492,8 @@ module.exports = {
           e
         );
         try {
-          if (!MAIN_BRANCHES.includes(await git.branch())) {
+          const branches = await git.branch();
+          if (!MAIN_BRANCHES.includes(branches.current)) {
             plgErr(
               plugin,
               'Not on expected branch - exiting before I break more things'
@@ -500,7 +501,6 @@ module.exports = {
             continue;
           }
 
-          const branches = await git.branch();
           const mainBranch =
             MAIN_BRANCHES.find(b => branches.branches[b]) ?? MAIN_BRANCHES[0];
 
