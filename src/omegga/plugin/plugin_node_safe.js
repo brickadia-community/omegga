@@ -3,9 +3,7 @@ const path = require('path');
 const { EventEmitter } = require('events');
 const readline = require('readline');
 
-const {
-  Worker,
-} = require('worker_threads');
+const { Worker } = require('worker_threads');
 
 const { Plugin } = require('../plugin.js');
 const { bootstrap } = require('./plugin_node_safe/proxyOmegga.js');
@@ -30,13 +28,17 @@ class NodeVmPlugin extends Plugin {
   // every node vm plugin requires a main file, a doc file, and an access file
   // may evolve this so it checks the contents of the doc file later
   static canLoad(pluginPath) {
-    return fs.existsSync(path.join(pluginPath, MAIN_FILE)) &&
+    return (
+      fs.existsSync(path.join(pluginPath, MAIN_FILE)) &&
       fs.existsSync(path.join(pluginPath, DOC_FILE)) &&
-      fs.existsSync(path.join(pluginPath, ACCESS_FILE));
+      fs.existsSync(path.join(pluginPath, ACCESS_FILE))
+    );
   }
 
   // safe node plugins are limited
-  static getFormat() { return 'node_safe'; }
+  static getFormat() {
+    return 'node_safe';
+  }
 
   constructor(pluginPath, omegga) {
     super(pluginPath, omegga);
@@ -57,7 +59,10 @@ class NodeVmPlugin extends Plugin {
     this.commands = [];
 
     // verify access is an array of strings
-    if (!(this.access instanceof Array) || !this.access.every(s => typeof s === 'string')) {
+    if (
+      !(this.access instanceof Array) ||
+      !this.access.every(s => typeof s === 'string')
+    ) {
       throw new Error('access list not a string array');
     }
 
@@ -78,30 +83,46 @@ class NodeVmPlugin extends Plugin {
     this.plugin.on('exec', (_, cmd) => omegga.writeln(cmd));
 
     // storage interface
-    this.plugin.on('store.get', async(resp, key) => {
+    this.plugin.on('store.get', async (resp, key) => {
       try {
         this.notify(resp, await this.storage.get(key));
       } catch (e) {
-        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.get of', key);
+        Omegga.error(
+          name.brightRed.underline,
+          '!>'.red,
+          'error in store.get of',
+          key
+        );
       }
     });
-    this.plugin.on('store.set', async(resp, key, value) => {
+    this.plugin.on('store.set', async (resp, key, value) => {
       try {
         await this.storage.set(key, JSON.parse(value));
       } catch (e) {
-        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.set of', key, value);
+        Omegga.error(
+          name.brightRed.underline,
+          '!>'.red,
+          'error in store.set of',
+          key,
+          value
+        );
       }
       this.notify(resp);
     });
-    this.plugin.on('store.delete', async(resp, key) => {
+    this.plugin.on('store.delete', async (resp, key) => {
       try {
         await this.storage.delete(key);
       } catch (e) {
-        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.delete of', key);
+        Omegga.error(
+          name.brightRed.underline,
+          '!>'.red,
+          'error in store.delete of',
+          key
+        );
       }
       this.notify(resp);
     });
-    this.plugin.on('store.wipe', async(resp) => {
+    this.plugin.on('store.wipe', async resp => {
       try {
         await this.storage.wipe();
       } catch (e) {
@@ -109,14 +130,18 @@ class NodeVmPlugin extends Plugin {
       }
       this.notify(resp);
     });
-    this.plugin.on('store.count', async(resp) => {
+    this.plugin.on('store.count', async resp => {
       try {
         this.notify(resp, await this.storage.count());
       } catch (e) {
-        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.count');
+        Omegga.error(
+          name.brightRed.underline,
+          '!>'.red,
+          'error in store.count'
+        );
       }
     });
-    this.plugin.on('store.keys', async(resp) => {
+    this.plugin.on('store.keys', async resp => {
       try {
         this.notify(resp, await this.storage.keys());
       } catch (e) {
@@ -126,7 +151,9 @@ class NodeVmPlugin extends Plugin {
 
     // plugin fetching
     this.plugin.on('getPlugin', async (resp, name) => {
-      const plugin = this.omegga.pluginLoader.plugins.find(p => p.getName() === name);
+      const plugin = this.omegga.pluginLoader.plugins.find(
+        p => p.getName() === name
+      );
 
       if (plugin) {
         this.notify(resp, {
@@ -140,7 +167,9 @@ class NodeVmPlugin extends Plugin {
     });
 
     this.plugin.on('emitPlugin', async (resp, target, ev, args) => {
-      const plugin = this.omegga.pluginLoader.plugins.find(p => p.getName() === target);
+      const plugin = this.omegga.pluginLoader.plugins.find(
+        p => p.getName() === target
+      );
 
       if (plugin) {
         let r = await plugin.emitPlugin(ev, name, args);
@@ -151,11 +180,15 @@ class NodeVmPlugin extends Plugin {
     });
 
     // command registration
-    this.plugin.on('command.registers', async(_, blob) => {
+    this.plugin.on('command.registers', async (_, blob) => {
       if (typeof blob !== 'string') return;
       const registers = JSON.parse(blob);
       // ensure registers is an array of strings
-      if (!(registers instanceof Array) || registers.some(i => typeof i !== 'string')) return;
+      if (
+        !(registers instanceof Array) ||
+        registers.some(i => typeof i !== 'string')
+      )
+        return;
 
       this.commands = registers;
     });
@@ -166,15 +199,19 @@ class NodeVmPlugin extends Plugin {
 
   // emit a custom plugin event
   async emitPlugin(ev, from, args) {
-    const [r] = await this.emit('emitPlugin', ev, from, args);
+    const [r] = (await this.emit('emitPlugin', ev, from, args)) ?? [];
     return r;
   }
 
   // documentation is based on doc.json file
-  getDocumentation() { return this.documentation; }
+  getDocumentation() {
+    return this.documentation;
+  }
 
   // loaded state is based on if a worker exists
-  isLoaded() { return !!this.#worker; }
+  isLoaded() {
+    return !!this.#worker;
+  }
 
   // determing if a command is registered
   isCommand(cmd) {
@@ -184,20 +221,22 @@ class NodeVmPlugin extends Plugin {
   // require the plugin into the system, run the init func
   async load() {
     // can't load the plugin if it's already loaded
-    if (typeof this.#worker !== 'undefined')
-      return false;
+    if (typeof this.#worker !== 'undefined') return false;
 
     // vm restriction settings, default is access to everything
     const vmOptions = {
       builtin: this.access, // TODO: reference access file
-      external: true, // TODO: reference access file
+      external: true // TODO: reference access file
     };
     this.commands = [];
 
     try {
       const config = await this.storage.getConfig();
       if (this.pluginConfig?.emitConfig) {
-        await fs.promises.writeFile(path.join(this.path, this.pluginConfig.emitConfig), JSON.stringify(config));
+        await fs.promises.writeFile(
+          path.join(this.path, this.pluginConfig.emitConfig),
+          JSON.stringify(config)
+        );
       }
       this.createWorker();
 
@@ -205,8 +244,7 @@ class NodeVmPlugin extends Plugin {
       await this.emit('name', this.getName());
 
       // create the vm, export the plugin's class
-      if (!(await this.emit('load', this.path, vmOptions))[0])
-        throw '';
+      if (!(await this.emit('load', this.path, vmOptions))[0]) throw '';
 
       // get some initial information to create an omegga proxy
       const initialData = bootstrap(this.omegga);
@@ -215,26 +253,31 @@ class NodeVmPlugin extends Plugin {
         try {
           this.#worker.postMessage({
             action: 'brickadiaEvent',
-            args: [ev, ...initialData[ev]],
+            args: [ev, ...initialData[ev]]
           });
-        } catch (e) { /* just writing 'safe' code :) */}
+        } catch (e) {
+          /* just writing 'safe' code :) */
+        }
       }
 
       // pass events through
       this.omegga.on('*', this.eventPassthrough);
 
       // actually start the plugin
-      if (!(await this.emit('start', config))[0])
-        throw 'plugin failed start';
+      if (!(await this.emit('start', config))[0]) throw 'plugin failed start';
 
       this.emitStatus();
       return true;
     } catch (e) {
-
       // kill the worker
       await this.emit('kill');
 
-      Omegga.error('!>'.red, 'error loading node vm plugin', this.getName().brightRed.underline, e);
+      Omegga.error(
+        '!>'.red,
+        'error loading node vm plugin',
+        this.getName().brightRed.underline,
+        e
+      );
       this.emitStatus();
       return false;
     }
@@ -242,13 +285,13 @@ class NodeVmPlugin extends Plugin {
 
   // disrequire the plugin into the system, run the stop func
   unload() {
-    let frozen = true, timed = false;
+    let frozen = true,
+      timed = false;
 
     return Promise.race([
-      (async() => {
+      (async () => {
         // can't unload the plugin if it hasn't been loaded
-        if (typeof this.#worker === 'undefined')
-          return false;
+        if (typeof this.#worker === 'undefined') return false;
 
         try {
           // stop the plugin (cleanly)
@@ -277,7 +320,12 @@ class NodeVmPlugin extends Plugin {
           frozen = false;
           if (timed) return;
 
-          Omegga.error('!>'.red, 'error unloading node plugin', this.getName().brightRed.underline, e);
+          Omegga.error(
+            '!>'.red,
+            'error unloading node plugin',
+            this.getName().brightRed.underline,
+            e
+          );
           this.emitStatus();
           return false;
         }
@@ -286,16 +334,20 @@ class NodeVmPlugin extends Plugin {
         // check if the worker is frozen (while true)
         setTimeout(() => {
           if (!frozen) return;
-          this.plugin.emit('error', 0, 'I appear to be in an unresponsive state - terminating worker');
+          this.plugin.emit(
+            'error',
+            0,
+            'I appear to be in an unresponsive state - terminating worker'
+          );
 
           // remove listeners
           this.omegga.off('*', this.eventPassthrough);
 
           // tell the worker to exit
-          if(this.#worker) this.#worker.emit('exit');
+          if (this.#worker) this.#worker.emit('exit');
 
           // terminate the worker if it still exists
-          if(this.#worker) this.#worker.terminate();
+          if (this.#worker) this.#worker.terminate();
 
           timed = true;
           resolve(true);
@@ -309,17 +361,18 @@ class NodeVmPlugin extends Plugin {
   emit(action, ...args) {
     if (!this.#worker) return;
 
-    const messageId = 'message:' + (this.messageCounter ++);
+    const messageId = 'message:' + this.messageCounter++;
 
     // promise waits for the message to resolve
     const promise = new Promise(resolve =>
-      this.plugin.once(messageId, (_, ...x) => resolve(x)));
+      this.plugin.once(messageId, (_, ...x) => resolve(x))
+    );
 
     // post the message
     try {
       this.#worker.postMessage({
         action,
-        args: [messageId, ...args],
+        args: [messageId, ...args]
       });
     } catch (e) {
       return Promise.reject(e);
@@ -337,7 +390,7 @@ class NodeVmPlugin extends Plugin {
     try {
       this.#worker.postMessage({
         action,
-        args: [...args],
+        args: [...args]
       });
     } catch (e) {
       // do nothing here
@@ -346,23 +399,38 @@ class NodeVmPlugin extends Plugin {
 
   // create the worker for this plugin, attach emitter
   createWorker() {
-    this.#worker = new Worker(path.join(__dirname, 'plugin_node_safe/worker.js'), {
-      stdout: true,
-    });
+    this.#worker = new Worker(
+      path.join(__dirname, 'plugin_node_safe/worker.js'),
+      {
+        stdout: true
+      }
+    );
 
     // pipe plugin output into omegga
-    this.#outInterface = readline.createInterface({input: this.#worker.stdout, terminal: false});
-    this.#errInterface = readline.createInterface({input: this.#worker.stderr, terminal: false});
+    this.#outInterface = readline.createInterface({
+      input: this.#worker.stdout,
+      terminal: false
+    });
+    this.#errInterface = readline.createInterface({
+      input: this.#worker.stderr,
+      terminal: false
+    });
     this.#outInterface.on('line', Omegga.log);
     this.#errInterface.on('line', Omegga.error);
 
     // attach message emitter
-    this.#worker.on('message', ({action, args}) =>
-      this.plugin.emit(action, ...args));
+    this.#worker.on('message', ({ action, args }) =>
+      this.plugin.emit(action, ...args)
+    );
 
     // broadcast an error if there is one
     this.#worker.on('error', err => {
-      Omegga.error('!>'.red, 'error in plugin', this.getName().brightRed.underline, err);
+      Omegga.error(
+        '!>'.red,
+        'error in plugin',
+        this.getName().brightRed.underline,
+        err
+      );
     });
 
     // when the worker exits - set its variable to undefined this knows it's stopped
@@ -371,10 +439,14 @@ class NodeVmPlugin extends Plugin {
       this.#outInterface.removeAllListeners('line');
       this.#errInterface.removeAllListeners('line');
       try {
-        if (this.#worker)
-          this.#worker.terminate();
+        if (this.#worker) this.#worker.terminate();
       } catch (err) {
-        Omegga.error('!>'.red, 'Error terminating worker for', this.getName().brightRed.underline, err);
+        Omegga.error(
+          '!>'.red,
+          'Error terminating worker for',
+          this.getName().brightRed.underline,
+          err
+        );
       }
       this.#worker = undefined;
       this.emitStatus();
@@ -389,7 +461,7 @@ class NodeVmPlugin extends Plugin {
       // post the message
       this.#worker.postMessage({
         action: 'brickadiaEvent',
-        args,
+        args
       });
     } catch (e) {
       // make sure post message doesn't crash the entire app

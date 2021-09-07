@@ -3,7 +3,7 @@ const path = require('path');
 const simpleGit = require('simple-git');
 const semver = require('semver');
 const util = require('util');
-const {exec: execNonPromise} = require('child_process');
+const { exec: execNonPromise } = require('child_process');
 const exec = util.promisify(execNonPromise);
 
 require('colors');
@@ -21,37 +21,41 @@ function getWorkDir() {
   verboseLog('Using working directory', workDir.yellow);
 
   // if there's a config in the current directory, use that one instead
-  if (config.find('.'))
-    workDir = '.';
+  if (config.find('.')) workDir = '.';
 
   const confFile = config.find(workDir);
 
-  return confFile ? path.resolve(process.cwd(), path.dirname(confFile)) : undefined;
+  return confFile
+    ? path.resolve(process.cwd(), path.dirname(confFile))
+    : undefined;
 }
 
 // plugin url transformers
-const transformers = [{
-  // github transformer
-  pattern: /^gh:(?<owner>[^/]+)\/(?<repo>[^/]+)$/,
-  fn: ({owner, repo}) => ({
-    type: 'short',
-    name: repo,
-    url: `https://github.com/${owner}/omegga-${repo}`,
-  }),
-}, {
-  // gitlab transformer
-  pattern: /^gl:(?<owner>[^/]+)\/(?<repo>[^/]+)$/,
-  fn: ({owner, repo}) => ({
-    type: 'short',
-    name: repo,
-    url: `https://gitlab.com/${owner}/omegga-${repo}`,
-  }),
-}];
+const transformers = [
+  {
+    // github transformer
+    pattern: /^gh:(?<owner>[^/]+)\/(?<repo>[^/]+)$/,
+    fn: ({ owner, repo }) => ({
+      type: 'short',
+      name: repo,
+      url: `https://github.com/${owner}/omegga-${repo}`
+    })
+  },
+  {
+    // gitlab transformer
+    pattern: /^gl:(?<owner>[^/]+)\/(?<repo>[^/]+)$/,
+    fn: ({ owner, repo }) => ({
+      type: 'short',
+      name: repo,
+      url: `https://gitlab.com/${owner}/omegga-${repo}`
+    })
+  }
+];
 
 // convert a shortened url into a full length one
 const transformUrl = url => {
   const found = transformers.find(t => url.match(t.pattern));
-  if (!found) return {type: 'raw', url};
+  if (!found) return { type: 'raw', url };
   return found.fn(url.match(found.pattern).groups);
 };
 
@@ -75,10 +79,8 @@ const plg = (plugin, ...args) => {
   console.log(plugin.name.padStart(padding), '>>'.green, ...args);
 };
 const plgLog = (plugin, ...args) => {
-  if (global.VERBOSE)
-    plg(plugin, ...args);
-  else
-    rewriteLine(plugin.name.padStart(padding), '>>'.green, ...args);
+  if (global.VERBOSE) plg(plugin, ...args);
+  else rewriteLine(plugin.name.padStart(padding), '>>'.green, ...args);
 };
 const plgWarn = (plugin, ...args) => {
   if (needsNL) {
@@ -130,7 +132,9 @@ function checkPlugin(omeggaPath, plugin) {
     plgLog(plugin, 'Checking plugin file...');
     let data;
     try {
-      data = JSON.parse(fs.readFileSync(path.join(pluginPath, soft.PLUGIN_FILE), 'utf8'));
+      data = JSON.parse(
+        fs.readFileSync(path.join(pluginPath, soft.PLUGIN_FILE), 'utf8')
+      );
     } catch (e) {
       plgErr(plugin, 'Error reading plugin file', e);
       return false;
@@ -139,16 +143,28 @@ function checkPlugin(omeggaPath, plugin) {
     // make sure this plugin version is okay.
     // in the future, this may include deprecation warnings and format changes
     if (data.formatVersion !== 1) {
-      plgWarn(plugin, 'WARNING - Plugin file has invalid', 'formatVersion'.yellow + '. Expected', '1'.yellow);
+      plgWarn(
+        plugin,
+        'WARNING - Plugin file has invalid',
+        'formatVersion'.yellow + '. Expected',
+        '1'.yellow
+      );
       return;
     }
 
     // check the omeggaVersion field of the plugin file
     if (!data.omeggaVersion || !semver.validRange(data.omeggaVersion)) {
-      plgWarn(plugin, 'WARNING - Plugin file has invalid', 'omeggaVersion'.yellow + '. Expected semver expression');
+      plgWarn(
+        plugin,
+        'WARNING - Plugin file has invalid',
+        'omeggaVersion'.yellow + '. Expected semver expression'
+      );
       return false;
     } else if (!semver.satisfies(pkg.version, data.omeggaVersion)) {
-      plgWarn(plugin, `WARNING - Plugin is not made for this version of omegga (${pkg.version.yellow} vs ${data.omeggaVersion.yellow})`);
+      plgWarn(
+        plugin,
+        `WARNING - Plugin is not made for this version of omegga (${pkg.version.yellow} vs ${data.omeggaVersion.yellow})`
+      );
       return false;
     }
 
@@ -157,7 +173,10 @@ function checkPlugin(omeggaPath, plugin) {
   }
 
   // no plugin file, no problem!
-  plgWarn(plugin, `WARNING - Plugin is missing plugin file (${soft.PLUGIN_FILE}), this may be a problem in future versions`);
+  plgWarn(
+    plugin,
+    `WARNING - Plugin is missing plugin file (${soft.PLUGIN_FILE}), this may be a problem in future versions`
+  );
   return true;
 }
 
@@ -166,10 +185,14 @@ module.exports = {
   async install(plugins, _options) {
     const omeggaPath = getWorkDir();
     if (!omeggaPath)
-      return err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+      return err(
+        'Not an omegga directory, run ',
+        'omegga init'.yellow,
+        'to setup one.'
+      );
 
     plugins = plugins.map(transformUrl);
-    log('Attempting to install', (plugins.length+'').yellow, 'plugins...');
+    log('Attempting to install', (plugins.length + '').yellow, 'plugins...');
 
     plugins = plugins.filter(plugin => {
       // if the plugin wasn't transformed, try to extract its name from the git url
@@ -188,7 +211,12 @@ module.exports = {
     });
 
     for (const plugin of plugins) {
-      log('Installing plugin', plugin.name.yellow, 'from', plugin.url.yellow + '...');
+      log(
+        'Installing plugin',
+        plugin.name.yellow,
+        'from',
+        plugin.url.yellow + '...'
+      );
 
       // update padding for plugin names
       padding = Math.max(...plugins.map(p => p.name.length));
@@ -198,16 +226,26 @@ module.exports = {
 
       // check if plugin already exists
       // TODO: if force is passed in, remove the old directory
-      if (fs.existsSync(pluginPath)) {
-        plgErr(plugin, 'Directory already exists! Try', ('omegga update ' + plugin.name).yellow, 'or check for plugin name collisions');
+      if (
+        fs.existsSync(pluginPath) &&
+        fs.existsSync(path.join(pluginPath, 'doc.json'))
+      ) {
+        plgErr(
+          plugin,
+          'Directory already exists! Try',
+          ('omegga update ' + plugin.name).yellow,
+          'or check for plugin name collisions'
+        );
         continue;
       }
 
-      // create plugin local directory
-      try {
-        fs.mkdirSync(pluginPath, {recursive: true});
-      } catch (e) {
-        plgErr(plugin, 'Error creating plugin directory', e);
+      if (!fs.existsSync(pluginPath)) {
+        // create plugin local directory
+        try {
+          fs.mkdirSync(pluginPath, { recursive: true });
+        } catch (e) {
+          plgErr(plugin, 'Error creating plugin directory', e);
+        }
       }
 
       // clone the plugin from git
@@ -228,13 +266,12 @@ module.exports = {
         plgLog(plugin, 'Running post install script...');
         try {
           fs.chmodSync(postInstallPath, '0755');
-          let {stdout, stderr} = await exec(postInstallPath, {
+          let { stdout, stderr } = await exec(postInstallPath, {
             cwd: pluginPath,
-            shell: true,
+            shell: true
           });
 
-          if (stderr.length)
-            plgErr(plugin, stderr);
+          if (stderr.length) plgErr(plugin, stderr);
 
           verboseLog(stdout);
         } catch (e) {
@@ -247,7 +284,11 @@ module.exports = {
   async update(plugins, _options) {
     const omeggaPath = getWorkDir();
     if (!omeggaPath)
-      return err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+      return err(
+        'Not an omegga directory, run ',
+        'omegga init'.yellow,
+        'to setup one.'
+      );
 
     const pluginFolder = path.join(omeggaPath, soft.PLUGIN_PATH);
 
@@ -256,18 +297,23 @@ module.exports = {
       plugins = fs.readdirSync(pluginFolder);
     }
 
-    plugins = plugins.map(dir => path.join(pluginFolder, dir))
+    plugins = plugins
+      .map(dir => path.join(pluginFolder, dir))
       // every plugin must be in a directory
-      .filter(dir => fs.existsSync(dir) && fs.lstatSync(dir).isDirectory() &&
-        fs.existsSync(path.join(dir, '.git')))
-      .map(dir => ({name: path.basename(dir)}));
+      .filter(
+        dir =>
+          fs.existsSync(dir) &&
+          fs.lstatSync(dir).isDirectory() &&
+          fs.existsSync(path.join(dir, '.git'))
+      )
+      .map(dir => ({ name: path.basename(dir) }));
 
     if (plugins.length === 0) {
       log('Found no plugins that can be updated');
       return;
     }
 
-    log('Checking', (plugins.length+'').yellow, 'plugins for updates...');
+    log('Checking', (plugins.length + '').yellow, 'plugins for updates...');
 
     // update padding for plugin names
     padding = Math.max(...plugins.map(p => p.name.length));
@@ -285,7 +331,7 @@ module.exports = {
       plugin.path = pluginPath;
       const git = simpleGit(pluginPath);
       plugin.git = git;
-      if (!await git.checkIsRepo()) {
+      if (!(await git.checkIsRepo())) {
         plgErr(plugin, 'No git repo detected');
         continue;
       }
@@ -315,17 +361,28 @@ module.exports = {
         }
 
         // try to correct a weird detached branch
-        if (remotes.length === 1 && remotes[0].name === 'origin' && !status.tracking) {
+        if (
+          remotes.length === 1 &&
+          remotes[0].name === 'origin' &&
+          !status.tracking
+        ) {
           let skip = false;
           for (const branch of MAIN_BRANCHES) {
-            if (branches.current === branch && branches.branches[`remotes/origin/${branch}`]) {
+            if (
+              branches.current === branch &&
+              branches.branches[`remotes/origin/${branch}`]
+            ) {
               plgLog(plugin, 'Correcting upstream...');
               try {
-                await git.branch({'--set-upstream-to': `origin/${branch}`});
+                await git.branch({ '--set-upstream-to': `origin/${branch}` });
                 status = await git.status();
                 break;
               } catch (e) {
-                plgErr(plugin, 'Error getting status/fixing upstream branch', e);
+                plgErr(
+                  plugin,
+                  'Error getting status/fixing upstream branch',
+                  e
+                );
                 skip = true;
                 break;
               }
@@ -377,7 +434,7 @@ module.exports = {
       return;
     }
 
-    log('Updating', (pluginsToUpdate.length+'').yellow, 'plugins...');
+    log('Updating', (pluginsToUpdate.length + '').yellow, 'plugins...');
     let updates = 0;
 
     for (const plugin of pluginsToUpdate) {
@@ -389,13 +446,14 @@ module.exports = {
       plgLog(plugin, 'Creating backup branch...');
       try {
         const branches = await git.branch();
-        const mainBranch = MAIN_BRANCHES.find(b => branches.branches[b]) ?? MAIN_BRANCHES[0];
+        const mainBranch =
+          MAIN_BRANCHES.find(b => branches.branches[b]) ?? MAIN_BRANCHES[0];
         if (branches.branches['omegga-upgrade-backup']) {
           plgLog(plugin, 'Deleting leftover backup branch...');
           await git.deleteLocalBranch('omegga-upgrade-backup', true);
         }
         await git.checkoutBranch('omegga-upgrade-backup', mainBranch);
-        await git.branch({'--set-upstream-to': `origin/${mainBranch}`});
+        await git.branch({ '--set-upstream-to': `origin/${mainBranch}` });
         await git.checkout(mainBranch);
         plgLog(plugin, 'Pulling update...');
         await git.pull();
@@ -412,13 +470,12 @@ module.exports = {
           plgLog(plugin, 'Running post install script...');
           try {
             fs.chmodSync(postInstallPath, '0755');
-            let {stdout, stderr} = await exec(postInstallPath, {
+            let { stdout, stderr } = await exec(postInstallPath, {
               cwd: plugin.path,
-              shell: true,
+              shell: true
             });
 
-            if (stderr.length)
-              plgErr(plugin, stderr);
+            if (stderr.length) plgErr(plugin, stderr);
 
             verboseLog(stdout);
           } catch (e) {
@@ -427,17 +484,25 @@ module.exports = {
         }
 
         plgLog(plugin, 'Updated!'.green);
-        updates ++;
+        updates++;
       } catch (e) {
-        plgErr(plugin, 'Error updating - attempting to restore from backup branch', e);
+        plgErr(
+          plugin,
+          'Error updating - attempting to restore from backup branch',
+          e
+        );
         try {
           if (!MAIN_BRANCHES.includes(await git.branch())) {
-            plgErr(plugin, 'Not on expected branch - exiting before I break more things');
+            plgErr(
+              plugin,
+              'Not on expected branch - exiting before I break more things'
+            );
             continue;
           }
 
           const branches = await git.branch();
-          const mainBranch = MAIN_BRANCHES.find(b => branches.branches[b]) ?? MAIN_BRANCHES[0];
+          const mainBranch =
+            MAIN_BRANCHES.find(b => branches.branches[b]) ?? MAIN_BRANCHES[0];
 
           plg(plugin, 'Resetting current branch');
           await git.reset('hard');
@@ -449,12 +514,14 @@ module.exports = {
           plgLog(plugin, 'Restored to backup branch');
 
           if ((await git.branch()) !== mainBranch) {
-            plgErr(plugin, `Failed to checkout newly created ${mainBranch} branch`);
+            plgErr(
+              plugin,
+              `Failed to checkout newly created ${mainBranch} branch`
+            );
             continue;
           } else {
             plgWarn(plugin, 'Restored from backup and plugin not updated...');
           }
-
         } catch (e) {
           plgErr(plugin, 'Error restoring from backup... Whelp...');
         }
@@ -462,13 +529,17 @@ module.exports = {
       }
     }
 
-    log('Updated', (updates+'').yellow, 'plugins!');
+    log('Updated', (updates + '').yellow, 'plugins!');
   },
 
   async check(plugins, _options) {
     const omeggaPath = getWorkDir();
     if (!omeggaPath)
-      return err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+      return err(
+        'Not an omegga directory, run ',
+        'omegga init'.yellow,
+        'to setup one.'
+      );
 
     const pluginFolder = path.join(omeggaPath, soft.PLUGIN_PATH);
 
@@ -477,18 +548,27 @@ module.exports = {
       plugins = fs.readdirSync(pluginFolder);
     }
 
-    plugins = plugins.map(dir => path.join(pluginFolder, dir))
+    plugins = plugins
+      .map(dir => path.join(pluginFolder, dir))
       // every plugin must be in a directory
-      .filter(dir => fs.existsSync(dir) && fs.lstatSync(dir).isDirectory() &&
-        fs.existsSync(path.join(dir, '.git')))
-      .map(dir => ({name: path.basename(dir)}));
+      .filter(
+        dir =>
+          fs.existsSync(dir) &&
+          fs.lstatSync(dir).isDirectory() &&
+          fs.existsSync(path.join(dir, '.git'))
+      )
+      .map(dir => ({ name: path.basename(dir) }));
 
     if (plugins.length === 0) {
       log('Found no plugins that can be checked');
       return;
     }
 
-    log('Checking', (plugins.length+'').yellow, 'plugins for valid plugin files');
+    log(
+      'Checking',
+      (plugins.length + '').yellow,
+      'plugins for valid plugin files'
+    );
 
     // update padding for plugin names
     padding = Math.max(...plugins.map(p => p.name.length));
@@ -498,7 +578,7 @@ module.exports = {
       plugin.path = pluginPath;
       const git = simpleGit(pluginPath);
       plugin.git = git;
-      if (!await git.checkIsRepo()) {
+      if (!(await git.checkIsRepo())) {
         plgErr(plugin, 'No git repo detected');
         continue;
       }
