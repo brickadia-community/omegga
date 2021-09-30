@@ -191,26 +191,22 @@ module.exports = {
         'to setup one.'
       );
 
-    plugins = plugins.map(transformUrl);
     log('Attempting to install', (plugins.length + '').yellow, 'plugins...');
 
-    plugins = plugins.filter(plugin => {
+    for (const pluginUrl of plugins) {
+      const plugin = transformUrl(pluginUrl);
+
       // if the plugin wasn't transformed, try to extract its name from the git url
-      if (!plugin.name) {
+      if (!('name' in plugin)) {
         try {
           const { name } = path.parse(plugin.url);
           plugin.name = name.replace(/^omegga-/, '');
-          return true;
         } catch (e) {
           console.error('!>'.red, 'Error parsing name from url', plugin.url);
-          return false;
+          break;
         }
-      } else {
-        return true;
       }
-    });
 
-    for (const plugin of plugins) {
       log(
         'Installing plugin',
         plugin.name.yellow,
