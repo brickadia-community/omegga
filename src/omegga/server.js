@@ -525,10 +525,10 @@ class Omegga extends OmeggaWrapper {
     // wait for the server to save the file
     await this.watchLogChunk(
       `Bricks.Save "${saveFile}"`,
-      /^LogBrickSerializer: (.+)$/,
+      /^(LogBrickSerializer|LogTemp): (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),
-        last: match => match[1].match(/Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/),
+        last: match => match[2].match(/Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/),
         afterMatchDelay: 0,
         timeoutDelay: 30000
       },
