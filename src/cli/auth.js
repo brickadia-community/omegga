@@ -31,15 +31,17 @@ async function prompt() {
   ];
 }
 
-async function authFromPrompt() {
-  let email, password, files;
+async function authFromPrompt({email, password, debug=false}) {
+  let files;
 
-  // prompt for user credentials
-  try {
-    [email, password] = await prompt();
-  } catch (err) {
-    console.error('!>'.red, 'Error prompting credentials\n', err);
-    return false;
+  if (!email || !password) {
+    // prompt for user credentials
+    try {
+      [email, password] = await prompt();
+    } catch (err) {
+      console.error('!>'.red, 'Error prompting credentials\n', err);
+      return false;
+    }
   }
 
   // generate auth tokens
@@ -48,12 +50,17 @@ async function authFromPrompt() {
     console.log('>>'.green, 'Probably also installing the game...');
   },  10000);
   try {
-    files = await genAuthFiles(email, password);
+    files = await genAuthFiles(email, password, debug);
     clearTimeout(timeout);
   } catch (err) {
     clearTimeout(timeout);
     console.error('!>'.red, 'Error generating tokens:', err);
     return false;
+  }
+
+  if (!files) {
+    console.error('!>'.red, 'Authentication Failed');
+    return;
   }
 
   // save the tokens to the config path (will be copied when omegga starts)
@@ -85,4 +92,5 @@ module.exports = {
   prompt: authFromPrompt,
   exists: authExists,
   clean: deleteAuthFiles,
+  AUTH_PATH,
 };

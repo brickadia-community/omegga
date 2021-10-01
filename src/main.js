@@ -93,7 +93,7 @@ const program = require('commander')
 
     // check if the auth files don't exist
     if (!auth.exists(path.join(workDir, soft.DATA_PATH, 'Saved/Auth')) && !auth.exists()) {
-      const success = await auth.prompt();
+      const success = await auth.prompt({ debug });
       if (!success) {
         err('Start aborted - could not generate auth tokens');
         process.exit(1);
@@ -163,18 +163,27 @@ program
   .command('auth')
   .option('-g, --global', 'Remove global auth files')
   .option('-l, --local', 'Remove local auth files')
+  .option('-u, --email <email>', 'User email (must provide password)')
+  .option('-p, --pass <password>', 'User password (must provide email)')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .description('Generates server auth tokens from brickadia account email+password')
-  .action(() => {
-    const { global, local } = program.opts();
-    if (global || local) {
-      log('Clearing old auth files');
-      if (global)
+  .action(async ({ email, pass: password, local: localAuth, global: globalAuth }) => {
+    const { verbose, debug } = program.opts();
+    global.VERBOSE = verbose;
+
+    if (globalAuth || localAuth) {
+      if (globalAuth) {
+        log('Clearing auth files from', auth.AUTH_PATH.yellow);
         auth.clean();
-      if (local)
-        file.rmdir(path.join(__dirname, 'data/Saved/Auth'));
+      }
+      if (localAuth) {
+        const localPath = path.resolve('data/Saved/Auth');
+        log('Clearing auth files from', localPath.yellow);
+        await file.rmdir(localPath);
+      }
       return;
     } else {
-      auth.prompt();
+      auth.prompt({email, password, debug});
     }
   });
 

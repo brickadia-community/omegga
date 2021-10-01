@@ -77,13 +77,13 @@ function mkdir(path) {
 
 // rm -rf a path
 function rmdir(dir) {
-  if (!fs.existsSync(dir)) return;
+  if (!fs.existsSync(dir)) return false;
   return new Promise((resolve, reject) => {
     rimraf(dir, error => {
       if (error)
         reject(error);
       else
-        resolve();
+        resolve(true);
     });
   });
 }

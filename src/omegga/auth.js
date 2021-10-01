@@ -44,7 +44,7 @@ function writeAuthFiles(dstDir, files) {
 }
 
 // from credentials, build brickadia auth tokens
-async function genAuthFiles(email, password) {
+async function genAuthFiles(email, password, debug=false) {
   verboseLog('Generating auth files');
 
   // remove existing temporary install path
@@ -70,6 +70,7 @@ async function genAuthFiles(email, password) {
     noauth: true,
     noplugin: true,
     noweb: true,
+    debug,
   };
 
   // create a dummy omegga
@@ -107,7 +108,6 @@ async function genAuthFiles(email, password) {
       if (finished) return;
       finished = true;
       verboseLog('Brickadia', name, 'with code', ...args);
-      removeTempDir();
       if (!resolved) reject('temp server could not start');
     };
 
@@ -118,7 +118,7 @@ async function genAuthFiles(email, password) {
   });
 
   // read the auth files on success
-  const files = success ? readAuthFiles() : undefined;
+  const files = success ? readAuthFiles() : null;
 
   // remove temp dir
   removeTempDir();
