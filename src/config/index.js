@@ -31,11 +31,11 @@ module.exports = {
   defaultConfig: {
     omegga: {
       webui: true,
-      port: process.env.OMEGGA_PORT ?? soft.DEFAULT_PORT,
+      port: process.env.OMEGGA_PORT ? Number(process.env.OMEGGA_PORT) : soft.DEFAULT_PORT,
       https: true,
     },
     server: {
-      port: process.env.BRICKADIA_PORT ?? 7777,
+      port: process.env.BRICKADIA_PORT ? Number(process.env.BRICKADIA_PORT) : 7777,
       map: 'Plate'
     },
   },
