@@ -93,7 +93,11 @@ const program = require('commander')
 
     // check if the auth files don't exist
     if (!auth.exists(path.join(workDir, soft.DATA_PATH, 'Saved/Auth')) && !auth.exists()) {
-      const success = await auth.prompt({ debug });
+      const success = await auth.prompt({
+        debug,
+        email: process.env.BRICKADIA_USER ?? null,
+        password: process.env.BRICKADIA_PASS ?? null,
+      });
       if (!success) {
         err('Start aborted - could not generate auth tokens');
         process.exit(1);
@@ -163,11 +167,12 @@ program
   .command('auth')
   .option('-g, --global', 'Remove global auth files')
   .option('-l, --local', 'Remove local auth files')
+  .option('-w, --workdir', 'Remove configured location auth files')
   .option('-u, --email <email>', 'User email (must provide password)')
   .option('-p, --pass <password>', 'User password (must provide email)')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .description('Generates server auth tokens from brickadia account email+password')
-  .action(async ({ email, pass: password, local: localAuth, global: globalAuth }) => {
+  .action(async ({ email, pass: password, local: localAuth, workDir, global: globalAuth }) => {
     const { verbose, debug } = program.opts();
     global.VERBOSE = verbose;
 
@@ -175,6 +180,11 @@ program
       if (globalAuth) {
         log('Clearing auth files from', auth.AUTH_PATH.yellow);
         auth.clean();
+      }
+      if (workDir) {
+        const workdirPath = path.join(config.store.get('defaultOmegga'), 'data/Saved/Auth');
+        log('Clearing auth files from', workdirPath.yellow);
+        await file.rmdir(workdirPath);
       }
       if (localAuth) {
         const localPath = path.resolve('data/Saved/Auth');
