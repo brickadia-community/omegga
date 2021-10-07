@@ -59,7 +59,6 @@ const transformUrl = url => {
   return found.fn(url.match(found.pattern).groups);
 };
 
-let padding = 0;
 let needsNL = false;
 
 // rewrite a console line
@@ -76,25 +75,25 @@ const plg = (plugin, ...args) => {
     needsNL = false;
     console.log();
   }
-  console.log(plugin.name.padStart(padding), '>>'.green, ...args);
+  console.log(plugin.name, '>>'.green, ...args);
 };
 const plgLog = (plugin, ...args) => {
   if (global.VERBOSE) plg(plugin, ...args);
-  else rewriteLine(plugin.name.padStart(padding), '>>'.green, ...args);
+  else rewriteLine(plugin.name, '>>'.green, ...args);
 };
 const plgWarn = (plugin, ...args) => {
   if (needsNL) {
     needsNL = false;
     console.warn();
   }
-  console.warn(plugin.name.padStart(padding), 'W>'.yellow, ...args);
+  console.warn(plugin.name, 'W>'.yellow, ...args);
 };
 const plgErr = (plugin, ...args) => {
   if (needsNL) {
     needsNL = false;
     console.error();
   }
-  console.error(plugin.name.padStart(padding), '!>'.red, ...args);
+  console.error(plugin.name, '!>'.red, ...args);
 };
 
 const err = (...args) => {
@@ -214,9 +213,6 @@ module.exports = {
         plugin.url.yellow + '...'
       );
 
-      // update padding for plugin names
-      padding = Math.max(...plugins.map(p => p.name.length));
-
       // plugin absolute path
       const pluginPath = path.join(omeggaPath, soft.PLUGIN_PATH, plugin.name);
 
@@ -310,9 +306,6 @@ module.exports = {
     }
 
     log('Checking', (plugins.length + '').yellow, 'plugins for updates...');
-
-    // update padding for plugin names
-    padding = Math.max(...plugins.map(p => p.name.length));
 
     // list of plugins that will be updated
     let pluginsToUpdate = [];
@@ -565,9 +558,6 @@ module.exports = {
       (plugins.length + '').yellow,
       'plugins for valid plugin files'
     );
-
-    // update padding for plugin names
-    padding = Math.max(...plugins.map(p => p.name.length));
 
     for (const plugin of plugins) {
       const pluginPath = path.join(pluginFolder, plugin.name);
