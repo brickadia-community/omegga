@@ -6,7 +6,8 @@
   align-items: stretch;
 }
 
-.player-table-container, .player-inspector-container {
+.player-table-container,
+.player-inspector-container {
   @include column-container;
 }
 
@@ -52,7 +53,8 @@
           padding-right: 0;
         }
 
-        .label, .icon {
+        .label,
+        .icon {
           padding: 0;
         }
 
@@ -74,7 +76,8 @@
         vertical-align: center;
       }
 
-      &:hover td, &.active td {
+      &:hover td,
+      &.active td {
         background-color: $br-element-hover;
       }
 
@@ -134,41 +137,37 @@
   }
 }
 
-
 .player-inspector {
   @include column;
   background-color: $br-element-popout-bg;
   flex: 1;
   position: relative;
 }
-
-@media screen and (max-width: 600px) {
-
-}
-
 </style>
 
 <template>
   <page>
     <nav-header title="Players">
       <div class="widgets-container">
-        <br-button normal boxy
+        <br-button
+          normal
+          boxy
           data-tooltip="Player list filters"
           @click="showFilters = !showFilters"
         >
           <FilterIcon />
           Filters
         </br-button>
-        <div class="widgets-list" :style="{display: showFilters ? 'block' : 'none'}">
+        <div
+          class="widgets-list"
+          :style="{ display: showFilters ? 'block' : 'none' }"
+        >
           <div class="widget-item" data-tooltip="Filter by banned players">
             <div class="name">
               <BanIcon />
               Banned
             </div>
-            <br-toggle
-              @input="value => doSearch()"
-              v-model="filterBanned"
-            />
+            <br-toggle @input="value => doSearch()" v-model="filterBanned" />
           </div>
         </div>
       </div>
@@ -178,9 +177,15 @@
       <div class="generic-container players-container">
         <div class="player-table-container">
           <br-navbar>
-            <br-input placeholder="Search Players..." v-model="search" @input="doSearch()"/>
-            <span style="flex: 1"/>
-            <br-button icon normal
+            <br-input
+              placeholder="Search Players..."
+              v-model="search"
+              @input="doSearch()"
+            />
+            <span style="flex: 1" />
+            <br-button
+              icon
+              normal
               data-tooltip="Refresh player list"
               @click="getPlayers"
             >
@@ -198,57 +203,100 @@
                     >
                       <span>
                         Name
-                        <SortAscendingIcon v-if="sort === 'name' && direction === 1" />
-                        <SortDescendingIcon v-if="sort === 'name' && direction === -1" />
+                        <SortAscendingIcon
+                          v-if="sort === 'name' && direction === 1"
+                        />
+                        <SortDescendingIcon
+                          v-if="sort === 'name' && direction === -1"
+                        />
                       </span>
                     </th>
-                    <th @click="setSort('heartbeats')" data-tooltip="Number of heartbeats the player has been part of (minutely)">
+                    <th
+                      @click="setSort('heartbeats')"
+                      data-tooltip="Number of heartbeats the player has been part of (minutely)"
+                    >
                       <span>
                         Played
-                        <SortAscendingIcon v-if="sort === 'heartbeats' && direction === 1" />
-                        <SortDescendingIcon v-if="sort === 'heartbeats' && direction === -1" />
+                        <SortAscendingIcon
+                          v-if="sort === 'heartbeats' && direction === 1"
+                        />
+                        <SortDescendingIcon
+                          v-if="sort === 'heartbeats' && direction === -1"
+                        />
                       </span>
                     </th>
-                    <th @click="setSort('lastSeen')" data-tooltip="When the player was last seen">
+                    <th
+                      @click="setSort('lastSeen')"
+                      data-tooltip="When the player was last seen"
+                    >
                       <span>
                         Seen
-                        <SortAscendingIcon v-if="sort === 'lastSeen' && direction === 1" />
-                        <SortDescendingIcon v-if="sort === 'lastSeen' && direction === -1" />
+                        <SortAscendingIcon
+                          v-if="sort === 'lastSeen' && direction === 1"
+                        />
+                        <SortDescendingIcon
+                          v-if="sort === 'lastSeen' && direction === -1"
+                        />
                       </span>
                     </th>
-                    <th @click="setSort('created')" data-tooltip="When the player joined">
+                    <th
+                      @click="setSort('created')"
+                      data-tooltip="When the player joined"
+                    >
                       <span>
                         Joined
-                        <SortAscendingIcon v-if="sort === 'created' && direction === 1" />
-                        <SortDescendingIcon v-if="sort === 'created' && direction === -1" />
+                        <SortAscendingIcon
+                          v-if="sort === 'created' && direction === 1"
+                        />
+                        <SortDescendingIcon
+                          v-if="sort === 'created' && direction === -1"
+                        />
                       </span>
                     </th>
-                    <th @click="setSort('sessions')" data-tooltip="Number of Visits">
+                    <th
+                      @click="setSort('sessions')"
+                      data-tooltip="Number of Visits"
+                    >
                       <span class="icon-cell">
-                        <MapPinIcon class="label" size="30"/>
-                        <SortAscendingIcon v-if="sort === 'sessions' && direction === 1" />
-                        <SortDescendingIcon v-if="sort === 'sessions' && direction === -1" />
+                        <MapPinIcon class="label" size="30" />
+                        <SortAscendingIcon
+                          v-if="sort === 'sessions' && direction === 1"
+                        />
+                        <SortDescendingIcon
+                          v-if="sort === 'sessions' && direction === -1"
+                        />
                       </span>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="player in players" @click="clickPlayer(player)" :class="{active: player.id === $route.params.id}">
-                    <td :class="{ban: !!player.ban}">
-                      {{player.name}}
-                      <BanIcon v-if="player.ban" size="18"/>
+                  <tr
+                    v-for="player in players"
+                    @click="clickPlayer(player)"
+                    :class="{ active: player.id === $route.params.id }"
+                    :key="player.id"
+                  >
+                    <td :class="{ ban: !!player.ban }">
+                      {{ player.name }}
+                      <BanIcon v-if="player.ban" size="18" />
                     </td>
-                    <td style="text-align: right;">
-                      {{heartbeatAgo(player.heartbeats)}}
+                    <td style="text-align: right">
+                      {{ heartbeatAgo(player.heartbeats) }}
                     </td>
-                    <td style="text-align: right;" :data-tooltip="new Date(player.lastSeen)">
-                      {{duration(player.seenAgo)}}
+                    <td
+                      style="text-align: right"
+                      :data-tooltip="new Date(player.lastSeen)"
+                    >
+                      {{ duration(player.seenAgo) }}
                     </td>
-                    <td style="text-align: right;" :data-tooltip="new Date(player.created)">
-                      {{duration(player.createdAgo)}}
+                    <td
+                      style="text-align: right"
+                      :data-tooltip="new Date(player.created)"
+                    >
+                      {{ duration(player.createdAgo) }}
                     </td>
-                    <td style="text-align: right;">
-                      {{player.sessions}}
+                    <td style="text-align: right">
+                      {{ player.sessions }}
                     </td>
                   </tr>
                 </tbody>
@@ -259,49 +307,61 @@
                 icon
                 normal
                 :disabled="page === 0"
-                @click="page=0;getPlayers()"
+                @click="
+                  page = 0;
+                  getPlayers();
+                "
               >
-                <ArrowBarToLeftIcon/>
+                <ArrowBarToLeftIcon />
               </br-button>
               <br-button
                 icon
                 normal
                 :disabled="page === 0"
-                @click="page--;getPlayers()"
+                @click="
+                  page--;
+                  getPlayers();
+                "
               >
-                <ArrowLeftIcon/>
+                <ArrowLeftIcon />
               </br-button>
               <div class="current-page">
-                Page {{page + 1}} of {{pages}}, Showing {{players.length}} of {{total}}
+                Page {{ page + 1 }} of {{ pages }}, Showing
+                {{ players.length }} of {{ total }}
               </div>
               <br-button
                 icon
                 normal
                 :disabled="page >= pages - 1"
-                @click="page++;getPlayers()"
+                @click="
+                  page++;
+                  getPlayers();
+                "
               >
-                <ArrowRightIcon/>
+                <ArrowRightIcon />
               </br-button>
               <br-button
                 icon
                 normal
                 :disabled="page === pages - 1"
-                @click="page=pages-1;getPlayers()"
+                @click="
+                  page = pages - 1;
+                  getPlayers();
+                "
               >
-                <ArrowBarToRightIcon/>
+                <ArrowBarToRightIcon />
               </br-button>
             </br-footer>
             <br-loader :active="loading" size="huge">Loading Players</br-loader>
           </div>
         </div>
-        <div class="player-inspector-container">
+        <div class="player-inspector-container" v-if="!$route.params.id">
           <br-navbar>
-            {{selectedPlayer}}
+            SELECT A PLAYER
           </br-navbar>
-          <div class="player-inspector">
-            <router-view :key="$route.params.id" />
-          </div>
+          <div class="player-inspector" />
         </div>
+        <router-view :key="$route.params.id" v-else />
       </div>
     </page-content>
   </page>
@@ -322,14 +382,20 @@ import FilterIcon from 'vue-tabler-icons/icons/FilterIcon';
 import debounce from 'lodash/debounce';
 
 export default {
-  components: { RotateIcon, ArrowBarToLeftIcon, ArrowBarToRightIcon, ArrowLeftIcon, ArrowRightIcon, SortAscendingIcon, SortDescendingIcon, MapPinIcon, BanIcon, FilterIcon },
+  components: {
+    RotateIcon,
+    ArrowBarToLeftIcon,
+    ArrowBarToRightIcon,
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    SortAscendingIcon,
+    SortDescendingIcon,
+    MapPinIcon,
+    BanIcon,
+    FilterIcon,
+  },
   created() {
     this.getPlayers();
-    setTimeout(() => {
-      if (this.nameLookup[this.$route.params.id]) {
-        this.update++;
-      }
-    }, 500);
   },
   methods: {
     // get a list of players
@@ -351,11 +417,11 @@ export default {
     // redirect to a player page
     clickPlayer(player) {
       if (this.$route.params.id !== player.id)
-        this.$router.push({path: `/players/${player.id}`});
+        this.$router.push({ path: `/players/${player.id}` });
     },
 
     // debounced search
-    doSearch: debounce(function(){
+    doSearch: debounce(function() {
       this.page = 0;
       this.getPlayers();
     }, 500),
@@ -372,21 +438,10 @@ export default {
         this.direction = sort === 'name' ? 1 : -1;
       }
       this.getPlayers();
-    }
+    },
   },
-  sockets: {
-  },
-  computed: {
-    selectedPlayer() {
-      this.update;
-      if (this.nameLookup[this.$route.params.id]) {
-        return this.nameLookup[this.$route.params.id];
-      }
-      const player = this.players.find(p => p.id === this.$route.params.id);
-      if (player) return player.name;
-      return 'SELECT A PLAYER';
-    }
-  },
+  sockets: {},
+  computed: {},
   data() {
     return {
       search: '',
@@ -403,5 +458,4 @@ export default {
     };
   },
 };
-
 </script>

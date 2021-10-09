@@ -7,6 +7,7 @@ const Player = require('../../omegga/player.js');
 const pkg = require('../../../package');
 
 const {chat: {sanitize, parseLinks}, color: {rgbToHex}, time: {parseBrickadiaTime}} = require('../../util/index.js');
+const uuid = require('../../util/uuid.js');
 
 module.exports = (server, io) => {
   const { database, omegga } = server;
@@ -316,6 +317,114 @@ module.exports = (server, io) => {
           };
         }),
       };
+    });
+
+    rpc.addMethod('player.ban', async([id, duration=-1, reason='No Reason']) => {
+      // validate inputs
+      if (typeof duration !== 'number') return false;
+      if (typeof id !== 'string' || !uuid.match(id)) return false;
+      if (typeof reason !== 'string' || reason.length > 128) return false;
+      reason = reason.replace(/\n/g, ' ').replace(/"/g, '\'');
+      log('Banning player', omegga.getNameCache()?.savedPlayerNames?.[id].yellow ?? 'with id ' + id.yellow);
+      // ban the user
+      omegga.writeln(`Chat.Command /Ban "${id}" ${duration} "${reason}"`);
+      let listener;
+
+      // wait for the ban to update
+      const ok = await Promise.race([
+        new Promise(resolve => {
+          database.on('update.bans', listener = () => {
+            const banList = (omegga.getBanList() || {banList: {}}).banList;
+            if (banList[id]) {
+              const entry = {
+                type: 'banHistory',
+                banned: id,
+                bannerId: null,
+                created: parseBrickadiaTime(banList[id].created),
+                expires: parseBrickadiaTime(banList[id].expires),
+                reason: banList[id].reason,
+              };
+
+              database.stores.players.update(entry, {$set: entry}, {upsert: true});
+
+              resolve(true);
+            }
+          });
+        }),
+        new Promise(resolve => setTimeout(() => resolve(false), 5000)),
+      ]);
+      database.off('update.bans', listener);
+      return ok;
+    });
+
+    rpc.addMethod('player.kick', async([id, reason='No Reason']) => {
+      // validate inputs
+      if (typeof id !== 'string' || !uuid.match(id)) return false;
+      if (typeof reason !== 'string' || reason.length > 128) return false;
+      reason = reason.replace(/\n/g, ' ').replace(/"/g, '\'');
+
+      // ensure player exists
+      const player = omegga.players.find(p => p.id === id);
+      if (!player) return false;
+
+      log('Kicking player', player.name.yellow);
+
+      // kick the user
+      omegga.writeln(`Chat.Command /Kick "${id}" "${reason}"`);
+
+      // wait for the player to disconnect
+      const ok = await Promise.race([
+        new Promise(resolve => {
+          this.omegga.once('leave',async leavingPlayer => {
+            if (leavingPlayer.id === id) {
+              resolve(true);
+
+              // add kick to database
+              const entry = {
+                type: 'kickHistory',
+                kicked: id,
+                kickerId: null,
+                created: Date.now(),
+                reason,
+              };
+
+              await database.stores.players.update(entry, {$set: entry}, {upsert: true});
+            }
+          });
+        }),
+        new Promise(resolve => setTimeout(() => resolve(false), 5000)),
+      ]);
+
+      return ok;
+    });
+
+    rpc.addMethod('player.unban', async([id]) => {
+      // validate inputs
+      if (typeof id !== 'string' || !uuid.match(id)) return false;
+
+      // check if user is banned
+      const banList = (omegga.getBanList() || {banList: {}}).banList;
+      if (!banList[id] || parseBrickadiaTime(banList[id].expires) < Date.now()) return false;
+
+      log('Unbanning player', omegga.getNameCache()?.savedPlayerNames?.[id].yellow ?? 'with id ' + id.yellow);
+
+      // unban the user
+      omegga.writeln(`Chat.Command /Unban "${id}"`);
+      let listener;
+
+      // wait for the ban to update
+      const ok = await Promise.race([
+        new Promise(resolve => {
+          database.on('update.bans', listener = () => {
+            const banList = (omegga.getBanList() || {banList: {}}).banList;
+            if (!banList[id] || parseBrickadiaTime(banList[id].expires) < Date.now())
+              resolve(true);
+          });
+        }),
+        new Promise(resolve => setTimeout(() => resolve(false), 5000)),
+      ]);
+      database.off('update.bans', listener);
+      return ok;
     });
 
     // set plugin config

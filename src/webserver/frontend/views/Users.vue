@@ -6,7 +6,8 @@
   align-items: stretch;
 }
 
-.player-table-container, .player-inspector-container {
+.player-table-container,
+.player-inspector-container {
   @include column-container;
 }
 
@@ -52,7 +53,8 @@
           padding-right: 0;
         }
 
-        .label, .icon {
+        .label,
+        .icon {
           padding: 0;
         }
 
@@ -69,7 +71,8 @@
       cursor: pointer;
       user-select: none;
 
-      &:hover td, &.active td {
+      &:hover td,
+      &.active td {
         background-color: $br-element-hover;
       }
 
@@ -93,7 +96,6 @@
   }
 }
 
-
 .player-inspector {
   @include column;
   background-color: $br-element-popout-bg;
@@ -102,23 +104,21 @@
 }
 
 @media screen and (max-width: 600px) {
-
 }
-
 </style>
 
 <template>
   <page>
     <nav-header title="Users">
-      <span style="flex: 1"/>
+      <span style="flex: 1" />
       <br-button
         normal
         @click="toggleCredentials()"
         data-tooltip="Enable user sign-in"
       >
-        <CirclePlusIcon v-if="omeggaData.userless"/>
+        <CirclePlusIcon v-if="omeggaData.userless" />
         <LockIcon v-else />
-        {{omeggaData.userless ? 'Enable Users' : 'Change Password'}}
+        {{ omeggaData.userless ? 'Enable Users' : 'Change Password' }}
       </br-button>
       <br-button
         normal
@@ -135,9 +135,15 @@
       <div class="generic-container players-container">
         <div class="player-table-container">
           <br-navbar>
-            <br-input placeholder="Search Users..." v-model="search" @input="doSearch()"/>
-            <span style="flex: 1"/>
-            <br-button icon normal
+            <br-input
+              placeholder="Search Users..."
+              v-model="search"
+              @input="doSearch()"
+            />
+            <span style="flex: 1" />
+            <br-button
+              icon
+              normal
               data-tooltip="Refresh user list"
               @click="getUsers"
             >
@@ -155,39 +161,73 @@
                     >
                       <span>
                         Username
-                        <SortAscendingIcon v-if="sort === 'username' && direction === 1" />
-                        <SortDescendingIcon v-if="sort === 'username' && direction === -1" />
+                        <SortAscendingIcon
+                          v-if="sort === 'username' && direction === 1"
+                        />
+                        <SortDescendingIcon
+                          v-if="sort === 'username' && direction === -1"
+                        />
                       </span>
                     </th>
-                    <th @click="setSort('lastOnline')" data-tooltip="When the user was last active">
+                    <th
+                      @click="setSort('lastOnline')"
+                      data-tooltip="When the user was last active"
+                    >
                       <span>
                         Active
-                        <SortAscendingIcon v-if="sort === 'lastOnline' && direction === 1" />
-                        <SortDescendingIcon v-if="sort === 'lastOnline' && direction === -1" />
+                        <SortAscendingIcon
+                          v-if="sort === 'lastOnline' && direction === 1"
+                        />
+                        <SortDescendingIcon
+                          v-if="sort === 'lastOnline' && direction === -1"
+                        />
                       </span>
                     </th>
-                    <th @click="setSort('created')" data-tooltip="When the user joined">
+                    <th
+                      @click="setSort('created')"
+                      data-tooltip="When the user joined"
+                    >
                       <span>
                         Joined
-                        <SortAscendingIcon v-if="sort === 'created' && direction === 1" />
-                        <SortDescendingIcon v-if="sort === 'created' && direction === -1" />
+                        <SortAscendingIcon
+                          v-if="sort === 'created' && direction === 1"
+                        />
+                        <SortDescendingIcon
+                          v-if="sort === 'created' && direction === -1"
+                        />
                       </span>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="u in users" @click="clickUser(u)" :class="{active: u.username === $route.params.id}">
+                  <tr
+                    v-for="u in users"
+                    @click="clickUser(u)"
+                    :class="{ active: u.username === $route.params.id }"
+                    :key="u.username"
+                  >
                     <td>
-                      {{u.username || 'Admin'}}
-                      <span v-if="(u.username || 'Admin') === user.username" style="font-size: 12px;">
+                      {{ u.username || 'Admin' }}
+                      <span
+                        v-if="(u.username || 'Admin') === user.username"
+                        style="font-size: 12px;"
+                      >
                         (You)
                       </span>
                     </td>
-                    <td style="text-align: right;" :data-tooltip="u.lastOnline ? new Date(u.lastOnline) : 'Never'">
-                      {{u.lastOnline ? duration(u.seenAgo) : 'Never'}}
+                    <td
+                      style="text-align: right;"
+                      :data-tooltip="
+                        u.lastOnline ? new Date(u.lastOnline) : 'Never'
+                      "
+                    >
+                      {{ u.lastOnline ? duration(u.seenAgo) : 'Never' }}
                     </td>
-                    <td style="text-align: right;" :data-tooltip="new Date(u.created)">
-                      {{duration(u.createdAgo)}}
+                    <td
+                      style="text-align: right;"
+                      :data-tooltip="new Date(u.created)"
+                    >
+                      {{ duration(u.createdAgo) }}
                     </td>
                   </tr>
                 </tbody>
@@ -198,36 +238,49 @@
                 icon
                 normal
                 :disabled="page === 0"
-                @click="page=0;getUsers()"
+                @click="
+                  page = 0;
+                  getUsers();
+                "
               >
-                <ArrowBarToLeftIcon/>
+                <ArrowBarToLeftIcon />
               </br-button>
               <br-button
                 icon
                 normal
                 :disabled="page === 0"
-                @click="page--;getUsers()"
+                @click="
+                  page--;
+                  getUsers();
+                "
               >
-                <ArrowLeftIcon/>
+                <ArrowLeftIcon />
               </br-button>
               <div class="current-page">
-                Page {{page + 1}} of {{pages}}, Showing {{users.length}} of {{total}}
+                Page {{ page + 1 }} of {{ pages }}, Showing
+                {{ users.length }} of {{ total }}
               </div>
               <br-button
                 icon
                 normal
                 :disabled="page >= pages - 1"
-                @click="page++;getUsers()"
+                @click="
+                  page++;
+                  getUsers();
+                "
               >
-                <ArrowRightIcon/>
+                <ArrowRightIcon />
               </br-button>
               <br-button
                 icon
                 normal
                 :disabled="page === pages - 1"
-                @click="page=pages-1;getUsers()"
+                @click="
+                  page = pages - 1;
+                  getUsers();
+                "
               >
-                <ArrowBarToRightIcon/>
+                <ArrowBarToRightIcon />
               </br-button>
             </br-footer>
             <br-loader :active="loading" size="huge">Loading Users</br-loader>
@@ -243,20 +296,21 @@
           <br-loader :active="modalLoading" size="huge">Submitting</br-loader>
           <br-modal :visible="!modalLoading">
             <br-header>
-              {{showCreateUser ? 'Create New User' : 'Update Credentials'}}
+              {{ showCreateUser ? 'Create New User' : 'Update Credentials' }}
             </br-header>
             <br-popout-content>
-              <p v-if="omeggaData.userless">This will require you to enter a password when you sign in.</p>
+              <p v-if="omeggaData.userless">
+                This will require you to enter a password when you sign in.
+              </p>
               <p v-if="omeggaData.userless">This action cannot be undone.</p>
               <p v-if="!omeggaData.userless && showCredentials">
-                Updating credentials for user &quot;{{username}}&quot;
+                Updating credentials for user &quot;{{ username }}&quot;
               </p>
               <p v-if="showCreateUser">
-                Creating a new user. It&apos;s recommended to create a temporary password.
+                Creating a new user. It&apos;s recommended to create a temporary
+                password.
               </p>
-              <p v-if="error" style="color: red">
-                Error: {{error}}
-              </p>
+              <p v-if="error" style="color: red">Error: {{ error }}</p>
             </br-popout-content>
             <div class="popout-inputs">
               <br-input
@@ -277,19 +331,18 @@
               />
             </div>
             <br-footer>
-              <br-button main
+              <br-button
+                main
                 :disabled="!ok || confirm !== password"
                 @click="submit(username, password)"
               >
                 <UserPlusIcon v-if="showCreateUser" />
                 <LockIcon v-else />
-                {{showCreateUser ? 'Add' : 'Update'}}
+                {{ showCreateUser ? 'Add' : 'Update' }}
               </br-button>
               <div style="flex: 1" />
-              <br-button warn
-                @click="hideModals"
-              >
-                <XIcon/>Cancel
+              <br-button normal @click="hideModals">
+                <XIcon />Cancel
               </br-button>
             </br-footer>
           </br-modal>
@@ -315,7 +368,19 @@ import LockIcon from 'vue-tabler-icons/icons/LockIcon';
 import debounce from 'lodash/debounce';
 
 export default {
-  components: { RotateIcon, ArrowBarToLeftIcon, ArrowBarToRightIcon, ArrowLeftIcon, ArrowRightIcon, SortAscendingIcon, SortDescendingIcon, UserPlusIcon, CirclePlusIcon, XIcon, LockIcon, },
+  components: {
+    RotateIcon,
+    ArrowBarToLeftIcon,
+    ArrowBarToRightIcon,
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    SortAscendingIcon,
+    SortDescendingIcon,
+    UserPlusIcon,
+    CirclePlusIcon,
+    XIcon,
+    LockIcon,
+  },
   created() {
     this.getUsers();
     setTimeout(() => {
@@ -327,8 +392,7 @@ export default {
   methods: {
     async submit(username, password) {
       this.error = '';
-      if (password !== this.confirm)
-        return;
+      if (password !== this.confirm) return;
 
       this.modalLoading = true;
       let error;
@@ -337,7 +401,11 @@ export default {
           if (this.omeggaData.userless) {
             error = await this.$$request('users.create', username, password);
           } else {
-            error = await this.$$request('users.passwd', this.user.username, password);
+            error = await this.$$request(
+              'users.passwd',
+              this.user.username,
+              password
+            );
           }
         } else if (this.showCreateUser) {
           error = await this.$$request('users.create', username, password);
@@ -346,10 +414,8 @@ export default {
         this.modalLoading = false;
         if (!error) {
           // if you are changing your credentials for the first time, it will force you to log back in
-          if (this.showCredentials && this.omeggaData.userless)
-            this.logout();
-          else
-            this.hideModals();
+          if (this.showCredentials && this.omeggaData.userless) this.logout();
+          else this.hideModals();
           return;
         }
       } catch (e) {
@@ -362,8 +428,7 @@ export default {
     toggleCredentials() {
       this.showCredentials = !this.showCredentials;
       this.showCreateUser = false;
-      if (!this.omeggaData.userless)
-        this.username = this.user.username;
+      if (!this.omeggaData.userless) this.username = this.user.username;
       this.error = '';
     },
 
@@ -401,11 +466,11 @@ export default {
     // redirect to a user page
     clickUser(user) {
       if (this.$route.params.id !== user.username)
-        this.$router.push({path: `/users/${user.username}`});
+        this.$router.push({ path: `/users/${user.username}` });
     },
 
     // debounced search
-    doSearch: debounce(function(){
+    doSearch: debounce(function() {
       this.page = 0;
       this.getUsers();
     }, 500),
@@ -422,17 +487,21 @@ export default {
         this.direction = sort === 'name' ? 1 : -1;
       }
       this.getUsers();
-    }
+    },
   },
-  sockets: {
-  },
+  sockets: {},
   computed: {
     ok() {
-      const nameOk = this.username.length !== 0 || !(this.showCredentials && !this.userless)
-      return this.username.match(/^\w{0,32}$/) && nameOk && this.password.length !== 0
+      const nameOk =
+        this.username.length !== 0 || !(this.showCredentials && !this.userless);
+      return (
+        this.username.match(/^\w{0,32}$/) &&
+        nameOk &&
+        this.password.length !== 0
+      );
     },
     blank() {
-      return this.username.length === 0 && this.password.length === 0
+      return this.username.length === 0 && this.password.length === 0;
     },
     selectedUser() {
       this.update;
@@ -442,7 +511,7 @@ export default {
       const user = this.users.find(p => p.username === this.$route.params.id);
       if (user) return user.username;
       return 'SELECT A USER';
-    }
+    },
   },
   data() {
     return {
@@ -466,5 +535,4 @@ export default {
     };
   },
 };
-
 </script>

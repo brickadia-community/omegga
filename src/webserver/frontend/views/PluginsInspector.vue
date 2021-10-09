@@ -26,9 +26,6 @@
   }
 }
 
-.option-list {
-}
-
 .option-item {
   @include alternate(background-color, $br-bg-secondary, $br-bg-secondary-alt);
   font-size: 20px;
@@ -333,12 +330,12 @@ export default {
     PlusIcon,
     MinusIcon,
     ArrowBackUpIcon,
-    CheckIcon
+    CheckIcon,
   },
   sockets: {
     plugin([path, info]) {
       if (path === this.plugin.path) Object.assign(this.plugin, info);
-    }
+    },
   },
   methods: {
     saveConfig: debounce(async function() {
@@ -403,7 +400,7 @@ export default {
     eq(a, b) {
       // super stupidly not performant equality but it's okay because it doesn't happen often
       return JSON.stringify(a) === JSON.stringify(b);
-    }
+    },
   },
   created() {
     this.getPlugin();
@@ -414,8 +411,8 @@ export default {
       config: {},
       showSave: {},
       loading: true,
-      waiting: false
+      waiting: false,
     };
-  }
+  },
 };
 </script>

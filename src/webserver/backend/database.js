@@ -8,6 +8,7 @@ const soft = require('../../softconfig.js');
 const {pattern: {explode}, time: {parseBrickadiaTime}} = require('../../util/index.js');
 
 const Calendar = require('./calendar.js');
+const { EventEmitter } = require('events');
 
 // TODO: online users graph
 // TODO: player online times
@@ -21,8 +22,9 @@ let serverInstance;
 const createPunchcard = () => Array.from({length: 7}).map(() => Array.from({length: 24}).fill(0));
 
 // the database keeps track of metrics for omegga
-class Database {
+class Database extends EventEmitter {
   constructor(options, omegga) {
+    super();
     this.options = options;
     this.omegga = omegga;
     this.calendar = new Calendar();
@@ -126,9 +128,12 @@ class Database {
 
     const watcher = chokidar.watch(path.join(this.omegga.configPath, 'BanList.json'), {persistent: false});
     watcher
-      .on('add', () => setTimeout(this.syncBanList.bind(this), 1000))
-      .on('change', () => setTimeout(this.syncBanList.bind(this), 1000));
-    setTimeout(this.syncBanList.bind(this), 1000);
+      .on('add', () => setTimeout(this.syncBanList.bind(this), 500))
+      .on('change', () => setTimeout(() => {
+        this.syncBanList();
+        this.emit('update.bans');
+      }, 500));
+    setTimeout(this.syncBanList.bind(this), 500);
 
     const handleKick = (kicked, kicker, reason) => {
       // time the event listener should expire
@@ -212,9 +217,7 @@ class Database {
         expires: parseBrickadiaTime(banList[banned].expires),
         reason: banList[banned].reason,
       };
-      // depending on implementation, this could potentially check
-      // if the ban was already added and emit some kind of
-      // new ban event
+
       this.stores.players.update(entry, {$set: entry}, {upsert: true});
     }
   }

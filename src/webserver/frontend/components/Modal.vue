@@ -16,21 +16,24 @@
     position: relative;
   }
 
+  .popout-inputs {
+    .dropdown,
+    .input {
+      margin: 8px;
+    }
+  }
 }
-
-
 </style>
 
 <template>
-  <div :class="['modal', {visible}]">
+  <div :class="['modal', { visible }]">
     <div class="modal-content">
-      <slot/>
+      <slot />
     </div>
   </div>
 </template>
 
 <script>
-
 import Vue from 'vue';
 
 export default Vue.component('br-modal', {
@@ -38,5 +41,4 @@ export default Vue.component('br-modal', {
     visible: Boolean,
   },
 });
-
 </script>
