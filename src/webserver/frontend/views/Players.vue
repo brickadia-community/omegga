@@ -101,42 +101,6 @@
   }
 }
 
-.widgets-container {
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-
-  .widgets-list {
-    background-color: $br-element-footer-bg;
-    margin-right: 8px;
-    min-width: 200px;
-
-    .widget-item {
-      background-color: $br-bg-primary;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 50px;
-      padding: 0 10px;
-
-      &:nth-child(even) {
-        background-color: $br-bg-primary-alt;
-      }
-
-      .name {
-        text-transform: uppercase;
-        display: flex;
-        align-items: center;
-
-        .icon {
-          margin-right: 10px;
-        }
-      }
-    }
-  }
-}
-
 .player-inspector {
   @include column;
   background-color: $br-element-popout-bg;

@@ -11,6 +11,7 @@
   background-color: rgba(0, 0, 0, 0.7);
   display: none;
   align-items: stretch;
+  z-index: 200;
 
   &.visible {
     display: flex;
@@ -21,20 +22,17 @@
     flex: 1;
   }
 }
-
-
 </style>
 
 <template>
-  <div :class="['dimmer', {visible}]">
+  <div :class="['dimmer', { visible }]">
     <div class="dimmer-content">
-      <slot/>
+      <slot />
     </div>
   </div>
 </template>
 
 <script>
-
 import Vue from 'vue';
 
 export default Vue.component('br-dimmer', {
@@ -42,5 +40,4 @@ export default Vue.component('br-dimmer', {
     visible: Boolean,
   },
 });
-
 </script>

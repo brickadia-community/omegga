@@ -14,7 +14,6 @@
     }
   }
 }
-
 </style>
 
 <template>
@@ -22,10 +21,10 @@
     <br-scroll v-if="status.players" class="players">
       <div class="players-child">
         <div class="stats">
-          <div class="stat"><b>Name:</b> {{status.serverName}}</div>
-          <div class="stat"><b>Uptime:</b> {{duration(status.time)}}</div>
-          <div class="stat"><b>Bricks:</b> {{status.bricks}}</div>
-          <div class="stat"><b>Players:</b> {{status.players.length}}</div>
+          <div class="stat"><b>Name:</b> {{ status.serverName }}</div>
+          <div class="stat"><b>Uptime:</b> {{ duration(status.time) }}</div>
+          <div class="stat"><b>Bricks:</b> {{ status.bricks }}</div>
+          <div class="stat"><b>Players:</b> {{ status.players.length }}</div>
         </div>
         <table class="br-table">
           <thead>
@@ -36,25 +35,30 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="player in status.players">
-              <td>{{player.name}}</td>
-              <td style="text-align: right;">{{duration(player.time)}}</td>
-              <td style="text-align: right;">{{player.ping}}</td>
+            <tr v-for="(player, i) in status.players" :key="i">
+              <td>
+                <router-link class="user" :to="'/players/' + player.id">
+                  {{ player.name }}
+                </router-link>
+              </td>
+              <td style="text-align: right;">{{ duration(player.time) }}</td>
+              <td style="text-align: right;">{{ player.ping }}</td>
             </tr>
           </tbody>
         </table>
       </div>
     </br-scroll>
-    <br-loader :active="!status.players" blur size="huge">Loading Status</br-loader>
+    <br-loader :active="!status.players" blur size="huge"
+      >Loading Status</br-loader
+    >
   </div>
 </template>
 <script>
-
 import Vue from 'vue';
 
 export default Vue.component('br-status-widget', {
   sockets: {
-    'server.status': function (status) {
+    'server.status': function(status) {
       this.status = status || {};
       this.updated = Date.now();
     },
@@ -72,7 +76,7 @@ export default Vue.component('br-status-widget', {
         this.status = status || {};
         this.updated = Date.now();
       });
-    }
+    },
   },
   created() {
     this.getStatus();
@@ -84,5 +88,4 @@ export default Vue.component('br-status-widget', {
     };
   },
 });
-
 </script>

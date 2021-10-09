@@ -1,4 +1,4 @@
-<style scoped>
+<style scoped lang="scss">
 @import '../css/theme';
 
 .navbar {
@@ -10,7 +10,6 @@
   font-weight: bold;
   padding: 10px;
 }
-
 </style>
 
 <template>
@@ -19,10 +18,7 @@
   </div>
 </template>
 <script>
-
 import Vue from 'vue';
 
-export default Vue.component('br-navbar', {
-});
-
+export default Vue.component('br-navbar', {});
 </script>

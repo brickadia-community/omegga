@@ -298,6 +298,8 @@ module.exports = (server, io) => {
         // player is host
         isHost: omegga.getHostId() === id,
 
+        isOnline: omegga.players.some(p => p.id === id),
+
         // player's current ban state
         currentBan,
 
@@ -425,6 +427,17 @@ module.exports = (server, io) => {
       ]);
       database.off('update.bans', listener);
       return ok;
+    });
+
+    rpc.addMethod('player.clearbricks', async([id]) => {
+      // validate inputs
+      if (typeof id !== 'string' || !uuid.match(id)) return false;
+
+      log('Clearing bricks for player', omegga.getNameCache()?.savedPlayerNames?.[id].yellow ?? 'with id ' + id.yellow);
+
+      // unban the user
+      omegga.writeln(`Bricks.Clear "${id}"`);
+      return true;
     });
 
     // set plugin config

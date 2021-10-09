@@ -1,6 +1,40 @@
 <style lang="scss">
 @import '../css/style';
 
+.player-inspector-container {
+  .popout-inputs {
+    &.ban > .input {
+      margin-bottom: 0 !important;
+    }
+    .ban-duration .input {
+      margin-right: 0 !important;
+    }
+  }
+
+  .popout-content {
+    padding: 8px !important;
+    padding-top: 0 !important;
+  }
+
+  .widgets-container {
+    margin-right: 0 !important;
+    .widgets-list {
+      width: calc(100% - 9px);
+
+      .button {
+        justify-content: flex-start;
+        width: 100%;
+        margin-right: 0;
+        box-sizing: border-box;
+
+        .button-content {
+          text-align: left;
+        }
+      }
+    }
+  }
+}
+
 .player-view,
 .player-info {
   @include column-container;
@@ -45,20 +79,10 @@
   background-color: $br-element-popout-bg;
   flex: 1;
   position: relative;
-}
 
-.popout-inputs {
-  & > .input {
-    margin-bottom: 0 !important;
+  .navbar {
+    overflow: visible;
   }
-  .ban-duration .input {
-    margin-right: 0 !important;
-  }
-}
-
-.popout-content {
-  padding: 8px !important;
-  padding-top: 0 !important;
 }
 </style>
 
@@ -67,26 +91,66 @@
     <br-navbar>
       {{ player.name || 'SELECT A PLAYER' }}
       <span style="flex: 1" />
-      <span v-if="player">
-        <br-button
-          warn
-          :disabled="banLoading"
-          @click="unban()"
-          v-if="player.currentBan"
-        >
-          <BackspaceIcon />
-          Unban
+      <div class="widgets-container" v-if="player.name">
+        <br-button normal boxy @click="showActions = !showActions">
+          <CaretDownIcon />
+          User Actions...
         </br-button>
-        <br-button
-          error
-          :disabled="banLoading"
-          @click="showBan = true"
-          v-else-if="!player.isHost"
+        <div
+          class="widgets-list"
+          :style="{ display: showActions ? 'block' : 'none' }"
         >
-          <BanIcon />
-          Ban
-        </br-button>
-      </span>
+          <br-button
+            boxy
+            warn
+            @click="
+              showClear = true;
+              showActions = false;
+            "
+          >
+            <EraserIcon />
+            Clear Bricks
+          </br-button>
+          <br-button
+            boxy
+            error
+            @click="
+              showKick = true;
+              showActions = false;
+            "
+            v-if="!player.isHost && player.isOnline"
+          >
+            <PlugIcon />
+            Kick
+          </br-button>
+          <br-button
+            boxy
+            warn
+            :disabled="banLoading"
+            @click="
+              unban();
+              showActions = false;
+            "
+            v-if="player.currentBan"
+          >
+            <BackspaceIcon />
+            Unban
+          </br-button>
+          <br-button
+            boxy
+            error
+            :disabled="banLoading"
+            @click="
+              showBan = true;
+              showActions = false;
+            "
+            v-else-if="!player.isHost"
+          >
+            <BanIcon />
+            Ban
+          </br-button>
+        </div>
+      </div>
     </br-navbar>
     <div class="player-inspector">
       <div class="player-view">
@@ -281,15 +345,20 @@
         </div>
       </div>
     </div>
-    <br-dimmer :visible="showBan">
-      <br-loader :active="banLoading" size="huge">Banning...</br-loader>
+    <br-dimmer :visible="showBan || showKick || showClear">
+      <br-loader :active="banLoading" size="huge">Running Action...</br-loader>
       <br-modal :visible="!banLoading">
         <br-header>
-          Ban Player
+          {{
+            showBan ? 'Ban Player' : showKick ? 'Kick Player' : 'Clear Bricks'
+          }}
         </br-header>
-        <div class="popout-inputs">
+        <div
+          :class="{ 'popout-inputs': true, kick: showKick, ban: showBan }"
+          v-if="showKick || showBan"
+        >
           <br-input placeholder="Reason" type="text" v-model="banReason" />
-          <div class="ban-duration" style="display: flex">
+          <div class="ban-duration" style="display: flex" v-if="showBan">
             <br-input
               v-if="banUnit !== 'Permanent'"
               placeholder="Duration"
@@ -303,19 +372,32 @@
             />
           </div>
         </div>
-        <br-popout-content>
+        <br-popout-content v-if="showBan">
           This ban will expire <span style="color: white">{{ expiry }}</span
           >.
         </br-popout-content>
+        <br-popout-content v-if="showClear">
+          <p style="padding: 20px">
+            Are you sure you want to clear
+            <span style="color: white">{{ player.name }}</span
+            >'s bricks?
+          </p>
+        </br-popout-content>
         <br-footer>
-          <br-button main error @click="ban()">
+          <br-button error @click="ban()" v-if="showBan">
             <BanIcon />
             Ban
           </br-button>
-          <div style="flex: 1" />
-          <br-button normal @click="showBan = false">
-            <XIcon />Cancel
+          <br-button warn @click="clearBricks()" v-if="showClear">
+            <EraserIcon />
+            Clear Bricks
           </br-button>
+          <br-button error @click="kick()" v-if="showKick">
+            <PlugIcon />
+            Kick
+          </br-button>
+          <div style="flex: 1" />
+          <br-button normal @click="closeModal"> <XIcon />Cancel </br-button>
         </br-footer>
       </br-modal>
     </br-dimmer>
@@ -325,6 +407,9 @@
 import BackspaceIcon from 'vue-tabler-icons/icons/BackspaceIcon';
 import BanIcon from 'vue-tabler-icons/icons/BanIcon';
 import XIcon from 'vue-tabler-icons/icons/XIcon';
+import PlugIcon from 'vue-tabler-icons/icons/PlugIcon';
+import EraserIcon from 'vue-tabler-icons/icons/EraserIcon';
+import CaretDownIcon from 'vue-tabler-icons/icons/CaretDownIcon';
 
 const UNIT_SCALARS = {
   'Minute(s)': 1,
@@ -339,6 +424,9 @@ export default {
     BanIcon,
     BackspaceIcon,
     XIcon,
+    PlugIcon,
+    EraserIcon,
+    CaretDownIcon,
   },
   sockets: {},
   computed: {
@@ -350,6 +438,11 @@ export default {
     },
   },
   methods: {
+    closeModal() {
+      this.showBan = false;
+      this.showClear = false;
+      this.showKick = false;
+    },
     async getPlayer() {
       this.loading = true;
       this.player =
@@ -380,6 +473,22 @@ export default {
       await this.getPlayer();
       this.banLoading = false;
     },
+    async kick() {
+      this.banLoading = true;
+
+      try {
+        (await this.$$request(
+          'player.kick',
+          this.$route.params.id,
+          this.banReason
+        )) || {};
+      } catch (err) {
+        console.error(err);
+      }
+      this.showKick = false;
+      await this.getPlayer();
+      this.banLoading = false;
+    },
     async unban() {
       this.banLoading = true;
       try {
@@ -389,6 +498,15 @@ export default {
       }
       await this.getPlayer();
       this.banLoading = false;
+    },
+    async clearBricks() {
+      try {
+        (await this.$$request('player.clearbricks', this.$route.params.id)) ||
+          {};
+      } catch (err) {
+        console.error(err);
+      }
+      this.showClear = false;
     },
   },
   created() {
@@ -406,6 +524,9 @@ export default {
       ],
       player: {},
       showBan: false,
+      showKick: false,
+      showClear: false,
+      showActions: false,
       banReason: '',
       banDuration: 10,
       banUnit: 'Permanent',

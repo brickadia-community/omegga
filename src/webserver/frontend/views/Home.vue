@@ -47,9 +47,6 @@
   bottom: -4px;
 }
 
-.disable-userselect {
-}
-
 .vue-grid-item.vue-grid-placeholder {
   background-color: $br-button-normal !important;
 }
@@ -60,44 +57,6 @@
   align-items: stretch;
   flex: 1;
 }
-
-.widgets-container {
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-
-  .widgets-list {
-    background-color: $br-element-footer-bg;
-    margin-right: 8px;
-    min-width: 200px;
-
-    .widget-item {
-      background-color: $br-bg-primary;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 50px;
-      padding: 0 10px;
-
-      &:nth-child(even) {
-        background-color: $br-bg-primary-alt;
-      }
-
-      .name {
-        text-transform: uppercase;
-        display: flex;
-        align-items: center;
-
-        .icon {
-          margin-right: 10px;
-        }
-      }
-    }
-  }
-}
-
-
 
 @media screen and (max-width: 600px) {
   .vue-grid-layout {
@@ -111,37 +70,47 @@
     overflow: hidden;
   }
 }
-
 </style>
 
 <template>
   <page :loading="loading">
     <nav-header title="Dashboard">
       <div class="widgets-container">
-        <br-button normal boxy
+        <br-button
+          normal
+          boxy
           data-tooltip="Add more widgets to the dashboard"
           @click="showWidgets = !showWidgets"
         >
           <AppsIcon />
           Widgets
         </br-button>
-        <div class="widgets-list" :style="{display: showWidgets ? 'block' : 'none'}">
-          <div v-for="widget, k in widgetList" :key="k" class="widget-item">
+        <div
+          class="widgets-list"
+          :style="{ display: showWidgets ? 'block' : 'none' }"
+        >
+          <div v-for="(widget, k) in widgetList" :key="k" class="widget-item">
             <div class="name" :data-tooltip="widget.tooltip">
-              <component :is="widget.icon"/>
-              {{k}}
+              <component :is="widget.icon" />
+              {{ k }}
             </div>
-            <br-button main icon v-if="!hasWidget[k]"
-              :data-tooltip="'Add '+k+' widget'"
+            <br-button
+              main
+              icon
+              v-if="!hasWidget[k]"
+              :data-tooltip="'Add ' + k + ' widget'"
               @click="addWidget(k)"
             >
-              <PlusIcon/>
+              <PlusIcon />
             </br-button>
-            <br-button warn icon v-else
-              :data-tooltip="'Remove '+k+' widget'"
+            <br-button
+              warn
+              icon
+              v-else
+              :data-tooltip="'Remove ' + k + ' widget'"
               @click="removeWidget(k)"
             >
-              <MinusIcon/>
+              <MinusIcon />
             </br-button>
           </div>
         </div>
@@ -162,23 +131,27 @@
           :use-css-transforms="true"
           @layout-updated="layoutUpdated"
         >
-          <grid-item v-for="item in layout"
-           :x="item.x"
-           :y="item.y"
-           :w="item.w"
-           :h="item.h"
-           :i="item.i"
-           :key="item.i"
-           :minW="2"
-           :maxW="10"
-           :minH="2"
-           :maxH="10"
-           drag-allow-from=".drag-handle"
-           drag-ignore-from=".no-drag"
+          <grid-item
+            v-for="item in layout"
+            :x="item.x"
+            :y="item.y"
+            :w="item.w"
+            :h="item.h"
+            :i="item.i"
+            :key="item.i"
+            :minW="2"
+            :maxW="10"
+            :minH="2"
+            :maxH="10"
+            drag-allow-from=".drag-handle"
+            drag-ignore-from=".no-drag"
           >
             <br-header class="drag-handle">
-              <span style="flex: 1">{{item.i}}</span>
-              <br-button icon error class="no-drag"
+              <span style="flex: 1">{{ item.i }}</span>
+              <br-button
+                icon
+                error
+                class="no-drag"
                 data-tooltip="Close widget"
                 @click="removeWidget(item.i)"
               >
@@ -197,7 +170,6 @@
 </template>
 
 <script>
-
 import { GridLayout, GridItem } from 'vue-grid-layout';
 
 import AppsIcon from 'vue-tabler-icons/icons/AppsIcon';
@@ -209,9 +181,7 @@ import XIcon from 'vue-tabler-icons/icons/XIcon';
 import ChevronDownRightIcon from 'vue-tabler-icons/icons/ChevronDownRightIcon';
 
 export default {
-  created() {
-
-  },
+  created() {},
   methods: {
     layoutUpdated(layout) {
       localStorage.omeggaDashLayout = JSON.stringify(layout);
@@ -221,15 +191,16 @@ export default {
     },
     addWidget(id) {
       this.layout.push({
-        x: 0, y: 0,
-        w: 2, h: 2,
+        x: 0,
+        y: 0,
+        w: 2,
+        h: 2,
         i: id,
         component: this.widgetList[id].component,
       });
     },
   },
-  sockets: {
-  },
+  sockets: {},
   computed: {
     hasWidget() {
       return Object.fromEntries(this.layout.map(l => [l.i, true]));
@@ -238,8 +209,8 @@ export default {
   data() {
     // default layout
     let layout = [
-      {x: 0, y: 0, w: 2, h: 2, i: 'chat', component: 'br-chat-widget'},
-      {x: 2, y: 0, w: 2, h: 2, i: 'status', component: 'br-status-widget'},
+      { x: 0, y: 0, w: 2, h: 2, i: 'chat', component: 'br-chat-widget' },
+      { x: 2, y: 0, w: 2, h: 2, i: 'status', component: 'br-status-widget' },
     ];
 
     if (localStorage.omeggaDashLayout) {
@@ -266,10 +237,15 @@ export default {
     };
   },
   components: {
-    AppsIcon, PlusIcon, MinusIcon, MessageDotsIcon, ListIcon, XIcon, ChevronDownRightIcon,
+    AppsIcon,
+    PlusIcon,
+    MinusIcon,
+    MessageDotsIcon,
+    ListIcon,
+    XIcon,
+    ChevronDownRightIcon,
     GridLayout,
     GridItem,
   },
 };
-
 </script>

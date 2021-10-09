@@ -12,40 +12,52 @@
   display: flex;
   margin-top: 8px;
 }
-
 </style>
 
 <template>
   <page>
-    <nav-header title="Server">
-    </nav-header>
+    <nav-header title="Server"> </nav-header>
     <page-content>
-      <side-nav :active="$route.name"/>
+      <side-nav :active="$route.name" />
       <div class="generic-container server-container">
-        <br-header>Server Status: {{starting ? 'starting' : stopping ? 'stopping' : started ? 'started' : 'stopped'}}</br-header>
+        <br-header
+          >Server Status:
+          {{
+            starting
+              ? 'starting'
+              : stopping
+              ? 'stopping'
+              : started
+              ? 'started'
+              : 'stopped'
+          }}</br-header
+        >
         <div class="buttons">
           <br-button
             main
             data-tooltip="Start the server"
             :disabled="starting || stopping || loading || started"
-            @click="start()">
-            <PlayerPlayIcon/>
+            @click="start()"
+          >
+            <PlayerPlayIcon />
             Start
           </br-button>
           <br-button
             error
             data-tooltip="Stop the server"
             :disabled="starting || stopping || loading || !started"
-            @click="stop()">
-            <PlayerStopIcon/>
+            @click="stop()"
+          >
+            <PlayerStopIcon />
             Stop
           </br-button>
           <br-button
             warn
             data-tooltip="Stop the server if it's running, then start the server"
             :disabled="starting || stopping || loading"
-            @click="restart()">
-            <RefreshIcon/>
+            @click="restart()"
+          >
+            <RefreshIcon />
             Restart
           </br-button>
         </div>
@@ -55,22 +67,16 @@
               Confirmation
             </br-header>
             <br-popout-content>
-              <p>
-                Are you sure you want to {{message}}?
-              </p>
+              <p>Are you sure you want to {{ message }}?</p>
             </br-popout-content>
             <br-footer>
-              <br-button main
-                @click="resolve(true)"
-              >
+              <br-button main @click="resolve(true)">
                 <CheckIcon />
                 Yes
               </br-button>
               <div style="flex: 1" />
-              <br-button warn
-                @click="resolve(false)"
-              >
-                <XIcon/>No
+              <br-button normal @click="resolve(false)">
+                <XIcon />No
               </br-button>
             </br-footer>
           </br-modal>
@@ -95,10 +101,8 @@ export default {
   beforeDestroy() {
     this.$$emit('unsubscribe', 'server');
   },
-  destroyed () {
-  },
-  mounted() {
-  },
+  destroyed() {},
+  mounted() {},
   methods: {
     async start() {
       if (!(await this.prompt('start the server'))) return;
@@ -126,7 +130,9 @@ export default {
     async getStatus() {
       this.$$emit('subscribe', 'server');
       this.loading = true;
-      const { started, starting, stopping } = await this.$$request('server.started');
+      const { started, starting, stopping } = await this.$$request(
+        'server.started'
+      );
       this.started = started;
       this.starting = starting;
       this.stopping = stopping;
@@ -135,7 +141,7 @@ export default {
   },
   sockets: {
     // watch server status
-    status({started, starting, stopping}) {
+    status({ started, starting, stopping }) {
       this.started = started;
       this.starting = starting;
       this.stopping = stopping;
@@ -145,8 +151,7 @@ export default {
       this.getStatus();
     },
   },
-  computed: {
-  },
+  computed: {},
   data() {
     return {
       loading: true,
@@ -159,5 +164,4 @@ export default {
     };
   },
 };
-
 </script>

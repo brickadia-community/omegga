@@ -1,4 +1,4 @@
-<style scoped>
+<style scoped lang="scss">
 @import '../css/theme';
 
 .header {
@@ -13,7 +13,6 @@
   padding-right: 10px;
   text-transform: uppercase;
 }
-
 </style>
 
 <template>
@@ -22,10 +21,7 @@
   </div>
 </template>
 <script>
-
 import Vue from 'vue';
 
-export default Vue.component('br-header', {
-});
-
+export default Vue.component('br-header', {});
 </script>

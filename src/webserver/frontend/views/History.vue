@@ -11,7 +11,6 @@
 }
 
 @media screen and (max-width: 600px) {
-
 }
 
 .chat-new-day {
@@ -38,12 +37,12 @@
   align-items: flex-end;
 }
 
-
 .calendar {
   background-color: $br-element-footer-bg;
   min-width: 200px;
 
-  .year, .month {
+  .year,
+  .month {
     @include center;
     background-color: $br-bg-header;
     justify-content: space-between;
@@ -76,10 +75,18 @@
         border-radius: 0;
         cursor: pointer;
 
-        &:hover { background-color: $br-element-hover; }
-        &:active {background-color: $br-element-pressed; }
-        &.today:hover { background-color: $br-info-hover; }
-        &.today:active {background-color: $br-info-pressed; }
+        &:hover {
+          background-color: $br-element-hover;
+        }
+        &:active {
+          background-color: $br-element-pressed;
+        }
+        &.today:hover {
+          background-color: $br-info-hover;
+        }
+        &.today:active {
+          background-color: $br-info-pressed;
+        }
       }
 
       &.today {
@@ -93,41 +100,59 @@
     }
   }
 }
-
-
-
 </style>
 
 <template>
   <page>
     <nav-header title="History">
       <div class="calendar-container">
-        <br-button normal
+        <br-button
+          normal
           boxy
           style="margin-right: 0"
           data-tooltip="Show a calendar previewing days"
           @click="showCalendar = !showCalendar"
-          >
+        >
           <CalendarIcon />
           Calendar
         </br-button>
         <div class="calendar" v-if="showCalendar">
           <div class="year">
-            <br-button icon normal :disabled="!getPrevYear()" @click="setDate(getPrevYear())">
-              <ArrowLeftIcon/>
+            <br-button
+              icon
+              normal
+              :disabled="!getPrevYear()"
+              @click="setDate(getPrevYear())"
+            >
+              <ArrowLeftIcon />
             </br-button>
-            {{year}}
-            <br-button icon normal :disabled="!getNextYear()" @click="setDate(getNextYear())">
-              <ArrowRightIcon/>
+            {{ year }}
+            <br-button
+              icon
+              normal
+              :disabled="!getNextYear()"
+              @click="setDate(getNextYear())"
+            >
+              <ArrowRightIcon />
             </br-button>
           </div>
           <div class="month">
-            <br-button icon normal :disabled="!hasPrevMonth" @click="setDate(getPrevMonth())">
-              <ArrowLeftIcon/>
+            <br-button
+              icon
+              normal
+              :disabled="!hasPrevMonth"
+              @click="setDate(getPrevMonth())"
+            >
+              <ArrowLeftIcon />
             </br-button>
-            {{MONTHS[month]}}
-            <br-button icon normal :disabled="!hasNextMonth" @click="setDate(getNextMonth())">
-              <ArrowRightIcon/>
+            {{ MONTHS[month] }}
+            <br-button
+              icon
+              normal
+              :disabled="!hasNextMonth"
+              @click="setDate(getNextMonth())"
+            >
+              <ArrowRightIcon />
             </br-button>
           </div>
           <div class="calendar-days">
@@ -139,20 +164,28 @@
             <div class="header days">F</div>
             <div class="header days">S</div>
             <div v-for="d in startDay" :key="'empty' + d"></div>
-            <div v-for="d in numDays" :key="d" :class="{
-              days: true,
-              today: nowMonth === month && nowYear === year && nowDay === d,
-              available: !(nowMonth === month && nowYear === year && d > nowDay) &&
-                calendar[year] && calendar[year][month] && calendar[year][month][d],
-            }" @click="focusDay(year, month, d)">
-              {{d}}
+            <div
+              v-for="d in numDays"
+              :key="d"
+              :class="{
+                days: true,
+                today: nowMonth === month && nowYear === year && nowDay === d,
+                available:
+                  !(nowMonth === month && nowYear === year && d > nowDay) &&
+                  calendar[year] &&
+                  calendar[year][month] &&
+                  calendar[year][month][d],
+              }"
+              @click="focusDay(year, month, d)"
+            >
+              {{ d }}
             </div>
           </div>
         </div>
       </div>
     </nav-header>
     <page-content>
-      <side-nav :active="$route.name"/>
+      <side-nav :active="$route.name" />
       <div class="generic-container history-container">
         <div class="chat-history">
           <div class="scroll-container">
@@ -166,14 +199,20 @@
               class="scroll-scroller"
             >
               <template v-for="log in chats">
-                <div v-if="log.newDay" class="chat-new-day" :key="log._id + 'day'">
-                  {{log.newDay}}
+                <div
+                  v-if="log.newDay"
+                  class="chat-new-day"
+                  :key="log._id + 'day'"
+                >
+                  {{ log.newDay }}
                 </div>
                 <br-chat-entry :log="log" :key="log._id" />
               </template>
             </v-infinite-scroll>
           </div>
-          <br-loader :active="loading && firstLoad" size="huge">Loading Chat</br-loader>
+          <br-loader :active="loading && firstLoad" size="huge"
+            >Loading Chat</br-loader
+          >
         </div>
       </div>
     </page-content>
@@ -200,32 +239,34 @@ const MONTHS = [
   'December',
 ];
 
-const sorted = (obj, reverse=false) => Object.keys(obj).map(Number).sort((a, b) => reverse ? b - a : a - b);
+const sorted = (obj, reverse = false) =>
+  Object.keys(obj)
+    .map(Number)
+    .sort((a, b) => (reverse ? b - a : a - b));
 
 export default {
   components: { CalendarIcon, ArrowLeftIcon, ArrowRightIcon },
   async created() {
     await this.getCalendar();
-    const paramTime = this.$route.params.time
-    const time = paramTime && new Date(paramTime.match(/^\d+$/) ? Number(paramTime) : paramTime);
+    const paramTime = this.$route.params.time;
+    const time =
+      paramTime &&
+      new Date(paramTime.match(/^\d+$/) ? Number(paramTime) : paramTime);
     // valid time passed into route param
     if (time && time.getTime() === time.getTime()) {
-      await this.getChats({ before: time.getTime()-1 });
-      await this.getChats({ after: time.getTime()-1 });
+      await this.getChats({ before: time.getTime() - 1 });
+      await this.getChats({ after: time.getTime() - 1 });
       this.focused = time.getTime();
       const focused = this.$el.querySelector('.focused');
-      focused.scrollIntoView({block: 'center'});
+      focused.scrollIntoView({ block: 'center' });
     } else {
       await this.getChats({ before: Date.now() });
       this.scroll();
     }
   },
-  beforeDestroy() {
-  },
-  destroyed () {
-  },
-  mounted() {
-  },
+  beforeDestroy() {},
+  destroyed() {},
+  mounted() {},
   methods: {
     // get the chat calendar (days messages have been sent)
     async getCalendar() {
@@ -240,7 +281,7 @@ export default {
           container.scrollTop = container.scrollHeight;
           resolve();
         });
-      })
+      });
     },
     async focusDay(year, month, day) {
       if (this.loading) return false;
@@ -249,7 +290,7 @@ export default {
       await this.getChats({ after: time });
     },
 
-    handleChats(chats, {before, after}, dir) {
+    handleChats(chats, { before: _b, after: _a }, _dir) {
       if (!chats.length) return;
 
       // add new chats and sort by create time
@@ -266,8 +307,10 @@ export default {
         c.date = date.getDate();
 
         // determine if the date between chat messages is a different day and insert that date
-        if (i === 0 || c.date !== this.chats[i-1].date) {
-          c.newDay = `${MONTHS[date.getMonth()]} ${c.date}, ${date.getFullYear()}`;
+        if (i === 0 || c.date !== this.chats[i - 1].date) {
+          c.newDay = `${MONTHS[date.getMonth()]} ${
+            c.date
+          }, ${date.getFullYear()}`;
         } else {
           c.newDay = undefined;
         }
@@ -293,10 +336,10 @@ export default {
       if (chats.length === 0) this.absMax = this.max;
     },
 
-    async getChats({before, after}, dir) {
+    async getChats({ before, after }, dir) {
       this.loading = true;
-      const chats = await this.$$request('chat.history', {before, after});
-      this.handleChats(chats, {before, after}, dir);
+      const chats = await this.$$request('chat.history', { before, after });
+      this.handleChats(chats, { before, after }, dir);
 
       // remove chats that our off screen
       requestAnimationFrame(() => {
@@ -305,7 +348,7 @@ export default {
 
         if (dir === 'top' && this.chats.length > 200)
           this.chats.splice(200, this.chats.length - 200).map(m => m.message);
-      })
+      });
 
       this.loading = false;
       this.firstLoad = false;
@@ -337,10 +380,10 @@ export default {
       // if this isn't the last month and there are things for this year
       if (this.month !== 11 && this.calendar[this.year]) {
         // find the first month from this year greater than this month
-        const month = sorted(this.calendar[this.year])
-          .find(m => m > this.month);
-        if (typeof month == 'number')
-          return [this.year, month];
+        const month = sorted(this.calendar[this.year]).find(
+          m => m > this.month
+        );
+        if (typeof month == 'number') return [this.year, month];
       }
 
       // find the next largest year
@@ -358,10 +401,10 @@ export default {
       // if this isn't the first month and there are things for this year
       if (this.month !== 0 && this.calendar[this.year]) {
         // find the first month from this year greater than this month
-        const month = sorted(this.calendar[this.year], true)
-          .find(m => m < this.month);
-        if (typeof month == 'number')
-          return [this.year, month];
+        const month = sorted(this.calendar[this.year], true).find(
+          m => m < this.month
+        );
+        if (typeof month == 'number') return [this.year, month];
       }
 
       // find the next smallest year
@@ -374,8 +417,7 @@ export default {
       return [year, month];
     },
   },
-  sockets: {
-  },
+  sockets: {},
   computed: {
     numDays() {
       return new Date(this.year, this.month + 1, 0).getDate();
@@ -386,7 +428,9 @@ export default {
     hasNextMonth() {
       return !!this.getNextMonth();
     },
-    hasPrevMonth() { return !!this.getPrevMonth(); },
+    hasPrevMonth() {
+      return !!this.getPrevMonth();
+    },
   },
   data() {
     const date = new Date();
@@ -399,7 +443,10 @@ export default {
       // how close to the edge the user has to scroll before loading new messages
       offset: 500,
 
-      date, month, year, day,
+      date,
+      month,
+      year,
+      day,
       nowYear: year,
       nowMonth: month,
       nowDay: day,
@@ -412,5 +459,4 @@ export default {
     };
   },
 };
-
 </script>
