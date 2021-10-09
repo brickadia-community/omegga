@@ -110,6 +110,95 @@ class Terminal {
         }
       },
 
+      ban: {
+        desc: 'ban a player',
+        fn(...args) {
+          if (!this.omegga.started) {
+            err('Omegga is not running');
+            return;
+          }
+          if (!args.length) {
+            return err('usage:', '/ban <name|id> [duration in mins] [reason]'.yellow);
+          }
+          this.omegga.writeln('Chat.Command /ban ' + args.join(' '));
+        }
+      },
+      unban: {
+        desc: 'unban a player',
+        fn(...args) {
+          if (!this.omegga.started) {
+            err('Omegga is not running');
+            return;
+          }
+          if (!args.length) {
+            return err('usage:', '/unban <name|id>'.yellow);
+          }
+          this.omegga.writeln('Chat.Command /unban ' + args.join(' '));
+        }
+      },
+      kick: {
+        desc: 'kick a player',
+        fn(...args) {
+          if (!this.omegga.started) {
+            err('Omegga is not running');
+            return;
+          }
+          if (!args.length) {
+            return err('usage:', '/kick <name|id> [reason]'.yellow);
+          }
+          this.omegga.writeln('Chat.Command /kick ' + args.join(' '));
+        }
+      },
+      grantrole: {
+        desc: 'grant a role to a player',
+        fn(...args) {
+          if (!this.omegga.started) {
+            err('Omegga is not running');
+            return;
+          }
+          if (!args.length) {
+            return err('usage:', '/grantrole <role name> <name|id>'.yellow);
+          }
+          this.omegga.writeln('Chat.Command /grantrole ' + args.join(' '));
+        }
+      },
+      revokerole: {
+        desc: 'revoke a role from a player',
+        fn(...args) {
+          if (!this.omegga.started) {
+            err('Omegga is not running');
+            return;
+          }
+          if (!args.length) {
+            return err('usage:', '/revokerole <role name> <name|id>'.yellow);
+          }
+          this.omegga.writeln('Chat.Command /revokerole ' + args.join(' '));
+        }
+      },
+      clearbricks: {
+        desc: 'clear a player\'s bricks',
+        fn(...args) {
+          if (!this.omegga.started) {
+            err('Omegga is not running');
+            return;
+          }
+          if (!args.length) {
+            return err('usage:', '/clearbricks <name>'.yellow);
+          }
+          this.omegga.writeln(`Bricks.Clear "${args.join(' ')}"`);
+        }
+      },
+      clearallbricks: {
+        desc: 'clear all bricks',
+        fn() {
+          if (!this.omegga.started) {
+            err('Omegga is not running');
+            return;
+          }
+          this.omegga.writeln('Bricks.ClearAll');
+        }
+      },
+
       status: {
         desc: 'display server status information. brick count, online players, etc',
         async fn() {

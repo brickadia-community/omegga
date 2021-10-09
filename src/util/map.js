@@ -2,6 +2,7 @@ const DEFAULT_MAPS = [
   { name: 'plate', brName: '/Game/Maps/Plate/Plate' },
   { name: 'peaks', brName: '/Game/Maps/Terrain/Peaks' },
   { name: 'studio', brName: '/Game/Maps/Studio/Studio' },
+  { name: 'space', brName: '/Game/Maps/Space/Space' },
 ];
 
 // Convert map brName to name
