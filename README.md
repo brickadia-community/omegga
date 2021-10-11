@@ -162,8 +162,10 @@ omegga:
 server:
   port: 7777
   map: Plate
-  branch: unstable
+  branch: unstable:unstable-server
 ```
+
+Note: `BRANCH-server` branches download only server data
 
 ## Troubleshooting
 

@@ -97,6 +97,7 @@ const program = require('commander')
         debug,
         email: process.env.BRICKADIA_USER ?? null,
         password: process.env.BRICKADIA_PASS ?? null,
+        branch: conf?.server?.branch ?? null,
       });
       if (!success) {
         err('Start aborted - could not generate auth tokens');
@@ -135,8 +136,8 @@ const program = require('commander')
     Omegga.log('>>'.green, `Launching brickadia server on port ${(''+(conf.server.port || 7777)).green}...`);
 
     // start the server
+    verboseLog('Starting Omegga');
     server.start();
-    verboseLog('Running start');
   });
 
 program
@@ -175,6 +176,8 @@ program
   .action(async ({ email, pass: password, local: localAuth, workDir, global: globalAuth }) => {
     const { verbose, debug } = program.opts();
     global.VERBOSE = verbose;
+    const workdirPath = path.join(config.store.get('defaultOmegga'), 'data/Saved/Auth');
+
 
     if (globalAuth || localAuth) {
       if (globalAuth) {
@@ -182,7 +185,6 @@ program
         auth.clean();
       }
       if (workDir) {
-        const workdirPath = path.join(config.store.get('defaultOmegga'), 'data/Saved/Auth');
         log('Clearing auth files from', workdirPath.yellow);
         await file.rmdir(workdirPath);
       }
@@ -193,7 +195,29 @@ program
       }
       return;
     } else {
-      auth.prompt({email, password, debug});
+
+      let branch;
+
+      // if there's a config in the current directory, use that one instead
+      if (config.find('.'))
+        workDir = '.';
+
+      // check if configured path exists
+      if (fs.existsSync(workDir) && fs.statSync(workDir).isDirectory) {
+        // find the config for the working directory
+        const configFile = config.find(workDir);
+        try {
+          // read the config and extract the branch
+          const conf = config.read(configFile);
+          branch = conf?.server?.branch;
+        } catch (err) {
+          err('Error reading config file');
+          verboseLog(err);
+        }
+      }
+
+      // auth with that branch
+      auth.prompt({email, password, debug, branch });
     }
   });
 

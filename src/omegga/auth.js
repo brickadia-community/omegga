@@ -44,7 +44,7 @@ function writeAuthFiles(dstDir, files) {
 }
 
 // from credentials, build brickadia auth tokens
-async function genAuthFiles(email, password, debug=false) {
+async function genAuthFiles(email, password, {debug=false, branch}) {
   verboseLog('Generating auth files');
 
   // remove existing temporary install path
@@ -61,6 +61,7 @@ async function genAuthFiles(email, password, debug=false) {
       publiclyListed: false,
       name: 'omegga auth init',
       __LOCAL: fs.existsSync(soft.LOCAL_LAUNCHER),
+      branch,
     },
     credentials: { email, password },
   };

@@ -36,7 +36,8 @@ module.exports = {
     },
     server: {
       port: process.env.BRICKADIA_PORT ? Number(process.env.BRICKADIA_PORT) : 7777,
-      map: 'Plate'
+      map: 'Plate',
+      branch: 'main-server',
     },
   },
 

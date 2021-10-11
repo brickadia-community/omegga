@@ -31,7 +31,7 @@ async function prompt() {
   ];
 }
 
-async function authFromPrompt({email, password, debug=false}) {
+async function authFromPrompt({email, password, debug=false, branch}) {
   let files;
 
   if (!email || !password) {
@@ -50,7 +50,7 @@ async function authFromPrompt({email, password, debug=false}) {
     console.log('>>'.green, 'Probably also installing the game...');
   },  10000);
   try {
-    files = await genAuthFiles(email, password, debug);
+    files = await genAuthFiles(email, password, { debug, branch });
     clearTimeout(timeout);
   } catch (err) {
     clearTimeout(timeout);

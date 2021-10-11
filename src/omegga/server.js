@@ -236,6 +236,7 @@ class Omegga extends OmeggaWrapper {
       await this.pluginLoader.reload();
     }
 
+    verboseLog('Starting Brickadia');
     super.start();
     this.emit('server:starting');
   }
