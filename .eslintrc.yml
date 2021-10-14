@@ -4,6 +4,7 @@ env:
 extends:
   - eslint:recommended
 parser: "@babel/eslint-parser"
+plugins: [prettier]
 parserOptions:
   ecmaVersion: 12
   requireConfigFile: false
@@ -11,6 +12,7 @@ globals:
   Omegga: readonly
   VERBOSE: readonly
 rules:
+  prettier/prettier: warn
   indent:
     - error
     - 2
