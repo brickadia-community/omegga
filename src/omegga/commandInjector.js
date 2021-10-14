@@ -7,7 +7,6 @@ const _ = require('lodash');
  * @type {Object}
  */
 const COMMANDS = {
-
   /**
    * Get a server status object containing bricks, time, players, player ping, player roles, etc
    * @return {Promise<Object>} - Server Status
@@ -16,19 +15,28 @@ const COMMANDS = {
     const statusLines = await this.watchLogChunk(
       'Server.Status',
       /^LogConsoleCommands: (.+)$/,
-      {first: match => match[1].startsWith('Server Name:'), timeoutDelay: 1000}
+      {
+        first: match => match[1].startsWith('Server Name:'),
+        timeoutDelay: 1000
+      }
     );
 
     // the table lines all start with '* '
     // find all those lines, and remove the asterisk
-    const [tableHeader, ...tableLines] = statusLines.filter(l => l[1].startsWith('* ')).map(l => l[1].slice(1));
+    const [tableHeader, ...tableLines] = statusLines
+      .filter(l => l[1].startsWith('* '))
+      .map(l => l[1].slice(1));
 
     // use the size of each column to build a regex that matches each row
-    const columnRegExp = new RegExp(tableHeader
-      .match(/[^|]+/g) // get all strings between the |'s'
-      .map((line, i) => [line.slice(1, -1), line.length - (i === 5 ? 1 : 2)]) // calculate the lengths (and remove the spaces)
-      .map(([name, len]) => ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`) // create a regex pattern to match strings of that length (and trim off whitespace at the end)
-      .join('\\|')); // join the regexes with the |
+    const columnRegExp = new RegExp(
+      tableHeader
+        .match(/[^|]+/g) // get all strings between the |'s'
+        .map((line, i) => [line.slice(1, -1), line.length - (i === 5 ? 1 : 2)]) // calculate the lengths (and remove the spaces)
+        .map(
+          ([name, len]) => ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`
+        ) // create a regex pattern to match strings of that length (and trim off whitespace at the end)
+        .join('\\|')
+    ); // join the regexes with the |
 
     const status = {
       // easily extract certain values from the server status
@@ -40,17 +48,22 @@ const COMMANDS = {
       // extract players using the generated table regex
       players: tableLines.map(l => {
         // match the player row with the generated regex
-        const { groups: { name, ping, time: online, roles, address, id }} = l.match(columnRegExp);
+        const {
+          groups: { name, ping, time: online, roles, address, id }
+        } = l.match(columnRegExp);
         // trim and parse the matched data
         return {
           name: name.trim(),
           ping: time.parseDuration(ping.trim()),
           time: time.parseDuration(online.trim()),
-          roles: roles.trim().split(', ').filter(r => r.length > 0), // roles are split by ', '
+          roles: roles
+            .trim()
+            .split(', ')
+            .filter(r => r.length > 0), // roles are split by ', '
           address: address.replace('(Owner)', '').trim(),
-          id: id.trim(),
+          id: id.trim()
         };
-      }),
+      })
     };
 
     return status;
@@ -66,31 +79,45 @@ const COMMANDS = {
     const deadFigureRegExp = /(?<index>\d+)\) BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.bIsDead = (?<dead>(True|False))$/;
 
     // wait for the pawn and position watchers to return all the results
-    const [ pawns, deadFigures, positions ] = await Promise.all([
-      this.watchLogChunk('GetAll BP_PlayerController_C Pawn', pawnRegExp, {first: 'index'}),
-      this.watchLogChunk('GetAll BP_FigureV2_C bIsDead', deadFigureRegExp, {first: 'index'}),
-      this.watchLogChunk('GetAll SceneComponent RelativeLocation Name=CollisionCylinder', posRegExp, {first: 'index'}),
+    const [pawns, deadFigures, positions] = await Promise.all([
+      this.watchLogChunk('GetAll BP_PlayerController_C Pawn', pawnRegExp, {
+        first: 'index',
+        timeoutDelay: 250
+      }),
+      this.watchLogChunk('GetAll BP_FigureV2_C bIsDead', deadFigureRegExp, {
+        first: 'index',
+        timeoutDelay: 250
+      }),
+      this.watchLogChunk(
+        'GetAll SceneComponent RelativeLocation Name=CollisionCylinder',
+        posRegExp,
+        { first: 'index', timeoutDelay: 250 }
+      )
     ]);
 
-    return pawns
-      // iterate through the pawn+controllers
-      .map(pawn => ({
-      // find the player for the associated controller
-        player: this.getPlayer(pawn.groups.controller),
-        // find the position for the associated pawn
-        pos: positions.find(pos => pawn.groups.pawn === pos.groups.pawn),
-        isDead: deadFigures.find(dead => pawn.groups.pawn === dead.groups.pawn),
-        pawn,
-      }))
-      // filter by only those who have both player. previously we filtered by position but this breaks for players without a pawn, instead it's preferable to pass null
-      .filter(p => p.player)
-      // turn the position into a [x, y, z] number array (last 3 items in the array)
-      .map(p => ({
-        player: p.player,
-        pawn: p.pawn.groups.pawn || null,
-        pos: p.pos ? p.pos.slice(3).map(Number) : null,
-        isDead: p.isDead ? p.isDead.groups.dead === 'True' : true,
-      }));
+    return (
+      pawns
+        // iterate through the pawn+controllers
+        .map(pawn => ({
+          // find the player for the associated controller
+          player: this.getPlayer(pawn.groups.controller),
+          // find the position for the associated pawn
+          pos: positions.find(pos => pawn.groups.pawn === pos.groups.pawn),
+          isDead: deadFigures.find(
+            dead => pawn.groups.pawn === dead.groups.pawn
+          ),
+          pawn
+        }))
+        // filter by only those who have both player. previously we filtered by position but this breaks for players without a pawn, instead it's preferable to pass null
+        .filter(p => p.player)
+        // turn the position into a [x, y, z] number array (last 3 items in the array)
+        .map(p => ({
+          player: p.player,
+          pawn: p.pawn.groups.pawn || null,
+          pos: p.pos ? p.pos.slice(3).map(Number) : null,
+          isDead: p.isDead ? p.isDead.groups.dead === 'True' : true
+        }))
+    );
   },
 
   /**
@@ -108,22 +135,40 @@ const COMMANDS = {
 
     try {
       // parse console output to get the minigame info
-      const [rulesets, ruleMembers, teamMembers, teamNames, teamColors] = await Promise.all([
-        this.watchLogChunk('GetAll BP_Ruleset_C RulesetName', ruleNameRegExp, {first: 'index'}),
-        this.watchLogArray('GetAll BP_Ruleset_C MemberStates', ruleMembersRegExp, playerStateRegExp),
-        this.watchLogArray('GetAll BP_Team_C MemberStates', teamMembersRegExp, playerStateRegExp),
-        this.watchLogChunk('GetAll BP_Team_C TeamName', teamNameRegExp, {first: 'index'}),
+      const [
+        rulesets,
+        ruleMembers,
+        teamMembers,
+        teamNames,
+        teamColors
+      ] = await Promise.all([
+        this.watchLogChunk('GetAll BP_Ruleset_C RulesetName', ruleNameRegExp, {
+          first: 'index'
+        }),
+        this.watchLogArray(
+          'GetAll BP_Ruleset_C MemberStates',
+          ruleMembersRegExp,
+          playerStateRegExp
+        ),
+        this.watchLogArray(
+          'GetAll BP_Team_C MemberStates',
+          teamMembersRegExp,
+          playerStateRegExp
+        ),
+        this.watchLogChunk('GetAll BP_Team_C TeamName', teamNameRegExp, {
+          first: 'index'
+        }),
         // team color in a5 is based on (B=255,G=255,R=255,A=255)
-        this.watchLogChunk('GetAll BP_Team_C TeamColor', teamColorRegExp, {first: 'index'}),
+        this.watchLogChunk('GetAll BP_Team_C TeamColor', teamColorRegExp, {
+          first: 'index'
+        })
       ]);
 
       // figure out what to do with the matched color results
       const handleColor = match => {
         // color index, return the colorset color
-        if (match.color)
-          return color.DEFAULT_COLORSET[Number(match)].slice();
-        else
-          return [match.r, match.g, match.b, match.a].map(Number);
+        if (match.color) return color.DEFAULT_COLORSET[Number(match)].slice();
+        else return [match.r, match.g, match.b, match.a].map(Number);
       };
 
       // join the data into a big object
@@ -132,8 +177,9 @@ const COMMANDS = {
         ruleset: r.groups.ruleset,
 
         // get the players from the team members
-        members: (ruleMembers
-          .find(m => m.item.ruleset === r.groups.ruleset)).members // get the members from this ruleset
+        members: ruleMembers
+          .find(m => m.item.ruleset === r.groups.ruleset)
+          .members // get the members from this ruleset
           .map(m => this.getPlayer(m.state)), // get the players
 
         // get the teams for this ruleset
@@ -141,22 +187,29 @@ const COMMANDS = {
           .filter(m => m.item.ruleset === r.groups.ruleset) // only get teams from this ruleset
           .map(m => ({
             // team name
-            name: _.get(teamNames.find(t => t.groups.team === m.item.team), 'groups.name'),
+            name: _.get(
+              teamNames.find(t => t.groups.team === m.item.team),
+              'groups.name'
+            ),
             team: m.item.team,
 
             // get the colors (different for a4 and a5)
-            color: handleColor(_.pick(teamColors.find(t => t.groups.team === m.item.team).groups,
-              ['r', 'g', 'b', 'a'])),
+            color: handleColor(
+              _.pick(
+                teamColors.find(t => t.groups.team === m.item.team).groups,
+                ['r', 'g', 'b', 'a']
+              )
+            ),
 
             // get the players from the team
-            members: m.members.map(m => this.getPlayer(m.state)),
+            members: m.members.map(m => this.getPlayer(m.state))
           }))
       }));
     } catch (e) {
       Omegga.error('error getting minigames', e);
       return undefined;
     }
-  },
+  }
 };
 
 // inject the commands into the object given a log wrangler

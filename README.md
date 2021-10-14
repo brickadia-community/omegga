@@ -41,6 +41,7 @@ If any of the above are true, [create a new user](#creating-a-new-user) and cont
     ```
 
     If you get an error like "gyp info find Python using Python version 3.8.10 found at /usr/bin/python3" you need to install python3: `sudo apt install python3` and re-run `npm i -g omegga`
+    If you get an error like "gyp ERR! stack Error: not found: make" you need to install build-essential: `sudo apt install build-essential` and re-run `npm i -g omegga`
 
     If you are having trouble installing with nvm and are running Ubuntu/Debian, run the following commands (installs node, installs omegga) instead or install node&npm from [NodeSource Binary Distributions](https://github.com/nodesource/distributions/blob/master/README.md).
 
@@ -63,7 +64,6 @@ Omegga depends on:
   * One of:
     * `tar` (most linuxes come with this, though you can `sudo apt install tar`)
     * [Brickadia linux launcher](https://brickadia.com/download)
-
 
 Omegga is installed as a global npm package
 
