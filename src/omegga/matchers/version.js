@@ -1,10 +1,14 @@
+const fs = require('fs');
+const path = require('path');
+const softconfig = require('../../softconfig');
+
 module.exports = omegga => {
   const versionRegExp = /^Using libcurl (?<curlversion>.+)$/;
-  let foundVersion;
+  let version;
   return {
     pattern(_line, logMatch) {
       // if the version has already been found - ignore this matcher
-      if (foundVersion || !logMatch) return;
+      if (version || !logMatch) return;
 
       const { generator, data } = logMatch.groups;
 
@@ -13,10 +17,23 @@ module.exports = omegga => {
 
       const match = data.match(versionRegExp);
 
+      const branch = omegga.config.server.branch ?? 'main-server';
+      const configPath = path.join(
+        softconfig.BRICKADIA_INSTALLS,
+        branch.substring(Math.max(0, branch.indexOf(':') + 1)) + '.json'
+      );
+
       // base game version on curl version
       if (match) {
-        foundVersion = match.groups.curlversion === '7.48.0-DEV' ? 'a4' : 'a5';
-        return foundVersion;
+        try {
+          version = Number(
+            JSON.parse(fs.readFileSync(configPath)).version.substring(2)
+          );
+        } catch (e) {
+          console.error('!>'.red, 'Unable to read branch config file: ', e);
+          version = -1;
+        }
+        return version;
       }
     },
     // when there's a match, emit the chat message event

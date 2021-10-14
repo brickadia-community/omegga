@@ -20,11 +20,11 @@ let messageCounter = 0;
 const parent = new EventEmitter();
 
 // handle message passing
-parentPort.on('message', ({action, args}) => parent.emit(action, ...args));
+parentPort.on('message', ({ action, args }) => parent.emit(action, ...args));
 
 // emit a message to the parent port - async wait for a reponse
 const emit = (action, ...args) => {
-  const messageId = 'message:' + (messageCounter ++);
+  const messageId = 'message:' + messageCounter++;
 
   let rejectFn;
   // promise waits for the message to resolve
@@ -35,7 +35,7 @@ const emit = (action, ...args) => {
 
   try {
     // post the message
-    parentPort.postMessage({action, args: [messageId, ...args]});
+    parentPort.postMessage({ action, args: [messageId, ...args] });
   } catch (err) {
     rejectFn(err);
   }
@@ -51,7 +51,7 @@ const exec = cmd => emit('exec', cmd);
 const omegga = new ProxyOmegga(exec);
 
 // add plugin fetcher
-omegga.getPlugin = async (name) => {
+omegga.getPlugin = async name => {
   let plugin = await emit('getPlugin', name);
   if (plugin) {
     plugin.emit = async (ev, ...args) => {
@@ -70,7 +70,7 @@ const store = {
   delete: key => emit('store.delete', key),
   wipe: () => emit('store.wipe'),
   count: () => emit('store.count'),
-  keys: () => emit('store.keys'),
+  keys: () => emit('store.keys')
 };
 
 // generic brickadia events are forwarded to the proxy omegga
@@ -78,15 +78,14 @@ parent.on('brickadiaEvent', (type, ...args) => {
   if (!vm) return;
   try {
     omegga.emit(type, ...args);
-  } catch(e) {
-    console.log('error in brickadia event', e);
+  } catch (e) {
+    console.log('error in brickadia event', e?.stack ?? e.toString());
   }
 });
 
 // create the node vm
-function createVm(pluginPath, {builtin=['*'], external=true}={}) {
-  if (vm !== undefined)
-    return [false, 'vm is already created'];
+function createVm(pluginPath, { builtin = ['*'], external = true } = {}) {
+  if (vm !== undefined) return [false, 'vm is already created'];
 
   // create the vm
   vm = new NodeVM({
@@ -95,12 +94,13 @@ function createVm(pluginPath, {builtin=['*'], external=true}={}) {
     require: {
       external,
       builtin,
-      root: pluginPath,
+      root: pluginPath
     }
   });
 
   // plugin log generator function
-  const ezLog = (logFn, name, symbol) => (...args) => console[logFn](name.underline, symbol, ...args);
+  const ezLog = (logFn, name, symbol) => (...args) =>
+    console[logFn](name.underline, symbol, ...args);
 
   // special formatting for stdout
   vm.on('console.log', ezLog('log', pluginName, '>>'.green));
@@ -120,8 +120,8 @@ function createVm(pluginPath, {builtin=['*'], external=true}={}) {
   try {
     pluginCode = fs.readFileSync(file);
   } catch (e) {
-    emit('error', 'failed to read plugin source: ' + e.toString());
-    throw 'failed to read plugin source: ' + e.toString();
+    emit('error', 'failed to read plugin source: ' + e?.stack ?? e.toString());
+    throw 'failed to read plugin source: ' + e?.stack ?? e.toString();
   }
 
   // proxy the plugin out of the vm
@@ -131,10 +131,14 @@ function createVm(pluginPath, {builtin=['*'], external=true}={}) {
   } catch (e) {
     emit('error', 'plugin failed to init');
     console.log(e);
-    throw 'plugin failed to init: ' + e.toString();
+    throw 'plugin failed to init: ' + e?.stack ?? e.toString();
   }
 
-  if (!PluginClass || typeof PluginClass !== 'function' || typeof PluginClass.prototype !== 'object') {
+  if (
+    !PluginClass ||
+    typeof PluginClass !== 'function' ||
+    typeof PluginClass.prototype !== 'object'
+  ) {
     PluginClass = undefined;
     emit('error', 'plugin does not export a class');
     throw 'plugin does not export a class';
@@ -154,7 +158,7 @@ function createVm(pluginPath, {builtin=['*'], external=true}={}) {
 }
 
 // kill this plugin
-parent.on('kill', (resp) => {
+parent.on('kill', resp => {
   emit(resp);
   process.exit(0);
 });
@@ -168,7 +172,7 @@ parent.on('name', (resp, name) => {
 });
 
 // get memory usage for this plugin
-parent.on('mem', (resp) => emit(resp, 'mem', process.memoryUsage()));
+parent.on('mem', resp => emit(resp, 'mem', process.memoryUsage()));
 
 // create the vm
 parent.on('load', (resp, pluginPath, options) => {
@@ -176,7 +180,7 @@ parent.on('load', (resp, pluginPath, options) => {
     createVm(pluginPath, options);
     emit(resp, true);
   } catch (err) {
-    console.error('error creating vm', err);
+    console.error('error creating vm', err?.stack ?? err.toString());
     emit(resp, false);
   }
 });
@@ -190,16 +194,19 @@ parent.on('start', async (resp, config) => {
     const result = await pluginInstance.init();
     // if a plugin init returns a list of strings, treat them as the list of commands
     if (typeof result === 'object' && result) {
-
       // if registeredCommands is in the results, register the provided strings as commands
       const cmds = result.registeredCommands;
-      if (cmds && (cmds instanceof Array) && cmds.every(i => typeof i === 'string')) {
+      if (
+        cmds &&
+        cmds instanceof Array &&
+        cmds.every(i => typeof i === 'string')
+      ) {
         emit('command.registers', JSON.stringify(cmds));
       }
     }
     emit(resp, true);
   } catch (err) {
-    emit('error', 'error starting plugin', JSON.stringify(err));
+    emit('error', 'error starting plugin', err?.stack ?? JSON.stringify(err));
     emit(resp, false);
     console.error(err);
   }
@@ -214,7 +221,7 @@ parent.on('stop', async resp => {
     pluginInstance = undefined;
     emit(resp, true);
   } catch (err) {
-    emit('error', 'error stopping plugin', err.toString());
+    emit('error', 'error stopping plugin', err?.stack ?? toString());
     emit(resp, false);
   }
 });

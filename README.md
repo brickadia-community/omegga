@@ -676,7 +676,7 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `line` | [brickadiaLog string] | A brickadia console log | |
 | `start` | [{map}] | Run when the brickadia server starts | |
 | `host` | [{name, id}] | Run when the brickadia server detects the host | |
-| `version` | ['a4' or 'a5'] | Run when the brickadia server detects the version | |
+| `version` | [-1 or the CL number] | Run when the brickadia server detects the version | |
 | `unauthorized` | _none_ | Run when the brickadia server fails an auth check | |
 | `join` | [{name, id, state, controller}] | Run when a player joins | |
 | `leave` | [{name, id, state, controller}] | Run when a player leaves | |

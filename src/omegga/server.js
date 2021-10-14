@@ -14,7 +14,8 @@ const Terminal = require('../cli/terminal.js');
 require('colors');
 
 const DEFAULT_COMMANDS = require('../info/default_commands.json');
-const MISSING_CMD = '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
+const MISSING_CMD =
+  '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
 
 const MATCHERS = [
   require('./matchers/join.js'),
@@ -42,7 +43,7 @@ const MATCHERS = [
   require('./matchers/init.js'),
   // watch loginit for any funny business
 
-  require('./matchers/mapChange.js'),
+  require('./matchers/mapChange.js')
   // 'mapchange' event
 ];
 
@@ -50,10 +51,8 @@ const MATCHERS = [
 
 const verboseLog = (...args) => {
   if (!global.VERBOSE) return;
-  if (Omegga.log)
-    Omegga.log('V>'.magenta, ...args);
-  else
-    console.log('V>'.magenta, ...args);
+  if (Omegga.log) Omegga.log('V>'.magenta, ...args);
+  else console.log('V>'.magenta, ...args);
 };
 
 class Omegga extends OmeggaWrapper {
@@ -72,40 +71,47 @@ class Omegga extends OmeggaWrapper {
    * send a console log to the readline terminal or stdout
    * @param {...args} - things to print out
    */
-  static log(...args) { (Omegga.terminal || console).log(...args); }
+  static log(...args) {
+    (Omegga.terminal || console).log(...args);
+  }
 
   /**
    * send a console error to the readline terminal or stderr
    * @param {...args} - things to print out
    */
-  static error(...args) { (Omegga.terminal || console).error(...args); }
+  static error(...args) {
+    (Omegga.terminal || console).error(...args);
+  }
 
   /**
    * send a console warn to the readline terminal or stdout
    * @param {...args} - things to print out
    */
-  static warn(...args) { (Omegga.terminal || console).warn(...args); }
+  static warn(...args) {
+    (Omegga.terminal || console).warn(...args);
+  }
 
   /**
    * send a console log when omegga is launched when --verbose
    * @param  {...args} message to print
    */
-  static verbose(...args) { verboseLog(...args); }
+  static verbose(...args) {
+    verboseLog(...args);
+  }
 
   /**
    * send a console log to the readline terminal or console
    * @param {terminal} - readline terminal instance
    */
   static setTerminal(term) {
-    if (term instanceof Terminal)
-      Omegga.terminal = term;
+    if (term instanceof Terminal) Omegga.terminal = term;
   }
 
   /**
    * Omegga instance
    * @constructor
    */
-  constructor(serverPath, cfg, options={}) {
+  constructor(serverPath, cfg, options = {}) {
     super(serverPath, cfg);
     this.verbose = global.VERBOSE;
 
@@ -144,7 +150,10 @@ class Omegga extends OmeggaWrapper {
     if (!options.noplugin) {
       verboseLog('Creating plugin loader');
       // create the pluginloader
-      this.pluginLoader = new PluginLoader(path.join(this.path, soft.PLUGIN_PATH), this);
+      this.pluginLoader = new PluginLoader(
+        path.join(this.path, soft.PLUGIN_PATH),
+        this
+      );
 
       verboseLog('Creating loading plugins');
       // load all the plugin formats in
@@ -158,7 +167,7 @@ class Omegga extends OmeggaWrapper {
     this.host = undefined;
 
     /** @type {String} current game version - may later be turned into CL#### versions */
-    this.version = 'a5';
+    this.version = -1;
 
     /** @type {Boolean} whether server has started */
     this.started = false;
@@ -171,7 +180,7 @@ class Omegga extends OmeggaWrapper {
     // add all the matchers to the server
     verboseLog('Adding matchers');
     for (const matcher of MATCHERS) {
-      const {pattern, callback} = matcher(this);
+      const { pattern, callback } = matcher(this);
       this.addMatcher(pattern, callback);
     }
 
@@ -182,7 +191,11 @@ class Omegga extends OmeggaWrapper {
       if (this.webserver && this.webserver.database) {
         this.webserver.database.addChatLog('server', {}, 'Server error');
       }
-      try { await this.stop(); } catch (e) { Omegga.error(e); }
+      try {
+        await this.stop();
+      } catch (e) {
+        Omegga.error(e);
+      }
       process.exit();
     });
 
@@ -201,17 +214,18 @@ class Omegga extends OmeggaWrapper {
 
     // when the process closes, emit the exit signal and stop
     this.on('closed', () => {
-      if (this.started)
-        this.emit('exit');
-      if (!this.stopping)
-        this.stop();
+      if (this.started) this.emit('exit');
+      if (!this.stopping) this.stop();
     });
 
     // detect when a missing command is sent
     this.on('cmd', (cmd, name) => {
       // if it's not in the default commands and it's not registered to a plugin,
       // it's okay to send the missing command message
-      if (!DEFAULT_COMMANDS.includes(cmd) && (!this.pluginLoader || !this.pluginLoader.isCommand(cmd))) {
+      if (
+        !DEFAULT_COMMANDS.includes(cmd) &&
+        (!this.pluginLoader || !this.pluginLoader.isCommand(cmd))
+      ) {
         this.whisper(name, MISSING_CMD);
       }
     });
@@ -248,7 +262,7 @@ class Omegga extends OmeggaWrapper {
    */
   async stop() {
     if (!this.started && !this.starting) {
-      verboseLog('Stop called while server wasn\'t started or was starting');
+      verboseLog("Stop called while server wasn't started or was starting");
       return;
     }
 
@@ -265,8 +279,7 @@ class Omegga extends OmeggaWrapper {
     }
     verboseLog('Stopping server');
     super.stop();
-    if (this.stopping)
-      this.emit('server:stopped');
+    if (this.stopping) this.emit('server:stopped');
     this.stopping = false;
     this.started = false;
     this.starting = false;
@@ -312,8 +325,7 @@ class Omegga extends OmeggaWrapper {
   //
   whisper(target, ...messages) {
     // find the target player
-    if (typeof target !== 'object')
-      target = this.getPlayer(target);
+    if (typeof target !== 'object') target = this.getPlayer(target);
 
     // whisper the messages to that player
     messages
@@ -326,31 +338,45 @@ class Omegga extends OmeggaWrapper {
    * get a list of players
    * @return {players} - list of players {id: uuid, name: name} objects
    */
-  getPlayers() { return this.players.map(p => ({...p})); }
+  getPlayers() {
+    return this.players.map(p => ({ ...p }));
+  }
 
   /**
    * Get up-to-date role setup from RoleSetup.json
    * @return {object}
    */
-  getRoleSetup() { return file.readWatchedJSON(path.join(this.configPath, 'RoleSetup.json')); }
+  getRoleSetup() {
+    return file.readWatchedJSON(path.join(this.configPath, 'RoleSetup.json'));
+  }
 
   /**
    * Get up-to-date role assignments from RoleAssignment.json
    * @return {object}
    */
-  getRoleAssignments() { return file.readWatchedJSON(path.join(this.configPath, 'RoleAssignments.json')); }
+  getRoleAssignments() {
+    return file.readWatchedJSON(
+      path.join(this.configPath, 'RoleAssignments.json')
+    );
+  }
 
   /**
    * Get up-to-date ban list from BanList.json
    * @return {object}
    */
-  getBanList() { return file.readWatchedJSON(path.join(this.configPath, 'BanList.json')); }
+  getBanList() {
+    return file.readWatchedJSON(path.join(this.configPath, 'BanList.json'));
+  }
 
   /**
    * Get up-to-date name cache from PlayerNameCache.json
    * @return {object}
    */
-  getNameCache() { return file.readWatchedJSON(path.join(this.configPath, 'PlayerNameCache.json')); }
+  getNameCache() {
+    return file.readWatchedJSON(
+      path.join(this.configPath, 'PlayerNameCache.json')
+    );
+  }
 
   /**
    * find a player by name, id, controller, or state
@@ -358,7 +384,13 @@ class Omegga extends OmeggaWrapper {
    * @return {Player}
    */
   getPlayer(arg) {
-    return this.players.find(p => p.name === arg || p.id === arg || p.controller === arg || p.state === arg);
+    return this.players.find(
+      p =>
+        p.name === arg ||
+        p.id === arg ||
+        p.controller === arg ||
+        p.state === arg
+    );
   }
 
   /**
@@ -369,27 +401,29 @@ class Omegga extends OmeggaWrapper {
   findPlayerByName(name) {
     name = name.toLowerCase();
     const exploded = pattern.explode(name);
-    return this.players.find(p => p.name === name) // find by exact match
-      || this.players.find(p => p.name.indexOf(name) > -1) // find by rough match
-      || this.players.find(p => p.name.match(exploded)); // find by exploded regex match (ck finds cake, tbp finds TheBlackParrot)
+    return (
+      this.players.find(p => p.name === name) || // find by exact match
+      this.players.find(p => p.name.indexOf(name) > -1) || // find by rough match
+      this.players.find(p => p.name.match(exploded))
+    ); // find by exploded regex match (ck finds cake, tbp finds TheBlackParrot)
   }
 
   /**
    * get the host's ID
    * @return {String} - Host Id
    */
-  getHostId() { return this.host ? this.host.id : ''; }
+  getHostId() {
+    return this.host ? this.host.id : '';
+  }
 
   /**
    * clear a user's bricks (by uuid, name, controller, or player object)
    * @param  {String|Object} - player or player identifier
    * @param  {Boolean} - quietly clear bricks
    */
-  clearBricks(target, quiet=false) {
+  clearBricks(target, quiet = false) {
     // target is a player object, just use that id
-    if (typeof target === 'object' && target.id)
-      target = target.id;
-
+    if (typeof target === 'object' && target.id) target = target.id;
     // if the target isn't a uuid already, find the player by name or controller and use that uuid
     else if (typeof target === 'string' && !uuid.match(target)) {
       // only set the target if the player exists
@@ -397,8 +431,7 @@ class Omegga extends OmeggaWrapper {
       target = player && player.id;
     }
 
-    if (!target)
-      return;
+    if (!target) return;
 
     this.writeln(`Bricks.Clear ${target} ${quiet ? 1 : ''}`);
   }
@@ -407,7 +440,9 @@ class Omegga extends OmeggaWrapper {
    * Clear all bricks on the server
    * @param  {Boolean} - quietly clear bricks
    */
-  clearAllBricks(quiet=false) { this.writeln(`Bricks.ClearAll ${quiet ? 1 : ''}`); }
+  clearAllBricks(quiet = false) {
+    this.writeln(`Bricks.ClearAll ${quiet ? 1 : ''}`);
+  }
 
   /**
    * Save bricks under a name
@@ -415,8 +450,7 @@ class Omegga extends OmeggaWrapper {
    */
   saveBricks(name) {
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
-    if (!(name.startsWith('"') && name.endsWith('"')))
-      name = `"${name}"`;
+    if (!(name.startsWith('"') && name.endsWith('"'))) name = `"${name}"`;
     this.writeln(`Bricks.Save ${name}`);
   }
 
@@ -428,19 +462,24 @@ class Omegga extends OmeggaWrapper {
    * @param  {Number} - world Z offset
    * @param  {Boolean} - quiet mode
    */
-  loadBricks(name, {offX=0, offY=0, offZ=0, quiet=false}={}) {
+  loadBricks(name, { offX = 0, offY = 0, offZ = 0, quiet = false } = {}) {
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
-    if (!(name.startsWith('"') && name.endsWith('"')))
-      name = `"${name}"`;
+    if (!(name.startsWith('"') && name.endsWith('"'))) name = `"${name}"`;
 
-    this.writeln(`Bricks.Load ${name} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`);
+    this.writeln(
+      `Bricks.Load ${name} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`
+    );
   }
 
   /**
    * get all saves in the save folder and child folders
    * @return {Array<String>}
    */
-  getSaves() { return fs.existsSync(this.savePath) ? glob.sync(this.savePath + '/**/*.brs') : []; }
+  getSaves() {
+    return fs.existsSync(this.savePath)
+      ? glob.sync(this.savePath + '/**/*.brs')
+      : [];
+  }
 
   /**
    * Checks if a save exists and returns an absolute path
@@ -448,7 +487,10 @@ class Omegga extends OmeggaWrapper {
    * @return {String} - Path to string
    */
   getSavePath(name) {
-    const file = path.join(this.savePath, name.endsWith('.brs') ? name : name + '.brs');
+    const file = path.join(
+      this.savePath,
+      name.endsWith('.brs') ? name : name + '.brs'
+    );
     return fs.existsSync(file) ? file : undefined;
   }
 
@@ -473,14 +515,18 @@ class Omegga extends OmeggaWrapper {
    * @param  {Boolean} - only read save header data
    * @return {SaveData} - BRS JS Save Data
    */
-  readSaveData(name, nobricks=false) {
+  readSaveData(name, nobricks = false) {
     if (typeof name !== 'string')
       throw 'expected name argument for readSaveData';
 
     const file = this.getSavePath(name);
     if (!file || !file.startsWith(this.savePath))
       throw 'save file not in Saved/Builds directory';
-    if (file) return brs.read(fs.readFileSync(file), {preview: false, bricks: !nobricks});
+    if (file)
+      return brs.read(fs.readFileSync(file), {
+        preview: false,
+        bricks: !nobricks
+      });
   }
 
   /**
@@ -492,8 +538,12 @@ class Omegga extends OmeggaWrapper {
    * @param  {Boolean} - quiet mode
    * @return {Promise}
    */
-  async loadSaveData(data, {offX=0, offY=0, offZ=0, quiet=false}={}) {
-    const saveFile = this._tempSavePrefix + Date.now() + '_' + (this._tempSaveCounter++);
+  async loadSaveData(
+    data,
+    { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
+  ) {
+    const saveFile =
+      this._tempSavePrefix + Date.now() + '_' + this._tempSaveCounter++;
     // write savedata to file
     this.writeSaveData(saveFile, data);
 
@@ -521,7 +571,8 @@ class Omegga extends OmeggaWrapper {
    * @return {Promise<SaveData>} - BRS JS Save Data
    */
   async getSaveData() {
-    const saveFile = this._tempSavePrefix + Date.now() + '_' + (this._tempSaveCounter++);
+    const saveFile =
+      this._tempSavePrefix + Date.now() + '_' + this._tempSaveCounter++;
 
     // wait for the server to save the file
     await this.watchLogChunk(
@@ -529,10 +580,13 @@ class Omegga extends OmeggaWrapper {
       /^(LogBrickSerializer|LogTemp): (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),
-        last: match => match[2].match(/Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/),
+        last: match =>
+          match[2].match(
+            /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/
+          ),
         afterMatchDelay: 0,
         timeoutDelay: 30000
-      },
+      }
     );
 
     // read the save file
@@ -557,8 +611,7 @@ class Omegga extends OmeggaWrapper {
    * @return {Promise}
    */
   async changeMap(map) {
-    if(!map)
-      return;
+    if (!map) return;
 
     // ServerTravel requires /Game/Maps/Plate/Plate instead of Plate
     const brName = mapUtils.n2brn(map);
@@ -569,9 +622,14 @@ class Omegga extends OmeggaWrapper {
       {
         timeoutDelay: 30000,
         exec: () => this.writeln(`ServerTravel ${brName}`)
-      },
+      }
     );
-    const success = !!(match && match[0] && match[0].groups && match[0].groups.map);
+    const success = !!(
+      match &&
+      match[0] &&
+      match[0].groups &&
+      match[0].groups.map
+    );
     return success;
   }
 

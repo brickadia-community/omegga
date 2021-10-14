@@ -20,8 +20,6 @@ class OmeggaWrapper extends EventEmitter {
     this.dataPath = path.join(this.path, soft.DATA_PATH);
     this.#server = new BrickadiaServer(this.dataPath, cfg);
 
-    this.version = 'a4';
-
     // log wrangler wrangles logs... it reads brickadia logs and clumps them together
     this.logWrangler = new LogWrangler(this);
     this.#server.on('line', this.logWrangler.callback);

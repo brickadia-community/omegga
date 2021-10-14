@@ -20,6 +20,7 @@ module.exports = {
   // home directory for omegga config
   PROJECT_NAME,
   CONFIG_HOME,
+  BRICKADIA_INSTALLS: path.join(os.homedir(), '.local/share/brickadia-launcher/brickadia-installs'),
   LOCAL_LAUNCHER: path.join(CONFIG_HOME, 'launcher/brickadia-launcher/main-brickadia-launcher'),
 
   // path to auth files

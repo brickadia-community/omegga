@@ -6,30 +6,46 @@ const Omegga = require('../../server.js');
 const commandInjector = require('../../commandInjector.js');
 
 // bootstrap the proxy with initial omegga data
-const bootstrap = (omegga) => ({
+const bootstrap = omegga => ({
   'plugin:players:raw': [omegga.players.map(p => p.raw())],
-  bootstrap: [{
-    host: Object.freeze({...omegga.host}),
-    version: omegga.version,
-    verbose: global.VERBOSE,
-    savePath: omegga.savePath,
-    path: omegga.path,
-    configPath: omegga.configPath,
-    starting: omegga.starting,
-    started: omegga.started,
-    config: omegga.config,
-    currentMap: omegga.currentMap,
-  }],
+  bootstrap: [
+    {
+      host: Object.freeze({ ...omegga.host }),
+      version: omegga.version,
+      verbose: global.VERBOSE,
+      savePath: omegga.savePath,
+      path: omegga.path,
+      configPath: omegga.configPath,
+      starting: omegga.starting,
+      started: omegga.started,
+      config: omegga.config,
+      currentMap: omegga.currentMap
+    }
+  ]
 });
 
 // prototypes that can be directly stolen from omegga
 const STEAL_PROTOTYPES = [
-  'broadcast', 'whisper', 'getPlayer', 'getPlayers',
-  'findPlayerByName', 'getHostId',
-  'clearBricks', 'clearAllBricks', 'loadBricks', 'saveBricks',
-  'getSavePath', 'getSaves',
-  'writeSaveData', 'readSaveData', 'loadSaveData', 'getSaveData',
-  'getRoleSetup', 'getRoleAssignments', 'getBanList', 'getNameCache',
+  'broadcast',
+  'whisper',
+  'getPlayer',
+  'getPlayers',
+  'findPlayerByName',
+  'getHostId',
+  'clearBricks',
+  'clearAllBricks',
+  'loadBricks',
+  'saveBricks',
+  'getSavePath',
+  'getSaves',
+  'writeSaveData',
+  'readSaveData',
+  'loadSaveData',
+  'getSaveData',
+  'getRoleSetup',
+  'getRoleAssignments',
+  'getBanList',
+  'getNameCache',
   'changeMap'
 ];
 
@@ -46,7 +62,7 @@ class ProxyOmegga extends EventEmitter {
 
     this.writeln = exec;
 
-    this.version = 'a4';
+    this.version = -1;
 
     this.players = [];
 
@@ -69,12 +85,14 @@ class ProxyOmegga extends EventEmitter {
     });
 
     // data synchronization
-    this.on('host', host => this.host = host);
-    this.on('version', version => this.version = version);
+    this.on('host', host => (this.host = host));
+    this.on('version', version => (this.version = version));
 
     // create players from raw constructor data
-    this.on('plugin:players:raw', players =>
-      this.players = players.map(p => new Player(this, ...p)));
+    this.on(
+      'plugin:players:raw',
+      players => (this.players = players.map(p => new Player(this, ...p)))
+    );
 
     this.on('start', ({ map }) => {
       this.started = true;

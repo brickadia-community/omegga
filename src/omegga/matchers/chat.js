@@ -5,14 +5,15 @@ module.exports = omegga => {
 
   const exists = name => omegga.players.some(p => p.name === name);
 
-  const sanitizeMsg = msg => msg.toString()
-    .replace(/&gt;/g, '>')
-    .replace(/&und;/g, '_')
-    .replace(/&lt;/g, '<')
-    .replace(/&scl;/g, ';');
+  const sanitizeMsg = msg =>
+    msg
+      .toString()
+      .replace(/&gt;/g, '>')
+      .replace(/&und;/g, '_')
+      .replace(/&lt;/g, '<')
+      .replace(/&scl;/g, ';');
 
-  const sanitizeName = name => name.toString()
-    .replace(/&und;/g, '_');
+  const sanitizeName = name => name.toString().replace(/&und;/g, '_');
 
   return {
     // listen for chat messages
@@ -31,10 +32,8 @@ module.exports = omegga => {
       if (chatMatch) {
         let { name, message } = chatMatch.groups;
 
-        if (omegga.version === 'a5') {
-          name = sanitizeName(name);
-          message = sanitizeMsg(message);
-        }
+        name = sanitizeName(name);
+        message = sanitizeMsg(message);
 
         // no player has this name. probably a bug
         if (!exists(name)) return;
@@ -51,7 +50,6 @@ module.exports = omegga => {
 
         return { type: 'kick', name, kicker, reason };
       }
-
     },
     // when there's a match, emit the chat message event
     callback({ type, name, kicker, message, reason }) {
