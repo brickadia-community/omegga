@@ -15,8 +15,8 @@ module.exports = {
   auth: require('./auth.js'),
 
   // tackles the problem of reading brickadia logs
-  LogWrangler: require('./LogWrangler.js'),
+  LogWrangler: require('./logWrangler.js'),
 
   // injects commands that only need a log wrangler to function
-  commandInjector: require('./commandInjector.js'),
+  commandInjector: require('./commandInjector.js')
 };
