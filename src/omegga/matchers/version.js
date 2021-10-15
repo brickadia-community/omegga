@@ -20,7 +20,7 @@ module.exports = omegga => {
       const branch = omegga.config.server.branch ?? 'main-server';
       const configPath = path.join(
         softconfig.BRICKADIA_INSTALLS,
-        branch.substring(Math.max(0, branch.indexOf(':') + 1)) + '.json'
+        branch.split(':')[0] + '.json'
       );
 
       // base game version on curl version
@@ -40,6 +40,6 @@ module.exports = omegga => {
     callback(version) {
       omegga.emit('version', version);
       omegga.version = version;
-    },
+    }
   };
 };
