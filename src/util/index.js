@@ -20,7 +20,7 @@ module.exports = {
   // brick utils
   brick: require('./brick'),
 
-  // brs
+  // wsl
   wsl: () => require('./wsl'),
 
   // brs
