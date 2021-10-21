@@ -1,25 +1,28 @@
 module.exports = {
   // santize chat, emote list
-  chat: require('./chat.js'),
+  chat: require('./chat'),
 
   // hsv and sRGB to linearRGB helpers
-  color: require('./color.js'),
+  color: require('./color'),
 
   // uuid utils
-  uuid: require('./uuid.js'),
+  uuid: require('./uuid'),
 
   // pattern matching utils
-  pattern: require('./pattern.js'),
+  pattern: require('./pattern'),
 
   // time parsing utils
-  time: require('./time.js'),
+  time: require('./time'),
 
   // map parsing utils
-  map: require('./map.js'),
+  map: require('./map'),
 
   // brick utils
   brick: require('./brick'),
 
   // brs
-  brs: require('brs-js'),
+  wsl: () => require('./wsl'),
+
+  // brs
+  brs: require('brs-js')
 };
