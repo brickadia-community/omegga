@@ -4,7 +4,7 @@ const {
   chat: { sanitize }
 } = require('../util/index.js');
 
-let log, err;
+let log, err, warn;
 
 // the terminal wraps omegga and displays console output and handles console input
 class Terminal {
@@ -69,11 +69,16 @@ class Terminal {
       this.log(`${name.brightYellow.underline}: ${message}`)
     );
     omegga.on('start', () => {
-      log('Server has started. Type', '/help'.yellow, 'for more commands');
+      const wsl = require('../util/wsl');
+      log(
+        `Server has started${
+          wsl === 1 ? ' in single thread mode due to WSL1' : ''
+        }. Type ${'/help'.yellow} for more commands`
+      );
 
       // check if this is WSL2 and wsl2binds is installed
       if (
-        require('../util/wsl') === 2 &&
+        wsl === 2 &&
         this.omegga.pluginLoader &&
         !this.omegga.pluginLoader.plugins.some(p => p.getName() === 'wsl2binds')
       ) {
@@ -85,15 +90,18 @@ class Terminal {
         );
         warn(
           '####'.yellow,
-          `The wsl2binds plugin works as a UDP proxy between Windows and the WSL2 VM.`
+          `The wsl2binds plugin works as a ${
+            'UDP proxy'.underline
+          } between Windows and the WSL2 VM.`
         );
         warn('####'.yellow, 'Install it by:');
         warn('####'.yellow, ' 1. Closing omegga with', '/stop'.green);
         warn(
           '####'.yellow,
-          ' 1. Installing wsl2binds with',
+          ' 2. Installing wsl2binds with',
           'omegga install gh:Meshiest/wsl2binds'.green
         );
+        warn('####'.yellow, ' 3. Restarting', 'omegga'.green);
       }
     });
     omegga.on('mapchange', ({ map }) =>
