@@ -443,23 +443,6 @@ class Omegga extends OmeggaWrapper {
   clearAllBricks(quiet = false) {
     this.writeln(`Bricks.ClearAll ${quiet ? 1 : ''}`);
   }
-  
-  /**
-  * Gets all the rounds for all the minigames on the server
-  * (MOST LIKELY BROKEN. PLZ CHECK CAKE!)
-  */
-  getAllMinigameRounds(){
-    const rulesetRegex = new RegExp(`BP_Ruleset_C .+?PersistentLevel\\.BP_Ruleset_C_(?<id>[\\d\\.-]+)\\.CurrentRound = (?<round>[\\d\\.-]+)'`);
-
-        // wait for the pawn watcher to return a pawn
-    const [{groups: {id,round}}] = await omegga.addWatcher(rulesetRegex, {
-      // request the pawn for this player's controller (should only be one)
-      exec: () =>  omegga.writeln(`GetAll BP_Ruleset_C CurrentRound`),
-      timeoutDelay: 100,
-    });
-    return [id,round].map(Number)
-  }
-  
 
   /**
    * Save bricks under a name
