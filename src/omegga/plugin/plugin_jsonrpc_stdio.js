@@ -338,7 +338,7 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('getAllPlayerPositions', () => this.omegga.getAllPlayerPositions());
     rpc.addMethod('getRoleSetup', () => this.omegga.getRoleSetup());
     rpc.addMethod('getBanList', () => this.omegga.getBanList());
-    rpc.addMethod('getSaves', () => this.omegga.getBanList());
+    rpc.addMethod('getSaves', () => this.omegga.getSaves());
     rpc.addMethod('getSavePath', (name) => this.omegga.getSavePath(name));
     rpc.addMethod('clearBricks', ({target, quiet=false}) => this.omegga.clearBricks(target, quiet));
     rpc.addMethod('clearAllBricks', (quiet=false) => this.omegga.clearAllBricks(quiet));

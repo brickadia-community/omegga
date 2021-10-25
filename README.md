@@ -83,7 +83,7 @@ Alternatively, you can use a development/local omegga.
     # build the web ui (once)
     npm run dist
 
-If you accidentally install both from github and `npm i -g omegga`, you can run `npm unlink omegga` to stop npm from using the git one.
+If you accidentally install both from Github and `npm i -g omegga`, you can run `npm unlink omegga` to stop npm from using the git one.
 
 If you have EACCES errors on WSL, see the [troubleshooting](#troubleshooting) section for a potential fix.
 
@@ -107,7 +107,7 @@ Then in the Microsoft Store, download a linux:
 To set WSL version from 2 to 1:
 
 1. Check WSL version with `wsl -l -v` in cmd
-2. In Administator cmd, run `wsl --set-version <distribution name> 1` where `<distribution name>` is `Ubuntu`, `Debian`, etc. (From the NAME section of the previous command)
+2. In Administrator cmd, run `wsl --set-version <distribution name> 1` where `<distribution name>` is `Ubuntu`, `Debian`, etc. (From the NAME section of the previous command)
 
 ### Creating a New User
 
@@ -216,7 +216,7 @@ You will have to delete your omegga data folders manually
     * [ ] roles for each user
     * [ ] chatcmd history
     * [x] track players kicked/banned
-    * [ ] automated/scheduled server restarting (when noone is on)
+    * [ ] automated/scheduled server restarting (when no one is on)
   * [x] terminal interface
     * [x] reload plugins
     * [x] chat with players
@@ -256,7 +256,7 @@ Plugins are most easily developed in Javascript at the moment using the Node VM 
 
 You can install plugins with the `omegga install https://github.com/user/repo` command.
 
-You can install plugins using a shortand `omegga install gh:user/repo` which will install the plugin located at `https://github.com/user/omegga-repo`
+You can install plugins using a shorthand `omegga install gh:user/repo` which will install the plugin located at `https://github.com/user/omegga-repo`
 
 ### Manual Installation
 
@@ -339,6 +339,7 @@ Every plugin requires a `doc.json` file to document which briefly describes the 
 This is an example config section of a `doc.json`. The web ui provides an interface for editing these configs.
 
 ```json
+{
   "config": {
     "example-text": {
       "description": "This is an example text input",
@@ -364,13 +365,20 @@ This is an example config section of a `doc.json`. The web ui provides an interf
       "description": "This is an example list input. List type can be string, password, number, or enum",
       "type": "list",
       "itemType": "string",
-      "default": ["hello"]
+      "default": [
+        "hello"
+      ]
     },
     "example-enum": {
       "description": "This is an example enum/dropdown input",
       "type": "enum",
       "options": [
-        "foo", "bar", "baz", 1, 2, 3
+        "foo",
+        "bar",
+        "baz",
+        1,
+        2,
+        3
       ],
       "default": "foo"
     },
@@ -379,21 +387,31 @@ This is an example config section of a `doc.json`. The web ui provides an interf
       "type": "list",
       "itemType": "enum",
       "options": [
-        "foo", "bar", "baz"
+        "foo",
+        "bar",
+        "baz"
       ],
-      "default": ["foo"]
+      "default": [
+        "foo"
+      ]
     },
     "example-players-list": {
       "description": "This is an example list of players.",
       "type": "players",
-      "default": [{"id":"fa577b9e-f2be-493f-a30a-3789b02ba70b", "name":"Aware"}]
+      "default": [
+        {
+          "id": "fa577b9e-f2be-493f-a30a-3789b02ba70b",
+          "name": "Aware"
+        }
+      ]
     },
     "example-role": {
       "description": "This is an example role dropdown",
       "type": "role",
       "default": "Admin"
-    },
+    }
   }
+}
 ```
 
 That config section would generate the following default config:
@@ -415,7 +433,7 @@ This is provided to plugins in the constructor or the RPC init function.
 
 ## Plugin File
 
-This is an example `plugin.json`, located inside of a plugin folder. The plugin file helps omegga know if the plugin is compatible with the current installation. Plugin files can be validated with the `omegga check` command.
+This is an example `plugin.json`, located inside a plugin folder. The plugin file helps omegga know if the plugin is compatible with the current installation. Plugin files can be validated with the `omegga check` command.
 
 ```json
 {
@@ -477,13 +495,13 @@ async function add() {
 })();
 ```
 
-For Node Plugins, the `store` is the third argument passed into the constructor. For JSONRPC Plugins, the `"store.get"`/etc methods can be used.
+For Node Plugins, the `store` is the third argument passed into the constructor. For JSONRPC Plugins, the `"store.get"`/etc. methods can be used.
 
 **JSONRPC Note:** `store.set` has an array of arguments (`[key, value]`)
 
 ## Node VM Plugins
 
-Node VM Plugins are what you should be using. They are run inside a VM inside a Worker. This means when they crash, they do not crash the whole server and they can in the future have locked down permissions (disable filesystem access, etc).
+Node VM Plugins are what you should be using. They are run inside a VM inside a Worker. This means when they crash, they do not crash the whole server, and they can in the future have locked down permissions (disable filesystem access, etc.).
 
 These plugins receive a "proxy" reference to `omegga` and have limited reach for what they can touch.
 
@@ -508,7 +526,7 @@ In a `plugins` directory create the following folder structure:
 
 ### `access.json` (examples)
 
-Access to any builtin modules (`fs`, `path`, etc)
+Access to any builtin modules (`fs`, `path`, etc.)
 ```json
 ["*"]
 ```
@@ -620,48 +638,48 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 
 ### Omegga Methods (You can access these)
 
-| Method | Arguments | Description |
-| ------ | --------- | ----------- |
-| `log` | line (string) | Prints message to omegga console |
-| `error` | line (string) | Same as `log` but with different colors |
-| `info` | line (string) | Same as `log` but with different colors |
-| `warn` | line (string) | Same as `log` but with different colors |
-| `trace` | line (string) | Same as `log` but with different colors |
-| `store.get` | key (string) | Get an object from plugin store |
-| `store.set` | [key (string), value (any)] | Store an object in plugin store |
-| `store.delete` | key (string) | Remove an object from plugin store |
-| `store.wipe` | _none_ | Remove all objects from plugin store |
-| `store.count` | _none_ | Count number of objects in plugin store |
-| `store.keys` | _none_ | Get keys for all objects in plugin store |
-| `exec` | cmd (string) | Writes a console command to Brickadia |
-| `writeln` | cmd (string) | Same as `exec` |
-| `broadcast` | line (string) | Broadcasts a message to the server|
-| `whisper` | {target: string, line: string} | (a5 only) Sends a message to a specific client |
-| `getPlayers` | _none_ | Gets online players |
-| `getAllPlayerPositions` | _none_ | Gets an array of objects with fields `pos` and `player`, representing the position and player object of each player in the server |
-| `getRoleSetup` | _none_ | Gets server roles |
-| `getBanList` | _none_ | Gets list of bans |
-| `getSaves` | _none_ | Gets saves in the saves directory |
-| `getSavePath` | name (string) | Gets the path to a specific save |
-| `getSaveData` | _none_ | Saves the server, converts that save into a brs-js save object, returns the object |
+| Method | Arguments | Description | Response |
+| ------ | --------- | ----------- | -------- |
+| `log` | line (string) | Prints message to omegga console |  |
+| `error` | line (string) | Same as `log` but with different colors |  |
+| `info` | line (string) | Same as `log` but with different colors |  |
+| `warn` | line (string) | Same as `log` but with different colors |  |
+| `trace` | line (string) | Same as `log` but with different colors |  |
+| `store.get` | key (string) | Get an object from plugin store | Object |
+| `store.set` | [key (string), value (any)] | Store an object in plugin store |  |
+| `store.delete` | key (string) | Remove an object from plugin store |  |
+| `store.wipe` | _none_ | Remove all objects from plugin store |  |
+| `store.count` | _none_ | Count number of objects in plugin store | Integer |
+| `store.keys` | _none_ | Get keys for all objects in plugin store | List of Strings |
+| `exec` | cmd (string) | Writes a console command to Brickadia |  |
+| `writeln` | cmd (string) | Same as `exec` |  |
+| `broadcast` | line (string) | Broadcasts a message to the server|  |
+| `whisper` | {target: string, line: string} | (a5 only) Sends a message to a specific client |  |
+| `getPlayers` | _none_ | Gets online players | List of Players
+| `getAllPlayerPositions` | _none_ | Gets an array of objects with fields `pos` and `player`, representing the position and player object of each player in the server. | List of { _Player Object_(...), _Position_(...), isDead(bool)   }
+| `getRoleSetup` | _none_ | Gets server roles | _JSON Data_ | 
+| `getBanList` | _none_ | Gets list of bans | _JSON Data_|
+| `getSaves` | _none_ | Gets saves in the saves directory | List Strings|
+| `getSavePath` | name (string) | Gets the path to a specific save | String |
+| `getSaveData` | _none_ | Saves the server, converts that save into a brs-js save object, returns the object | _BRS Object_|
 | `clearBricks` | {target: string, quiet: bool (a5 only)} | Clears a specific player's bricks |
 | `clearAllBricks` | quiet (bool, a5 only) | Clears all bricks on the server |
 | `saveBricks` | name (string) | Save bricks to a save named `name` |
 | `loadBricks` | {name: string, offX=0 (Number), offY=0 (Number), offY=0 (Number), quiet: bool (a5 only)} | Load bricks of save named `name` |
-| `readSaveData` | name (string) | Parses save into a brs-js save object, returns the object |
+| `readSaveData` | name (string) | Parses save into a brs-js save object, returns the object | _BRS Object_
 | `loadSaveData` | {data: object, offX=0 (Number), offY=0 (Number), offY=0 (Number), quiet: bool (a5 only)} | Loads brs-js save data object to the server |
-| `changeMap` | map (string) | Change map to specified map name, returns if succeeded |
-| `player.get` | target (string) | Gets the player by their name or UUID. Returned is the player in the format `{name: string, id: string, controller: string, state: string, host: bool}?`. |
+| `changeMap` | map (string) | Change map to specified map name, returns if succeeded | Boolean |
+| `player.get` | target (string) | Gets the player by their name or UUID. Returned is the player in the format `{name: string, id: string, controller: string, state: string, host: bool}?`. | _Player Object_
 | `player.getRoles` | target (string) | Gets the target's roles |
-| `player.getPermissions` | target (string) | Gets the target's permissions |
-| `player.getNameColor` | target (string) | Gets the target's name color |
-| `player.getPosition` | target (string) | Gets the target's position |
-| `player.getGhostBrick` | target (string) | Gets info on the target's ghost brick |
-| `player.getPaint` | target (string) | Gets info on the target's current paint selection |
-| `player.getTemplateBounds` | target (string) | Gets the target's template/selection bounds |
-| `player.getTemplateBoundsData` | target (string) | Gets the target's template/selection as brs-js save data |
+| `player.getPermissions` | target (string) | Gets the target's permissions | List of Strings |
+| `player.getNameColor` | target (string) | Gets the target's name color | _RGB Hex Object_ (int, int ,int)
+| `player.getPosition` | target (string) | Gets the target's position | _Position Object_ 
+| `player.getGhostBrick` | target (string) | Gets info on the target's ghost brick | {targetGrid, location(_Location_), orientation}
+| `player.getPaint` | target (string) | Gets info on the target's current paint selection | {materialIndex (Integer), materialAlpha (Integer), material (String), color (_RGB Object_ (Integer, Integer, Integer))}
+| `player.getTemplateBounds` | target (string) | Gets the target's template/selection bounds | {minBound (_Position Object_), maxBound (_Position Object_), Center (_Position Object_)}
+| `player.getTemplateBoundsData` | target (string) | Gets the target's template/selection as brs-js save data | _Brick Object_|
 | `player.loadDataAtGhostBrick` | {target: string, data: object, rotate=true (bool), offX=0 (number), offY=0 (number), offZ=0 (number), quiet=false (bool)} | Loads brs-js save data at the target's template/selection bounds |
-| `plugin.get` | target (string) | Gets info on the target plugin |
+| `plugin.get` | target (string) | Gets info on the target plugin | Object |
 | `plugin.emit` | [target (string), event (string), ...args (any)] | Emit a custom event to the target plugin |
 
 ### Plugin Methods (You implement these)
