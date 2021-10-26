@@ -37,7 +37,10 @@ module.exports = (server, io) => {
       }
 
       // stop recording metrics after 3 empty server statuses
-      if (players.length === 0 && ++empties > soft.METRIC_EMPTIES_BEFORE_PAUSE) {
+      if (
+        players.length === 0 &&
+        ++empties > soft.METRIC_EMPTIES_BEFORE_PAUSE
+      ) {
         return;
       }
 
@@ -76,7 +79,6 @@ module.exports = (server, io) => {
       // probably an issue getting server status
       error('Server Not Responding...');
     }
-
   }, soft.METRIC_HEARTBEAT_INTERVAL);
 
   // chat events
@@ -89,25 +91,32 @@ module.exports = (server, io) => {
     };
 
     // tell web users about a chat message
-    io.to('chat').emit('chat',
-      await database.addChatLog('msg', user, message));
+    io.to('chat').emit('chat', await database.addChatLog('msg', user, message));
   });
 
   // player leave events
-  omegga.on('leave', async ({id, name}) => {
+  omegga.on('leave', async ({ id, name }) => {
     // tell web users a player left
-    io.to('chat').emit('chat',
-      await database.addChatLog('leave', {id, name}));
+    io.to('chat').emit(
+      'chat',
+      await database.addChatLog('leave', { id, name })
+    );
   });
 
   // player join events
-  omegga.on('join', async ({id, name}) => {
+  omegga.on('join', async ({ id, name }) => {
     // add the visit to the database
-    const isFirst = await database.addVisit({id, name});
+    const isFirst = await database.addVisit({ id, name });
 
     // tell web users a player joined (and if it's their first time joining)
-    io.to('chat').emit('chat',
-      await database.addChatLog('join', {id, name, ...(isFirst ? {isFirst} : {})}));
+    io.to('chat').emit(
+      'chat',
+      await database.addChatLog('join', {
+        id,
+        name,
+        ...(isFirst ? { isFirst } : {}),
+      })
+    );
   });
 
   // tell web users plugin status
@@ -117,11 +126,23 @@ module.exports = (server, io) => {
 
   // server status events
   omegga.on('start', () =>
-    io.to('server').emit('status', {started: true, starting: false, stopping: false}));
+    io
+      .to('server')
+      .emit('status', { started: true, starting: false, stopping: false })
+  );
   omegga.on('server:starting', () =>
-    io.to('server').emit('status', {started: false, starting: true, stopping: false}));
+    io
+      .to('server')
+      .emit('status', { started: false, starting: true, stopping: false })
+  );
   omegga.on('server:stopped', () =>
-    io.to('server').emit('status', {started: false, starting: false, stopping: false}));
+    io
+      .to('server')
+      .emit('status', { started: false, starting: false, stopping: false })
+  );
   omegga.on('server:stopping', () =>
-    io.to('server').emit('status', {started: true, starting: false, stopping: true}));
+    io
+      .to('server')
+      .emit('status', { started: true, starting: false, stopping: true })
+  );
 };

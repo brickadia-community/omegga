@@ -6,22 +6,21 @@ module.exports = formats => path => {
   // find the config format that matches this extension
   const ext = path.split('.').pop().toLowerCase();
   const format = formats.find(f => f.extension === ext);
-  if (!format)
-    throw 'missing format';
+  if (!format) throw 'missing format';
 
-  if (!fs.existsSync(path))
-    throw 'missing file';
+  if (!fs.existsSync(path)) throw 'missing file';
 
   // read the config file
   const data = fs.readFileSync(path);
 
   // parse the config file
-  const blob = format.reader(format.encoding === 'string' ? data.toString() : data);
+  const blob = format.reader(
+    format.encoding === 'string' ? data.toString() : data
+  );
 
   // validate the config blob
   const result = validate(blob);
-  if (!result.valid)
-    throw result.errors;
+  if (!result.valid) throw result.errors;
 
   // return the parsed config
   return blob;

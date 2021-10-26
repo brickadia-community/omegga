@@ -38,8 +38,8 @@ const transformers = [
     fn: ({ owner, repo }) => ({
       type: 'short',
       name: repo,
-      url: `https://github.com/${owner}/omegga-${repo}`
-    })
+      url: `https://github.com/${owner}/omegga-${repo}`,
+    }),
   },
   {
     // gitlab transformer
@@ -47,9 +47,9 @@ const transformers = [
     fn: ({ owner, repo }) => ({
       type: 'short',
       name: repo,
-      url: `https://gitlab.com/${owner}/omegga-${repo}`
-    })
-  }
+      url: `https://gitlab.com/${owner}/omegga-${repo}`,
+    }),
+  },
 ];
 
 // convert a shortened url into a full length one
@@ -260,7 +260,7 @@ module.exports = {
           fs.chmodSync(postInstallPath, '0755');
           let { stdout, stderr } = await exec(postInstallPath, {
             cwd: pluginPath,
-            shell: true
+            shell: true,
           });
 
           if (stderr.length) plgErr(plugin, stderr);
@@ -461,7 +461,7 @@ module.exports = {
             fs.chmodSync(postInstallPath, '0755');
             let { stdout, stderr } = await exec(postInstallPath, {
               cwd: plugin.path,
-              shell: true
+              shell: true,
             });
 
             if (stderr.length) plgErr(plugin, stderr);
@@ -571,5 +571,5 @@ module.exports = {
       checkPlugin(omeggaPath, plugin);
     }
     console.log();
-  }
+  },
 };

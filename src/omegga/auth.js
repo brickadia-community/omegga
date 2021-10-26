@@ -9,10 +9,8 @@ require('colors');
 
 const verboseLog = (...args) => {
   if (!global.VERBOSE) return;
-  if (Omegga.log)
-    Omegga.log('V>'.magenta, ...args);
-  else
-    console.log('V>'.magenta, ...args);
+  if (Omegga.log) Omegga.log('V>'.magenta, ...args);
+  else console.log('V>'.magenta, ...args);
 };
 
 // remove the temporary install
@@ -21,7 +19,9 @@ async function removeTempDir() {
     verboseLog('Removing temporary auth directory');
 
     // attempt to remove the temporary dir
-    try { await file.rmdir(soft.TEMP_DIR_NAME); } catch (e) {
+    try {
+      await file.rmdir(soft.TEMP_DIR_NAME);
+    } catch (e) {
       // ignore fail - the directory probably doesn't exist
     }
   }
@@ -31,7 +31,9 @@ async function removeTempDir() {
 function readAuthFiles() {
   const files = {};
   for (const f of soft.BRICKADIA_AUTH_FILES) {
-    files[f] = fs.readFileSync(path.join(soft.TEMP_DIR_NAME, soft.DATA_PATH, 'Saved/Auth', f));
+    files[f] = fs.readFileSync(
+      path.join(soft.TEMP_DIR_NAME, soft.DATA_PATH, 'Saved/Auth', f)
+    );
   }
   return files;
 }
@@ -44,7 +46,7 @@ function writeAuthFiles(dstDir, files) {
 }
 
 // from credentials, build brickadia auth tokens
-async function genAuthFiles(email, password, {debug=false, branch}) {
+async function genAuthFiles(email, password, { debug = false, branch }) {
   verboseLog('Generating auth files');
 
   // remove existing temporary install path
@@ -105,12 +107,14 @@ async function genAuthFiles(email, password, {debug=false, branch}) {
     });
 
     let finished = false;
-    const finish = name => (...args) => {
-      if (finished) return;
-      finished = true;
-      verboseLog('Brickadia', name, 'with code', ...args);
-      if (!resolved) reject('temp server could not start');
-    };
+    const finish =
+      name =>
+      (...args) => {
+        if (finished) return;
+        finished = true;
+        verboseLog('Brickadia', name, 'with code', ...args);
+        if (!resolved) reject('temp server could not start');
+      };
 
     // if the server closes and the promise hasn't resolved, reject
     omegga.once('closed', finish('closed'));

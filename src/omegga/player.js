@@ -33,26 +33,38 @@ class Player {
    * @return {Player}
    */
   clone() {
-    return new Player(this.#omegga, this.name, this.id, this.controller, this.state);
+    return new Player(
+      this.#omegga,
+      this.name,
+      this.id,
+      this.controller,
+      this.state
+    );
   }
 
   /**
    * Get raw player info (to feed into a constructor)
    * @return {Array<String>}
    */
-  raw() { return [this.name, this.id, this.controller, this.state]; }
+  raw() {
+    return [this.name, this.id, this.controller, this.state];
+  }
 
   /**
    * true if the player is the host
    * @return {Boolean}
    */
-  isHost() { return this.#omegga.host.id === this.id; }
+  isHost() {
+    return this.#omegga.host.id === this.id;
+  }
 
   /**
    * clear this player's bricks
    * @param  {Boolean} - quiet mode
    */
-  clearBricks(quiet=false) { this.#omegga.clearBricks(this.id, quiet); }
+  clearBricks(quiet = false) {
+    this.#omegga.clearBricks(this.id, quiet);
+  }
 
   /**
    * get a player's roles, if any
@@ -84,13 +96,15 @@ class Player {
 
     // if the player is the host, the player has every permission
     if (omegga.host.id === id) {
-      return Object.freeze(Object.fromEntries(
-        [].concat(
-          defaultRole.permissions.map(p => [p.name, true]),
-          // sometimes the default role does not have every permission listed
-          ...roles.map(r => r.permissions.map(p => [p.name, true])),
-        ),
-      ));
+      return Object.freeze(
+        Object.fromEntries(
+          [].concat(
+            defaultRole.permissions.map(p => [p.name, true]),
+            // sometimes the default role does not have every permission listed
+            ...roles.map(r => r.permissions.map(p => [p.name, true]))
+          )
+        )
+      );
     }
 
     const DEFAULT_PERMS = {
@@ -167,14 +181,16 @@ class Player {
     // apply all permissions from default role
     for (const p of defaultRole.permissions) {
       // technically this can never be Unchanged so it's always on enabled or allowed
-      permissions[p.name] = p.state === 'Unchanged' ? permissions[p.name] : !!p.bEnabled || p.state === 'Allowed';
+      permissions[p.name] =
+        p.state === 'Unchanged'
+          ? permissions[p.name]
+          : !!p.bEnabled || p.state === 'Allowed';
     }
 
     // loop through all the roles
     for (const role of roles) {
       // ignore ones the player does not have
-      if (!playerRoles.includes(role.name.toLowerCase()))
-        continue;
+      if (!playerRoles.includes(role.name.toLowerCase())) continue;
 
       const defaultPerms = DEFAULT_PERMS[role.name.toLowerCase()] || [];
       // iterate through default permissions
@@ -187,10 +203,11 @@ class Player {
       // add all the new permissions the player now has
       for (const p of role.permissions) {
         // permission is disabled on forbidden, persisted on unchanged, and enabled on bEnabled or Allowed
-        permissions[p.name] = p.state !== 'Forbidden' && (
-          p.state === 'Unchanged'
+        permissions[p.name] =
+          p.state !== 'Forbidden' &&
+          (p.state === 'Unchanged'
             ? permissions[p.name]
-            : (permissions[p.name] || p.bEnabled) || p.state === 'Allowed');
+            : permissions[p.name] || p.bEnabled || p.state === 'Allowed');
         permissions[p.name] = permissions[p.name] || p.bEnabled;
       }
     }
@@ -211,7 +228,8 @@ class Player {
    * @return {String} - 6 character hex string
    */
   getNameColor() {
-    const { roles, defaultRole, ownerRoleColor, bOwnerRoleHasColor } = this.#omegga.getRoleSetup();
+    const { roles, defaultRole, ownerRoleColor, bOwnerRoleHasColor } =
+      this.#omegga.getRoleSetup();
 
     // host check if host has host color
     if (this.isHost() && bOwnerRoleHasColor)
@@ -223,14 +241,22 @@ class Player {
     // only if the player actually has roles...
     if (playerRoles.length > 0) {
       // check the role list in reverse for the player's role (highest tier first)
-      const found = roles.slice().reverse().find(role =>
-        role.bHasColor && playerRoles.includes(role.name.toLowerCase()));
+      const found = roles
+        .slice()
+        .reverse()
+        .find(
+          role =>
+            role.bHasColor && playerRoles.includes(role.name.toLowerCase())
+        );
 
-      if (found)
-        return color.rgbToHex(found.color);
+      if (found) return color.rgbToHex(found.color);
     }
 
-    return color.rgbToHex(defaultRole.bHasColor ? defaultRole.color : {r: 255, g: 255, b: 255, a: 255});
+    return color.rgbToHex(
+      defaultRole.bHasColor
+        ? defaultRole.color
+        : { r: 255, g: 255, b: 255, a: 255 }
+    );
   }
 
   /**
@@ -243,22 +269,40 @@ class Player {
     const omegga = this.#omegga;
 
     // given a player controller, match the player's pawn
-    const pawnRegExp = new RegExp(`BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\\d+)'`);
+    const pawnRegExp = new RegExp(
+      `BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\\d+)'`
+    );
 
     // wait for the pawn watcher to return a pawn
-    const [{groups: { pawn }}] = await omegga.addWatcher(pawnRegExp, {
+    const [
+      {
+        groups: { pawn },
+      },
+    ] = await omegga.addWatcher(pawnRegExp, {
       // request the pawn for this player's controller (should only be one)
-      exec: () =>  omegga.writeln(`GetAll BP_PlayerController_C Pawn Name=${this.controller}`),
+      exec: () =>
+        omegga.writeln(
+          `GetAll BP_PlayerController_C Pawn Name=${this.controller}`
+        ),
       timeoutDelay: 100,
     });
 
     // given a player's pawn, match the player's position
-    const posRegExp = new RegExp(`CapsuleComponent .+?PersistentLevel\\.${pawn}\\.CollisionCylinder\\.RelativeLocation = \\(X=(?<x>[\\d\\.-]+),Y=(?<y>[\\d\\.-]+),Z=(?<z>[\\d\\.-]+)\\)`);
+    const posRegExp = new RegExp(
+      `CapsuleComponent .+?PersistentLevel\\.${pawn}\\.CollisionCylinder\\.RelativeLocation = \\(X=(?<x>[\\d\\.-]+),Y=(?<y>[\\d\\.-]+),Z=(?<z>[\\d\\.-]+)\\)`
+    );
 
     // wait for the position promise
-    const [{groups: { x, y, z }}] = await omegga.addWatcher(posRegExp, {
+    const [
+      {
+        groups: { x, y, z },
+      },
+    ] = await omegga.addWatcher(posRegExp, {
       // request the position for this player's pawn
-      exec: () =>  omegga.writeln(`GetAll SceneComponent RelativeLocation Name=CollisionCylinder Outer=${pawn}`),
+      exec: () =>
+        omegga.writeln(
+          `GetAll SceneComponent RelativeLocation Name=CollisionCylinder Outer=${pawn}`
+        ),
       timeoutDelay: 100,
     });
 
@@ -273,26 +317,36 @@ class Player {
   async getGhostBrick() {
     const { controller } = this;
 
-    const ownerRegExp = /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.Owner = BP_PlayerController_C'(.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)'$/;
-    const transformParamsRegExp = /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.TransformParameters = \(TargetGrid=("(?<targetGrid>.+)"|None),Position=\(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\),Orientation=(?<orientation>.+)\)$/;
+    const ownerRegExp =
+      /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.Owner = BP_PlayerController_C'(.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)'$/;
+    const transformParamsRegExp =
+      /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.TransformParameters = \(TargetGrid=("(?<targetGrid>.+)"|None),Position=\(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\),Orientation=(?<orientation>.+)\)$/;
 
     const [owners, transformParams] = await Promise.all([
-      this.#omegga.watchLogChunk('GetAll BrickGridPreviewActor Owner', ownerRegExp, {first: 'index', timeoutDelay: 500}),
-      this.#omegga.watchLogChunk('GetAll BrickGridPreviewActor TransformParameters', transformParamsRegExp, {first: 'index', timeoutDelay: 500}),
+      this.#omegga.watchLogChunk(
+        'GetAll BrickGridPreviewActor Owner',
+        ownerRegExp,
+        { first: 'index', timeoutDelay: 500 }
+      ),
+      this.#omegga.watchLogChunk(
+        'GetAll BrickGridPreviewActor TransformParameters',
+        transformParamsRegExp,
+        { first: 'index', timeoutDelay: 500 }
+      ),
     ]);
 
     // get BrickGridPreviewActor by controller
-    const owner = owners.find((owner) => owner.groups.controller === controller);
+    const owner = owners.find(owner => owner.groups.controller === controller);
 
-    if (!owner)
-      return;
-    
+    if (!owner) return;
+
     const actor = owner.groups.actor;
     // get transform parameters for the found actor
-    const transformParameters = transformParams.find((transformParameters) => transformParameters.groups.actor === actor);
+    const transformParameters = transformParams.find(
+      transformParameters => transformParameters.groups.actor === actor
+    );
 
-    if (!transformParameters) 
-      return;
+    if (!transformParameters) return;
 
     return {
       targetGrid: transformParameters.groups.targetGrid,
@@ -301,7 +355,7 @@ class Player {
         +transformParameters.groups.y,
         +transformParameters.groups.z,
       ],
-      orientation: transformParameters.groups.orientation
+      orientation: transformParameters.groups.orientation,
     };
   }
 
@@ -312,46 +366,67 @@ class Player {
   async getPaint() {
     const { controller } = this;
 
-    const ownerRegExp = /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.Owner = BP_PlayerController_C'(.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)'$/;
-    const colorRegExp = /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.SelectedColor = \(B=(?<b>.+),G=(?<g>.+),R=(?<r>.+),A=(?<a>.+)\)$/;
-    const materialRegExp = /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.SelectedMaterialId = (?<materialIndex>\d+)$/;
-    const materialAlphaRegExp = /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.SelectedMaterialAlpha = (?<materialAlpha>\d+)$/;
+    const ownerRegExp =
+      /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.Owner = BP_PlayerController_C'(.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)'$/;
+    const colorRegExp =
+      /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.SelectedColor = \(B=(?<b>.+),G=(?<g>.+),R=(?<r>.+),A=(?<a>.+)\)$/;
+    const materialRegExp =
+      /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.SelectedMaterialId = (?<materialIndex>\d+)$/;
+    const materialAlphaRegExp =
+      /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.SelectedMaterialAlpha = (?<materialAlpha>\d+)$/;
 
-    const [owners, colorMatch, materialMatch, materialAlphaMatch] = await Promise.all([
-      this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C Owner', ownerRegExp, {first: 'index', timeoutDelay: 500}),
-      this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C SelectedColor', colorRegExp, {first: 'index', timeoutDelay: 500}),
-      this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C SelectedMaterialId', materialRegExp, {first: 'index', timeoutDelay: 500}),
-      this.#omegga.watchLogChunk('GetAll BP_Item_PaintTool_C SelectedMaterialAlpha', materialAlphaRegExp, {first: 'index', timeoutDelay: 500}),
-    ]);
+    const [owners, colorMatch, materialMatch, materialAlphaMatch] =
+      await Promise.all([
+        this.#omegga.watchLogChunk(
+          'GetAll BP_Item_PaintTool_C Owner',
+          ownerRegExp,
+          { first: 'index', timeoutDelay: 500 }
+        ),
+        this.#omegga.watchLogChunk(
+          'GetAll BP_Item_PaintTool_C SelectedColor',
+          colorRegExp,
+          { first: 'index', timeoutDelay: 500 }
+        ),
+        this.#omegga.watchLogChunk(
+          'GetAll BP_Item_PaintTool_C SelectedMaterialId',
+          materialRegExp,
+          { first: 'index', timeoutDelay: 500 }
+        ),
+        this.#omegga.watchLogChunk(
+          'GetAll BP_Item_PaintTool_C SelectedMaterialAlpha',
+          materialAlphaRegExp,
+          { first: 'index', timeoutDelay: 500 }
+        ),
+      ]);
 
     // get BrickGridPreviewActor by controller
-    const owner = owners.find((owner) => owner.groups.controller === controller);
+    const owner = owners.find(owner => owner.groups.controller === controller);
 
-    if (!owner)
-      return;
-    
+    if (!owner) return;
+
     const actor = owner.groups.actor;
     // get transform parameters for the found actor
-    const color = colorMatch.find((color) => color.groups.actor === actor);
-    const material = materialMatch.find((material) => material.groups.actor === actor);
-    const materialAlpha = materialAlphaMatch.find((materialAlpha) => materialAlpha.groups.actor === actor);
+    const color = colorMatch.find(color => color.groups.actor === actor);
+    const material = materialMatch.find(
+      material => material.groups.actor === actor
+    );
+    const materialAlpha = materialAlphaMatch.find(
+      materialAlpha => materialAlpha.groups.actor === actor
+    );
 
-    if (!color || !material || !materialAlpha) 
-      return;
+    if (!color || !material || !materialAlpha) return;
 
-    const colorRaw = [
-      +color.groups.r,
-      +color.groups.g,
-      +color.groups.b,
-    ];
+    const colorRaw = [+color.groups.r, +color.groups.g, +color.groups.b];
     return {
       materialIndex: material.groups.materialIndex,
       materialAlpha: materialAlpha.groups.materialAlpha,
-      material: brickUtils.BRICK_CONSTANTS.DEFAULT_MATERIALS[material.groups.materialIndex],
+      material:
+        brickUtils.BRICK_CONSTANTS.DEFAULT_MATERIALS[
+          material.groups.materialIndex
+        ],
       color: colorRaw,
     };
   }
-
 
   /**
    * gets the bounds of the template in the user's clipboard (bounds of original selection box)
@@ -360,48 +435,66 @@ class Player {
   async getTemplateBounds() {
     const { controller } = this;
 
-    const brickTemplateRegExp = /^(?<index>\d+)\) BP_PlayerController_C (.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.TEMP_BrickTemplate_Server = BrickBuildingTemplate'(.+)Transient.(?<templateName>BrickBuildingTemplate_\d+)'$/;
-    const minBoundsRegExp = /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.MinBounds = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
-    const maxBoundsRegExp = /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.MaxBounds = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
-    const centerRegExp = /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.Center = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
+    const brickTemplateRegExp =
+      /^(?<index>\d+)\) BP_PlayerController_C (.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.TEMP_BrickTemplate_Server = BrickBuildingTemplate'(.+)Transient.(?<templateName>BrickBuildingTemplate_\d+)'$/;
+    const minBoundsRegExp =
+      /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.MinBounds = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
+    const maxBoundsRegExp =
+      /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.MaxBounds = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
+    const centerRegExp =
+      /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.Center = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
 
     const [template, minBounds, maxBounds, centers] = await Promise.all([
-      this.#omegga.watchLogChunk(`GetAll BP_PlayerController_C TEMP_BrickTemplate_Server Name=${controller}`, brickTemplateRegExp, {first: 'index'}),
-      this.#omegga.watchLogChunk('GetAll BrickBuildingTemplate MinBounds', minBoundsRegExp, {first: 'index'}),
-      this.#omegga.watchLogChunk('GetAll BrickBuildingTemplate MaxBounds', maxBoundsRegExp, {first: 'index'}),
-      this.#omegga.watchLogChunk('GetAll BrickBuildingTemplate Center', centerRegExp, {first: 'index'}),
+      this.#omegga.watchLogChunk(
+        `GetAll BP_PlayerController_C TEMP_BrickTemplate_Server Name=${controller}`,
+        brickTemplateRegExp,
+        { first: 'index' }
+      ),
+      this.#omegga.watchLogChunk(
+        'GetAll BrickBuildingTemplate MinBounds',
+        minBoundsRegExp,
+        { first: 'index' }
+      ),
+      this.#omegga.watchLogChunk(
+        'GetAll BrickBuildingTemplate MaxBounds',
+        maxBoundsRegExp,
+        { first: 'index' }
+      ),
+      this.#omegga.watchLogChunk(
+        'GetAll BrickBuildingTemplate Center',
+        centerRegExp,
+        { first: 'index' }
+      ),
     ]);
 
-    if (!template.length || !minBounds.length || !maxBounds.length || !centers.length)
+    if (
+      !template.length ||
+      !minBounds.length ||
+      !maxBounds.length ||
+      !centers.length
+    )
       return;
-    
+
     // get template name
     const templateName = template[0].groups.templateName;
 
     // find all values with matching template name
-    const minBound = minBounds.find((minBound) => minBound.groups.templateName === templateName);
-    const maxBound = maxBounds.find((maxBound) => maxBound.groups.templateName === templateName);
-    const center = centers.find((center) => center.groups.templateName === templateName);
+    const minBound = minBounds.find(
+      minBound => minBound.groups.templateName === templateName
+    );
+    const maxBound = maxBounds.find(
+      maxBound => maxBound.groups.templateName === templateName
+    );
+    const center = centers.find(
+      center => center.groups.templateName === templateName
+    );
 
-    if (!minBound || !maxBound || !center)
-      return;
+    if (!minBound || !maxBound || !center) return;
 
     return {
-      minBound: [
-        +minBound.groups.x,
-        +minBound.groups.y,
-        +minBound.groups.z
-      ],
-      maxBound: [
-        +maxBound.groups.x,
-        +maxBound.groups.y,
-        +maxBound.groups.z
-      ],
-      center: [
-        +center.groups.x,
-        +center.groups.y,
-        +center.groups.z
-      ]
+      minBound: [+minBound.groups.x, +minBound.groups.y, +minBound.groups.z],
+      maxBound: [+maxBound.groups.x, +maxBound.groups.y, +maxBound.groups.z],
+      center: [+center.groups.x, +center.groups.y, +center.groups.z],
     };
   }
 
@@ -412,17 +505,19 @@ class Player {
   async getTemplateBoundsData() {
     const templateBounds = await this.getTemplateBounds();
 
-    if (!templateBounds) 
-      return;
+    if (!templateBounds) return;
 
     const saveData = await this.#omegga.getSaveData();
 
-    if (!saveData) 
-      return;
+    if (!saveData) return;
 
     // filter bricks outside the bounds
-    saveData.bricks = saveData.bricks.filter((brick) => {
-      return brickUtils.checkBounds(brick, saveData.brick_assets, templateBounds);
+    saveData.bricks = saveData.bricks.filter(brick => {
+      return brickUtils.checkBounds(
+        brick,
+        saveData.brick_assets,
+        templateBounds
+      );
     });
 
     if (saveData.bricks.length > 0) {
@@ -441,31 +536,48 @@ class Player {
    * @param  {Boolean} - quiet mode
    * @return {Promise} - BRS JS Save Data
    */
-  async loadDataAtGhostBrick(saveData, {rotate=true, offX=0, offY=0, offZ=0, quiet=true}={}) {
+  async loadDataAtGhostBrick(
+    saveData,
+    { rotate = true, offX = 0, offY = 0, offZ = 0, quiet = true } = {}
+  ) {
     const ghostBrickData = await this.getGhostBrick();
 
-    if (!ghostBrickData || !saveData)
-      return;
+    if (!ghostBrickData || !saveData) return;
 
     // get bounds of the bricks
     const bounds = brickUtils.getBounds(saveData);
 
     if (rotate) {
-      const orientation = brickUtils.BRICK_CONSTANTS.orientationMap[ghostBrickData.orientation];
-      saveData.bricks = saveData.bricks.map((brick) => brickUtils.rotate(brick, orientation));
+      const orientation =
+        brickUtils.BRICK_CONSTANTS.orientationMap[ghostBrickData.orientation];
+      saveData.bricks = saveData.bricks.map(brick =>
+        brickUtils.rotate(brick, orientation)
+      );
       // rotate bounds, if we dont use the original bounds they are off by 1 sometimes >:(
-      bounds.minBound = brickUtils.BRICK_CONSTANTS.translationTable[brickUtils.d2o(...orientation)](bounds.minBound);
-      bounds.maxBound = brickUtils.BRICK_CONSTANTS.translationTable[brickUtils.d2o(...orientation)](bounds.maxBound);
-      bounds.center = brickUtils.BRICK_CONSTANTS.translationTable[brickUtils.d2o(...orientation)](bounds.center);
+      bounds.minBound = brickUtils.BRICK_CONSTANTS.translationTable[
+        brickUtils.d2o(...orientation)
+      ](bounds.minBound);
+      bounds.maxBound = brickUtils.BRICK_CONSTANTS.translationTable[
+        brickUtils.d2o(...orientation)
+      ](bounds.maxBound);
+      bounds.center = brickUtils.BRICK_CONSTANTS.translationTable[
+        brickUtils.d2o(...orientation)
+      ](bounds.center);
     }
 
     // calculate offset from bricks center to ghost brick center
-    const offset = bounds.center.map((center, index) => ghostBrickData.location[index] - center);
+    const offset = bounds.center.map(
+      (center, index) => ghostBrickData.location[index] - center
+    );
 
     // load at offset location
-    await this.#omegga.loadSaveData(saveData, { offX: offX+offset[0], offY: offY+offset[1], offZ: offZ+offset[2], quiet });
+    await this.#omegga.loadSaveData(saveData, {
+      offX: offX + offset[0],
+      offY: offY + offset[1],
+      offZ: offZ + offset[2],
+      quiet,
+    });
   }
-
 }
 
 global.Player = Player;

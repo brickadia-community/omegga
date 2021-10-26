@@ -16,7 +16,10 @@ class OmeggaWrapper extends EventEmitter {
     this.setMaxListeners(Infinity);
 
     this.config = cfg;
-    this.path = path.isAbsolute(serverPath) || serverPath.startsWith('/') ? serverPath : path.join(process.cwd(), serverPath);
+    this.path =
+      path.isAbsolute(serverPath) || serverPath.startsWith('/')
+        ? serverPath
+        : path.join(process.cwd(), serverPath);
     this.dataPath = path.join(this.path, soft.DATA_PATH);
     this.#server = new BrickadiaServer(this.dataPath, cfg);
 
@@ -32,10 +35,18 @@ class OmeggaWrapper extends EventEmitter {
   }
 
   // passthrough to server
-  write(str) { this.#server.write(str); }
-  writeln(str) { this.#server.writeln(str); }
-  start() { return this.#server.start(); }
-  stop() { return this.#server.stop(); }
+  write(str) {
+    this.#server.write(str);
+  }
+  writeln(str) {
+    this.#server.writeln(str);
+  }
+  start() {
+    return this.#server.start();
+  }
+  stop() {
+    return this.#server.stop();
+  }
 
   // event emitter to catch everything
   emit(type, ...args) {

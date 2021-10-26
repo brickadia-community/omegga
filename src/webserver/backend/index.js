@@ -66,21 +66,31 @@ class Webserver {
           const certFile = await util.getSSLKeys(this.dataPath);
           if (certFile) {
             // handy notification of generated ssl certs
-            if (certFile.new)
-              log('>>'.green, 'Generated new SSL certificate');
+            if (certFile.new) log('>>'.green, 'Generated new SSL certificate');
 
             this.https = true;
-            return https.createServer({
-              key: certFile.keys.serviceKey,
-              cert: certFile.keys.certificate,
-            }, this.app);
+            return https.createServer(
+              {
+                key: certFile.keys.serviceKey,
+                cert: certFile.keys.certificate,
+              },
+              this.app
+            );
           } else {
-            error('!>'.red, 'Error generating SSL certificate - falling back to http');
+            error(
+              '!>'.red,
+              'Error generating SSL certificate - falling back to http'
+            );
           }
         }
 
         // warn the user
-        log(':>'.yellow, 'Running web server with http - install ', 'openssl'.yellow.underline, ' for https (more secure)');
+        log(
+          ':>'.yellow,
+          'Running web server with http - install ',
+          'openssl'.yellow.underline,
+          ' for https (more secure)'
+        );
       }
 
       // fallback to http
@@ -102,7 +112,7 @@ class Webserver {
       },
       // use a nedb database for session store
       store: new NedbStore({
-        filename: path.join(this.dataPath, soft.SESSION_STORE)
+        filename: path.join(this.dataPath, soft.SESSION_STORE),
       }),
     });
     this.app.use(session);
@@ -123,11 +133,16 @@ class Webserver {
     io.use((socket, next) => {
       session(socket.request, socket.request.res || {}, async () => {
         // check if user is authenticated
-        const user = await this.database.findUserById(socket.request.session.userId);
+        const user = await this.database.findUserById(
+          socket.request.session.userId
+        );
         if (user && !user.isBanned) {
           // TODO: check if user is banned while connected to disconnect websocket
           socket.user = user;
-          await this.database.stores.users.update({ _id: user._id }, {$set: {lastOnline: Date.now()}});
+          await this.database.stores.users.update(
+            { _id: user._id },
+            { $set: { lastOnline: Date.now() } }
+          );
           next();
         } else {
           next(new Error('unauthorized'));
@@ -167,7 +182,10 @@ class Webserver {
     await this.created;
     return await new Promise(resolve => {
       this.server.listen(this.port, () => {
-        log(`${'>>'.green} Web UI available at`, `http${this.https ? 's' : ''}://127.0.0.1:${this.port}`.green);
+        log(
+          `${'>>'.green} Web UI available at`,
+          `http${this.https ? 's' : ''}://127.0.0.1:${this.port}`.green
+        );
         this.started = true;
         this.database.addChatLog('server', {}, 'Server started');
         resolve();

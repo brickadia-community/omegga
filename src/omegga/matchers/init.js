@@ -11,10 +11,13 @@ module.exports = _omegga => {
 
       // check if log is the kill server log
       if (data.match(/we are not the first instance of this executable/)) {
-        Omegga.warn('W> WARNING'.yellow, 'You are running multiple brickadia instances, this better be intentional');
+        Omegga.warn(
+          'W> WARNING'.yellow,
+          'You are running multiple brickadia instances, this better be intentional'
+        );
       }
     },
 
-    callback() { },
+    callback() {},
   };
 };

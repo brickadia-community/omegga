@@ -16,11 +16,13 @@ Vue.prototype.userLookup = [];
 Vue.prototype.showLogout = false;
 Vue.prototype.omeggaData = {};
 
-Vue.prototype.xss = str => str.replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&apos;');
+Vue.prototype.xss = str =>
+  str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 
 // convert minutes into min/hour/day
 Vue.prototype.heartbeatAgo = mins => {
@@ -54,13 +56,20 @@ Vue.prototype.isoDate = time => {
 // date time in semi-iso format
 Vue.prototype.isoTime = time => {
   const date = new Date(time);
-  const pad = s => (s+'').padStart(2, '0');
-  return date.getFullYear() +
-    '-' + pad(date.getMonth() + 1) +
-    '-' + pad(date.getDate()) +
-    ' ' + pad(date.getHours()) +
-    ':' + pad(date.getMinutes()) +
-    ':' + pad(date.getSeconds());
+  const pad = s => (s + '').padStart(2, '0');
+  return (
+    date.getFullYear() +
+    '-' +
+    pad(date.getMonth() + 1) +
+    '-' +
+    pad(date.getDate()) +
+    ' ' +
+    pad(date.getHours()) +
+    ':' +
+    pad(date.getMinutes()) +
+    ':' +
+    pad(date.getSeconds())
+  );
 };
 
 new Vue({

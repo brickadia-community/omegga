@@ -1,7 +1,8 @@
 module.exports = omegga => {
   // pattern to get PlayerController from a leave message
   const chatRegExp = /^(?<name>.+?): (?<message>.+)$/;
-  const kickRegExp = /^(?<name>.+?) was kicked by (?<kicker>.+?) \((?<reason>.+?)\)$/;
+  const kickRegExp =
+    /^(?<name>.+?) was kicked by (?<kicker>.+?) \((?<reason>.+?)\)$/;
 
   const exists = name => omegga.players.some(p => p.name === name);
 

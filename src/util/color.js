@@ -2,11 +2,11 @@
  * h  Object = {h:x, s:y, v:z}
  * OR
  * h, s, v
-*/
+ */
 function hsv(h, s, v) {
   var r, g, b, i, f, p, q, t;
   if (arguments.length === 1) {
-    s = h.s, v = h.v, h = h.h;
+    (s = h.s), (v = h.v), (h = h.h);
   }
   i = Math.floor(h * 6);
   f = h * 6 - i;
@@ -14,41 +14,55 @@ function hsv(h, s, v) {
   q = v * (1 - f * s);
   t = v * (1 - (1 - f) * s);
   switch (i % 6) {
-  case 0: r = v, g = t, b = p; break;
-  case 1: r = q, g = v, b = p; break;
-  case 2: r = p, g = v, b = t; break;
-  case 3: r = p, g = q, b = v; break;
-  case 4: r = t, g = p, b = v; break;
-  case 5: r = v, g = p, b = q; break;
+    case 0:
+      (r = v), (g = t), (b = p);
+      break;
+    case 1:
+      (r = q), (g = v), (b = p);
+      break;
+    case 2:
+      (r = p), (g = v), (b = t);
+      break;
+    case 3:
+      (r = p), (g = q), (b = v);
+      break;
+    case 4:
+      (r = t), (g = p), (b = v);
+      break;
+    case 5:
+      (r = v), (g = p), (b = q);
+      break;
   }
-  return [
-    Math.round(r * 255),
-    Math.round(g * 255),
-    Math.round(b * 255),
-  ];
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
 // convert a color into the weird linearRGB format
 const linearRGB = rgba =>
-  rgba.map((c, i) => i === 3
-    ? c
-    : Math.round(((c/255) > 0.04045 ? Math.pow((c/255) * (1.0 / 1.055) + 0.0521327, 2.4 ) : (c/255) * (1.0 / 12.92))*255)
+  rgba.map((c, i) =>
+    i === 3
+      ? c
+      : Math.round(
+          (c / 255 > 0.04045
+            ? Math.pow((c / 255) * (1.0 / 1.055) + 0.0521327, 2.4)
+            : (c / 255) * (1.0 / 12.92)) * 255
+        )
   );
 
 const sRGB = linear =>
-  linear.map((c, i) => i === 3
-    ? c
-    : Math.round(((c/255) > 0.0031308
-      ? 1.055 * Math.pow((c/255), 1/2.4) - 0.055
-      : c / 255 * 12.92)*255)
+  linear.map((c, i) =>
+    i === 3
+      ? c
+      : Math.round(
+          (c / 255 > 0.0031308
+            ? 1.055 * Math.pow(c / 255, 1 / 2.4) - 0.055
+            : (c / 255) * 12.92) * 255
+        )
   );
 
 // convert (r, g, b), ([r, g, b]), and ({r, g, b}) to hex string
 const rgbToHex = (r, g, b) => {
   // parse array arguments
-  if (typeof r === 'object' && r.length > 0)
-    [r, g, b] = r;
-
+  if (typeof r === 'object' && r.length > 0) [r, g, b] = r;
   // parse object arguments
   else if (typeof r === 'object') {
     g = r.g;
@@ -56,7 +70,9 @@ const rgbToHex = (r, g, b) => {
     r = r.r;
   }
 
-  return [r, g, b].map(v => Math.round(Number(v)).toString(16).padStart(2, '0')).join('');
+  return [r, g, b]
+    .map(v => Math.round(Number(v)).toString(16).padStart(2, '0'))
+    .join('');
 };
 
 const DEFAULT_COLORSET = [
@@ -115,7 +131,7 @@ const DEFAULT_COLORSET = [
   [35, 35, 35, 153],
   [17, 17, 17, 153],
   [6, 6, 6, 153],
-  [0, 0, 0, 153]
+  [0, 0, 0, 153],
 ];
 
 module.exports = {

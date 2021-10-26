@@ -5,14 +5,16 @@
  * @return {SaveData} - save data with ownership changed
  */
 function setOwnership(player, saveData) {
-  saveData.brick_owners = [ {id: player.id, name: player.name, bricks: saveData.bricks.length} ];
+  saveData.brick_owners = [
+    { id: player.id, name: player.name, bricks: saveData.bricks.length },
+  ];
 
-  saveData.bricks = saveData.bricks.map((brick) => ({
+  saveData.bricks = saveData.bricks.map(brick => ({
     ...brick,
-    owner_index: 1
+    owner_index: 1,
   }));
 
-  return saveData;  
+  return saveData;
 }
 
 module.exports = setOwnership;

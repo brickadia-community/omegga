@@ -34,7 +34,9 @@ function parseDuration(str) {
 // parse brickadia's time format (YYYY.MM.DD-HH-MM-SS) into a time object
 function parseBrickadiaTime(str) {
   const [date, time] = str.split('-');
-  return new Date(date.replace(/\./g, '-') + 'T' + time.replace(/\./g, ':')).getTime();
+  return new Date(
+    date.replace(/\./g, '-') + 'T' + time.replace(/\./g, ':')
+  ).getTime();
 }
 
 module.exports = {

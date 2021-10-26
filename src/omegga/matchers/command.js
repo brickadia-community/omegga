@@ -1,6 +1,7 @@
 module.exports = omegga => {
   // pattern to get PlayerController from a leave message
-  const commandRegExp = /^Player (?<name>.+?) is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
+  const commandRegExp =
+    /^Player (?<name>.+?) is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
 
   return {
     // listen for commands messages
@@ -18,8 +19,7 @@ module.exports = omegga => {
         const { name, command, args } = match.groups;
 
         // no player has this name. probably a bug
-        if (!omegga.players.some(p => p.name === name))
-          return;
+        if (!omegga.players.some(p => p.name === name)) return;
 
         // return the player and the command
         return { name, command, args: args.split(' ') };
@@ -32,7 +32,7 @@ module.exports = omegga => {
       // if the only argument is an empty string, ignore it
       if (args.length === 1 && args[0].length === 0) args.pop();
 
-      omegga.emit('cmd:'+command.toLowerCase(), name, ...args);
+      omegga.emit('cmd:' + command.toLowerCase(), name, ...args);
       omegga.emit('cmd', command.toLowerCase(), name, ...args);
     },
   };

@@ -14,7 +14,9 @@ function brn2n(brName) {
 
 // Convert map name to brName
 function n2brn(name) {
-  const map = DEFAULT_MAPS.find(map => map.name === (name && name.toLowerCase()));
+  const map = DEFAULT_MAPS.find(
+    map => map.name === (name && name.toLowerCase())
+  );
   if (map) return map.brName;
   return name;
 }

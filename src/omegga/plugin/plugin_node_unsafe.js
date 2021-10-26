@@ -20,12 +20,16 @@ class NodePlugin extends Plugin {
   // every node plugin requires the main file and a doc file
   // may evolve this so it checks the contents of the doc file later
   static canLoad(pluginPath) {
-    return fs.existsSync(path.join(pluginPath, MAIN_FILE)) &&
-      fs.existsSync(path.join(pluginPath, DOC_FILE));
+    return (
+      fs.existsSync(path.join(pluginPath, MAIN_FILE)) &&
+      fs.existsSync(path.join(pluginPath, DOC_FILE))
+    );
   }
 
   // unsafe node plugins (can potentially crash omegga) are powerful
-  static getFormat() { return 'node_unsafe'; }
+  static getFormat() {
+    return 'node_unsafe';
+  }
 
   constructor(pluginPath, omegga) {
     super(pluginPath, omegga);
@@ -39,10 +43,14 @@ class NodePlugin extends Plugin {
   }
 
   // documentation is based on doc.json file
-  getDocumentation() { return this.documentation; }
+  getDocumentation() {
+    return this.documentation;
+  }
 
   // loaded state is based on if the loadedPlugin object is created
-  isLoaded() { return !!this.loadedPlugin; }
+  isLoaded() {
+    return !!this.loadedPlugin;
+  }
 
   // determing if a command is registered
   isCommand(cmd) {
@@ -53,7 +61,11 @@ class NodePlugin extends Plugin {
   async load() {
     const stopPlugin = reason => {
       Omegga.error('error launching node plugin', this.getName(), ':', reason);
-      try{this.disrequireAll();}catch(e){Omegga.error('error unloading node plugin (2)', this.getName(), e);}
+      try {
+        this.disrequireAll();
+      } catch (e) {
+        Omegga.error('error unloading node plugin (2)', this.getName(), e);
+      }
       this.emitStatus();
       return false;
     };
@@ -62,14 +74,20 @@ class NodePlugin extends Plugin {
     try {
       const config = await this.storage.getConfig();
       if (this.pluginConfig?.emitConfig) {
-        await fs.promises.writeFile(path.join(this.path, this.pluginConfig.emitConfig), JSON.stringify(config));
+        await fs.promises.writeFile(
+          path.join(this.path, this.pluginConfig.emitConfig),
+          JSON.stringify(config)
+        );
       }
 
       // require the plugin itself
       const Plugin = require(this.pluginFile);
 
       // node plugins must export a class with a constructor
-      if (typeof Plugin.prototype !== 'object' || typeof Plugin.prototype.constructor !== 'function')
+      if (
+        typeof Plugin.prototype !== 'object' ||
+        typeof Plugin.prototype.constructor !== 'function'
+      )
         return stopPlugin();
 
       // interface with plugin store
@@ -91,10 +109,13 @@ class NodePlugin extends Plugin {
 
         // plugins can return a result object
         if (typeof result === 'object' && result) {
-
           // if registeredCommands is in the results, register the provided strings as commands
           const cmds = result.registeredCommands;
-          if (cmds && (cmds instanceof Array) && cmds.every(i => typeof i === 'string'))
+          if (
+            cmds &&
+            cmds instanceof Array &&
+            cmds.every(i => typeof i === 'string')
+          )
             this.commands = cmds;
         }
       }
@@ -137,13 +158,16 @@ class NodePlugin extends Plugin {
   // disrequire all that match plugin path in require.cache
   disrequireAll() {
     // get all files in plugin directory from require cache
-    const requiredFiles = Object.keys(require.cache).filter(requiredFile => requiredFile.includes(this.path));
+    const requiredFiles = Object.keys(require.cache).filter(requiredFile =>
+      requiredFile.includes(this.path)
+    );
     // disrequire all the files
     requiredFiles.forEach(file => {
       try {
         disrequire(file);
       } catch (e) {
-        if (e.code !== 'MODULE_NOT_FOUND') // ignore error thrown if a module was deleted
+        if (e.code !== 'MODULE_NOT_FOUND')
+          // ignore error thrown if a module was deleted
           throw e;
       }
     });

@@ -8,12 +8,9 @@ Vue.prototype.omeggaData = {};
 new Vue({
   el: '#app',
   data() {
-    return {
-    };
+    return {};
   },
   render(h) {
     return h(Auth);
-  }
+  },
 });
-
-

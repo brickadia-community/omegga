@@ -45,30 +45,33 @@ const fields = {
   },
 };
 
-module.exports = (field, value, _opts={}) => {
+module.exports = (field, value, _opts = {}) => {
   // list command lists all fields, current setting, and description
   if (field === 'list') {
     log('Configurable fields:');
     const maxLen = Math.max(...Object.keys(fields).map(f => f.length));
     for (const key in fields) {
       const field = fields[key];
-      console.log('\n  ' + key.yellow.underline,
+      console.log(
+        '\n  ' + key.yellow.underline,
         '-'.padStart(maxLen - key.length + 1),
-        field.desc,
+        field.desc
       );
       console.log('    current'.brightGreen + ':', field.get());
       console.log('    default:', field.default);
       console.log('    example'.brightBlue + ':', field.example);
     }
     console.log();
-
   } else if (fields[field]) {
     // a valid field was entered - run the set command
     fields[field].set(value);
-
   } else {
     // no valid field was entered
-    err('invalid field, run', 'omegga config list'.yellow.underline, 'for a list of available fields');
+    err(
+      'invalid field, run',
+      'omegga config list'.yellow.underline,
+      'for a list of available fields'
+    );
     process.exit(1);
   }
 };

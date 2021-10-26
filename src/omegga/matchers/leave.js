@@ -18,7 +18,8 @@ module.exports = omegga => {
       if (!match) return null;
 
       // helper func for finding player with this controller
-      const getLeavingPlayer = () => omegga.players.find(p => p.controller === match[1]);
+      const getLeavingPlayer = () =>
+        omegga.players.find(p => p.controller === match[1]);
 
       let found = getLeavingPlayer();
 
@@ -45,8 +46,10 @@ module.exports = omegga => {
         const player = await res;
         omegga.players.splice(omegga.players.indexOf(player), 1);
         omegga.emit('leave', player);
-        omegga.emit('plugin:players:raw', omegga.players.map(p => p.raw()));
-
+        omegga.emit(
+          'plugin:players:raw',
+          omegga.players.map(p => p.raw())
+        );
       } catch (e) {
         Omegga.error('error getting player leave', e);
       }

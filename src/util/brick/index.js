@@ -5,5 +5,5 @@ module.exports = {
   getBrickSize: require('./getBrickSize'),
   getScaleAxis: require('./getScaleAxis'),
   setOwnership: require('./setOwnership'),
-  ...require('./rotate')
+  ...require('./rotate'),
 };

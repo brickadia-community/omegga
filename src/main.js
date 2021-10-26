@@ -6,7 +6,12 @@ const pkg = require('../package');
 const soft = require('./softconfig.js');
 const Omegga = require('./omegga/server.js');
 const config = require('./config/index.js');
-const { Terminal, auth, config: omeggaConfig, pluginUtil } = require('./cli/index.js');
+const {
+  Terminal,
+  auth,
+  config: omeggaConfig,
+  pluginUtil,
+} = require('./cli/index.js');
 const file = require('./util/file.js');
 
 const updateNotifier = require('update-notifier');
@@ -25,10 +30,8 @@ const err = (...args) => console.error('!>'.red, ...args);
 const log = (...args) => console.log('>>'.green, ...args);
 const verboseLog = (...args) => {
   if (!global.VERBOSE) return;
-  if (Omegga.log)
-    Omegga.log('V>'.magenta, ...args);
-  else
-    console.log('V>'.magenta, ...args);
+  if (Omegga.log) Omegga.log('V>'.magenta, ...args);
+  else console.log('V>'.magenta, ...args);
 };
 
 // write a default config file
@@ -43,9 +46,12 @@ const createDefaultConfig = () => {
 const program = require('commander')
   .description(pkg.description)
   .version(pkg.version)
-  .option('-d, --debug', 'Print all console logs rather than just chat messages')
+  .option(
+    '-d, --debug',
+    'Print all console logs rather than just chat messages'
+  )
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .action(async() => {
+  .action(async () => {
     const { debug, verbose } = program.opts();
     global.VERBOSE = verbose;
 
@@ -57,8 +63,7 @@ const program = require('commander')
     const localInstall = fs.existsSync(soft.LOCAL_LAUNCHER);
 
     // if there's a config in the current directory, use that one instead
-    if (config.find('.'))
-      workDir = '.';
+    if (config.find('.')) workDir = '.';
 
     // check if configured path exists
     if (!fs.existsSync(workDir)) {
@@ -87,12 +92,15 @@ const program = require('commander')
 
     // if local install is provided
     if (localInstall) {
-      verboseLog('Using omegga\'s brickadia-launcher');
+      verboseLog("Using omegga's brickadia-launcher");
       conf.server.__LOCAL = true;
     }
 
     // check if the auth files don't exist
-    if (!auth.exists(path.join(workDir, soft.DATA_PATH, 'Saved/Auth')) && !auth.exists()) {
+    if (
+      !auth.exists(path.join(workDir, soft.DATA_PATH, 'Saved/Auth')) &&
+      !auth.exists()
+    ) {
       const success = await auth.prompt({
         debug,
         email: process.env.BRICKADIA_USER ?? null,
@@ -130,10 +138,20 @@ const program = require('commander')
     Omegga.setTerminal(new Terminal(server, options));
 
     if (notifier.update) {
-      Omegga.log('>>'.green, `Update is available (${('v'+notifier.update.latest).yellow})! Run`, 'npm i -g omegga'.yellow, 'to update!');
+      Omegga.log(
+        '>>'.green,
+        `Update is available (${('v' + notifier.update.latest).yellow})! Run`,
+        'npm i -g omegga'.yellow,
+        'to update!'
+      );
     }
 
-    Omegga.log('>>'.green, `Launching brickadia server on port ${(''+(conf.server.port || 7777)).green}...`);
+    Omegga.log(
+      '>>'.green,
+      `Launching brickadia server on port ${
+        ('' + (conf.server.port || 7777)).green
+      }...`
+    );
 
     // start the server
     verboseLog('Starting Omegga');
@@ -155,12 +173,14 @@ program
 
 program
   .command('config [field] [value]')
-  .description('Configure Omegga\'s default behavior.\n' +
-    'Type ' + 'omegga config list'.yellow.underline + ' for current settings and available fields'
+  .description(
+    "Configure Omegga's default behavior.\n" +
+      'Type ' +
+      'omegga config list'.yellow.underline +
+      ' for current settings and available fields'
   )
   .action((field, value) => {
-    if (!field)
-      field = 'list';
+    if (!field) field = 'list';
     omeggaConfig(field, value, program.opts());
   });
 
@@ -172,64 +192,75 @@ program
   .option('-u, --email <email>', 'User email (must provide password)')
   .option('-p, --pass <password>', 'User password (must provide email)')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .description('Generates server auth tokens from brickadia account email+password')
-  .action(async ({ email, pass: password, local: localAuth, workDir, global: globalAuth }) => {
-    const { verbose, debug } = program.opts();
-    global.VERBOSE = verbose;
-    const workdirPath = path.join(config.store.get('defaultOmegga'), 'data/Saved/Auth');
+  .description(
+    'Generates server auth tokens from brickadia account email+password'
+  )
+  .action(
+    async ({
+      email,
+      pass: password,
+      local: localAuth,
+      workDir,
+      global: globalAuth,
+    }) => {
+      const { verbose, debug } = program.opts();
+      global.VERBOSE = verbose;
+      const workdirPath = path.join(
+        config.store.get('defaultOmegga'),
+        'data/Saved/Auth'
+      );
 
-
-    if (globalAuth || localAuth) {
-      if (globalAuth) {
-        log('Clearing auth files from', auth.AUTH_PATH.yellow);
-        auth.clean();
-      }
-      if (workDir) {
-        log('Clearing auth files from', workdirPath.yellow);
-        await file.rmdir(workdirPath);
-      }
-      if (localAuth) {
-        const localPath = path.resolve('data/Saved/Auth');
-        log('Clearing auth files from', localPath.yellow);
-        await file.rmdir(localPath);
-      }
-      return;
-    } else {
-
-      let branch;
-
-      // if there's a config in the current directory, use that one instead
-      if (config.find('.'))
-        workDir = '.';
-
-      // check if configured path exists
-      if (fs.existsSync(workDir) && fs.statSync(workDir).isDirectory) {
-        // find the config for the working directory
-        const configFile = config.find(workDir);
-        try {
-          // read the config and extract the branch
-          const conf = config.read(configFile);
-          branch = conf?.server?.branch;
-        } catch (err) {
-          err('Error reading config file');
-          verboseLog(err);
+      if (globalAuth || localAuth) {
+        if (globalAuth) {
+          log('Clearing auth files from', auth.AUTH_PATH.yellow);
+          auth.clean();
         }
-      }
+        if (workDir) {
+          log('Clearing auth files from', workdirPath.yellow);
+          await file.rmdir(workdirPath);
+        }
+        if (localAuth) {
+          const localPath = path.resolve('data/Saved/Auth');
+          log('Clearing auth files from', localPath.yellow);
+          await file.rmdir(localPath);
+        }
+        return;
+      } else {
+        let branch;
 
-      // auth with that branch
-      auth.prompt({email, password, debug, branch });
+        // if there's a config in the current directory, use that one instead
+        if (config.find('.')) workDir = '.';
+
+        // check if configured path exists
+        if (fs.existsSync(workDir) && fs.statSync(workDir).isDirectory) {
+          // find the config for the working directory
+          const configFile = config.find(workDir);
+          try {
+            // read the config and extract the branch
+            const conf = config.read(configFile);
+            branch = conf?.server?.branch;
+          } catch (err) {
+            err('Error reading config file');
+            verboseLog(err);
+          }
+        }
+
+        // auth with that branch
+        auth.prompt({ email, password, debug, branch });
+      }
     }
-  });
+  );
 
 program
   .command('info')
   .alias('n')
-  .description('Shows server name, description, port, install info, and installed plugins')
+  .description(
+    'Shows server name, description, port, install info, and installed plugins'
+  )
   .action(() => {
     err('not implemented yet');
     // TODO: implement config parsing
   });
-
 
 program
   .command('install <pluginUrl...>')
@@ -237,7 +268,7 @@ program
   .description('Installs a plugin to the current brickadia server')
   .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement install --force
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .action((plugins) => {
+  .action(plugins => {
     if (!require('hasbin').sync('git')) {
       err('git'.yellow, 'must be installed to install plugins.');
       process.exit(1);
@@ -245,7 +276,11 @@ program
     }
 
     if (!config.find('.')) {
-      err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+      err(
+        'Not an omegga directory, run ',
+        'omegga init'.yellow,
+        'to setup one.'
+      );
       process.exit(1);
       return;
     }
@@ -260,9 +295,13 @@ program
   .description('Updates all or selected installed plugins to latest versions')
   .option('-f, --force', 'Forcefully re-upgrade existing plugin') // TODO: implement update --force
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .action((plugins) => {
+  .action(plugins => {
     if (!config.find('.')) {
-      err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+      err(
+        'Not an omegga directory, run ',
+        'omegga init'.yellow,
+        'to setup one.'
+      );
       process.exit(1);
       return;
     }
@@ -275,9 +314,13 @@ program
   .command('check [pluginNames...]')
   .description('Checks plugins for compatibility issues')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .action((plugins) => {
+  .action(plugins => {
     if (!config.find('.')) {
-      err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+      err(
+        'Not an omegga directory, run ',
+        'omegga init'.yellow,
+        'to setup one.'
+      );
       process.exit(1);
       return;
     }

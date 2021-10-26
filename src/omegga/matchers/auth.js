@@ -1,8 +1,10 @@
 module.exports = omegga => {
   // patterns for leave message and host detection
   const hostRegExp = /^Logged in as (?<name>.+) \((?<id>[0-9a-fA-F-]{36})\)\.$/;
-  const invalidRegExp = /^(Error: AuthState is Invalid on dedicated server - exiting\.|Changing AuthState from \w+ to Invalid\.)$/;
-  const validRegExp = /^Changing AuthState from \w+ to Valid(Online|Offline)\.$/;
+  const invalidRegExp =
+    /^(Error: AuthState is Invalid on dedicated server - exiting\.|Changing AuthState from \w+ to Invalid\.)$/;
+  const validRegExp =
+    /^Changing AuthState from \w+ to Valid(Online|Offline)\.$/;
 
   return {
     // listen for auth messages

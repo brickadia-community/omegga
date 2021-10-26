@@ -4,24 +4,24 @@ const os = require('os');
 const PROJECT_NAME = 'omegga';
 const CONFIG_HOME = path.join(os.homedir(), '.config/' + PROJECT_NAME);
 
-
 module.exports = {
   DEFAULT_PORT: 8080,
 
   // filenames that omegga searches for
   // extensions are added based on the available config formats
-  CONFIG_FILENAMES: [
-    'omegga-config',
-    'omegga',
-    '.omegga-config',
-    '.omegga',
-  ],
+  CONFIG_FILENAMES: ['omegga-config', 'omegga', '.omegga-config', '.omegga'],
 
   // home directory for omegga config
   PROJECT_NAME,
   CONFIG_HOME,
-  BRICKADIA_INSTALLS: path.join(os.homedir(), '.local/share/brickadia-launcher/brickadia-installs'),
-  LOCAL_LAUNCHER: path.join(CONFIG_HOME, 'launcher/brickadia-launcher/main-brickadia-launcher'),
+  BRICKADIA_INSTALLS: path.join(
+    os.homedir(),
+    '.local/share/brickadia-launcher/brickadia-installs'
+  ),
+  LOCAL_LAUNCHER: path.join(
+    CONFIG_HOME,
+    'launcher/brickadia-launcher/main-brickadia-launcher'
+  ),
 
   // path to auth files
   CONFIG_AUTH_DIR: 'Auth',

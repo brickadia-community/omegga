@@ -40,6 +40,6 @@ module.exports = omegga => {
     callback(version) {
       omegga.emit('version', version);
       omegga.version = version;
-    }
+    },
   };
 };

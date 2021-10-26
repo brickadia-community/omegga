@@ -30,13 +30,15 @@ const knownErrors = [
   {
     name: 'MISSING_LIBGL',
     solution: 'apt-get install libgl1-mesa-glx libglib2.0-0',
-    match: /error while loading shared libraries: libGL\.so\.1: cannot open shared object file/
+    match:
+      /error while loading shared libraries: libGL\.so\.1: cannot open shared object file/,
   },
   {
     name: 'MISSING_GLIB',
     solution: 'apt-get install libgl1-mesa-glx libglib2.0-0',
-    match: /error while loading shared libraries: libgthread-2\.0\.so\.0: cannot open shared object file/
-  }
+    match:
+      /error while loading shared libraries: libgthread-2\.0\.so\.0: cannot open shared object file/,
+  },
 ];
 
 // Start a brickadia server
@@ -84,7 +86,7 @@ class BrickadiaServer extends EventEmitter {
         : 'brickadia',
       this.config.server.branch && `--branch=${this.config.server.branch}`,
       '--server',
-      '--'
+      '--',
     ];
 
     // Either unbuffer or stdbuf must be used because brickadia's output is buffered
@@ -103,7 +105,7 @@ class BrickadiaServer extends EventEmitter {
         this.path ? `-UserDir="${this.path}"` : null,
         email ? `-User="${email}"` : null, // remove email argument if not provided
         password ? `-Password="${password}"` : null, // remove password argument if not provided
-        `-port="${this.config.server.port}"`
+        `-port="${this.config.server.port}"`,
       ].filter(Boolean)
     ); // remove unused arguments
 
@@ -112,11 +114,11 @@ class BrickadiaServer extends EventEmitter {
     this.#child.stdin.setEncoding('utf8');
     this.#outInterface = readline.createInterface({
       input: this.#child.stdout,
-      terminal: false
+      terminal: false,
     });
     this.#errInterface = readline.createInterface({
       input: this.#child.stderr,
-      terminal: false
+      terminal: false,
     });
     this.attachListeners();
     verboseLog('Attached listeners');

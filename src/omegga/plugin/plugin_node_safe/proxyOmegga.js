@@ -19,9 +19,9 @@ const bootstrap = omegga => ({
       starting: omegga.starting,
       started: omegga.started,
       config: omegga.config,
-      currentMap: omegga.currentMap
-    }
-  ]
+      currentMap: omegga.currentMap,
+    },
+  ],
 });
 
 // prototypes that can be directly stolen from omegga
@@ -46,7 +46,7 @@ const STEAL_PROTOTYPES = [
   'getRoleAssignments',
   'getBanList',
   'getNameCache',
-  'changeMap'
+  'changeMap',
 ];
 
 // this is a "soft" omegga

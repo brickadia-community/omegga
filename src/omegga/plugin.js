@@ -18,11 +18,14 @@ const DISABLED_FILE = 'disabled.omegga';
 class Plugin {
   // returns true if a plugin at this path can be loaded
   // only one kind of plugin should match this type
-  static canLoad(_pluginPath) { return false; }
+  static canLoad(_pluginPath) {
+    return false;
+  }
 
   // returns the kind of plugin this is
-  static getFormat() { throw 'undefined plugin format'; }
-
+  static getFormat() {
+    throw 'undefined plugin format';
+  }
 
   // read a file as json or return null
   static readJSON(file) {
@@ -37,7 +40,10 @@ class Plugin {
   constructor(pluginPath, omegga) {
     this.path = pluginPath;
     this.omegga = omegga;
-    this.shortPath = pluginPath.replace(path.join(omegga.path, soft.PLUGIN_PATH) + '/', '');
+    this.shortPath = pluginPath.replace(
+      path.join(omegga.path, soft.PLUGIN_PATH) + '/',
+      ''
+    );
   }
 
   // assign plugin storage
@@ -46,7 +52,9 @@ class Plugin {
   }
 
   // check if the plugin is enabled
-  isEnabled() { return !fs.existsSync(path.join(this.path, DISABLED_FILE)); }
+  isEnabled() {
+    return !fs.existsSync(path.join(this.path, DISABLED_FILE));
+  }
   // set the plugin enabled/disabled
   setEnabled(enabled) {
     const disabledPath = path.join(this.path, DISABLED_FILE);
@@ -80,22 +88,34 @@ class Plugin {
   }
 
   // get the documentation object for this plugin
-  getDocumentation() { return null; }
+  getDocumentation() {
+    return null;
+  }
 
   // return true if this plugin is loaded
-  isLoaded() { return false; }
+  isLoaded() {
+    return false;
+  }
 
   // return true if the command exists
-  isCommand(_cmd) { return false; }
+  isCommand(_cmd) {
+    return false;
+  }
 
   // start the plugin, returns true if plugin successfully loaded
-  async load() { return false; }
+  async load() {
+    return false;
+  }
 
   // stop + kill the plugin, returns true if plugin successfully unloaded
-  async unload() { return false; }
+  async unload() {
+    return false;
+  }
 
   // extra info for this kind of plugin
-  getInfo() { return {}; }
+  getInfo() {
+    return {};
+  }
 }
 
 // key-value storage for a plugin
@@ -124,14 +144,21 @@ class PluginStorage {
 
   // set the config field for this plugin
   async setConfig(value) {
-    await this.store.update({type: 'config', plugin: this.name}, {
-      $set: { value },
-    }, { upsert: true });
+    await this.store.update(
+      { type: 'config', plugin: this.name },
+      {
+        $set: { value },
+      },
+      { upsert: true }
+    );
   }
 
   // get the config for this plugin
   async getConfig() {
-    const config = await this.store.findOne({type: 'config', plugin: this.name});
+    const config = await this.store.findOne({
+      type: 'config',
+      plugin: this.name,
+    });
     if (!config) return null;
     return config.value;
   }
@@ -154,7 +181,11 @@ class PluginStorage {
   // get a stored object
   async get(key) {
     if (typeof key !== 'string' || key.length === 0) return;
-    const obj = await this.store.findOne({type: 'store', plugin: this.name, key});
+    const obj = await this.store.findOne({
+      type: 'store',
+      plugin: this.name,
+      key,
+    });
     if (!obj) return null;
     return obj.value;
   }
@@ -167,7 +198,10 @@ class PluginStorage {
 
   // clear all stored values
   async wipe() {
-    await this.store.remove({ type: 'store', plugin: this.name }, {multi: true});
+    await this.store.remove(
+      { type: 'store', plugin: this.name },
+      { multi: true }
+    );
   }
 
   // count number of objects in store
@@ -185,9 +219,9 @@ class PluginStorage {
   async set(key, value) {
     if (typeof key !== 'string' || key.length === 0) return;
     await this.store.update(
-      {type: 'store', plugin: this.name, key},
-      {$set: {value}},
-      {upsert: true},
+      { type: 'store', plugin: this.name, key },
+      { $set: { value } },
+      { upsert: true }
     );
   }
 }
@@ -200,7 +234,10 @@ class PluginLoader {
   constructor(pluginsPath, omegga) {
     this.path = pluginsPath;
     this.omegga = omegga;
-    this.store = new Datastore({filename: path.join(omegga.dataPath, soft.PLUGIN_STORE), autoload: true}),
+    this.store = new Datastore({
+      filename: path.join(omegga.dataPath, soft.PLUGIN_STORE),
+      autoload: true,
+    });
     this.formats = [];
     this.plugins = [];
 
@@ -229,7 +266,8 @@ class PluginLoader {
     // add all the discovered formats into the formats list
     this.formats.push(
       // find all plugin_EXT.js files in the given dir
-      ...fs.readdirSync(dir)
+      ...fs
+        .readdirSync(dir)
         // all files match the plugin_nameType.js pattern
         .filter(file => file.match(/plugin_[a-zA-Z_]+\.js/))
         // require all the formats
@@ -244,22 +282,34 @@ class PluginLoader {
     for (const p of this.plugins) {
       try {
         // unload the plugin if it's loaded
-        if (p.isLoaded())
-          await p.unload();
+        if (p.isLoaded()) await p.unload();
 
         // load the plugin if it successfully unloaded
         if (!p.isLoaded()) {
           // only load it if it is enabled
           if (p.isEnabled()) {
-            Omegga.verbose('Loading plugin', p.constructor.getFormat(), p.getName().underline);
+            Omegga.verbose(
+              'Loading plugin',
+              p.constructor.getFormat(),
+              p.getName().underline
+            );
             ok = (await p.load()) || ok;
           }
         } else {
-          Omegga.error('!>'.red, 'Did not successfully unload plugin', p.getName().brightRed.underline);
+          Omegga.error(
+            '!>'.red,
+            'Did not successfully unload plugin',
+            p.getName().brightRed.underline
+          );
           ok = false;
         }
       } catch (err) {
-        Omegga.error('!>'.red, 'Error loading plugin', p.getName().brightRed.underline, err);
+        Omegga.error(
+          '!>'.red,
+          'Error loading plugin',
+          p.getName().brightRed.underline,
+          err
+        );
         ok = false;
       }
     }
@@ -277,7 +327,11 @@ class PluginLoader {
         // unload the plugin if it's loaded
         if (p.isLoaded()) {
           if (!(await p.unload())) {
-            Omegga.error('!>'.red, 'Could not unloading plugin', p.getName().brightRed.underline);
+            Omegga.error(
+              '!>'.red,
+              'Could not unloading plugin',
+              p.getName().brightRed.underline
+            );
             ok = false;
             continue;
           } else {
@@ -285,7 +339,11 @@ class PluginLoader {
           }
         }
       } catch (e) {
-        Omegga.error('!>'.red, 'Error unloading plugin', p.getName().brightRed.underline);
+        Omegga.error(
+          '!>'.red,
+          'Error unloading plugin',
+          p.getName().brightRed.underline
+        );
         ok = false;
       }
     }
@@ -308,42 +366,57 @@ class PluginLoader {
     }
 
     // find all directories in the plugin path
-    this.plugins = (await Promise.all(fs.readdirSync(this.path)
-      .map(dir => path.join(this.path, dir)) // convert from local paths
-      // every plugin must be in a directory
-      .filter(dir => fs.existsSync(dir) && fs.lstatSync(dir).isDirectory())
-      // every plugin must be loadable through some format
-      .map(async dir => {
-        // find a plugin format that can load in this plugin
-        const PluginFormat = this.formats.find(f => f.canLoad(dir));
+    this.plugins = (
+      await Promise.all(
+        fs
+          .readdirSync(this.path)
+          .map(dir => path.join(this.path, dir)) // convert from local paths
+          // every plugin must be in a directory
+          .filter(dir => fs.existsSync(dir) && fs.lstatSync(dir).isDirectory())
+          // every plugin must be loadable through some format
+          .map(async dir => {
+            // find a plugin format that can load in this plugin
+            const PluginFormat = this.formats.find(f => f.canLoad(dir));
 
-        // let users know if there's a missing plugin format
-        if (!PluginFormat) {
-          Omegga.error('!>'.red, 'Missing plugin format for', dir);
-          return;
-        }
-        try {
-          // create the plugin format
-          const plugin = PluginFormat && new PluginFormat(dir, this.omegga);
-          if (!plugin.getDocumentation()) {
-            Omegga.error('!>'.red, 'Missing/invalid plugin documentation for', dir);
-            return;
-          }
+            // let users know if there's a missing plugin format
+            if (!PluginFormat) {
+              Omegga.error('!>'.red, 'Missing plugin format for', dir);
+              return;
+            }
+            try {
+              // create the plugin format
+              const plugin = PluginFormat && new PluginFormat(dir, this.omegga);
+              if (!plugin.getDocumentation()) {
+                Omegga.error(
+                  '!>'.red,
+                  'Missing/invalid plugin documentation for',
+                  dir
+                );
+                return;
+              }
 
-          // create its storage
-          const storage = new PluginStorage(this.store, plugin);
-          await storage.init();
+              // create its storage
+              const storage = new PluginStorage(this.store, plugin);
+              await storage.init();
 
-          // load the storage in
-          plugin.setStorage(storage);
+              // load the storage in
+              plugin.setStorage(storage);
 
-          // if there is a plugin format, create the plugin instance (but don't load yet)
-          return plugin;
-        } catch (e) {
-          // if a plugin format fails to load, prevent omegga from dying
-          Omegga.error('!>'.red, 'Error loading plugin', e.getName().brightRed.underline, PluginFormat, e);
-        }
-      })))
+              // if there is a plugin format, create the plugin instance (but don't load yet)
+              return plugin;
+            } catch (e) {
+              // if a plugin format fails to load, prevent omegga from dying
+              Omegga.error(
+                '!>'.red,
+                'Error loading plugin',
+                e.getName().brightRed.underline,
+                PluginFormat,
+                e
+              );
+            }
+          })
+      )
+    )
       // remove plugins without formats
       .filter(p => p);
 
@@ -364,29 +437,34 @@ class PluginLoader {
     const splitHelper = objs => {
       const lines = [];
       while (objs.length > 0) {
-        const [ item ] = objs.splice(0, 1);
+        const [item] = objs.splice(0, 1);
         if (!lines.length || lines[lines.length - 1].length + item.length > 150)
           lines.push(item);
-        else
-          lines[lines.length - 1] += ', ' + item;
+        else lines[lines.length - 1] += ', ' + item;
       }
       return lines;
     };
 
     // no arguments
     if (!args.length) {
-      send('"Use <code>/plugins plugin</>, <code>/plugins !command</>, <code>/plugins /command</> for more information"');
-      const plugins = Object.keys(docs).map(d => `<color=\\"${docs[d]._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa'}\\">${d}</>`);
+      send(
+        '"Use <code>/plugins plugin</>, <code>/plugins !command</>, <code>/plugins /command</> for more information"'
+      );
+      const plugins = Object.keys(docs).map(
+        d =>
+          `<color=\\"${
+            docs[d]._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa'
+          }\\">${d}</>`
+      );
       if (!plugins.length) {
         send('"<b>No Installed Plugins</>"');
       } else {
         const lines = splitHelper(plugins);
         send(`"<b>Installed Plugins</>: ${lines[0]}"`);
-        for(let i = 1; i < lines.length; i++)
-          send(`"${lines[i]}"`);
+        for (let i = 1; i < lines.length; i++) send(`"${lines[i]}"`);
       }
 
-    // plugin or command argument
+      // plugin or command argument
     } else if (args.length > 0) {
       const target = args.join(' ');
       // argument is a plugin; render description, author, and commands
@@ -394,48 +472,65 @@ class PluginLoader {
         const doc = docs[target];
         const desc = doc.description || 'no description';
         const color = doc._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa';
-        send(`"<b>Plugin</> <code><color=\\"${color}\\">${target}</></>: ${desc}"`);
+        send(
+          `"<b>Plugin</> <code><color=\\"${color}\\">${target}</></>: ${desc}"`
+        );
 
         if (doc.author)
           send(`"<b>Author</>: <color=\\"c4d7f5\\"><b>${doc.author}</></>"`);
 
         if (doc.commands && doc.commands.length > 0) {
-          const lines = splitHelper(doc.commands.map(c => `<code>${c.name}</>`));
+          const lines = splitHelper(
+            doc.commands.map(c => `<code>${c.name}</>`)
+          );
           send(`"<b>Commands</>: ${lines[0]}"`);
-          for(let i = 1; i < lines.length; i++)
-            send(`"${lines[i]}"`);
+          for (let i = 1; i < lines.length; i++) send(`"${lines[i]}"`);
         }
 
-      // argument is a command
+        // argument is a command
       } else if (commands[target]) {
         const doc = commands[target];
         const desc = doc.description || 'no description';
         const example = doc.example || 'no example';
         const color = doc._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa';
-        send(`"<b>Command</> <code><color=\\"${color}\\">${doc.name}</></>: ${desc}"`);
+        send(
+          `"<b>Command</> <code><color=\\"${color}\\">${doc.name}</></>: ${desc}"`
+        );
         send(`"<b>Example</>: <code>${example}</>"`);
         if (doc.args && doc.args.length > 0) {
           send('"<b>Arguments</>:"');
           for (const arg of doc.args) {
             const desc = arg.description || 'no description';
-            send(`"- <code>${arg.name}</>${arg.required ? ' (required)' : ''}: ${desc}"`);
+            send(
+              `"- <code>${arg.name}</>${
+                arg.required ? ' (required)' : ''
+              }: ${desc}"`
+            );
           }
         } else {
           send('"<b>Arguments</>: None"');
         }
 
         // user takes the helptext literally
-      } else if (args[0] === '!command' || args[0] === '/command' || args[0] === 'plugin') {
-        send('"Use <code>/plugins [name of plugin]</> or <code>/plugins [name of !command or /command]</> for more help for the respective plugin or command"');
+      } else if (
+        args[0] === '!command' ||
+        args[0] === '/command' ||
+        args[0] === 'plugin'
+      ) {
+        send(
+          '"Use <code>/plugins [name of plugin]</> or <code>/plugins [name of !command or /command]</> for more help for the respective plugin or command"'
+        );
 
-      // argument is not found
+        // argument is not found
       } else {
         send('"Could not find that command or plugin"');
       }
 
-    // too many arguments
+      // too many arguments
     } else {
-      send('"Use <code>/plugins</> to list plugins and <code>/plugins plugin</> or <code>!help !command or /command</> for more information"');
+      send(
+        '"Use <code>/plugins</> to list plugins and <code>/plugins plugin</> or <code>!help !command or /command</> for more information"'
+      );
     }
   }
 

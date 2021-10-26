@@ -17,7 +17,7 @@ const COMMANDS = {
       /^LogConsoleCommands: (.+)$/,
       {
         first: match => match[1].startsWith('Server Name:'),
-        timeoutDelay: 1000
+        timeoutDelay: 1000,
       }
     );
 
@@ -49,7 +49,7 @@ const COMMANDS = {
       players: tableLines.map(l => {
         // match the player row with the generated regex
         const {
-          groups: { name, ping, time: online, roles, address, id }
+          groups: { name, ping, time: online, roles, address, id },
         } = l.match(columnRegExp);
         // trim and parse the matched data
         return {
@@ -61,9 +61,9 @@ const COMMANDS = {
             .split(', ')
             .filter(r => r.length > 0), // roles are split by ', '
           address: address.replace('(Owner)', '').trim(),
-          id: id.trim()
+          id: id.trim(),
         };
-      })
+      }),
     };
 
     return status;
@@ -74,25 +74,28 @@ const COMMANDS = {
    * @return {Promise<Array<Object>>}
    */
   async getAllPlayerPositions() {
-    const pawnRegExp = /(?<index>\d+)\) BP_PlayerController_C .+?PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.Pawn = (?:None|BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+)')?$/;
-    const posRegExp = /(?<index>\d+)\) CapsuleComponent .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.CollisionCylinder\.RelativeLocation = \(X=(?<x>[\d.-]+),Y=(?<y>[\d.-]+),Z=(?<z>[\d.-]+)\)$/;
-    const deadFigureRegExp = /(?<index>\d+)\) BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.bIsDead = (?<dead>(True|False))$/;
+    const pawnRegExp =
+      /(?<index>\d+)\) BP_PlayerController_C .+?PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.Pawn = (?:None|BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+)')?$/;
+    const posRegExp =
+      /(?<index>\d+)\) CapsuleComponent .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.CollisionCylinder\.RelativeLocation = \(X=(?<x>[\d.-]+),Y=(?<y>[\d.-]+),Z=(?<z>[\d.-]+)\)$/;
+    const deadFigureRegExp =
+      /(?<index>\d+)\) BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.bIsDead = (?<dead>(True|False))$/;
 
     // wait for the pawn and position watchers to return all the results
     const [pawns, deadFigures, positions] = await Promise.all([
       this.watchLogChunk('GetAll BP_PlayerController_C Pawn', pawnRegExp, {
         first: 'index',
-        timeoutDelay: 250
+        timeoutDelay: 250,
       }),
       this.watchLogChunk('GetAll BP_FigureV2_C bIsDead', deadFigureRegExp, {
         first: 'index',
-        timeoutDelay: 250
+        timeoutDelay: 250,
       }),
       this.watchLogChunk(
         'GetAll SceneComponent RelativeLocation Name=CollisionCylinder',
         posRegExp,
         { first: 'index', timeoutDelay: 250 }
-      )
+      ),
     ]);
 
     return (
@@ -106,7 +109,7 @@ const COMMANDS = {
           isDead: deadFigures.find(
             dead => pawn.groups.pawn === dead.groups.pawn
           ),
-          pawn
+          pawn,
         }))
         // filter by only those who have both player. previously we filtered by position but this breaks for players without a pawn, instead it's preferable to pass null
         .filter(p => p.player)
@@ -115,7 +118,7 @@ const COMMANDS = {
           player: p.player,
           pawn: p.pawn.groups.pawn || null,
           pos: p.pos ? p.pos.slice(3).map(Number) : null,
-          isDead: p.isDead ? p.isDead.groups.dead === 'True' : true
+          isDead: p.isDead ? p.isDead.groups.dead === 'True' : true,
         }))
     );
   },
@@ -126,43 +129,48 @@ const COMMANDS = {
    */
   async getMinigames() {
     // patterns to match the console logs
-    const ruleNameRegExp = /^(?<index>\d+)\) BP_Ruleset_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.RulesetName = (?<name>.*)$/;
-    const ruleMembersRegExp = /^(?<index>\d+)\) BP_Ruleset_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.MemberStates =$/;
-    const teamNameRegExp = /^(?<index>\d+)\) BP_Team(_\w+)?_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.(?<team>BP_Team(_\w+)?_C_\d+)\.TeamName = (?<name>.*)$/;
-    const teamColorRegExp = /^(?<index>\d+)\) BP_Team(_\w+)?_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.(?<team>BP_Team(_\w+)?_C_\d+)\.TeamColor = \(B=(?<b>\d+),G=(?<g>\d+),R=(?<r>\d+),A=(?<a>\d+)\)$/;
-    const teamMembersRegExp = /^(?<index>\d+)\) BP_Team(_\w+)?_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.(?<team>BP_Team(_\w+)?_C_\d+)\.MemberStates =$/;
-    const playerStateRegExp = /^\t(?<index>\d+): BP_PlayerState_C'(.+):PersistentLevel\.(?<state>BP_PlayerState_C_\d+)'$/;
+    const ruleNameRegExp =
+      /^(?<index>\d+)\) BP_Ruleset_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.RulesetName = (?<name>.*)$/;
+    const ruleMembersRegExp =
+      /^(?<index>\d+)\) BP_Ruleset_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.MemberStates =$/;
+    const teamNameRegExp =
+      /^(?<index>\d+)\) BP_Team(_\w+)?_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.(?<team>BP_Team(_\w+)?_C_\d+)\.TeamName = (?<name>.*)$/;
+    const teamColorRegExp =
+      /^(?<index>\d+)\) BP_Team(_\w+)?_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.(?<team>BP_Team(_\w+)?_C_\d+)\.TeamColor = \(B=(?<b>\d+),G=(?<g>\d+),R=(?<r>\d+),A=(?<a>\d+)\)$/;
+    const teamMembersRegExp =
+      /^(?<index>\d+)\) BP_Team(_\w+)?_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.(?<team>BP_Team(_\w+)?_C_\d+)\.MemberStates =$/;
+    const playerStateRegExp =
+      /^\t(?<index>\d+): BP_PlayerState_C'(.+):PersistentLevel\.(?<state>BP_PlayerState_C_\d+)'$/;
 
     try {
       // parse console output to get the minigame info
-      const [
-        rulesets,
-        ruleMembers,
-        teamMembers,
-        teamNames,
-        teamColors
-      ] = await Promise.all([
-        this.watchLogChunk('GetAll BP_Ruleset_C RulesetName', ruleNameRegExp, {
-          first: 'index'
-        }),
-        this.watchLogArray(
-          'GetAll BP_Ruleset_C MemberStates',
-          ruleMembersRegExp,
-          playerStateRegExp
-        ),
-        this.watchLogArray(
-          'GetAll BP_Team_C MemberStates',
-          teamMembersRegExp,
-          playerStateRegExp
-        ),
-        this.watchLogChunk('GetAll BP_Team_C TeamName', teamNameRegExp, {
-          first: 'index'
-        }),
-        // team color in a5 is based on (B=255,G=255,R=255,A=255)
-        this.watchLogChunk('GetAll BP_Team_C TeamColor', teamColorRegExp, {
-          first: 'index'
-        })
-      ]);
+      const [rulesets, ruleMembers, teamMembers, teamNames, teamColors] =
+        await Promise.all([
+          this.watchLogChunk(
+            'GetAll BP_Ruleset_C RulesetName',
+            ruleNameRegExp,
+            {
+              first: 'index',
+            }
+          ),
+          this.watchLogArray(
+            'GetAll BP_Ruleset_C MemberStates',
+            ruleMembersRegExp,
+            playerStateRegExp
+          ),
+          this.watchLogArray(
+            'GetAll BP_Team_C MemberStates',
+            teamMembersRegExp,
+            playerStateRegExp
+          ),
+          this.watchLogChunk('GetAll BP_Team_C TeamName', teamNameRegExp, {
+            first: 'index',
+          }),
+          // team color in a5 is based on (B=255,G=255,R=255,A=255)
+          this.watchLogChunk('GetAll BP_Team_C TeamColor', teamColorRegExp, {
+            first: 'index',
+          }),
+        ]);
 
       // figure out what to do with the matched color results
       const handleColor = match => {
@@ -202,14 +210,14 @@ const COMMANDS = {
             ),
 
             // get the players from the team
-            members: m.members.map(m => this.getPlayer(m.state))
-          }))
+            members: m.members.map(m => this.getPlayer(m.state)),
+          })),
       }));
     } catch (e) {
       Omegga.error('error getting minigames', e);
       return undefined;
     }
-  }
+  },
 };
 
 // inject the commands into the object given a log wrangler

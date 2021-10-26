@@ -24,5 +24,5 @@ module.exports = {
   wsl: () => require('./wsl'),
 
   // brs
-  brs: require('brs-js')
+  brs: require('brs-js'),
 };

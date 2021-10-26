@@ -1,14 +1,16 @@
-
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
 const readline = require('readline');
-const { JSONRPCServer, JSONRPCClient, JSONRPCServerAndClient } = require('json-rpc-2.0');
+const {
+  JSONRPCServer,
+  JSONRPCClient,
+  JSONRPCServerAndClient,
+} = require('json-rpc-2.0');
 
 const { Plugin } = require('../plugin.js');
 const { bootstrap } = require('./plugin_node_safe/proxyOmegga.js');
-
 
 // TODO: check if version is compatible (v1 -> v2) from file
 // TODO: write jsonrpc wrappers in a few languages, implement a few simple plugins
@@ -26,15 +28,21 @@ class RpcPlugin extends Plugin {
 
   // all RPC plugins require a main (binary) file and a doc file
   static canLoad(pluginPath) {
-    return fs.existsSync(path.join(pluginPath, MAIN_FILE)) &&
-      fs.existsSync(path.join(pluginPath, DOC_FILE));
+    return (
+      fs.existsSync(path.join(pluginPath, MAIN_FILE)) &&
+      fs.existsSync(path.join(pluginPath, DOC_FILE))
+    );
   }
 
   // websocket rpc plugin type
-  static getFormat() { return 'jsonrpc_stdio'; }
+  static getFormat() {
+    return 'jsonrpc_stdio';
+  }
 
   // documentation is based on doc.json file
-  getDocumentation() { return this.documentation; }
+  getDocumentation() {
+    return this.documentation;
+  }
 
   constructor(pluginPath, omegga) {
     super(pluginPath, omegga);
@@ -52,7 +60,9 @@ class RpcPlugin extends Plugin {
     this.initRPC();
   }
 
-  isLoaded() { return !!this.#child && !this.#child.exitCode; }
+  isLoaded() {
+    return !!this.#child && !this.#child.exitCode;
+  }
 
   // determing if a command is registered
   isCommand(cmd) {
@@ -64,7 +74,8 @@ class RpcPlugin extends Plugin {
     const name = this.getName();
     const verbose = (...msg) => Omegga.verbose(name.underline, ...msg);
     verbose('Load method invoked');
-    let frozen = true, timed = false;
+    let frozen = true,
+      timed = false;
     this.commands = [];
 
     // can't load the plugin if the child is still running
@@ -84,23 +95,37 @@ class RpcPlugin extends Plugin {
     try {
       if (this.pluginConfig?.emitConfig) {
         verbose('Emitting plugin config');
-        await fs.promises.writeFile(path.join(this.path, this.pluginConfig.emitConfig), JSON.stringify(config));
+        await fs.promises.writeFile(
+          path.join(this.path, this.pluginConfig.emitConfig),
+          JSON.stringify(config)
+        );
       }
       verbose('Spawning child process');
       this.#child = spawn(this.pluginFile);
       this.#child.stdin.setEncoding('utf8');
-      this.#outInterface = readline.createInterface({input: this.#child.stdout, terminal: false});
-      this.#errInterface = readline.createInterface({input: this.#child.stderr, terminal: false});
+      this.#outInterface = readline.createInterface({
+        input: this.#child.stdout,
+        terminal: false,
+      });
+      this.#errInterface = readline.createInterface({
+        input: this.#child.stderr,
+        terminal: false,
+      });
       this.attachListeners();
     } catch (err) {
-      Omegga.error('!>'.red, 'error loading stdio rpc plugin', name.brightRed.underline, err);
+      Omegga.error(
+        '!>'.red,
+        'error loading stdio rpc plugin',
+        name.brightRed.underline,
+        err
+      );
       await this.kill();
       this.emitStatus();
       return false;
     }
 
     return Promise.race([
-      (async() => {
+      (async () => {
         try {
           // get some initial information to create an omegga proxy
           const initialData = bootstrap(this.omegga);
@@ -124,15 +149,23 @@ class RpcPlugin extends Plugin {
             verbose('Initialized with result:', result);
             // plugins can return a result object
             if (typeof result === 'object' && result) {
-
               // if registeredCommands is in the results, register the provided strings as commands
               const cmds = result.registeredCommands;
-              if (cmds && (cmds instanceof Array) && cmds.every(i => typeof i === 'string'))
+              if (
+                cmds &&
+                cmds instanceof Array &&
+                cmds.every(i => typeof i === 'string')
+              )
                 this.commands = cmds;
             }
           } catch (e) {
             if (!e.message) return;
-            Omegga.error('!>'.red, name.brightRed.underline, 'error starting: ', e);
+            Omegga.error(
+              '!>'.red,
+              name.brightRed.underline,
+              'error starting: ',
+              e
+            );
           }
 
           // plugin is not frozen, resolve that it has loaded
@@ -140,9 +173,14 @@ class RpcPlugin extends Plugin {
           if (timed) return;
           this.emitStatus();
           return true;
-        } catch(e) {
+        } catch (e) {
           if (timed) return;
-          Omegga.error('!>'.red, 'error loading stdio rpc plugin', name.brightRed.underline, e);
+          Omegga.error(
+            '!>'.red,
+            'error loading stdio rpc plugin',
+            name.brightRed.underline,
+            e
+          );
           await this.kill();
           frozen = false;
           this.emitStatus();
@@ -162,13 +200,17 @@ class RpcPlugin extends Plugin {
         // check if the child is frozen (while true)
         setTimeout(() => {
           if (!frozen) return;
-          Omegga.error('!>'.red, 'I appear to be unresponsive when starting (maybe I forgot to respond to start)', name.brightRed.underline);
+          Omegga.error(
+            '!>'.red,
+            'I appear to be unresponsive when starting (maybe I forgot to respond to start)',
+            name.brightRed.underline
+          );
           this.kill();
           timed = true;
           this.emitStatus();
           resolve(false);
         }, 5000);
-      })
+      }),
     ]);
   }
 
@@ -179,15 +221,17 @@ class RpcPlugin extends Plugin {
       this.emitStatus();
       return Promise.resolve(true);
     }
-    let frozen = true, timed = false;
+    let frozen = true,
+      timed = false;
     const name = this.getName();
 
     return Promise.race([
-      (async() => {
+      (async () => {
         try {
-
           // let the plugin know it's time to stop, if this error it's probably because the method was not implemented
-          try { await this.emit('stop'); } catch (e) {
+          try {
+            await this.emit('stop');
+          } catch (e) {
             // lazy developer - just implement stop please
           }
 
@@ -200,7 +244,12 @@ class RpcPlugin extends Plugin {
           return true;
         } catch (e) {
           if (timed) return;
-          Omegga.error('!>'.red, 'error unloading rpc plugin', name.brightRed.underline, e);
+          Omegga.error(
+            '!>'.red,
+            'error unloading rpc plugin',
+            name.brightRed.underline,
+            e
+          );
           frozen = false;
           this.emitStatus();
           return false;
@@ -211,7 +260,11 @@ class RpcPlugin extends Plugin {
         // check if the child is frozen (while true)
         setTimeout(() => {
           if (!frozen) return;
-          Omegga.error('!>'.red, 'I appear to be unresponsive when stopping (maybe I forgot to respond to stop)', name.brightRed.underline);
+          Omegga.error(
+            '!>'.red,
+            'I appear to be unresponsive when stopping (maybe I forgot to respond to stop)',
+            name.brightRed.underline
+          );
           this.kill();
           timed = true;
           this.emitStatus();
@@ -229,7 +282,13 @@ class RpcPlugin extends Plugin {
       try {
         this.#rpc.receiveAndSend(JSON.parse(line));
       } catch (e) {
-        Omegga.error(this.getName().brightRed.underline, '!>'.red, 'error parsing rpc data', e, line);
+        Omegga.error(
+          this.getName().brightRed.underline,
+          '!>'.red,
+          'error parsing rpc data',
+          e,
+          line
+        );
       }
     });
 
@@ -241,7 +300,13 @@ class RpcPlugin extends Plugin {
     this.#child.on('error', () => this.kill());
     this.#child.on('close', () => this.kill());
     this.#child.on('exit', code => {
-      Omegga.error('!>'.red, 'rpc plugin', name.brightRed.underline, 'exited with code', code);
+      Omegga.error(
+        '!>'.red,
+        'rpc plugin',
+        name.brightRed.underline,
+        'exited with code',
+        code
+      );
       this.kill();
     });
   }
@@ -272,8 +337,7 @@ class RpcPlugin extends Plugin {
     this.#rpc.rejectAllPendingRequests();
     this.detachListeners();
     this.omegga.off('*', this.eventPassthrough);
-    if (!this.#child)
-      return;
+    if (!this.#child) return;
 
     // create a promise for the exit of the process
     const promise = new Promise(resolve => this.#child.once('exit', resolve));
@@ -306,10 +370,11 @@ class RpcPlugin extends Plugin {
         return Promise.reject(error);
       }
     });
-    const rpc = this.#rpc = new JSONRPCServerAndClient(server, client);
+    const rpc = (this.#rpc = new JSONRPCServerAndClient(server, client));
 
     // plugin log generator function
-    const ezLog = (logFn, name, symbol) => line => console[logFn](name.underline, symbol, line);
+    const ezLog = (logFn, name, symbol) => line =>
+      console[logFn](name.underline, symbol, line);
 
     const name = this.getName();
 
@@ -321,9 +386,9 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('trace', ezLog('trace', name, 'T>'.grey));
 
     // plugin store interactions
-    rpc.addMethod('store.get', (key) => this.storage.get(key));
+    rpc.addMethod('store.get', key => this.storage.get(key));
     rpc.addMethod('store.set', ([key, value]) => this.storage.set(key, value));
-    rpc.addMethod('store.delete', (key) => this.storage.delete(key));
+    rpc.addMethod('store.delete', key => this.storage.delete(key));
     rpc.addMethod('store.wipe', () => this.storage.wipe());
     rpc.addMethod('store.count', () => this.storage.count());
     rpc.addMethod('store.keys', () => this.storage.keys());
@@ -332,25 +397,40 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('exec', line => this.omegga.writeln(line));
     rpc.addMethod('writeln', line => this.omegga.writeln(line));
     rpc.addMethod('broadcast', line => this.omegga.broadcast(line));
-    rpc.addMethod('whisper', ({target, line}) => this.omegga.whisper(target, line));
+    rpc.addMethod('whisper', ({ target, line }) =>
+      this.omegga.whisper(target, line)
+    );
     rpc.addMethod('getPlayers', () => this.omegga.getPlayers());
-    rpc.addMethod('getPlayerPosition', (name) => this.omegga.getPlayer(name)?.getPosition()); // included for compatibility
-    rpc.addMethod('getAllPlayerPositions', () => this.omegga.getAllPlayerPositions());
+    rpc.addMethod('getPlayerPosition', name =>
+      this.omegga.getPlayer(name)?.getPosition()
+    ); // included for compatibility
+    rpc.addMethod('getAllPlayerPositions', () =>
+      this.omegga.getAllPlayerPositions()
+    );
     rpc.addMethod('getRoleSetup', () => this.omegga.getRoleSetup());
     rpc.addMethod('getBanList', () => this.omegga.getBanList());
     rpc.addMethod('getSaves', () => this.omegga.getSaves());
-    rpc.addMethod('getSavePath', (name) => this.omegga.getSavePath(name));
-    rpc.addMethod('clearBricks', ({target, quiet=false}) => this.omegga.clearBricks(target, quiet));
-    rpc.addMethod('clearAllBricks', (quiet=false) => this.omegga.clearAllBricks(quiet));
-    rpc.addMethod('saveBricks', (name) => this.omegga.saveBricks(name));
-    rpc.addMethod('loadBricks', ({name, offX=0, offY=0, offZ=0, quiet=false}) =>
-      this.omegga.loadBricks(name, {offX, offY, offZ, quiet}));
-    rpc.addMethod('readSaveData', (name) => this.omegga.readSaveData(name));
+    rpc.addMethod('getSavePath', name => this.omegga.getSavePath(name));
+    rpc.addMethod('clearBricks', ({ target, quiet = false }) =>
+      this.omegga.clearBricks(target, quiet)
+    );
+    rpc.addMethod('clearAllBricks', (quiet = false) =>
+      this.omegga.clearAllBricks(quiet)
+    );
+    rpc.addMethod('saveBricks', name => this.omegga.saveBricks(name));
+    rpc.addMethod(
+      'loadBricks',
+      ({ name, offX = 0, offY = 0, offZ = 0, quiet = false }) =>
+        this.omegga.loadBricks(name, { offX, offY, offZ, quiet })
+    );
+    rpc.addMethod('readSaveData', name => this.omegga.readSaveData(name));
     rpc.addMethod('getSaveData', () => this.omegga.getSaveData());
-    rpc.addMethod('loadSaveData', ({data, offX=0, offY=0, offZ=0, quiet=false}) =>
-      this.omegga.loadSaveData(data, {offX, offY, offZ, quiet}));
-    rpc.addMethod('changeMap', (map) =>
-      this.omegga.changeMap(map));
+    rpc.addMethod(
+      'loadSaveData',
+      ({ data, offX = 0, offY = 0, offZ = 0, quiet = false }) =>
+        this.omegga.loadSaveData(data, { offX, offY, offZ, quiet })
+    );
+    rpc.addMethod('changeMap', map => this.omegga.changeMap(map));
     rpc.addMethod('unload', () => this.unload());
     rpc.addMethod('reload', async () => {
       await this.unload();
@@ -358,10 +438,13 @@ class RpcPlugin extends Plugin {
     });
 
     // player related operations
-    const addPlayerMethod = (name) => rpc.addMethod(`player.${name}`, (player) => this.omegga.getPlayer(player)?.[name]());
-    rpc.addMethod('player.get', (target) => {
+    const addPlayerMethod = name =>
+      rpc.addMethod(`player.${name}`, player =>
+        this.omegga.getPlayer(player)?.[name]()
+      );
+    rpc.addMethod('player.get', target => {
       let player = this.omegga.getPlayer(target);
-      return player && {...player, host: player.isHost()};
+      return player && { ...player, host: player.isHost() };
     });
     addPlayerMethod('getRoles');
     addPlayerMethod('getPermissions');
@@ -371,18 +454,33 @@ class RpcPlugin extends Plugin {
     addPlayerMethod('getPaint');
     addPlayerMethod('getTemplateBounds');
     addPlayerMethod('getTemplateBoundsData');
-    rpc.addMethod('player.loadDataAtGhostBrick', ({target, data, rotate=true, offX=0, offY=0, offZ=0, quiet=false}) =>
-      this.omegga.getPlayer(target)?.loadDataAtGhostBrick(data, {rotate, offX, offY, offZ, quiet}));
+    rpc.addMethod(
+      'player.loadDataAtGhostBrick',
+      ({
+        target,
+        data,
+        rotate = true,
+        offX = 0,
+        offY = 0,
+        offZ = 0,
+        quiet = false,
+      }) =>
+        this.omegga
+          .getPlayer(target)
+          ?.loadDataAtGhostBrick(data, { rotate, offX, offY, offZ, quiet })
+    );
 
     // plugin related operations
-    rpc.addMethod('plugin.get', async (name) => {
-      const plugin = this.omegga.pluginLoader.plugins.find(p => p.getName() === name);
+    rpc.addMethod('plugin.get', async name => {
+      const plugin = this.omegga.pluginLoader.plugins.find(
+        p => p.getName() === name
+      );
 
       if (plugin) {
         return {
           name,
           documentation: plugin.getDocumentation(),
-          loaded: plugin.isLoaded()
+          loaded: plugin.isLoaded(),
         };
       } else {
         return null;
@@ -390,7 +488,9 @@ class RpcPlugin extends Plugin {
     });
 
     rpc.addMethod('plugin.emit', async ([name, event, ...args]) => {
-      const plugin = this.omegga.pluginLoader.plugins.find(p => p.getName() === name);
+      const plugin = this.omegga.pluginLoader.plugins.find(
+        p => p.getName() === name
+      );
 
       if (plugin) {
         return plugin.emitPlugin(event, this.getName(), args);

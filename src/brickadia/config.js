@@ -14,7 +14,9 @@ module.exports = {
 
     file.mkdir(configPath);
 
-    fs.writeFileSync(settingsPath, `[Server__BP_ServerSettings_General_C BP_ServerSettings_General_C]
+    fs.writeFileSync(
+      settingsPath,
+      `[Server__BP_ServerSettings_General_C BP_ServerSettings_General_C]
 MaxSelectedBricks=1000
 MaxPlacedBricks=1000
 SelectionTimeout=2.000000
@@ -23,7 +25,12 @@ ServerName=${config.server.name || ''}
 ServerDescription=${config.server.description || ''}
 ServerPassword=${config.server.password || ''}
 MaxPlayers=${config.server.players || 20}
-bPubliclyListed=${typeof config.server.publiclyListed === 'undefined' || config.server.publiclyListed ? 'True' : 'False'}
+bPubliclyListed=${
+        typeof config.server.publiclyListed === 'undefined' ||
+        config.server.publiclyListed
+          ? 'True'
+          : 'False'
+      }
 WelcomeMessage="${config.server.welcomeMessage || ''}"
 bGlobalRulesetSelfDamage=True
 bGlobalRulesetPhysicsDamage=False`

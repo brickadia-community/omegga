@@ -19,8 +19,7 @@ module.exports = {
         certData = JSON.parse(fs.readFileSync(certsPath, 'utf8'));
 
         // make sure the cert is not expired
-        if (certData.expires < now)
-          certData = undefined;
+        if (certData.expires < now) certData = undefined;
       } catch (e) {
         // nothing to do here - probably bad json
       }
@@ -30,7 +29,7 @@ module.exports = {
     if (!certData) {
       // expires in half the real duration time
       const days = 360;
-      const expires = now + (days/2) * 24 * 60 * 60 * 1000;
+      const expires = now + (days / 2) * 24 * 60 * 60 * 1000;
       try {
         const keys = await pem.createCertificate({ days, selfSigned: true });
         certData = { keys, expires };
@@ -72,5 +71,5 @@ module.exports = {
     }
 
     return secret;
-  }
+  },
 };

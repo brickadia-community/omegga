@@ -11,27 +11,34 @@ const soft = require('../softconfig.js');
 const AUTH_PATH = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
 
 // prompt user for email
-const emailPrompt = text => new Promise((resolve) => {
-  const rl = readline.createInterface({
-    input: process.stdin, output: process.stdout
-  });
+const emailPrompt = text =>
+  new Promise(resolve => {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
 
-  rl.question(text, email => {
-    rl.close();
-    resolve(email);
+    rl.question(text, email => {
+      rl.close();
+      resolve(email);
+    });
   });
-});
 
 // async function to prompt for credentials
 async function prompt() {
-  console.log('>>'.green, 'Enter', 'Brickadia'.green.underline, 'credentials (not stored)');
+  console.log(
+    '>>'.green,
+    'Enter',
+    'Brickadia'.green.underline,
+    'credentials (not stored)'
+  );
   return [
-    await emailPrompt('     '+'email'.yellow.underline+': '),
-    await passwordPrompt('  '+'password'.yellow.underline+': '),
+    await emailPrompt('     ' + 'email'.yellow.underline + ': '),
+    await passwordPrompt('  ' + 'password'.yellow.underline + ': '),
   ];
 }
 
-async function authFromPrompt({email, password, debug=false, branch}) {
+async function authFromPrompt({ email, password, debug = false, branch }) {
   let files;
 
   if (!email || !password) {
@@ -48,7 +55,7 @@ async function authFromPrompt({email, password, debug=false, branch}) {
   console.log('>>'.green, 'Generating auth tokens...');
   const timeout = setTimeout(() => {
     console.log('>>'.green, 'Probably also installing the game...');
-  },  10000);
+  }, 10000);
   try {
     files = await genAuthFiles(email, password, { debug, branch });
     clearTimeout(timeout);
@@ -80,7 +87,8 @@ async function authFromPrompt({email, password, debug=false, branch}) {
 // check if auth files exist
 function authExists(dir) {
   return soft.BRICKADIA_AUTH_FILES.every(f =>
-    fs.existsSync(path.join(dir || AUTH_PATH, f)));
+    fs.existsSync(path.join(dir || AUTH_PATH, f))
+  );
 }
 
 // delete auth files stored in config

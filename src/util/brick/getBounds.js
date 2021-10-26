@@ -17,7 +17,7 @@ function minMaxBound(brick, brick_assets, bounds, axis) {
 function getBounds({ bricks, brick_assets }) {
   const bounds = { minBound: [], maxBound: [], center: [] };
 
-  bricks.forEach((brick) => {
+  bricks.forEach(brick => {
     minMaxBound(brick, brick_assets, bounds, 0);
     minMaxBound(brick, brick_assets, bounds, 1);
     minMaxBound(brick, brick_assets, bounds, 2);
@@ -26,10 +26,10 @@ function getBounds({ bricks, brick_assets }) {
   // calculate center from min and max bounds
   bounds.center = bounds.minBound.map((min, index) => {
     const max = bounds.maxBound[index];
-    const avg = (max+min)/2;
+    const avg = (max + min) / 2;
     return Math.round(avg);
   });
-  
+
   return bounds;
 }
 

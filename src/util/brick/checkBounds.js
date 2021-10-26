@@ -12,7 +12,11 @@ function checkBound(brick, brick_assets, bounds, axis) {
 
 // check if the brick is in bounds
 function checkBounds(brick, brick_assets, bounds) {
-  return checkBound(brick, brick_assets, bounds, 0) && checkBound(brick, brick_assets, bounds, 1) && checkBound(brick, brick_assets, bounds, 2);
+  return (
+    checkBound(brick, brick_assets, bounds, 0) &&
+    checkBound(brick, brick_assets, bounds, 1) &&
+    checkBound(brick, brick_assets, bounds, 2)
+  );
 }
 
 module.exports = checkBounds;

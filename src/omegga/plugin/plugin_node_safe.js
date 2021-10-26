@@ -159,7 +159,7 @@ class NodeVmPlugin extends Plugin {
         this.notify(resp, {
           name,
           documentation: plugin.getDocumentation(),
-          loaded: plugin.isLoaded()
+          loaded: plugin.isLoaded(),
         });
       } else {
         this.notify(resp);
@@ -226,7 +226,7 @@ class NodeVmPlugin extends Plugin {
     // vm restriction settings, default is access to everything
     const vmOptions = {
       builtin: this.access, // TODO: reference access file
-      external: true // TODO: reference access file
+      external: true, // TODO: reference access file
     };
     this.commands = [];
 
@@ -253,7 +253,7 @@ class NodeVmPlugin extends Plugin {
         try {
           this.#worker.postMessage({
             action: 'brickadiaEvent',
-            args: [ev, ...initialData[ev]]
+            args: [ev, ...initialData[ev]],
           });
         } catch (e) {
           /* just writing 'safe' code :) */
@@ -353,7 +353,7 @@ class NodeVmPlugin extends Plugin {
           resolve(true);
           this.emitStatus();
         }, 5000);
-      })
+      }),
     ]);
   }
 
@@ -372,7 +372,7 @@ class NodeVmPlugin extends Plugin {
     try {
       this.#worker.postMessage({
         action,
-        args: [messageId, ...args]
+        args: [messageId, ...args],
       });
     } catch (e) {
       return Promise.reject(e);
@@ -390,7 +390,7 @@ class NodeVmPlugin extends Plugin {
     try {
       this.#worker.postMessage({
         action,
-        args: [...args]
+        args: [...args],
       });
     } catch (e) {
       // do nothing here
@@ -402,18 +402,18 @@ class NodeVmPlugin extends Plugin {
     this.#worker = new Worker(
       path.join(__dirname, 'plugin_node_safe/worker.js'),
       {
-        stdout: true
+        stdout: true,
       }
     );
 
     // pipe plugin output into omegga
     this.#outInterface = readline.createInterface({
       input: this.#worker.stdout,
-      terminal: false
+      terminal: false,
     });
     this.#errInterface = readline.createInterface({
       input: this.#worker.stderr,
-      terminal: false
+      terminal: false,
     });
     this.#outInterface.on('line', Omegga.log);
     this.#errInterface.on('line', Omegga.error);
@@ -461,7 +461,7 @@ class NodeVmPlugin extends Plugin {
       // post the message
       this.#worker.postMessage({
         action: 'brickadiaEvent',
-        args
+        args,
       });
     } catch (e) {
       // make sure post message doesn't crash the entire app

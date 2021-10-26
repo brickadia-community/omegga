@@ -3,7 +3,6 @@ const path = require('path');
 const chokidar = require('chokidar');
 const rimraf = require('rimraf');
 
-
 // objects to store cached data
 const cachedTimes = {};
 const cachedJSON = {};
@@ -15,23 +14,23 @@ function updateJSONCache(file) {
     // check if the file contents exist
     body = fs.readFileSync(file, 'utf8');
     // sometimes json files start with unicode for some reason. who knows!
-    if (!body.startsWith('{') && body.length > 4) body = body.replace(/^[^{]+/, '');
+    if (!body.startsWith('{') && body.length > 4)
+      body = body.replace(/^[^{]+/, '');
     if (!body) return cachedJSON[file];
 
     // parse them as  json
     cachedJSON[file] = JSON.parse(body);
     cachedTimes[file] = Date.now();
   } catch (err) {
-    const log = global.Omegga && global.Omegga.error || console.error;
+    const log = (global.Omegga && global.Omegga.error) || console.error;
     log('Error updating JSON cache for file', file, err);
-    if (body)
-      log('File contents:', body);
+    if (body) log('File contents:', body);
   }
   return cachedJSON[file];
 }
 
 // read cached json
-function readCachedJSON(file, expire=5000) {
+function readCachedJSON(file, expire = 5000) {
   const now = Date.now();
   if (cachedTimes[file] && cachedTimes[file] + expire > now)
     return cachedJSON[file];
@@ -45,12 +44,10 @@ const watchers = {};
 
 function readWatchedJSON(file) {
   // if the file is already being watched, return the watched json
-  if (watchers[file])
-    return cachedJSON[file];
+  if (watchers[file]) return cachedJSON[file];
 
   // check if the file exists
-  if (!fs.existsSync(file))
-    return undefined;
+  if (!fs.existsSync(file)) return undefined;
 
   // create a watcher (no persistence means the process dies even if there's still a watcher)
   const watcher = chokidar.watch(file, { persistent: false });
@@ -62,7 +59,8 @@ function readWatchedJSON(file) {
   watcher
     .on('add', () => read()) // on add, update the cache
     .on('change', () => read()) // on change, update the cache
-    .on('unlink', () => { // on unlink (delete), destroy value in cache
+    .on('unlink', () => {
+      // on unlink (delete), destroy value in cache
       cachedJSON[file] = undefined;
       cachedTimes[file] = Date.now();
     });
@@ -72,7 +70,11 @@ function readWatchedJSON(file) {
 
 // recursively mkdir (mkdir -p )
 function mkdir(path) {
-  try { fs.mkdirSync(path, {recursive: true}); } catch (e) { /* */ }
+  try {
+    fs.mkdirSync(path, { recursive: true });
+  } catch (e) {
+    /* */
+  }
 }
 
 // rm -rf a path
@@ -80,10 +82,8 @@ function rmdir(dir) {
   if (!fs.existsSync(dir)) return false;
   return new Promise((resolve, reject) => {
     rimraf(dir, error => {
-      if (error)
-        reject(error);
-      else
-        resolve(true);
+      if (error) reject(error);
+      else resolve(true);
     });
   });
 }

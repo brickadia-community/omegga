@@ -70,7 +70,7 @@ const store = {
   delete: key => emit('store.delete', key),
   wipe: () => emit('store.wipe'),
   count: () => emit('store.count'),
-  keys: () => emit('store.keys')
+  keys: () => emit('store.keys'),
 };
 
 // generic brickadia events are forwarded to the proxy omegga
@@ -94,13 +94,15 @@ function createVm(pluginPath, { builtin = ['*'], external = true } = {}) {
     require: {
       external,
       builtin,
-      root: pluginPath
-    }
+      root: pluginPath,
+    },
   });
 
   // plugin log generator function
-  const ezLog = (logFn, name, symbol) => (...args) =>
-    console[logFn](name.underline, symbol, ...args);
+  const ezLog =
+    (logFn, name, symbol) =>
+    (...args) =>
+      console[logFn](name.underline, symbol, ...args);
 
   // special formatting for stdout
   vm.on('console.log', ezLog('log', pluginName, '>>'.green));

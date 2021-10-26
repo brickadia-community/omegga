@@ -1,4 +1,3 @@
-
 let mouseX = -1;
 let mouseY = -1;
 let tooltipVisible = false;
@@ -31,8 +30,7 @@ document.body.appendChild(tooltipElem);
 document.body.addEventListener('mousemove', e => {
   mouseX = e.clientX;
   mouseY = e.clientY;
-  if (showTooltip)
-    updateTooltipPos();
+  if (showTooltip) updateTooltipPos();
 });
 
 // set the tooltip position to the last mouse position;
@@ -40,8 +38,12 @@ function updateTooltipPos() {
   const width = document.body.clientWidth;
   const height = document.body.clientHeight;
   Object.assign(tooltipElem.style, {
-    left: mouseX + (mouseX < width / 2 ? 16 : -16 - tooltipElem.clientWidth) + 'px',
-    top: mouseY + (mouseY < height / 2 ? 16 : -16 - tooltipElem.clientHeight) + 'px',
+    left:
+      mouseX + (mouseX < width / 2 ? 16 : -16 - tooltipElem.clientWidth) + 'px',
+    top:
+      mouseY +
+      (mouseY < height / 2 ? 16 : -16 - tooltipElem.clientHeight) +
+      'px',
   });
 }
 
@@ -81,7 +83,7 @@ function checkHoverElem() {
       showTooltip = true;
     }, 400);
 
-  // otherwise, hide it
+    // otherwise, hide it
   } else if (currText !== tooltip && showTooltip && tooltipVisible) {
     clearTimeout(tooltipHideTimeout);
     tooltipVisible = false;

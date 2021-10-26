@@ -1,7 +1,7 @@
 const readline = require('readline');
 
 const {
-  chat: { sanitize }
+  chat: { sanitize },
 } = require('../util/index.js');
 
 let log, err, warn;
@@ -18,7 +18,7 @@ class Terminal {
     this.rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
-      terminal: true
+      terminal: true,
     });
     this.rl.setPrompt('> '.brightGreen);
 
@@ -128,7 +128,7 @@ class Terminal {
             'Brickadia logs now',
             options.debug ? 'visible'.green : 'hidden'.red
           );
-        }
+        },
       },
 
       help: {
@@ -160,19 +160,18 @@ class Terminal {
               );
             });
           this.log('');
-        }
+        },
       },
 
       cmd: {
-        desc:
-          'run a console command on the brickadia server. requires debug for log to show',
+        desc: 'run a console command on the brickadia server. requires debug for log to show',
         fn(...args) {
           if (!this.omegga.started) {
             err('Omegga is not running');
             return;
           }
           this.omegga.writeln(args.join(' '));
-        }
+        },
       },
 
       ban: {
@@ -189,7 +188,7 @@ class Terminal {
             );
           }
           this.omegga.writeln('Chat.Command /ban ' + args.join(' '));
-        }
+        },
       },
       unban: {
         desc: 'unban a player',
@@ -202,7 +201,7 @@ class Terminal {
             return err('usage:', '/unban <name|id>'.yellow);
           }
           this.omegga.writeln('Chat.Command /unban ' + args.join(' '));
-        }
+        },
       },
       kick: {
         desc: 'kick a player',
@@ -215,7 +214,7 @@ class Terminal {
             return err('usage:', '/kick <name|id> [reason]'.yellow);
           }
           this.omegga.writeln('Chat.Command /kick ' + args.join(' '));
-        }
+        },
       },
       grantrole: {
         desc: 'grant a role to a player',
@@ -228,7 +227,7 @@ class Terminal {
             return err('usage:', '/grantrole <role name> <name|id>'.yellow);
           }
           this.omegga.writeln('Chat.Command /grantrole ' + args.join(' '));
-        }
+        },
       },
       revokerole: {
         desc: 'revoke a role from a player',
@@ -241,7 +240,7 @@ class Terminal {
             return err('usage:', '/revokerole <role name> <name|id>'.yellow);
           }
           this.omegga.writeln('Chat.Command /revokerole ' + args.join(' '));
-        }
+        },
       },
       clearbricks: {
         desc: "clear a player's bricks",
@@ -254,7 +253,7 @@ class Terminal {
             return err('usage:', '/clearbricks <name>'.yellow);
           }
           this.omegga.writeln(`Bricks.Clear "${args.join(' ')}"`);
-        }
+        },
       },
       clearallbricks: {
         desc: 'clear all bricks',
@@ -264,12 +263,11 @@ class Terminal {
             return;
           }
           this.omegga.writeln('Bricks.ClearAll');
-        }
+        },
       },
 
       status: {
-        desc:
-          'display server status information. brick count, online players, etc',
+        desc: 'display server status information. brick count, online players, etc',
         async fn() {
           if (!this.omegga.started) {
             err('Omegga is not running');
@@ -293,7 +291,7 @@ class Terminal {
           } catch (e) {
             err('An error occurred while getting server status');
           }
-        }
+        },
       },
 
       stop: {
@@ -302,7 +300,7 @@ class Terminal {
           log('Stopping server...');
           await this.omegga.stop();
           process.exit();
-        }
+        },
       },
 
       kill: {
@@ -310,7 +308,7 @@ class Terminal {
         async fn() {
           log('Stopping server...');
           await this.omegga.stop();
-        }
+        },
       },
 
       save: {
@@ -320,7 +318,7 @@ class Terminal {
           if (!name.length) return err('usage:', '/save <name>'.yellow);
           log('Saving bricks');
           this.omegga.saveBricks(name);
-        }
+        },
       },
 
       load: {
@@ -330,7 +328,7 @@ class Terminal {
           if (!name.length) return err('usage:', '/load <name>'.yellow);
           log('Loading bricks');
           this.omegga.loadBricks(name);
-        }
+        },
       },
 
       start: {
@@ -345,7 +343,7 @@ class Terminal {
           }
           log('Starting server...');
           this.omegga.start();
-        }
+        },
       },
 
       reload: {
@@ -380,8 +378,8 @@ class Terminal {
           } else {
             err('Could not load all plugins');
           }
-        }
-      }
+        },
+      },
     }).forEach(([cmd, { desc, fn }]) => this.addCommand(cmd, desc, fn));
   }
 

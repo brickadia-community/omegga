@@ -18,5 +18,5 @@ module.exports = {
   LogWrangler: require('./logWrangler.js'),
 
   // injects commands that only need a log wrangler to function
-  commandInjector: require('./commandInjector.js')
+  commandInjector: require('./commandInjector.js'),
 };

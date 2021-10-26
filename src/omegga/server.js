@@ -43,7 +43,7 @@ const MATCHERS = [
   require('./matchers/init.js'),
   // watch loginit for any funny business
 
-  require('./matchers/mapChange.js')
+  require('./matchers/mapChange.js'),
   // 'mapchange' event
 ];
 
@@ -525,7 +525,7 @@ class Omegga extends OmeggaWrapper {
     if (file)
       return brs.read(fs.readFileSync(file), {
         preview: false,
-        bricks: !nobricks
+        bricks: !nobricks,
       });
   }
 
@@ -555,7 +555,7 @@ class Omegga extends OmeggaWrapper {
         first: match => match[0].endsWith(saveFile + '.brs...'),
         last: match => match[1].match(/Read .+ bricks/),
         afterMatchDelay: 0,
-        timeoutDelay: 30000
+        timeoutDelay: 30000,
       }
     );
 
@@ -585,7 +585,7 @@ class Omegga extends OmeggaWrapper {
             /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/
           ),
         afterMatchDelay: 0,
-        timeoutDelay: 30000
+        timeoutDelay: 30000,
       }
     );
 
@@ -621,7 +621,7 @@ class Omegga extends OmeggaWrapper {
       /^.*(LogLoad: Took .+ seconds to LoadMap\((?<map>.+)\))|(ERROR: The map .+)$/,
       {
         timeoutDelay: 30000,
-        exec: () => this.writeln(`ServerTravel ${brName}`)
+        exec: () => this.writeln(`ServerTravel ${brName}`),
       }
     );
     const success = !!(

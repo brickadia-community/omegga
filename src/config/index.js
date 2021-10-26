@@ -5,25 +5,35 @@ const soft = require('../softconfig.js');
 
 const Configstore = require('configstore');
 
-const store = new Configstore(soft.PROJECT_NAME, {
-  defaultOmegga: '.',
-  legacyBin: '',
-}, {
-  globalConfigPath: true,
-});
+const store = new Configstore(
+  soft.PROJECT_NAME,
+  {
+    defaultOmegga: '.',
+    legacyBin: '',
+  },
+  {
+    globalConfigPath: true,
+  }
+);
 
 // find all format_EXT.js files in the formats path
-const formats = fs.readdirSync(path.join(__dirname, 'formats'))
+const formats = fs
+  .readdirSync(path.join(__dirname, 'formats'))
   // all formats match the format_EXT.js pattern
   .filter(file => file.match(/format_[a-z]+\.js/))
   // require all the formats
   .map(file => require('./formats/' + file))
   // format has a valid extension, reader, and writer
-  .filter(format =>
-    format.extension && format.extension.match(/^[a-z]+$/) &&
-    format.encoding && format.encoding.match(/^(string|buffer)$/) &&
-    format.reader && typeof format.reader === 'function' &&
-    format.writer && typeof format.writer === 'function'
+  .filter(
+    format =>
+      format.extension &&
+      format.extension.match(/^[a-z]+$/) &&
+      format.encoding &&
+      format.encoding.match(/^(string|buffer)$/) &&
+      format.reader &&
+      typeof format.reader === 'function' &&
+      format.writer &&
+      typeof format.writer === 'function'
   );
 
 // create read/write funcs for the provided formats
@@ -31,11 +41,15 @@ module.exports = {
   defaultConfig: {
     omegga: {
       webui: true,
-      port: process.env.OMEGGA_PORT ? Number(process.env.OMEGGA_PORT) : soft.DEFAULT_PORT,
+      port: process.env.OMEGGA_PORT
+        ? Number(process.env.OMEGGA_PORT)
+        : soft.DEFAULT_PORT,
       https: true,
     },
     server: {
-      port: process.env.BRICKADIA_PORT ? Number(process.env.BRICKADIA_PORT) : 7777,
+      port: process.env.BRICKADIA_PORT
+        ? Number(process.env.BRICKADIA_PORT)
+        : 7777,
       map: 'Plate',
       branch: 'main-server',
     },
@@ -53,7 +67,7 @@ module.exports = {
   read: require('./reader.js')(formats),
 
   // open config at a specified path
-  find(dir='.') {
+  find(dir = '.') {
     // find the first config file matching these config file names
     for (const f of soft.CONFIG_FILENAMES) {
       for (const { extension } of formats) {
@@ -63,5 +77,5 @@ module.exports = {
     }
 
     return undefined;
-  }
+  },
 };
