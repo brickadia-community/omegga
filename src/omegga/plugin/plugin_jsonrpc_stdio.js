@@ -407,6 +407,9 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('getAllPlayerPositions', () =>
       this.omegga.getAllPlayerPositions()
     );
+    rpc.addMethod('getServerStatus', () => this.omegga.getServerStatus());
+    rpc.addMethod('getMinigames', () => this.omegga.getMinigames());
+    rpc.addMethod('getHostId', () => this.omegga.getHostId());
     rpc.addMethod('getRoleSetup', () => this.omegga.getRoleSetup());
     rpc.addMethod('getBanList', () => this.omegga.getBanList());
     rpc.addMethod('getSaves', () => this.omegga.getSaves());
