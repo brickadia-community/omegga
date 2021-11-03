@@ -1,6 +1,6 @@
 const path = require('path');
 
-const Datastore = require('nedb-promise');
+const Datastore = require('nedb-promises');
 const bcrypt = require('bcrypt');
 const chokidar = require('chokidar');
 

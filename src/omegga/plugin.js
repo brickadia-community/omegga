@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const Datastore = require('nedb-promise');
+const Datastore = require('nedb-promises');
 
 const soft = require('../softconfig.js');
 
@@ -234,10 +234,11 @@ class PluginLoader {
   constructor(pluginsPath, omegga) {
     this.path = pluginsPath;
     this.omegga = omegga;
-    this.store = new Datastore({
+    this.store = Datastore.create({
       filename: path.join(omegga.dataPath, soft.PLUGIN_STORE),
       autoload: true,
     });
+    this.store.persistence.setAutocompactionInterval(1000 * 60 * 5);
     this.formats = [];
     this.plugins = [];
 
