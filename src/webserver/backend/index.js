@@ -4,7 +4,7 @@ const https = require('https');
 
 const express = require('express');
 const expressSession = require('express-session');
-const NedbStore = require('nedb-promises-session-store');
+const NedbStore = require('nedb-promises-session-store').default;
 const SocketIo = require('socket.io');
 const bodyParser = require('body-parser');
 

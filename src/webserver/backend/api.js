@@ -520,7 +520,7 @@ module.exports = (server, io) => {
 
       log(
         'Clearing bricks for player',
-        omegga.getNameCache()?.savedPlayerNames?.[id].yellow ??
+        omegga.getNameCache()?.savedPlayerNames?.[id]?.yellow ??
           'with id ' + id.yellow
       );
 

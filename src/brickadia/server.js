@@ -220,9 +220,7 @@ class BrickadiaServer extends EventEmitter {
   }
 
   lineListener(line) {
-    line = stripAnsi(line);
-
-    this.emit('line', line);
+    this.emit('line', stripAnsi(line));
   }
 }
 

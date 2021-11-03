@@ -43,23 +43,23 @@ class Database extends EventEmitter {
 
     // create all the stores
     this.stores = {
-      users: new Datastore({
+      users: Datastore.create({
         filename: path.join(omegga.dataPath, soft.USER_STORE),
         ...dbOpts,
       }),
-      chat: new Datastore({
+      chat: Datastore.create({
         filename: path.join(omegga.dataPath, soft.CHAT_STORE),
         ...dbOpts,
       }),
-      players: new Datastore({
+      players: Datastore.create({
         filename: path.join(omegga.dataPath, soft.PLAYER_STORE),
         ...dbOpts,
       }),
-      status: new Datastore({
+      status: Datastore.create({
         filename: path.join(omegga.dataPath, soft.STATUS_STORE),
         ...dbOpts,
       }),
-      server: new Datastore({
+      server: Datastore.create({
         filename: path.join(omegga.dataPath, soft.SERVER_STORE),
         ...dbOpts,
       }),
@@ -384,7 +384,7 @@ class Database extends EventEmitter {
   // get recent chat activity
   async getChats({ count = 50, sameServer, before, after } = {}) {
     return await this.stores.chat
-      .cfind({
+      .find({
         type: 'chat',
         ...(sameServer ? { instanceId: await this.getInstanceId() } : {}),
         created: before
@@ -453,7 +453,7 @@ class Database extends EventEmitter {
     const [total, players, exactResult] = await Promise.all([
       this.stores.players.count(query),
       this.stores.players
-        .cfind(query)
+        .find(query)
         // TODO: add other sorts and sort directions
         .sort({ [sort]: direction })
         .skip(count * page)
@@ -515,7 +515,7 @@ class Database extends EventEmitter {
     const [total, users] = await Promise.all([
       this.stores.users.count(query),
       this.stores.users
-        .cfind(query)
+        .find(query)
         // TODO: add other sorts and sort directions
         .sort({ [sort]: direction })
         .skip(count * page)
@@ -535,17 +535,17 @@ class Database extends EventEmitter {
     const [player, banHistory, kickHistory, notes] = await Promise.all([
       this.stores.players.findOne({ type: 'userHistory', id }),
       this.stores.players
-        .cfind({ type: 'banHistory', banned: id })
+        .find({ type: 'banHistory', banned: id })
         .sort({ created: -1 })
         .limit(25)
         .exec(),
       this.stores.players
-        .cfind({ type: 'kickHistory', kicked: id })
+        .find({ type: 'kickHistory', kicked: id })
         .sort({ created: -1 })
         .limit(25)
         .exec(),
       this.stores.players
-        .cfind({ type: 'note', id })
+        .find({ type: 'note', id })
         .sort({ created: -1 })
         .limit(25)
         .exec(),
