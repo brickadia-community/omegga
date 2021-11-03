@@ -4,7 +4,7 @@ const https = require('https');
 
 const express = require('express');
 const expressSession = require('express-session');
-const NedbStore = require('nedb-session-store')(expressSession);
+const NedbStore = require('nedb-promises-session-store');
 const SocketIo = require('socket.io');
 const bodyParser = require('body-parser');
 
@@ -111,8 +111,9 @@ class Webserver {
         maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
       },
       // use a nedb database for session store
-      store: new NedbStore({
+      store: NedbStore({
         filename: path.join(this.dataPath, soft.SESSION_STORE),
+        connect: expressSession,
       }),
     });
     this.app.use(session);
