@@ -29,6 +29,7 @@ class Terminal {
 
     // print log line if debug is enabled
     let launcherDone = false;
+    let lastDoneMessage = '';
     omegga.on('line', l => {
       if (options.debug) this.log('::'.blue, l);
       else if (!launcherDone) {
@@ -50,7 +51,9 @@ class Terminal {
           process.stdout.clearLine();
           process.stdout.cursorTo(0);
           process.stdout.write(l);
-          if (l.match(/Done!/)) {
+          // add a newline on "Done!" but prevent newlines on repeat done messages
+          if (l.match(/Done!/) && l !== lastDoneMessage) {
+            lastDoneMessage = l;
             process.stdout.write('\n');
           }
         } else if (l.match(/Disabling core dumps./)) {

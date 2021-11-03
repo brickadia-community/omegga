@@ -17,7 +17,7 @@ module.exports = omegga => {
 
       const match = data.match(versionRegExp);
 
-      const branch = omegga.config.server.branch ?? 'main-server';
+      const branch = omegga.config.server?.branch ?? 'main-server';
       const configPath = path.join(
         softconfig.BRICKADIA_INSTALLS,
         branch.split(':')[0] + '.json'
