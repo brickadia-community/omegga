@@ -21,5 +21,6 @@
   "spectator",
   "ghost",
   "ping",
-  "gettransform"
+  "gettransform",
+  "back"
 ]
