@@ -26,7 +26,7 @@
     "json-rpc-2.0": "^0.2.10",
     "lodash": "^4.17.20",
     "nedb-promises": "^5.0.1",
-    "nedb-promises-session-store": "^1.0.0",
+    "nedb-promises-session-store": "1.0.0",
     "npm": "^7.20.6",
     "password-prompt": "^1.1.2",
     "pem": "^1.14.4",
