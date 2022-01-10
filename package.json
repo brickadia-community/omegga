@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "0.1.83",
+  "version": "0.1.84",
   "description": "Brickadia server installer, manager, wrapper, configurator, and automator",
   "main": "index.js",
   "bin": {
@@ -13,7 +13,7 @@
     "brs-js": "^2.0.0",
     "child_process": "^1.0.2",
     "chokidar": "^3.4.2",
-    "colors": "^1.4.0",
+    "colors": "1.4.0",
     "commander": "^5.1.0",
     "configstore": "^5.0.1",
     "disrequire": "^1.1.1",
