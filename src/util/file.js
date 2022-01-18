@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const chokidar = require('chokidar');
 const rimraf = require('rimraf');
+const _ = require('lodash');
 
 // objects to store cached data
 const cachedTimes = {};
@@ -53,7 +54,7 @@ function readWatchedJSON(file) {
   const watcher = chokidar.watch(file, { persistent: false });
   watchers[file] = watcher;
 
-  const read = () => updateJSONCache(file);
+  const read = _.debounce(() => updateJSONCache(file), 500);
 
   // add listeners to the watcher
   watcher
@@ -65,7 +66,7 @@ function readWatchedJSON(file) {
       cachedTimes[file] = Date.now();
     });
 
-  return read();
+  return updateJSONCache(file);
 }
 
 // recursively mkdir (mkdir -p )
