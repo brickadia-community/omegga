@@ -1,18 +1,31 @@
-const { color, time } = require('../util/index.js');
-const _ = require('lodash');
+import { color, time } from '../util';
+import _ from 'lodash';
+import { IServerStatus } from './types';
+import type Omegga from './server';
+import type LogWrangler from './logWrangler';
+
+const buildTableHeaderRegex = (header: string) =>
+  new RegExp(
+    header
+      .match(/[^|]+/g) // get all strings between the |'s'
+      .map((line, i) => [line.slice(1, -1), line.length - (i === 5 ? 1 : 2)]) // calculate the lengths (and remove the spaces)
+      .map(
+        ([name, len]: [string, number]) =>
+          ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`
+      ) // create a regex pattern to match strings of that length (and trim off whitespace at the end)
+      .join('\\|')
+  ); // join the regexes with the |
 
 // A list of commands that can be injected to things with the log wrangler
 /**
  * List of injected commands
- * @type {Object}
  */
-const COMMANDS = {
+const COMMANDS: Record<string, Function> = {
   /**
    * Get a server status object containing bricks, time, players, player ping, player roles, etc
-   * @return {Promise<Object>} - Server Status
    */
-  async getServerStatus() {
-    const statusLines = await this.watchLogChunk(
+  async getServerStatus(): Promise<IServerStatus> {
+    const statusLines = await (this as Omegga).watchLogChunk<RegExpMatchArray>(
       'Server.Status',
       /^LogConsoleCommands: (.+)$/,
       {
@@ -28,15 +41,7 @@ const COMMANDS = {
       .map(l => l[1].slice(1));
 
     // use the size of each column to build a regex that matches each row
-    const columnRegExp = new RegExp(
-      tableHeader
-        .match(/[^|]+/g) // get all strings between the |'s'
-        .map((line, i) => [line.slice(1, -1), line.length - (i === 5 ? 1 : 2)]) // calculate the lengths (and remove the spaces)
-        .map(
-          ([name, len]) => ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`
-        ) // create a regex pattern to match strings of that length (and trim off whitespace at the end)
-        .join('\\|')
-    ); // join the regexes with the |
+    const columnRegExp = buildTableHeaderRegex(tableHeader);
 
     const status = {
       // easily extract certain values from the server status
@@ -70,6 +75,46 @@ const COMMANDS = {
   },
 
   /**
+   * Get a list of minigames
+   * @return {Promise<{index: number, name: string, numMembers: number, owner: {name: string, id: string}}[]>} - Minigame List
+   */
+  async listMinigames() {
+    const minigameLines = await (
+      this as Omegga
+    ).watchLogChunk<RegExpMatchArray>(
+      'Server.Minigames.List',
+      /^LogConsoleCommands: (.+)$/,
+      {
+        first: match => match[1].startsWith('Minigame Count:'),
+        timeoutDelay: 1000,
+      }
+    );
+
+    // the table lines all start with '* '
+    // find all those lines, and remove the asterisk
+    const [tableHeader, ...tableLines] = minigameLines
+      .filter(l => l[1].startsWith('* '))
+      .map(l => l[1].slice(1));
+
+    // use the size of each column to build a regex that matches each row
+    const columnRegExp = buildTableHeaderRegex(tableHeader);
+
+    return tableLines.map(l => {
+      // match the player row with the generated regex
+      const {
+        groups: { id, name, ownername, ownerid, members: numMembers },
+      } = l.match(columnRegExp);
+      // trim and parse the matched data
+      return {
+        index: id,
+        name,
+        numMembers,
+        owner: { name: ownername, id: ownerid },
+      };
+    });
+  },
+
+  /**
    * get every player's position and alive states
    * @return {Promise<Array<Object>>}
    */
@@ -83,15 +128,23 @@ const COMMANDS = {
 
     // wait for the pawn and position watchers to return all the results
     const [pawns, deadFigures, positions] = await Promise.all([
-      this.watchLogChunk('GetAll BP_PlayerController_C Pawn', pawnRegExp, {
-        first: 'index',
-        timeoutDelay: 250,
-      }),
-      this.watchLogChunk('GetAll BP_FigureV2_C bIsDead', deadFigureRegExp, {
-        first: 'index',
-        timeoutDelay: 250,
-      }),
-      this.watchLogChunk(
+      (this as Omegga).watchLogChunk<RegExpMatchArray>(
+        'GetAll BP_PlayerController_C Pawn',
+        pawnRegExp,
+        {
+          first: 'index',
+          timeoutDelay: 250,
+        }
+      ),
+      (this as Omegga).watchLogChunk<RegExpMatchArray>(
+        'GetAll BP_FigureV2_C bIsDead',
+        deadFigureRegExp,
+        {
+          first: 'index',
+          timeoutDelay: 250,
+        }
+      ),
+      (this as Omegga).watchLogChunk<RegExpMatchArray>(
         'GetAll SceneComponent RelativeLocation Name=CollisionCylinder',
         posRegExp,
         { first: 'index', timeoutDelay: 250 }
@@ -146,36 +199,55 @@ const COMMANDS = {
       // parse console output to get the minigame info
       const [rulesets, ruleMembers, teamMembers, teamNames, teamColors] =
         await Promise.all([
-          this.watchLogChunk(
+          (this as Omegga).watchLogChunk<RegExpMatchArray>(
             'GetAll BP_Ruleset_C RulesetName',
             ruleNameRegExp,
             {
               first: 'index',
             }
           ),
-          this.watchLogArray(
+          (this as Omegga).watchLogArray<
+            { index: string; ruleset: string },
+            { index: string; state: string }
+          >(
             'GetAll BP_Ruleset_C MemberStates',
             ruleMembersRegExp,
             playerStateRegExp
           ),
-          this.watchLogArray(
+          (this as Omegga).watchLogArray<
+            { index: string; ruleset: string; team: string },
+            { index: string; state: string }
+          >(
             'GetAll BP_Team_C MemberStates',
             teamMembersRegExp,
             playerStateRegExp
           ),
-          this.watchLogChunk('GetAll BP_Team_C TeamName', teamNameRegExp, {
-            first: 'index',
-          }),
+          (this as Omegga).watchLogChunk<RegExpMatchArray>(
+            'GetAll BP_Team_C TeamName',
+            teamNameRegExp,
+            {
+              first: 'index',
+            }
+          ),
           // team color in a5 is based on (B=255,G=255,R=255,A=255)
-          this.watchLogChunk('GetAll BP_Team_C TeamColor', teamColorRegExp, {
-            first: 'index',
-          }),
+          (this as Omegga).watchLogChunk<RegExpMatchArray>(
+            'GetAll BP_Team_C TeamColor',
+            teamColorRegExp,
+            {
+              first: 'index',
+            }
+          ),
         ]);
 
       // figure out what to do with the matched color results
-      const handleColor = match => {
+      const handleColor = (
+        match:
+          | { color: string }
+          | { r: string; g: string; b: string; a: string }
+      ) => {
         // color index, return the colorset color
-        if (match.color) return color.DEFAULT_COLORSET[Number(match)].slice();
+        if ('color' in match)
+          return color.DEFAULT_COLORSET[Number(match)].slice();
         else return [match.r, match.g, match.b, match.a].map(Number);
       };
 
@@ -221,8 +293,10 @@ const COMMANDS = {
 };
 
 // inject the commands into the object given a log wrangler
-module.exports = (obj, logWrangler) => {
+export default (obj: Omegga, logWrangler: typeof LogWrangler) => {
   for (const cmd in COMMANDS) {
-    obj[cmd] = COMMANDS[cmd].bind(logWrangler);
+    // disgusting type casting because we're injecting functions
+    (obj as unknown as Record<string, Function>)[cmd] =
+      COMMANDS[cmd].bind(logWrangler);
   }
 };

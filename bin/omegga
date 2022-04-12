@@ -3,13 +3,19 @@
 const isBrickInstalled = require('hasbin').sync('brickadia');
 
 // check if a local brickadia is installed
-const isLocal = !isBrickInstalled && require('fs').existsSync(require('../src/softconfig.js').LOCAL_LAUNCHER);
+const isLocal =
+  !isBrickInstalled &&
+  require('fs').existsSync(require('../dist/softconfig.js').LOCAL_LAUNCHER);
 
 if (!isBrickInstalled && !isLocal) {
   require('colors');
-  console.error('!>'.red, 'brickadia launcher'.yellow.underline, 'must be installed for omegga to run');
+  console.error(
+    '!>'.red,
+    'brickadia launcher'.yellow.underline,
+    'must be installed for omegga to run'
+  );
 
-  require('../src/cli/installer.js');
+  require('../dist/cli/installer.js');
 } else {
-  require('../src/main.js');
+  require('../dist/main.js');
 }

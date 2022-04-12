@@ -1,13 +1,14 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
-const Omegga = require('./server.js');
-const soft = require('../softconfig.js');
-const file = require('../util/file.js');
-const { write: writeConfig } = require('../brickadia/config.js');
+const Omegga = require('./server').default;
+import soft from '../softconfig';
+import * as file from '../util/file';
+import { write as writeConfig } from '../brickadia/config';
+
 require('colors');
 
-const verboseLog = (...args) => {
+const verboseLog = (...args: any[]) => {
   if (!global.VERBOSE) return;
   if (Omegga.log) Omegga.log('V>'.magenta, ...args);
   else console.log('V>'.magenta, ...args);
@@ -29,7 +30,7 @@ async function removeTempDir() {
 
 // read the auth files into a buffer
 function readAuthFiles() {
-  const files = {};
+  const files: Record<string, Buffer> = {};
   for (const f of soft.BRICKADIA_AUTH_FILES) {
     files[f] = fs.readFileSync(
       path.join(soft.TEMP_DIR_NAME, soft.DATA_PATH, 'Saved/Auth', f)
@@ -39,14 +40,18 @@ function readAuthFiles() {
 }
 
 // write auth files object to a server path
-function writeAuthFiles(dstDir, files) {
+export function writeAuthFiles(dstDir: string, files: Record<string, string>) {
   for (const f in files) {
     fs.writeFileSync(path.join(dstDir, f), files[f]);
   }
 }
 
 // from credentials, build brickadia auth tokens
-async function genAuthFiles(email, password, { debug = false, branch }) {
+export async function genAuthFiles(
+  email: string,
+  password: string,
+  { debug = false, branch }: { debug?: boolean; branch?: string }
+) {
   verboseLog('Generating auth files');
 
   // remove existing temporary install path
@@ -108,8 +113,8 @@ async function genAuthFiles(email, password, { debug = false, branch }) {
 
     let finished = false;
     const finish =
-      name =>
-      (...args) => {
+      (name: string) =>
+      (...args: any[]) => {
         if (finished) return;
         finished = true;
         verboseLog('Brickadia', name, 'with code', ...args);
@@ -131,8 +136,3 @@ async function genAuthFiles(email, password, { debug = false, branch }) {
   // return auth files (or null)
   return files;
 }
-
-module.exports = {
-  genAuthFiles,
-  writeAuthFiles,
-};

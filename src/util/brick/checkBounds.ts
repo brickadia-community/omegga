@@ -1,8 +1,21 @@
-const getScaleAxis = require('./getScaleAxis');
-const getBrickSize = require('./getBrickSize');
+import { Brick } from 'brs-js/dist/src/types';
+
+import getScaleAxis from './getScaleAxis';
+import getBrickSize from './getBrickSize';
+
+export interface IBrickBounds {
+  minBound: number[];
+  maxBound: number[];
+  center: number[];
+}
 
 // check if the brick is in bounds for 1 axis
-function checkBound(brick, brick_assets, bounds, axis) {
+function checkBound(
+  brick: Brick,
+  brick_assets: string[],
+  bounds: IBrickBounds,
+  axis: number
+) {
   const scaleAxis = getScaleAxis(brick, axis);
   const size = getBrickSize(brick, brick_assets);
   const upper = brick.position[axis] + size[scaleAxis];
@@ -11,12 +24,14 @@ function checkBound(brick, brick_assets, bounds, axis) {
 }
 
 // check if the brick is in bounds
-function checkBounds(brick, brick_assets, bounds) {
+export default function checkBounds(
+  brick: Brick,
+  brick_assets: string[],
+  bounds: IBrickBounds
+) {
   return (
     checkBound(brick, brick_assets, bounds, 0) &&
     checkBound(brick, brick_assets, bounds, 1) &&
     checkBound(brick, brick_assets, bounds, 2)
   );
 }
-
-module.exports = checkBounds;

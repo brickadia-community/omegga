@@ -1,19 +1,33 @@
-const fs = require('fs');
-const path = require('path');
-const glob = require('glob');
-const brs = require('brs-js');
+import {
+  BRRoleSetup,
+  BRRoleAssignments,
+  BRBanList,
+  BRPlayerNameCache,
+} from './../brickadia/types';
+import { existsSync, writeFileSync, readFileSync, unlinkSync } from 'fs';
+import { join, basename } from 'path';
+import { sync } from 'glob';
+import { write, read } from 'brs-js';
 
-const OmeggaWrapper = require('./wrapper.js');
-const { PluginLoader } = require('./plugin.js');
-const commandInjector = require('./commandInjector.js');
-const { Webserver } = require('../webserver/index.js');
-const soft = require('../softconfig.js');
-const { uuid, pattern, map: mapUtils } = require('../util/index.js');
-const file = require('../util/file.js');
-const Terminal = require('../cli/terminal.js');
-require('colors');
+import OmeggaWrapper from './wrapper';
+import { PluginLoader } from './plugin';
+import commandInjector from './commandInjector';
+import { Webserver } from '../webserver/index';
+import {
+  DATA_PATH,
+  PLUGIN_PATH,
+  CONFIG_HOME,
+  CONFIG_AUTH_DIR,
+  BRICKADIA_AUTH_FILES,
+} from '../softconfig.js';
+import { uuid, pattern, map as mapUtils } from '../util/index.js';
+import { mkdir, copyFiles, readWatchedJSON } from '../util/file.js';
+import Terminal from '../cli/terminal.js';
+import 'colors';
 
-const DEFAULT_COMMANDS = require('../info/default_commands.json');
+import { includes } from '../info/default_commands.json';
+import Player from './player';
+import { ReadSaveObject, WriteSaveObject } from 'brs-js/dist/src/types';
 const MISSING_CMD =
   '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
 
@@ -49,69 +63,79 @@ const MATCHERS = [
 
 // TODO: safe broadcast parsing
 
-const verboseLog = (...args) => {
+const verboseLog = (...args: unknown[]) => {
   if (!global.VERBOSE) return;
   if (Omegga.log) Omegga.log('V>'.magenta, ...args);
   else console.log('V>'.magenta, ...args);
 };
 
 class Omegga extends OmeggaWrapper {
-  // pluginloader is not private so plugins can potentially add more formats
-  pluginLoader = undefined;
-
   /** The save counter prevents omegga from saving over the same file */
   _tempSaveCounter = 0;
   /** The save prefix is prepended to all temporary saves */
   _tempSavePrefix = 'omegga_temp_';
 
   // allow a terminal to be used instead of console log
-  static terminal = undefined;
+  static terminal: Terminal = undefined;
 
   /**
    * send a console log to the readline terminal or stdout
-   * @param {...args} - things to print out
    */
-  static log(...args) {
+  static log(...args: unknown[]) {
     (Omegga.terminal || console).log(...args);
   }
 
   /**
    * send a console error to the readline terminal or stderr
-   * @param {...args} - things to print out
    */
-  static error(...args) {
+  static error(...args: unknown[]) {
     (Omegga.terminal || console).error(...args);
   }
 
   /**
    * send a console warn to the readline terminal or stdout
-   * @param {...args} - things to print out
    */
-  static warn(...args) {
+  static warn(...args: unknown[]) {
     (Omegga.terminal || console).warn(...args);
   }
 
   /**
    * send a console log when omegga is launched when --verbose
-   * @param  {...args} message to print
    */
-  static verbose(...args) {
+  static verbose(...args: unknown[]) {
     verboseLog(...args);
   }
 
   /**
    * send a console log to the readline terminal or console
-   * @param {terminal} - readline terminal instance
    */
-  static setTerminal(term) {
+  static setTerminal(term: Terminal) {
     if (term instanceof Terminal) Omegga.terminal = term;
   }
 
+  // pluginloader is not private so plugins can potentially add more formats
+  pluginLoader: PluginLoader = undefined;
+  webserver: Webserver;
+
+  verbose: boolean;
+  savePath: string;
+  presetPath: string;
+  configPath: string;
+
+  version: number;
+
+  host?: { id: string; name: string };
+  players: Player[];
+
+  started: boolean;
+  starting: boolean;
+  stopping: boolean;
+  currentMap: string;
+
   /**
    * Omegga instance
-   * @constructor
    */
-  constructor(serverPath, cfg, options = {}) {
+  constructor(serverPath: string, cfg, options = {}) {
     super(serverPath, cfg);
     this.verbose = global.VERBOSE;
 
@@ -123,15 +147,17 @@ class Omegga extends OmeggaWrapper {
     this.options = options;
 
     // path to save files
-    this.savePath = path.join(this.path, soft.DATA_PATH, 'Saved/Builds');
+    this.savePath = join(this.path, DATA_PATH, 'Saved/Builds');
+
+    this.presetPath = join(this.path, DATA_PATH, 'Saved/Presets');
 
     // path to config files
-    this.configPath = path.join(this.path, soft.DATA_PATH, 'Saved/Server');
+    this.configPath = join(this.path, DATA_PATH, 'Saved/Server');
 
     // create dir folders
     verboseLog('Creating directories');
-    file.mkdir(this.savePath);
-    file.mkdir(this.configPath);
+    mkdir(this.savePath);
+    mkdir(this.configPath);
 
     // ignore auth file copy
     if (!options.noauth) {
@@ -150,14 +176,11 @@ class Omegga extends OmeggaWrapper {
     if (!options.noplugin) {
       verboseLog('Creating plugin loader');
       // create the pluginloader
-      this.pluginLoader = new PluginLoader(
-        path.join(this.path, soft.PLUGIN_PATH),
-        this
-      );
+      this.pluginLoader = new PluginLoader(join(this.path, PLUGIN_PATH), this);
 
       verboseLog('Creating loading plugins');
       // load all the plugin formats in
-      this.pluginLoader.loadFormats(path.join(__dirname, 'plugin'));
+      this.pluginLoader.loadFormats(join(__dirname, 'plugin'));
     }
 
     /** @type {Array<Player>}list of online players */
@@ -223,7 +246,7 @@ class Omegga extends OmeggaWrapper {
       // if it's not in the default commands and it's not registered to a plugin,
       // it's okay to send the missing command message
       if (
-        !DEFAULT_COMMANDS.includes(cmd) &&
+        !includes(cmd) &&
         (!this.pluginLoader || !this.pluginLoader.isCommand(cmd))
       ) {
         this.whisper(name, MISSING_CMD);
@@ -291,10 +314,10 @@ class Omegga extends OmeggaWrapper {
    * this should never be called by a plugin
    */
   copyAuthFiles() {
-    const authPath = path.join(this.path, soft.DATA_PATH, 'Saved/Auth');
-    const homeAuthPath = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
+    const authPath = join(this.path, DATA_PATH, 'Saved/Auth');
+    const homeAuthPath = join(CONFIG_HOME, CONFIG_AUTH_DIR);
 
-    file.copyFiles(homeAuthPath, authPath, soft.BRICKADIA_AUTH_FILES);
+    copyFiles(homeAuthPath, authPath, BRICKADIA_AUTH_FILES);
   }
 
   // TODO: split messages that longer than 512 characters
@@ -304,10 +327,10 @@ class Omegga extends OmeggaWrapper {
    * messages are broken by new line
    * multiple arguments are additional lines
    * all messages longer than 512 characters are deleted automatically, though omegga wouldn't have sent them anyway
-   * @param {...String} - unescaped chat messages to send. may need to wrap messages with quotes
+   * @param messages unescaped chat messages to send. may need to wrap messages with quotes
    */
   //
-  broadcast(...messages) {
+  broadcast(...messages: string[]) {
     messages
       .flatMap(m => m.toString().split('\n'))
       .filter(m => m.length < 512)
@@ -319,11 +342,11 @@ class Omegga extends OmeggaWrapper {
    * messages are broken by new line
    * multiple arguments are additional lines
    * all messages longer than 512 characters are deleted automatically, though omegga wouldn't have sent them anyway
-   * @param {String} - player identifier or player object
-   * @param {...String} - unescaped chat messages to send. may need to wrap messages with quotes
+   * @param target - player identifier or player object
+   * @param messages - unescaped chat messages to send. may need to wrap messages with quotes
    */
   //
-  whisper(target, ...messages) {
+  whisper(target: string | Player, ...messages: string[]) {
     // find the target player
     if (typeof target !== 'object') target = this.getPlayer(target);
 
@@ -331,74 +354,72 @@ class Omegga extends OmeggaWrapper {
     messages
       .flatMap(m => m.toString().split('\n'))
       .filter(m => m.length < 512)
-      .forEach(m => this.writeln(`Chat.Whisper "${target.name}" ${m}`));
+      .forEach(m =>
+        this.writeln(`Chat.Whisper "${(target as { name: string }).name}" ${m}`)
+      );
   }
 
   /**
    * get a list of players
-   * @return {players} - list of players {id: uuid, name: name} objects
+   * @return list of players {id: uuid, name: name} objects
    */
-  getPlayers() {
+  getPlayers(): {
+    id: string;
+    name: string;
+    controller: string;
+    state: string;
+  }[] {
     return this.players.map(p => ({ ...p }));
   }
 
   /**
    * Get up-to-date role setup from RoleSetup.json
-   * @return {object}
    */
-  getRoleSetup() {
-    return file.readWatchedJSON(path.join(this.configPath, 'RoleSetup.json'));
+  getRoleSetup(): BRRoleSetup {
+    return readWatchedJSON(join(this.configPath, 'RoleSetup.json'));
   }
 
   /**
    * Get up-to-date role assignments from RoleAssignment.json
-   * @return {object}
    */
-  getRoleAssignments() {
-    return file.readWatchedJSON(
-      path.join(this.configPath, 'RoleAssignments.json')
-    );
+  getRoleAssignments(): BRRoleAssignments {
+    return readWatchedJSON(join(this.configPath, 'RoleAssignments.json'));
   }
 
   /**
    * Get up-to-date ban list from BanList.json
-   * @return {object}
    */
-  getBanList() {
-    return file.readWatchedJSON(path.join(this.configPath, 'BanList.json'));
+  getBanList(): BRBanList {
+    return readWatchedJSON(join(this.configPath, 'BanList.json'));
   }
 
   /**
    * Get up-to-date name cache from PlayerNameCache.json
    * @return {object}
    */
-  getNameCache() {
-    return file.readWatchedJSON(
-      path.join(this.configPath, 'PlayerNameCache.json')
-    );
+  getNameCache(): BRPlayerNameCache {
+    return readWatchedJSON(join(this.configPath, 'PlayerNameCache.json'));
   }
 
   /**
    * find a player by name, id, controller, or state
-   * @param  {String} - name, id, controller, or state
-   * @return {Player}
+   * @param target - name, id, controller, or state
    */
-  getPlayer(arg) {
+  getPlayer(target: string): Player {
     return this.players.find(
       p =>
-        p.name === arg ||
-        p.id === arg ||
-        p.controller === arg ||
-        p.state === arg
+        p.name === target ||
+        p.id === target ||
+        p.controller === target ||
+        p.state === target
     );
   }
 
   /**
    * find a player by rough name, prioritize exact matches and get fuzzier
-   * @param  {String} - player name, fuzzy
-   * @return {Player}
+   * @param name player name, fuzzy
    */
-  findPlayerByName(name) {
+  findPlayerByName(name: string): Player {
     name = name.toLowerCase();
     const exploded = pattern.explode(name);
     return (
@@ -410,18 +431,105 @@ class Omegga extends OmeggaWrapper {
 
   /**
    * get the host's ID
-   * @return {String} - Host Id
+   * @return Host Id
    */
-  getHostId() {
+  getHostId(): string {
     return this.host ? this.host.id : '';
   }
 
   /**
-   * clear a user's bricks (by uuid, name, controller, or player object)
-   * @param  {String|Object} - player or player identifier
-   * @param  {Boolean} - quietly clear bricks
+   * Save a minigame preset based on a minigame index
+   * @param index minigame index
+   * @param name preset name
    */
-  clearBricks(target, quiet = false) {
+  saveMinigame(index: number, name: string) {
+    this.writeln(`Server.Minigame.SavePreset ${index} "${name}"`);
+  }
+
+  /**
+   * Delete a minigame
+   * @param index minigame index
+   */
+  deleteMinigame(index: number) {
+    this.writeln(`Server.Minigame.Delete ${index}`);
+  }
+
+  /**
+   * Reset a minigame
+   * @param index minigame index
+   */
+  resetMinigame(index: number) {
+    this.writeln(`Server.Minigame.Reset ${index}`);
+  }
+
+  /**
+   * Force the next round in a minigame
+   * @param index minigame index
+   */
+  nextRoundMinigame(index: number) {
+    this.writeln(`Server.Minigame.NextRound ${index}`);
+  }
+
+  /**
+   * Load an Minigame preset
+   * @param presetName preset name
+   * @param owner owner id/name
+   */
+  loadMinigame(presetName: string, owner = '') {
+    this.writeln(
+      `Server.Minigame.LoadPreset "${presetName}" ${owner ? `"${owner}"` : ''}`
+    );
+  }
+
+  /**
+   * get all presets in the minigame folder and child folders
+   */
+  getMinigamePresets(): string[] {
+    const presetPath = join(this.presetPath, 'Minigames');
+    return existsSync(presetPath)
+      ? sync(presetPath + '/**/*.bp').map(f => basename(f))
+      : [];
+  }
+
+  /**
+   * Reset the environment settings
+   */
+  resetEnvironment() {
+    this.writeln(`Server.Environment.Reset`);
+  }
+
+  /**
+   * Save an environment preset
+   * @param presetName preset name
+   */
+  saveEnvironment(presetName: string) {
+    this.writeln(`Server.Environment.SavePreset "${presetName}"`);
+  }
+
+  /**
+   * Load an environment preset
+   * @param presetName preset name
+   */
+  loadEnvironment(presetName: string) {
+    this.writeln(`Server.Environment.LoadPreset "${presetName}"`);
+  }
+
+  /**
+   * get all presets in the environment folder and child folders
+   */
+  getEnvironmentPresets(): string[] {
+    const presetPath = join(this.presetPath, 'Environment');
+    return existsSync(presetPath)
+      ? sync(presetPath + '/**/*.bp').map(f => basename(f))
+      : [];
+  }
+
+  /**
+   * clear a user's bricks (by uuid, name, controller, or player object)
+   * @param target player or player identifier
+   * @param quiet quietly clear bricks
+   */
+  clearBricks(target: string | { id: string }, quiet = false) {
     // target is a player object, just use that id
     if (typeof target === 'object' && target.id) target = target.id;
     // if the target isn't a uuid already, find the player by name or controller and use that uuid
@@ -438,7 +546,7 @@ class Omegga extends OmeggaWrapper {
 
   /**
    * Clear all bricks on the server
-   * @param  {Boolean} - quietly clear bricks
+   * @param quiet quietly clear bricks
    */
   clearAllBricks(quiet = false) {
     this.writeln(`Bricks.ClearAll ${quiet ? 1 : ''}`);
@@ -446,84 +554,81 @@ class Omegga extends OmeggaWrapper {
 
   /**
    * Save bricks under a name
-   * @param  {String} - save file name
+   * @param saveName save file name
    */
-  saveBricks(name) {
+  saveBricks(saveName: string) {
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
-    if (!(name.startsWith('"') && name.endsWith('"'))) name = `"${name}"`;
-    this.writeln(`Bricks.Save ${name}`);
+    if (!(saveName.startsWith('"') && saveName.endsWith('"')))
+      saveName = `"${saveName}"`;
+    this.writeln(`Bricks.Save ${saveName}`);
   }
 
   /**
    * Load bricks on the server
-   * @param  {String} - save name
-   * @param  {Number} - world X offset
-   * @param  {Number} - world Y offset
-   * @param  {Number} - world Z offset
-   * @param  {Boolean} - quiet mode
    */
-  loadBricks(name, { offX = 0, offY = 0, offZ = 0, quiet = false } = {}) {
+  loadBricks(
+    saveName: string,
+    { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
+  ) {
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
-    if (!(name.startsWith('"') && name.endsWith('"'))) name = `"${name}"`;
+    if (!(saveName.startsWith('"') && saveName.endsWith('"')))
+      saveName = `"${saveName}"`;
 
     this.writeln(
-      `Bricks.Load ${name} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`
+      `Bricks.Load ${saveName} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`
     );
   }
 
   /**
    * get all saves in the save folder and child folders
-   * @return {Array<String>}
    */
-  getSaves() {
-    return fs.existsSync(this.savePath)
-      ? glob.sync(this.savePath + '/**/*.brs')
-      : [];
+  getSaves(): string[] {
+    return existsSync(this.savePath) ? sync(this.savePath + '/**/*.brs') : [];
   }
 
   /**
    * Checks if a save exists and returns an absolute path
-   * @param  {String} - Save filename
-   * @return {String} - Path to string
+   * @param saveName Save filename
+   * @return Path to string
    */
-  getSavePath(name) {
-    const file = path.join(
+  getSavePath(saveName: string) {
+    const file = join(
       this.savePath,
-      name.endsWith('.brs') ? name : name + '.brs'
+      saveName.endsWith('.brs') ? saveName : saveName + '.brs'
     );
-    return fs.existsSync(file) ? file : undefined;
+    return existsSync(file) ? file : undefined;
   }
 
   /**
    * unsafely load save data (wrap in try/catch)
-   * @param  {String} - save file name
-   * @param  {SaveData} - BRS JS Save data
+   * @param saveName {String} - save file name
+   * @param saveData {SaveData} - BRS JS Save data
    */
-  writeSaveData(name, data) {
-    if (typeof name !== 'string')
+  writeSaveData(saveName: string, saveData: WriteSaveObject) {
+    if (typeof saveName !== 'string')
       throw 'expected name argument for writeSaveData';
 
-    const file = path.join(this.savePath, name + '.brs');
+    const file = join(this.savePath, saveName + '.brs');
     if (!file.startsWith(this.savePath))
       throw 'save file not in Saved/Builds directory';
-    fs.writeFileSync(file, new Uint8Array(brs.write(data)));
+    writeFileSync(file, new Uint8Array(write(saveData)));
   }
 
   /**
    * unsafely read save data (wrap in try/catch)
-   * @param  {String} - save file name
-   * @param  {Boolean} - only read save header data
-   * @return {SaveData} - BRS JS Save Data
+   * @param saveName save file name
+   * @param nobricks only read save header data
+   * @return BRS JS Save Data
    */
-  readSaveData(name, nobricks = false) {
-    if (typeof name !== 'string')
+  readSaveData(saveName: string, nobricks = false): ReadSaveObject {
+    if (typeof saveName !== 'string')
       throw 'expected name argument for readSaveData';
 
-    const file = this.getSavePath(name);
+    const file = this.getSavePath(saveName);
     if (!file || !file.startsWith(this.savePath))
       throw 'save file not in Saved/Builds directory';
     if (file)
-      return brs.read(fs.readFileSync(file), {
+      return read(readFileSync(file), {
         preview: false,
         bricks: !nobricks,
       });
@@ -531,21 +636,16 @@ class Omegga extends OmeggaWrapper {
 
   /**
    * load bricks from save data and resolve when game finishes loading
-   * @param  {SaveData} - BRS JS Save data
-   * @param  {Number} - save load X offset
-   * @param  {Number} - save load Y offset
-   * @param  {Number} - save load Z offset
-   * @param  {Boolean} - quiet mode
-   * @return {Promise}
+   * @param  saveData - BRS JS Save data
    */
   async loadSaveData(
-    data,
+    saveData: WriteSaveObject,
     { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
   ) {
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempSaveCounter++;
     // write savedata to file
-    this.writeSaveData(saveFile, data);
+    this.writeSaveData(saveFile, saveData);
 
     // wait for the server to finish reading the save
     await this.watchLogChunk(
@@ -553,7 +653,7 @@ class Omegga extends OmeggaWrapper {
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),
-        last: match => match[1].match(/Read .+ bricks/),
+        last: match => Boolean(match[1].match(/Read .+ bricks/)),
         afterMatchDelay: 0,
         timeoutDelay: 30000,
       }
@@ -562,13 +662,12 @@ class Omegga extends OmeggaWrapper {
     // delete the save file after we're done
     const savePath = this.getSavePath(saveFile);
     if (savePath) {
-      fs.unlinkSync(savePath);
+      unlinkSync(savePath);
     }
   }
 
   /**
    * get current bricks as save data
-   * @return {Promise<SaveData>} - BRS JS Save Data
    */
   async getSaveData() {
     const saveFile =
@@ -581,8 +680,10 @@ class Omegga extends OmeggaWrapper {
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),
         last: match =>
-          match[2].match(
-            /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/
+          Boolean(
+            match[2].match(
+              /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/
+            )
           ),
         afterMatchDelay: 0,
         timeoutDelay: 30000,
@@ -593,10 +694,10 @@ class Omegga extends OmeggaWrapper {
     const savePath = this.getSavePath(saveFile);
     if (savePath) {
       // read and parse the save file
-      const saveData = brs.read(fs.readFileSync(savePath));
+      const saveData = read(readFileSync(savePath));
 
       // delete the save file after we're done reading it
-      fs.unlinkSync(savePath);
+      unlinkSync(savePath);
 
       // return the parsed save
       return saveData;
@@ -607,10 +708,9 @@ class Omegga extends OmeggaWrapper {
 
   /**
    * Change server map
-   * @param  {String} - Map name
-   * @return {Promise}
+   * @param  map Map name
    */
-  async changeMap(map) {
+  async changeMap(map: string) {
     if (!map) return;
 
     // ServerTravel requires /Game/Maps/Plate/Plate instead of Plate
@@ -642,6 +742,12 @@ class Omegga extends OmeggaWrapper {
   async getServerStatus() {}
 
   /**
+   * Get a list of minigames
+   * @return {Promise<{index: number, name: string, numMembers: number, owner: {name: string, id: string}}[]>} - Minigame List
+   */
+  async listMinigames() {}
+
+  /**
    * get every player's position and alive states
    * @return {Promise<Array<Object>>}
    */
@@ -655,4 +761,4 @@ class Omegga extends OmeggaWrapper {
 }
 
 global.Omegga = Omegga;
-module.exports = Omegga;
+export default Omegga;

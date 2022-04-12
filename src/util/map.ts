@@ -1,4 +1,4 @@
-const DEFAULT_MAPS = [
+export const DEFAULT_MAPS = [
   { name: 'plate', brName: '/Game/Maps/Plate/Plate' },
   { name: 'peaks', brName: '/Game/Maps/Terrain/Peaks' },
   { name: 'studio', brName: '/Game/Maps/Studio/Studio' },
@@ -6,23 +6,17 @@ const DEFAULT_MAPS = [
 ];
 
 // Convert map brName to name
-function brn2n(brName) {
+export function brn2n(brName: string) {
   const map = DEFAULT_MAPS.find(map => map.brName === brName);
   if (map) return map.name;
   return brName;
 }
 
 // Convert map name to brName
-function n2brn(name) {
+export function n2brn(name: string) {
   const map = DEFAULT_MAPS.find(
     map => map.name === (name && name.toLowerCase())
   );
   if (map) return map.brName;
   return name;
 }
-
-module.exports = {
-  DEFAULT_MAPS,
-  brn2n,
-  n2brn,
-};

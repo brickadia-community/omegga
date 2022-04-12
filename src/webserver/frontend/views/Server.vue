@@ -61,11 +61,90 @@
             Restart
           </br-button>
         </div>
+        <br-header style="margin-top: 8px">Auto Restart</br-header>
+        <div class="inputs-list">
+          <div
+            class="inputs-item"
+            data-tooltip="How many hours before restarting regardless of online players"
+          >
+            <label>Max Server Uptime (Hours)</label>
+            <div class="inputs">
+              <br-toggle tooltip="Enabled" />
+              <br-input
+                type="number"
+                placeholder="Hours"
+                tooltip="Uptime Hours"
+              />
+            </div>
+          </div>
+          <div
+            class="inputs-item"
+            data-tooltip="How many hours before restarting when no players are online"
+          >
+            <label>Empty Server Lifetime (Hours)</label>
+            <div class="inputs">
+              <br-toggle tooltip="Enabled" />
+              <br-input
+                type="number"
+                placeholder="Hours"
+                tooltip="Uptime Hours"
+              />
+            </div>
+          </div>
+          <div
+            class="inputs-item"
+            data-tooltip="Restart every day at a certain hour"
+          >
+            <label>Daily at a Specific Hour</label>
+            <div class="inputs">
+              <br-toggle tooltip="Enabled" />
+              <br-input
+                type="number"
+                placeholder="Hour"
+                tooltip="Hour (0 = 12am, 13 = 1pm)"
+              />
+            </div>
+          </div>
+          <div
+            class="inputs-item"
+            data-tooltip="When enabled, announces auto restart"
+          >
+            <label>Restart Announcement</label>
+            <div class="inputs">
+              <br-toggle tooltip="Enabled" />
+            </div>
+          </div>
+          <div
+            class="inputs-item"
+            data-tooltip="When enabled, saves and re-loads bricks on autorestart"
+          >
+            <label>Reload Bricks</label>
+            <div class="inputs">
+              <br-toggle tooltip="Enabled" />
+            </div>
+          </div>
+          <div
+            class="inputs-item"
+            data-tooltip="When enabled, saves and re-loads minigames on autorestart"
+          >
+            <label>Reload Minigames</label>
+            <div class="inputs">
+              <br-toggle tooltip="Enabled" />
+            </div>
+          </div>
+          <div
+            class="inputs-item"
+            data-tooltip="When enabled, saves and re-loads environment on autorestart"
+          >
+            <label>Reload Environment</label>
+            <div class="inputs">
+              <br-toggle tooltip="Enabled" />
+            </div>
+          </div>
+        </div>
         <br-dimmer :visible="showConfirm">
           <br-modal visible>
-            <br-header>
-              Confirmation
-            </br-header>
+            <br-header> Confirmation </br-header>
             <br-popout-content>
               <p>Are you sure you want to {{ message }}?</p>
             </br-popout-content>

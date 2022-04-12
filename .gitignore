@@ -10,3 +10,4 @@ omegga-config.json
 omegga.json
 config.json
 public/*
+dist/

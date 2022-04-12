@@ -129,6 +129,45 @@ a, :visited {
   color: #0ff;
 }
 
+.inputs-list {
+  background-color: $br-element-footer-bg;
+
+  .inputs-item {
+    background-color: $br-bg-primary;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 50px;
+    padding: 0 10px;
+
+    &:nth-child(even) {
+      background-color: $br-bg-primary-alt;
+    }
+
+    label, .inputs {
+      display: flex;
+      align-items: center;
+    }
+
+    .inputs {
+      flex: 1;
+      .toggle, .br-input {
+        margin-right: 8px;
+      }
+    }
+
+    label {
+      color: $br-boring-button-fg;
+      min-width: 300px;
+      flex: 0.5;
+      font-size: 18px;
+      font-weight: bold;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+  }
+}
+
 .widgets-container {
   z-index: 100;
   display: flex;

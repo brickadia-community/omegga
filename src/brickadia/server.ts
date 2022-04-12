@@ -2,25 +2,26 @@
   Brickadia Server Wrapper
   Manages IO with the game server
 */
-const { EventEmitter } = require('events');
-const { spawn } = require('child_process');
-const readline = require('readline');
-const path = require('path');
-const stripAnsi = require('strip-ansi');
-require('colors');
+import { EventEmitter } from 'events';
+import { spawn } from 'child_process';
+import readline from 'readline';
+import path from 'path';
+import stripAnsi from 'strip-ansi';
+import 'colors';
+import Omegga from '../omegga/server';
 
-const verboseLog = (...args) => {
-  if (!global.VERBOSE) return;
+const verboseLog = (...args: any[]) => {
+  if (!VERBOSE) return;
   if (Omegga.log) Omegga.log('V>'.magenta, ...args);
   else console.log('V>'.magenta, ...args);
 };
 
-const errorLog = (...args) => {
+const errorLog = (...args: any[]) => {
   if (Omegga.error) Omegga.error('!>'.red, ...args);
   else console.error('!>'.red, ...args);
 };
 
-const warnLog = (...args) => {
+const warnLog = (...args: any[]) => {
   if (Omegga.error) Omegga.warn('W>'.yellow, ...args);
   else console.warn('W>'.yellow, ...args);
 };

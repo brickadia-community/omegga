@@ -58,11 +58,12 @@
 
 <template>
   <div
+    :data-tooltip="tooltip"
     :class="[
       'input',
       {
-        disabled
-      }
+        disabled,
+      },
     ]"
   >
     <input
@@ -85,9 +86,10 @@ import Vue from 'vue';
 export default Vue.component('br-input', {
   props: {
     placeholder: String,
+    tooltip: String,
     disabled: Boolean,
     type: String,
-    value: [String, Number]
-  }
+    value: [String, Number],
+  },
 });
 </script>

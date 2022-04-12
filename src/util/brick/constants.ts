@@ -28,7 +28,11 @@ const rotationTable = [
   23, 22, 21, 20, 19, 18, 17, 16,
 ];
 
-const translationTable = [
+const translationTable: (([x, y, z]: [number, number, number]) => [
+  number,
+  number,
+  number
+])[] = [
   ([x, y, z]) => [z, -y, x],
   ([x, y, z]) => [z, -x, -y],
   ([x, y, z]) => [z, y, -x],
@@ -98,7 +102,7 @@ const DEFAULT_MATERIALS = [
   'BMC_Hologram',
 ];
 
-const brickSizeMap = {
+const brickSizeMap: Record<string, [number, number, number]> = {
   B_1x1_Brick_Side: [5, 5, 6],
   B_1x1_Brick_Side_Lip: [5, 5, 6],
   B_1x1_Cone: [5, 5, 6],
@@ -176,7 +180,15 @@ const brickSizeMap = {
   B_GoalPoint: [20, 20, 2],
 };
 
-module.exports = {
+export {
+  rotationTable,
+  translationTable,
+  orientationMap,
+  DEFAULT_MATERIALS,
+  brickSizeMap,
+};
+
+export default {
   rotationTable,
   translationTable,
   orientationMap,

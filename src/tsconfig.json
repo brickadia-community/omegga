@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "baseUrl": ".",
+    "declaration": true,
+    "module": "es6",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "outDir": "../dist/",
+    "sourceMap": true,
+    "declarationMap": true,
+    "target": "es2020",
+    "typeRoots": [
+      "./index.d.ts"
+    ]
+  },
+}

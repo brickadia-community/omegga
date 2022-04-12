@@ -1,15 +1,15 @@
-const fs = require('fs');
-const path = require('path');
-const chokidar = require('chokidar');
-const rimraf = require('rimraf');
-const _ = require('lodash');
+import fs from 'fs';
+import path from 'path';
+import chokidar from 'chokidar';
+import rimraf from 'rimraf';
+import _ from 'lodash';
 
 // objects to store cached data
-const cachedTimes = {};
-const cachedJSON = {};
+const cachedTimes: Record<string, number> = {};
+const cachedJSON: Record<string, unknown> = {};
 
 // read a file and write it to cache, return the json object
-function updateJSONCache(file) {
+function updateJSONCache(file: string) {
   let body;
   try {
     // check if the file contents exist
@@ -31,7 +31,7 @@ function updateJSONCache(file) {
 }
 
 // read cached json
-function readCachedJSON(file, expire = 5000) {
+export function readCachedJSON(file: string, expire = 5000) {
   const now = Date.now();
   if (cachedTimes[file] && cachedTimes[file] + expire > now)
     return cachedJSON[file];
@@ -41,9 +41,9 @@ function readCachedJSON(file, expire = 5000) {
 }
 
 // object state to store watched json data
-const watchers = {};
+const watchers: Record<string, chokidar.FSWatcher> = {};
 
-function readWatchedJSON(file) {
+export function readWatchedJSON(file: string) {
   // if the file is already being watched, return the watched json
   if (watchers[file]) return cachedJSON[file];
 
@@ -70,7 +70,7 @@ function readWatchedJSON(file) {
 }
 
 // recursively mkdir (mkdir -p )
-function mkdir(path) {
+export function mkdir(path: string) {
   try {
     fs.mkdirSync(path, { recursive: true });
   } catch (e) {
@@ -79,7 +79,7 @@ function mkdir(path) {
 }
 
 // rm -rf a path
-function rmdir(dir) {
+export function rmdir(dir: string) {
   if (!fs.existsSync(dir)) return false;
   return new Promise((resolve, reject) => {
     rimraf(dir, error => {
@@ -90,7 +90,7 @@ function rmdir(dir) {
 }
 
 // copy files from one dir to another, creating the directories in the process
-function copyFiles(srcDir, dstDir, files) {
+export function copyFiles(srcDir: string, dstDir: string, files: string[]) {
   // create the directories if they don't already exist
   mkdir(srcDir);
   mkdir(dstDir);
@@ -109,11 +109,3 @@ function copyFiles(srcDir, dstDir, files) {
     }
   }
 }
-
-module.exports = {
-  readCachedJSON,
-  readWatchedJSON,
-  rmdir,
-  mkdir,
-  copyFiles,
-};

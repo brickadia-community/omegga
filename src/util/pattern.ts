@@ -1,5 +1,5 @@
 // explode a 'string' into a regex /\x73.*\x74.*\x72.*\x69.*\x6e.*\x67/i
-const explode = str =>
+export const explode = (str: string) =>
   new RegExp(
     str
       .split('')
@@ -8,7 +8,3 @@ const explode = str =>
       .join('.*'),
     'i'
   );
-
-module.exports = {
-  explode,
-};

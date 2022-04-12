@@ -2,8 +2,11 @@ const { VueLoaderPlugin } = require('vue-loader');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const path = require('path');
 
+const mode = process.env.NODE_ENV || 'development';
+
 module.exports = {
-  mode: process.env.MODE || 'development',
+  cache: { type: 'filesystem' },
+  mode: mode,
   entry: {
     app: './src/webserver/frontend/app.js',
     auth: './src/webserver/frontend/auth.js',
@@ -18,6 +21,10 @@ module.exports = {
     hints: false,
     maxEntrypointSize: Infinity,
     maxAssetSize: Infinity,
+  },
+  resolve: {
+    cacheWithContext: true,
+    extensions: ['', '.js', '.vue'],
   },
   module: {
     rules: [
@@ -55,10 +62,7 @@ module.exports = {
           limit: 100000,
         },
       },
-    ]
+    ],
   },
-  plugins: [
-    new VueLoaderPlugin(),
-    new MiniCssExtractPlugin(),
-  ],
+  plugins: [new VueLoaderPlugin(), new MiniCssExtractPlugin()],
 };

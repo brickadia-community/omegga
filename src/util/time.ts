@@ -1,6 +1,7 @@
-const debounce = require('lodash/debounce');
+import debounce from 'lodash/debounce';
+export const debounce = debounce;
 
-const UNIT_CONVERSION = {
+const UNIT_CONVERSION: Record<string, number> = {
   ms: 1, // milliseconds
   s: 1000, // seconds
   m: 60 * 1000, // minutes
@@ -10,7 +11,7 @@ const UNIT_CONVERSION = {
 };
 
 // sum duration from a string like '1d 4h 3m 25s 30ms'
-function parseDuration(str) {
+export function parseDuration(str: string) {
   let total = 0;
 
   // split string by spaces (0m 35s) -> [0m, 35s]
@@ -32,15 +33,9 @@ function parseDuration(str) {
 }
 
 // parse brickadia's time format (YYYY.MM.DD-HH-MM-SS) into a time object
-function parseBrickadiaTime(str) {
+export function parseBrickadiaTime(str: string) {
   const [date, time] = str.split('-');
   return new Date(
     date.replace(/\./g, '-') + 'T' + time.replace(/\./g, ':')
   ).getTime();
 }
-
-module.exports = {
-  parseDuration,
-  parseBrickadiaTime,
-  debounce,
-};

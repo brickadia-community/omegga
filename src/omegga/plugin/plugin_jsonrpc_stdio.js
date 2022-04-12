@@ -407,8 +407,27 @@ class RpcPlugin extends Plugin {
     rpc.addMethod('getAllPlayerPositions', () =>
       this.omegga.getAllPlayerPositions()
     );
+    rpc.addMethod('getEnvironmentPresets', () =>
+      this.omegga.getEnvironmentPresets()
+    );
+    rpc.addMethod('resetEnvironment', () => this.omegga.resetEnvironment());
+    rpc.addMethod('saveEnvironment', name => this.omegga.saveEnvironment(name));
+    rpc.addMethod('loadEnvironment', name => this.omegga.loadEnvironment(name));
     rpc.addMethod('getServerStatus', () => this.omegga.getServerStatus());
     rpc.addMethod('getMinigames', () => this.omegga.getMinigames());
+    rpc.addMethod('getMinigamePresets', () => this.omegga.getMinigamePresets());
+    rpc.addMethod('saveMinigame', (index, name) =>
+      this.omegga.saveMinigame(index, name)
+    );
+    rpc.addMethod('loadMinigame', (name, owner) =>
+      this.omegga.loadMinigame(name, owner)
+    );
+    rpc.addMethod('nextRoundMinigame', (name, owner) =>
+      this.omegga.nextRoundMinigame(name, owner)
+    );
+    rpc.addMethod('resetMinigame', index => this.omegga.resetMinigame(index));
+    rpc.addMethod('deleteMinigame', index => this.omegga.deleteMinigame(index));
+    rpc.addMethod('listMinigames', () => this.omegga.listMinigames());
     rpc.addMethod('getHostId', () => this.omegga.getHostId());
     rpc.addMethod('getRoleSetup', () => this.omegga.getRoleSetup());
     rpc.addMethod('getBanList', () => this.omegga.getBanList());

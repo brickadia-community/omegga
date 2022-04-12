@@ -1,21 +1,66 @@
 /*
-  The wrapper combines the things looking at or waiting for logs with the actual server logs
+The wrapper combines the things looking at or waiting for logs with the actual server logs
 */
+
+import type Omegga from './server';
 
 const GENERIC_LINE_REGEX =
   /^(\[(?<date>\d{4}\.\d\d.\d\d-\d\d.\d\d.\d\d:\d{3})\]\[\s*(?<counter>\d+)\])?(?<generator>\w+): (?<data>.+)$/;
 
+export type WatcherPattern<T> = (
+  line: string,
+  match: RegExpMatchArray
+) => T | RegExpMatchArray | '[OMEGGA_WATCHER_DONE]';
+
+export type IMatcher<T> =
+  | {
+      pattern: RegExp;
+      callback: (match: RegExpMatchArray) => boolean;
+    }
+  | {
+      pattern: (line: string, match: RegExpMatchArray) => boolean;
+      callback: (match: RegExpMatchArray) => boolean;
+    };
+
+export type IWatcher<T> = {
+  bundle: boolean;
+  debounce: boolean;
+  timeoutDelay: number;
+  afterMatchDelay: number;
+  last: (match: T) => boolean;
+  callback: () => void;
+  resolve: (...args: any[]) => void;
+  remove: () => void;
+  done: () => void;
+  timeout: ReturnType<typeof setTimeout>;
+} & (
+  | {
+      pattern: WatcherPattern<T>;
+      matches: T[];
+    }
+  | {
+      pattern: RegExp;
+      matches: RegExpMatchArray[];
+    }
+);
+
 class LogWrangler {
   // list of patterns and callbacks watching the brickadia logs in general
-  #matchers = [];
+  #matchers: IMatcher<unknown>[] = [];
 
   // list of patterns and promises waiting for specific console logs
-  #watchers = [];
+  #watchers: IWatcher<unknown>[] = [];
 
-  constructor(omegga) {
+  exec: (cmd: string) => void;
+  getPlayer: Omegga['getPlayer'];
+  getVersion: () => number;
+  omegga: Omegga;
+  callback: LogWrangler['handleLog'];
+
+  constructor(omegga: Omegga) {
     // passthru functions
     this.exec = cmd => omegga.writeln(cmd);
-    this.getPlayer = arg => omegga.getPlayer(arg);
+    this.getPlayer = (arg: string) => omegga.getPlayer(arg);
     this.getVersion = () => omegga.version;
 
     // callback reads in new lines
@@ -32,7 +77,10 @@ class LogWrangler {
   // pattern is regex or a function that returns a match
   // callback is a function that receives the result of the pattern
   // returns a deregister function
-  addMatcher(pattern, callback) {
+  addMatcher<T>(
+    pattern: IMatcher<T>['pattern'],
+    callback: IMatcher<T>['callback']
+  ) {
     if (
       (typeof pattern !== 'function' && !(pattern instanceof RegExp)) ||
       typeof callback !== 'function'
@@ -40,7 +88,7 @@ class LogWrangler {
       return undefined;
 
     // create the matcher from the callback and pattern, add it to the matchers
-    const matcher = { pattern, callback };
+    const matcher = { pattern, callback } as IMatcher<T>;
     this.#matchers.push(matcher);
 
     // return a function to remove this matcher from the list of matchers
@@ -58,8 +106,8 @@ class LogWrangler {
   // afterMatchDelay (used with debounce) indicates to run a new timeout after the first match
   // last (used with bundle) is a function run on the match. when it returns true, the watcher resolves early
   // returns a promise, rejects after timeout ends
-  addWatcher(
-    pattern,
+  addWatcher<T = RegExpMatchArray>(
+    pattern: IWatcher<T>['pattern'],
     {
       timeoutDelay = 50,
       bundle = false,
@@ -67,8 +115,15 @@ class LogWrangler {
       afterMatchDelay = 0,
       last,
       exec,
+    }: {
+      timeoutDelay?: number;
+      bundle?: boolean;
+      debounce?: boolean;
+      afterMatchDelay?: number;
+      last?: IWatcher<T>['last'];
+      exec?: () => void;
     } = {}
-  ) {
+  ): Promise<IWatcher<T>['matches']> {
     if (typeof pattern !== 'function' && !(pattern instanceof RegExp))
       return undefined;
 
@@ -82,7 +137,7 @@ class LogWrangler {
         afterMatchDelay,
         last,
         matches: [],
-      };
+      } as Partial<IWatcher<T>>;
 
       (watcher.resolve = (...args) => {
         clearTimeout(watcher.timeout);
@@ -90,7 +145,7 @@ class LogWrangler {
       }),
         // remove helper
         (watcher.remove = () => {
-          const index = this.#watchers.indexOf(watcher);
+          const index = this.#watchers.indexOf(watcher as IWatcher<T>);
           if (index > -1) {
             this.#watchers.splice(index, 1);
           }
@@ -115,7 +170,7 @@ class LogWrangler {
         watcher.timeout = setTimeout(watcher.done, timeoutDelay);
       }
 
-      this.#watchers.push(watcher);
+      this.#watchers.push(watcher as IWatcher<T>);
       exec && exec();
     });
   }
@@ -124,21 +179,31 @@ class LogWrangler {
   // first is a function or 'index' for the index capture group that determines if this is match is the first log
   // last is a function that determines if this match is the last log (and can terminate early)
   // aftermatch delay is borrowed from addWatcher
-  watchLogChunk(
-    cmd,
-    pattern,
-    { first, last, afterMatchDelay = 10, timeoutDelay = 100 }
-  ) {
+  watchLogChunk<T = string>(
+    cmd: string,
+    pattern: IWatcher<T>['pattern'],
+    {
+      first,
+      last,
+      afterMatchDelay = 10,
+      timeoutDelay = 100,
+    }: {
+      first?: 'index' | ((match: T) => boolean);
+      last?: IWatcher<T>['last'];
+      afterMatchDelay?: number;
+      timeoutDelay?: number;
+    }
+  ): Promise<IWatcher<T>['matches']> {
     // we're focused on the counter part of this, the rest will be passed to the pattern matcher
     const logLineRegExp =
       /\[(?<date>\d{4}\.\d\d.\d\d-\d\d.\d\d.\d\d:\d{3})\]\[\s*(?<counter>\d+)\](?<rest>.*)$/;
 
     // keep track of the current log line
-    let currentCounter = -1;
+    let currentCounter: number | string = -1;
 
     // create the
-    return this.addWatcher(
-      line => {
+    return this.addWatcher<T>(
+      (line: string, _match: RegExpMatchArray) => {
         const logLineMatch = line.match(logLineRegExp);
         if (!logLineMatch) return;
 
@@ -168,9 +233,14 @@ class LogWrangler {
         // if there is a first parameter
         if (first) {
           // if it's a function, use that function to match
-          if (typeof first === 'function') isFirst = first(match);
+          if (typeof first === 'function') isFirst = first(match as T);
           // if it's 'index', use the index capture group
-          else if (first === 'index') isFirst = match.groups.index === '0';
+          else if (
+            first === 'index' &&
+            typeof match === 'object' &&
+            'groups' in match
+          )
+            isFirst = match.groups.index === '0';
         } else {
           // otherwise, it doesn't matter
           isFirst = true;
@@ -213,10 +283,13 @@ class LogWrangler {
       ],
     }, ...]
   */
-  async watchLogArray(cmd, itemPattern, memberPattern) {
-    const results = await this.watchLogChunk(
+  async watchLogArray<
+    Item extends Record<string, string> = Record<string, string>,
+    Member extends Record<string, string> = Record<string, string>
+  >(cmd: string, itemPattern: RegExp, memberPattern: RegExp) {
+    const results = (await this.watchLogChunk<[string, RegExpMatchArray]>(
       cmd,
-      line => {
+      (line: string) => {
         // match on items
         const itemMatch = line.match(itemPattern);
         if (itemMatch) return ['item', itemMatch];
@@ -226,19 +299,19 @@ class LogWrangler {
         if (memberMatch) return ['member', memberMatch];
       },
       { first: arr => arr[0] === 'item' && arr[1].groups.index === '0' }
-    );
+    )) as [string, RegExpMatchArray][];
 
-    const array = [];
+    const array: { item: Item; members: Member[] }[] = [];
 
     // insert the results into the array
     for (const [type, { groups }] of results) {
       // insert an item into the array
       if (type === 'item') {
-        array.push({ item: groups, members: [] });
+        array.push({ item: groups as Item, members: [] });
 
         // insert a member into an item
       } else if (type === 'member' && array.length > 0) {
-        array[array.length - 1].members.push(groups);
+        array[array.length - 1].members.push(groups as Member);
       }
     }
 
@@ -246,7 +319,7 @@ class LogWrangler {
   }
 
   // check all the matchers against this line
-  handleLog(line) {
+  handleLog(line: string) {
     // generic match the log
     const logMatch = line.match(GENERIC_LINE_REGEX);
 
@@ -254,14 +327,17 @@ class LogWrangler {
     const patternMatchers = [
       {
         array: this.#matchers,
-        onMatch(match, matcher) {
+        onMatch<T>(match: RegExpMatchArray, matcher: IMatcher<T>) {
           // if the matcher's callback is a function, run it
           if (typeof matcher.callback === 'function') matcher.callback(match);
         },
       },
       {
         array: this.#watchers,
-        onMatch(match, watcher) {
+        onMatch<T>(
+          match: T | RegExpMatchArray | '[OMEGGA_WATCHER_DONE]',
+          watcher: IWatcher<T>
+        ) {
           // if the watcher is in bundle mode, add the match to its matches
           if (watcher.bundle) {
             // allow the watcher to terminate early
@@ -271,10 +347,12 @@ class LogWrangler {
               return;
             }
 
-            watcher.matches.push(match);
+            watcher.matches = [...watcher.matches, match] as
+              | RegExpMatchArray[]
+              | T[];
 
             // check if this is the last line and terminate early
-            if (watcher.last && watcher.last(match)) {
+            if (watcher.last && watcher.last(match as T)) {
               clearTimeout(watcher.timeout);
               watcher.done();
               return;
@@ -302,7 +380,7 @@ class LogWrangler {
     for (const { array, onMatch } of patternMatchers) {
       // iterate in reverse because removing indices will not skip over any elements
       for (let i = array.length - 1; i >= 0; i--) {
-        const matcher = array[i];
+        const matcher = array[i] as IWatcher<unknown> | IMatcher<unknown>;
         try {
           // run the match on a pattern or test with a function
           const match =
@@ -311,7 +389,11 @@ class LogWrangler {
               : matcher.pattern(line, logMatch);
 
           // if there's  match, handle it for this type of matcher
-          if (match) onMatch(match, matcher);
+          if (match)
+            onMatch(
+              match as RegExpMatchArray,
+              matcher as IWatcher<unknown> & IMatcher<unknown>
+            );
         } catch (e) {
           Omegga.error('error in matcher', matcher.pattern, e);
         }
@@ -320,4 +402,4 @@ class LogWrangler {
   }
 }
 
-module.exports = LogWrangler;
+export default LogWrangler;

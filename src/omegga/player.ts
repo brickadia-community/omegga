@@ -1,18 +1,65 @@
-const { color, brick: brickUtils } = require('../util/');
+import type Omegga from './server';
+
+import { color, brick as brickUtils } from '../util/';
+
+const DEFAULT_PERMS: Record<string, string[]> = {
+  moderator: [
+    'Bricks.ClearAll',
+    'Minigame.AlwaysLeave',
+    'Players.Kick',
+    'Players.TPInMinigame',
+    'Players.TPOthers',
+    'Self.Ghost',
+  ],
+  admin: [
+    'Bricks.ClearAll',
+    'Bricks.ClearOwn',
+    'Bricks.IgnoreTrust',
+    'Bricks.Load',
+    'Map.Environment',
+    'Minigame.AlwaysEdit',
+    'Minigame.AlwaysLeave',
+    'Minigame.AlwaysSwitchTeam',
+    'Minigame.MakeDefault',
+    'Minigame.MakePersistent',
+    'Minigame.UseAllBricks',
+    'Players.Ban',
+    'Players.Kick',
+    'Players.TPInMinigame',
+    'Players.TPOthers',
+    'Roles.Grant',
+    'Self.Ghost',
+    'Server.ChangeRoles',
+    'Server.ChangeSettings',
+    'Server.FreezeCamera',
+    'Tools.Selector.BypassLimits',
+    'Tools.Selector.BypassTimeouts',
+  ],
+};
 
 class Player {
-  #omegga = null;
+  #omegga: Omegga = null;
+  name: string;
+  id: string;
+  controller: string;
+  state: string;
 
   /**
    * players are not to be constructed
    * @constructor
-   * @param  {Omegga} - Omegga Instance
-   * @param  {String} - Player Name
-   * @param  {String} - Player Id
-   * @param  {String} - Player Controller
-   * @param  {String} - Player State
+   * @param  omegga Omegga Instance
+   * @param  name Player Name
+   * @param  id Player Id
+   * @param  controller Player Controller
+   * @param  state Player State
    */
-  constructor(omegga, name, id, controller, state) {
+  constructor(
+    omegga: Omegga,
+    name: string,
+    id: string,
+    controller: string,
+    state: string
+  ) {
     this.#omegga = omegga;
     this.name = name;
     this.id = id;
@@ -22,17 +69,15 @@ class Player {
 
   /**
    * Returns omegga
-   * @return {Omegga}
    */
-  getOmegga() {
+  getOmegga(): Omegga {
     return this.#omegga;
   }
 
   /**
    * Clone a player
-   * @return {Player}
    */
-  clone() {
+  clone(): Player {
     return new Player(
       this.#omegga,
       this.name,
@@ -44,23 +89,20 @@ class Player {
 
   /**
    * Get raw player info (to feed into a constructor)
-   * @return {Array<String>}
    */
-  raw() {
+  raw(): [string, string, string, string] {
     return [this.name, this.id, this.controller, this.state];
   }
 
   /**
    * true if the player is the host
-   * @return {Boolean}
    */
-  isHost() {
+  isHost(): boolean {
     return this.#omegga.host.id === this.id;
   }
 
   /**
    * clear this player's bricks
-   * @param  {Boolean} - quiet mode
    */
   clearBricks(quiet = false) {
     this.#omegga.clearBricks(this.id, quiet);
@@ -68,30 +110,29 @@ class Player {
 
   /**
    * get a player's roles, if any
-   * @param  {Omegga} - omegga instance
-   * @param  {String} - player uuid
-   * @return {Array<String>} - list of roles
+   * @param omegga omegga instance
+   * @param id player uuid
+   * @return list of roles
    */
-  static getRoles(omegga, id) {
+  static getRoles(omegga: Omegga, id: string): readonly string[] {
     const data = omegga.getRoleAssignments().savedPlayerRoles[id];
     return Object.freeze(data && data.roles ? data.roles : []);
   }
 
   /**
    * get a player's roles, if any
-   * @return {Array<String>}
    */
-  getRoles() {
+  getRoles(): readonly string[] {
     return Player.getRoles(this.#omegga, this.id);
   }
 
   /**
    * get a player's permissions in a map like `{"Bricks.ClearOwn": true, ...}`
-   * @param  {Omegga} - Omegga instance
-   * @param  {String} - player uuid
-   * @return {Object} - permissions map
+   * @param omegga Omegga instance
+   * @param id player uuid
+   * @return permissions map
    */
-  static getPermissions(omegga, id) {
+  static getPermissions(omegga: Omegga, id: string): Record<string, boolean> {
     const { roles, defaultRole } = omegga.getRoleSetup();
 
     // if the player is the host, the player has every permission
@@ -107,46 +148,11 @@ class Player {
       );
     }
 
-    const DEFAULT_PERMS = {
-      moderator: [
-        'Bricks.ClearAll',
-        'Minigame.AlwaysLeave',
-        'Players.Kick',
-        'Players.TPInMinigame',
-        'Players.TPOthers',
-        'Self.Ghost',
-      ],
-      admin: [
-        'Bricks.ClearAll',
-        'Bricks.ClearOwn',
-        'Bricks.IgnoreTrust',
-        'Bricks.Load',
-        'Map.Environment',
-        'Minigame.AlwaysEdit',
-        'Minigame.AlwaysLeave',
-        'Minigame.AlwaysSwitchTeam',
-        'Minigame.MakeDefault',
-        'Minigame.MakePersistent',
-        'Minigame.UseAllBricks',
-        'Players.Ban',
-        'Players.Kick',
-        'Players.TPInMinigame',
-        'Players.TPOthers',
-        'Roles.Grant',
-        'Self.Ghost',
-        'Server.ChangeRoles',
-        'Server.ChangeSettings',
-        'Server.FreezeCamera',
-        'Tools.Selector.BypassLimits',
-        'Tools.Selector.BypassTimeouts',
-      ],
-    };
-
     // get the player's roles
     const playerRoles = Player.getRoles(omegga, id).map(r => r.toLowerCase());
 
     // default player permissions
-    const permissions = {
+    const permissions: Record<string, boolean> = {
       'Bricks.ClearAll': false,
       'Bricks.ClearOwn': true,
       'Bricks.Delete': true,
@@ -182,9 +188,7 @@ class Player {
     for (const p of defaultRole.permissions) {
       // technically this can never be Unchanged so it's always on enabled or allowed
       permissions[p.name] =
-        p.state === 'Unchanged'
-          ? permissions[p.name]
-          : !!p.bEnabled || p.state === 'Allowed';
+        p.state === 'Unchanged' ? permissions[p.name] : p.state === 'Allowed';
     }
 
     // loop through all the roles
@@ -207,8 +211,8 @@ class Player {
           p.state !== 'Forbidden' &&
           (p.state === 'Unchanged'
             ? permissions[p.name]
-            : permissions[p.name] || p.bEnabled || p.state === 'Allowed');
-        permissions[p.name] = permissions[p.name] || p.bEnabled;
+            : permissions[p.name] || p.state === 'Allowed');
+        permissions[p.name] = permissions[p.name];
       }
     }
 
@@ -225,7 +229,7 @@ class Player {
 
   /**
    * get player's name color
-   * @return {String} - 6 character hex string
+   * @return 6 character hex string
    */
   getNameColor() {
     const { roles, defaultRole, ownerRoleColor, bOwnerRoleHasColor } =
@@ -323,12 +327,12 @@ class Player {
       /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.TransformParameters = \(TargetGrid=("(?<targetGrid>.+)"|None),Position=\(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\),Orientation=(?<orientation>.+)\)$/;
 
     const [owners, transformParams] = await Promise.all([
-      this.#omegga.watchLogChunk(
+      this.#omegga.watchLogChunk<RegExpMatchArray>(
         'GetAll BrickGridPreviewActor Owner',
         ownerRegExp,
         { first: 'index', timeoutDelay: 500 }
       ),
-      this.#omegga.watchLogChunk(
+      this.#omegga.watchLogChunk<RegExpMatchArray>(
         'GetAll BrickGridPreviewActor TransformParameters',
         transformParamsRegExp,
         { first: 'index', timeoutDelay: 500 }
@@ -361,7 +365,6 @@ class Player {
 
   /**
    * gets a user's paint tool properties
-   * @return {Promise<Object>} - paint data
    */
   async getPaint() {
     const { controller } = this;
@@ -377,22 +380,22 @@ class Player {
 
     const [owners, colorMatch, materialMatch, materialAlphaMatch] =
       await Promise.all([
-        this.#omegga.watchLogChunk(
+        this.#omegga.watchLogChunk<RegExpMatchArray>(
           'GetAll BP_Item_PaintTool_C Owner',
           ownerRegExp,
           { first: 'index', timeoutDelay: 500 }
         ),
-        this.#omegga.watchLogChunk(
+        this.#omegga.watchLogChunk<RegExpMatchArray>(
           'GetAll BP_Item_PaintTool_C SelectedColor',
           colorRegExp,
           { first: 'index', timeoutDelay: 500 }
         ),
-        this.#omegga.watchLogChunk(
+        this.#omegga.watchLogChunk<RegExpMatchArray>(
           'GetAll BP_Item_PaintTool_C SelectedMaterialId',
           materialRegExp,
           { first: 'index', timeoutDelay: 500 }
         ),
-        this.#omegga.watchLogChunk(
+        this.#omegga.watchLogChunk<RegExpMatchArray>(
           'GetAll BP_Item_PaintTool_C SelectedMaterialAlpha',
           materialAlphaRegExp,
           { first: 'index', timeoutDelay: 500 }
@@ -422,7 +425,7 @@ class Player {
       materialAlpha: materialAlpha.groups.materialAlpha,
       material:
         brickUtils.BRICK_CONSTANTS.DEFAULT_MATERIALS[
-          material.groups.materialIndex
+          Number(material.groups.materialIndex)
         ],
       color: colorRaw,
     };
@@ -445,22 +448,22 @@ class Player {
       /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.Center = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
 
     const [template, minBounds, maxBounds, centers] = await Promise.all([
-      this.#omegga.watchLogChunk(
+      this.#omegga.watchLogChunk<RegExpMatchArray>(
         `GetAll BP_PlayerController_C TEMP_BrickTemplate_Server Name=${controller}`,
         brickTemplateRegExp,
         { first: 'index' }
       ),
-      this.#omegga.watchLogChunk(
+      this.#omegga.watchLogChunk<RegExpMatchArray>(
         'GetAll BrickBuildingTemplate MinBounds',
         minBoundsRegExp,
         { first: 'index' }
       ),
-      this.#omegga.watchLogChunk(
+      this.#omegga.watchLogChunk<RegExpMatchArray>(
         'GetAll BrickBuildingTemplate MaxBounds',
         maxBoundsRegExp,
         { first: 'index' }
       ),
-      this.#omegga.watchLogChunk(
+      this.#omegga.watchLogChunk<RegExpMatchArray>(
         'GetAll BrickBuildingTemplate Center',
         centerRegExp,
         { first: 'index' }
@@ -582,4 +585,4 @@ class Player {
 
 global.Player = Player;
 
-module.exports = Player;
+export default Player;

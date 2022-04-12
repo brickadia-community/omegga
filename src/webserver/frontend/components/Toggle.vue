@@ -61,31 +61,30 @@
     }
   }
 }
-
 </style>
 
 <template>
   <div
+    :data-tooltip="tooltip"
     :class="[
       'toggle',
-      {disabled: typeof disabled !== 'undefined' && disabled}
+      { disabled: typeof disabled !== 'undefined' && disabled },
     ]"
     @click="$emit('input', !value)"
   >
-    <div :class="['toggle-slider', {on: value}]">
-      <div class="symbol"/>
+    <div :class="['toggle-slider', { on: value }]">
+      <div class="symbol" />
     </div>
   </div>
 </template>
 <script>
-
 import Vue from 'vue';
 
 export default Vue.component('br-toggle', {
   props: {
+    tooltip: String,
     disabled: Boolean,
     value: Boolean,
   },
 });
-
 </script>

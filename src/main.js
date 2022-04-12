@@ -4,7 +4,7 @@ require('colors');
 
 const pkg = require('../package');
 const soft = require('./softconfig.js');
-const Omegga = require('./omegga/server.js');
+const Omegga = require('./omegga/server.js').default;
 const config = require('./config/index.js');
 const {
   Terminal,

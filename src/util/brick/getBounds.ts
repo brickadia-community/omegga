@@ -1,8 +1,16 @@
-const getScaleAxis = require('./getScaleAxis');
-const getBrickSize = require('./getBrickSize');
+import { Brick } from 'brs-js/dist/src/types';
+import getScaleAxis from './getScaleAxis';
+import getBrickSize from './getBrickSize';
+import type { IBrickBounds } from './checkBounds';
+import type { brickSizeMap } from './constants';
 
 // compare bound to see if it is new min or max, and then replace if it is
-function minMaxBound(brick, brick_assets, bounds, axis) {
+function minMaxBound(
+  brick: Brick,
+  brick_assets: string[],
+  bounds: IBrickBounds,
+  axis: number
+) {
   const scaleAxis = getScaleAxis(brick, axis);
   const size = getBrickSize(brick, brick_assets);
   const upper = brick.position[axis] + size[scaleAxis];
@@ -14,8 +22,14 @@ function minMaxBound(brick, brick_assets, bounds, axis) {
 }
 
 // returns bounds of the array of the brick
-function getBounds({ bricks, brick_assets }) {
-  const bounds = { minBound: [], maxBound: [], center: [] };
+export default function getBounds({
+  bricks,
+  brick_assets,
+}: {
+  bricks: Brick[];
+  brick_assets: string[];
+}) {
+  const bounds: IBrickBounds = { minBound: [], maxBound: [], center: [] };
 
   bricks.forEach(brick => {
     minMaxBound(brick, brick_assets, bounds, 0);
@@ -32,5 +46,3 @@ function getBounds({ bricks, brick_assets }) {
 
   return bounds;
 }
-
-module.exports = getBounds;

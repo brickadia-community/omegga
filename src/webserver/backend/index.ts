@@ -1,19 +1,21 @@
-const path = require('path');
-const http = require('http');
-const https = require('https');
+import type Omegga from 'omegga/server';
 
-const express = require('express');
-const expressSession = require('express-session');
-const NedbStore = require('nedb-promises-session-store').default;
-const SocketIo = require('socket.io');
-const bodyParser = require('body-parser');
+import path from 'path';
+import http from 'http';
+import https from 'https';
 
-const util = require('./util.js');
-const setupApi = require('./api.js');
-const setupMetrics = require('./metrics.js');
-const Database = require('./database.js');
+import express from 'express';
+import expressSession from 'express-session';
+import NedbStore from 'nedb-promises-session-store';
+import SocketIo from 'socket.io';
+import bodyParser from 'body-parser';
 
-const soft = require('../../softconfig.js');
+import util from './util';
+import setupApi from './api';
+import setupMetrics from './metrics';
+import Database from './database';
+
+import soft = require('../../softconfig');
 
 // path to assets folder
 const ASSET_PATH = path.join(__dirname, '../frontend/assets');
@@ -30,6 +32,8 @@ const error = (...args) => global.Omegga.error(...args);
 // the webserver servers an authenticated
 class Webserver {
   #database = undefined;
+  port: number;
+  omegga: Omegga;
 
   // create a webserver
   constructor(options, omegga) {
@@ -203,4 +207,4 @@ class Webserver {
   }
 }
 
-module.exports = Webserver;
+export default Webserver;

@@ -3,11 +3,16 @@
  * OR
  * h, s, v
  */
-function hsv(h, s, v) {
+export function hsv(
+  h: number | { h: number; s: number; v: number },
+  s?: number,
+  v?: number
+) {
   var r, g, b, i, f, p, q, t;
-  if (arguments.length === 1) {
+  if (arguments.length === 1 && typeof h === 'object') {
     (s = h.s), (v = h.v), (h = h.h);
   }
+  h = h as number;
   i = Math.floor(h * 6);
   f = h * 6 - i;
   p = v * (1 - s);
@@ -37,7 +42,7 @@ function hsv(h, s, v) {
 }
 
 // convert a color into the weird linearRGB format
-const linearRGB = rgba =>
+export const linearRGB = (rgba: number[]) =>
   rgba.map((c, i) =>
     i === 3
       ? c
@@ -48,7 +53,7 @@ const linearRGB = rgba =>
         )
   );
 
-const sRGB = linear =>
+export const sRGB = (linear: number[]) =>
   linear.map((c, i) =>
     i === 3
       ? c
@@ -60,11 +65,15 @@ const sRGB = linear =>
   );
 
 // convert (r, g, b), ([r, g, b]), and ({r, g, b}) to hex string
-const rgbToHex = (r, g, b) => {
+export const rgbToHex = (
+  r: number | [number, number, number] | { r: number; g: number; b: number },
+  g: number,
+  b: number
+) => {
   // parse array arguments
-  if (typeof r === 'object' && r.length > 0) [r, g, b] = r;
+  if (typeof r === 'object' && 'length' in r && r.length > 0) [r, g, b] = r;
   // parse object arguments
-  else if (typeof r === 'object') {
+  else if (typeof r === 'object' && 'r' in r) {
     g = r.g;
     b = r.b;
     r = r.r;
@@ -75,7 +84,7 @@ const rgbToHex = (r, g, b) => {
     .join('');
 };
 
-const DEFAULT_COLORSET = [
+export const DEFAULT_COLORSET = [
   [255, 255, 255, 255],
   [136, 136, 136, 255],
   [89, 89, 89, 255],
@@ -133,11 +142,3 @@ const DEFAULT_COLORSET = [
   [6, 6, 6, 153],
   [0, 0, 0, 153],
 ];
-
-module.exports = {
-  hsv,
-  linearRGB,
-  sRGB,
-  rgbToHex,
-  DEFAULT_COLORSET,
-};

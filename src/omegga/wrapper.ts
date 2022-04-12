@@ -1,17 +1,25 @@
 /*
   The wrapper combines the things looking at or waiting for logs with the actual server logs
 */
-const { EventEmitter } = require('events');
-const path = require('path');
+import { EventEmitter } from 'events';
+import path from 'path';
 
-const BrickadiaServer = require('../brickadia/server.js');
-const soft = require('../softconfig.js');
-const LogWrangler = require('./logWrangler.js');
+import BrickadiaServer from '../brickadia/server';
+import soft from '../softconfig';
+import LogWrangler from './logWrangler';
 
 class OmeggaWrapper extends EventEmitter {
-  #server = undefined;
+  #server: typeof BrickadiaServer = undefined;
+  dataPath: string;
+  path: string;
 
-  constructor(serverPath, cfg) {
+  logWrangler: LogWrangler;
+  addMatcher: LogWrangler['addMatcher'];
+  addWatcher: LogWrangler['addWatcher'];
+  watchLogArray: LogWrangler['watchLogArray'];
+  watchLogChunk: LogWrangler['watchLogChunk'];
+
+  constructor(serverPath: string, cfg) {
     super();
     this.setMaxListeners(Infinity);
 
@@ -35,10 +43,10 @@ class OmeggaWrapper extends EventEmitter {
   }
 
   // passthrough to server
-  write(str) {
+  write(str: string) {
     this.#server.write(str);
   }
-  writeln(str) {
+  writeln(str: string) {
     this.#server.writeln(str);
   }
   start() {
@@ -49,7 +57,7 @@ class OmeggaWrapper extends EventEmitter {
   }
 
   // event emitter to catch everything
-  emit(type, ...args) {
+  emit(type: string, ...args: any[]) {
     try {
       super.emit('*', type, ...args);
     } catch (e) {
@@ -59,4 +67,4 @@ class OmeggaWrapper extends EventEmitter {
   }
 }
 
-module.exports = OmeggaWrapper;
+export default OmeggaWrapper;
