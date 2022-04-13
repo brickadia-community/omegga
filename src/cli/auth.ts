@@ -5,8 +5,7 @@ import fs from 'fs';
 import passwordPrompt from 'password-prompt';
 import path from 'path';
 import readline from 'readline';
-
-require('colors');
+import 'colors';
 
 export const AUTH_PATH = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
 

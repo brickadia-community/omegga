@@ -18,7 +18,7 @@ const MAIN_FILE = 'omegga.main.js';
 const DOC_FILE = 'doc.json';
 const PLUGIN_FILE = 'plugin.json';
 
-class NodePlugin extends Plugin {
+export default class NodePlugin extends Plugin {
   // every node plugin requires the main file and a doc file
   // may evolve this so it checks the contents of the doc file later
   static canLoad(pluginPath: string) {
@@ -42,27 +42,6 @@ class NodePlugin extends Plugin {
 
     // list of registered comands
     this.commands = [];
-  }
-  setStorage(storage: PluginStorage): void {
-    throw new Error('Method not implemented.');
-  }
-  isEnabled(): boolean {
-    throw new Error('Method not implemented.');
-  }
-  setEnabled(enabled: boolean): void {
-    throw new Error('Method not implemented.');
-  }
-  emitStatus(): void {
-    throw new Error('Method not implemented.');
-  }
-  emitPlugin(_ev: string, _from: string, _args: any[]): Promise<void> {
-    throw new Error('Method not implemented.');
-  }
-  getName(): string {
-    throw new Error('Method not implemented.');
-  }
-  getInfo(): {} {
-    throw new Error('Method not implemented.');
   }
 
   // documentation is based on doc.json file
@@ -205,5 +184,3 @@ class NodePlugin extends Plugin {
     });
   }
 }
-
-module.exports = NodePlugin;

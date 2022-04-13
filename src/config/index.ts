@@ -22,9 +22,9 @@ export const store = new Configstore(
 const formats: IConfigFormat[] = fs
   .readdirSync(path.join(__dirname, 'formats'))
   // all formats match the format_EXT.js pattern
-  .filter(file => file.match(/format_[a-z]+\.js/))
+  .filter(file => file.match(/format_[a-z]+\.js$/))
   // require all the formats
-  .map(file => require('./formats/' + file))
+  .map(file => require(path.join(__dirname, 'formats', file)).default)
   // format has a valid extension, reader, and writer
   .filter(
     format =>

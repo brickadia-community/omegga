@@ -51,14 +51,13 @@ async function installLauncher() {
         ' to download the launcher.'
     );
     process.exit(1);
-    return;
   }
 
   log('Running launcher installer...');
   const res = await runInstaller();
   if (res === 0) {
     log('Success!');
-    import('../main');
+    require('@/main');
   }
 }
 

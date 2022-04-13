@@ -1,4 +1,4 @@
-import { IConfig } from './../config/types';
+import { IConfig } from '@config/types';
 import fs from 'fs';
 import path from 'path';
 

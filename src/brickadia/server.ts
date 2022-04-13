@@ -1,4 +1,4 @@
-import { IConfig } from './../config/types';
+import { IConfig } from '@config/types';
 /*
   Brickadia Server Wrapper
   Manages IO with the game server

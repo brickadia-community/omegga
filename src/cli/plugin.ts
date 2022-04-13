@@ -6,7 +6,7 @@ import path from 'path';
 import semver from 'semver';
 import simpleGit, { ResetMode, SimpleGit } from 'simple-git';
 import { promisify } from 'util';
-import pkg from '~/package.json';
+const pkg = require('../../package.json');
 const exec = promisify(execNonPromise);
 
 require('colors');

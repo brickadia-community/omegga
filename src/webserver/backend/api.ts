@@ -11,7 +11,7 @@ import {
   JSONRPCServerAndClient,
 } from 'json-rpc-2.0';
 import _ from 'lodash';
-import pkg from '~/package.json';
+const pkg = require('../../../package.json');
 import type Webserver from './index';
 import {
   IFrontendBanEntry,

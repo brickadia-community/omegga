@@ -18,7 +18,7 @@ const DOC_FILE = 'doc.json';
 const ACCESS_FILE = 'access.json';
 const PLUGIN_FILE = 'plugin.json';
 
-class NodeVmPlugin extends Plugin {
+export default class NodeVmPlugin extends Plugin {
   #worker: Worker;
   #outInterface: readline.Interface;
   #errInterface: readline.Interface;
@@ -471,5 +471,3 @@ class NodeVmPlugin extends Plugin {
     }
   }
 }
-
-module.exports = NodeVmPlugin;

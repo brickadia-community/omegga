@@ -1,5 +1,5 @@
 import debounce from 'lodash/debounce';
-export const debounce = debounce;
+export { debounce };
 
 const UNIT_CONVERSION: Record<string, number> = {
   ms: 1, // milliseconds

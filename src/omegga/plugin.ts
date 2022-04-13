@@ -381,10 +381,11 @@ export class PluginLoader {
       ...fs
         .readdirSync(dir)
         // all files match the plugin_nameType.js pattern
-        .filter(file => file.match(/plugin_[a-zA-Z_]+\.js/))
+        .filter(file => file.match(/plugin_[a-zA-Z_]+\.js$/))
         // require all the formats
-        .map(file => require('./plugin/' + file))
+        .map(file => require('./plugin/' + file).default)
     );
+    global.Omegga.verbose('Found plugin formats:', this.formats);
   }
 
   // unload and load all installed plugins
@@ -524,7 +525,7 @@ export class PluginLoader {
               global.Omegga.error(
                 '!>'.red,
                 'Error loading plugin',
-                e.getName().brightRed.underline,
+                dir.brightRed.underline,
                 PluginFormat,
                 e
               );

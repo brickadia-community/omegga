@@ -80,6 +80,9 @@ Alternatively, you can use a development/local omegga.
     # point development omegga to global npm bin
     npm link
 
+    # build omegga's dist from typescript
+    npm build
+
     # build the web ui (once)
     npm run dist
 

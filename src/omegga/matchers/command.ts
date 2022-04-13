@@ -1,7 +1,6 @@
-import { command } from 'commander';
 import { MatchGenerator } from './types';
 
-const comman: MatchGenerator<{
+const command: MatchGenerator<{
   name: string;
   command: string;
   args: string[];

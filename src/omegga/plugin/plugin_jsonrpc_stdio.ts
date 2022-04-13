@@ -20,7 +20,7 @@ const MAIN_FILE = 'omegga_plugin';
 const DOC_FILE = 'doc.json';
 const PLUGIN_FILE = 'plugin.json';
 
-class RpcPlugin extends Plugin {
+export default class RpcPlugin extends Plugin {
   #child: ChildProcessWithoutNullStreams;
   #rpc: JSONRPCServerAndClient;
   #errInterface: readline.Interface;
@@ -619,4 +619,3 @@ class RpcPlugin extends Plugin {
   }
 }
 
-module.exports = RpcPlugin;

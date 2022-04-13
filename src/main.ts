@@ -7,7 +7,7 @@ import commander from 'commander';
 import fs from 'fs';
 import path from 'path';
 import updateNotifier from 'update-notifier';
-import pkg from '~/package.json';
+const pkg = require('../package.json');
 import { auth, config as omeggaConfig, pluginUtil, Terminal } from './cli';
 import { IConfig } from './config/types';
 
@@ -17,10 +17,8 @@ const notifier = updateNotifier({
 });
 notifier.notify();
 
-/*
 // TODO: let omegga bundle config (roles, bans, server config) to zip
 // TODO: let omegga unbundle config from zip to current omegga dir
-*/
 
 const err = (...args: any[]) => console.error('!>'.red, ...args);
 const log = (...args: any[]) => console.log('>>'.green, ...args);
@@ -53,7 +51,7 @@ const program = commander
 
     // default working directory is the one specified in config
     let workDir = config.store.get('defaultOmegga');
-    verboseLog('Using working directory', workDir.yellow);
+    verboseLog('Using working directory', workDir?.yellow);
 
     // check if a local install exists
     const localInstall = fs.existsSync(soft.LOCAL_LAUNCHER);
@@ -65,16 +63,15 @@ const program = commander
     if (!fs.existsSync(workDir)) {
       err('configured omegga default path does not exist');
       process.exit(1);
-      return;
     }
     if (!fs.statSync(workDir).isDirectory) {
       err('configured omegga default path is not a directory');
       process.exit(1);
-      return;
     }
 
     // find the config for the working directory
     const configFile = config.find(workDir);
+    verboseLog('Target config file:', configFile?.yellow);
     let conf: IConfig;
 
     // create a default config file if it does not already exist, otherwise load in the existing one
@@ -82,7 +79,7 @@ const program = commander
       verboseLog('Creating a new config');
       conf = createDefaultConfig();
     } else {
-      verboseLog('Reading config file from', configFile.yellow);
+      verboseLog('Reading config file');
       conf = config.read(configFile);
     }
 
@@ -160,7 +157,7 @@ const program = commander
 program
   .command('init')
   .description('Sets up the current directory as a brickadia server')
-  .action(() => {
+  .action(async () => {
     const configFile = config.find('.');
     if (configFile) {
       err('Config file already exists:', configFile.yellow.underline);
@@ -178,7 +175,7 @@ program
       'omegga config list'.yellow.underline +
       ' for current settings and available fields'
   )
-  .action((field, value) => {
+  .action(async (field, value) => {
     if (!field) field = 'list';
     omeggaConfig(field, value, program.opts());
   });
@@ -256,7 +253,7 @@ program
   .description(
     'Shows server name, description, port, install info, and installed plugins'
   )
-  .action(() => {
+  .action(async () => {
     err('not implemented yet');
     // TODO: implement config parsing
   });
@@ -267,7 +264,7 @@ program
   .description('Installs a plugin to the current brickadia server')
   .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement install --force
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .action(plugins => {
+  .action(async plugins => {
     if (!require('hasbin').sync('git')) {
       err('git'.yellow, 'must be installed to install plugins.');
       process.exit(1);
@@ -294,7 +291,7 @@ program
   .description('Updates all or selected installed plugins to latest versions')
   .option('-f, --force', 'Forcefully re-upgrade existing plugin') // TODO: implement update --force
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .action(plugins => {
+  .action(async plugins => {
     if (!config.find('.')) {
       err(
         'Not an omegga directory, run ',
@@ -313,7 +310,7 @@ program
   .command('check [pluginNames...]')
   .description('Checks plugins for compatibility issues')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .action(plugins => {
+  .action(async plugins => {
     if (!config.find('.')) {
       err(
         'Not an omegga directory, run ',
@@ -328,4 +325,4 @@ program
     pluginUtil.check(plugins, { verbose });
   });
 
-program.parse(process.argv);
+program.parseAsync(process.argv);
