@@ -275,6 +275,22 @@ Plugins can be updated with `omegga update` or `omegga update pluginName another
 
 Plugins may also need to be updated based on the project's README file.
 
+## Creating Plugins
+
+Plugins can be created manually using the file structure described below, or they can be initialized automatically using `omegga init-plugin`:
+
+`omegga init-plugin [--type <type>] [--author <author>] <plugin-name>`
+
+If the current working directory is an Omegga installation, the initialized plugin will be placed in the `plugins` directory. Otherwise,
+it will be created at the current working directory.
+
+For most cases, you will find yourself using `safe` or `safe-ts` plugins, but the valid plugin types to pass to `--type` are
+
+- `safe` (default), the standard Node VM plugin type
+- `safe-ts`, a `safe` plugin using TS
+- `unsafe`, an unsafe plugin with raw access to internal Omegga APIs
+- `rpc`, a plugin that will interface another executable using RPC over STDIN/STDOUT
+
 ## Plugin Structure
 
 All plugins are located in a `plugins` directory where you are running Omegga:

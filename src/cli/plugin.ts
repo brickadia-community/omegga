@@ -46,6 +46,9 @@ interface ITransformer {
   fn(match: Record<string, string>): IPlugin;
 }
 
+const PLUGIN_TYPES = ['safe', 'safe-ts', 'unsafe', 'rpc'];
+type PluginType = typeof PLUGIN_TYPES[number];
+
 // plugin url transformers
 const transformers: ITransformer[] = [
   {
@@ -583,4 +586,73 @@ export async function check(pluginNames: string[], _options: unknown) {
   console.log();
 }
 
-export default { install, update, check };
+async function init(
+  name: string,
+  author: string | undefined,
+  type: PluginType
+) {
+  if (!PLUGIN_TYPES.includes(type)) {
+    err('Invalid plugin type', type.red, '!');
+    process.exit(1);
+  }
+
+  let dest: string;
+  if (!config.find('.')) {
+    log(
+      'Warning:'.yellow,
+      'This is not an omegga installation, initializing here instead...'
+    );
+    dest = `./${name}`;
+  } else {
+    dest = `./plugins/${name}`;
+    if (!fs.existsSync('./plugins'))
+      fs.mkdirSync('./plugins');
+  }
+
+  if (fs.existsSync(dest)) {
+    err('A directory already exists at the desired plugin location.');
+    process.exit(1);
+  }
+
+  log('Initializing new', type.yellow, 'plugin', name.cyan, '...');
+
+  const templateData = {
+    name,
+    shortName: name.substring(7),
+    author: author ?? 'AUTHOR',
+    omeggaVersion: pkg.version,
+  };
+
+  const copyAndRender = async (src: string, dest: string) => {
+    const stats = fs.statSync(src);
+    if (stats.isDirectory()) {
+      await fs.promises.mkdir(dest);
+      const contents = await fs.promises.readdir(src);
+      for (const child of contents)
+        await copyAndRender(path.join(src, child), path.join(dest, child));
+    } else {
+      // copy and render the file
+      const data = (await fs.promises.readFile(src)).toString();
+
+      await fs.promises.writeFile(
+        dest,
+        data.replace(/{{(\w+)}}/g, (_, p) => templateData[p] ?? `{{${p}}}`),
+        {
+          mode: stats.mode,
+        }
+      );
+    }
+  };
+
+  verboseLog('Copying and rendering template...');
+  copyAndRender(path.join(__dirname, `../../templates/${type}`), dest);
+
+  if (require('hasbin').sync('git')) {
+    await exec('git init', { cwd: dest });
+    verboseLog('Running', 'git init'.yellow, 'in the new plugin directory ...');
+  }
+
+  log('Initialized', type.yellow, 'plugin', `${name}`.cyan, 'successfully!');
+}
+
+export default { install, update, check, init };

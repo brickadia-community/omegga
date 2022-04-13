@@ -1,0 +1,7 @@
+{
+  "name": "{{shortName}}",
+  "description": "A safe Omegga plugin.",
+  "author": "{{author}}",
+  "config": {},
+  "commands": []
+}
