@@ -26,5 +26,3 @@ export * as util from '@util';
 
 /** config */
 export * as config from '@config';
-
-import './index.d.ts';

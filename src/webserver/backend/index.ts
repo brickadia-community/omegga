@@ -16,11 +16,11 @@ import setupMetrics from './metrics';
 import { IStoreUser, OmeggaSocketIo } from './types';
 import * as util from './util';
 
-// path to assets folder
-const ASSET_PATH = path.join(__dirname, '../frontend/assets');
-
 // path to frontend directory
-const FRONTEND_PATH = path.join(__dirname, '../frontend');
+const FRONTEND_PATH = path.join(__dirname, '../../../frontend');
+
+// path to assets folder
+const ASSET_PATH = path.join(FRONTEND_PATH, 'assets');
 
 // path to webpacked data
 const PUBLIC_PATH = path.join(__dirname, '../../../public');
