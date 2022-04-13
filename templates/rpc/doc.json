@@ -1,0 +1,7 @@
+{
+  "name": "{{shortName}}",
+  "description": "An RPC Omegga plugin.",
+  "author": "{{author}}",
+  "config": {},
+  "commands": []
+}

@@ -21,6 +21,7 @@ notifier.notify();
 // TODO: let omegga unbundle config from zip to current omegga dir
 
 const err = (...args: any[]) => console.error('!>'.red, ...args);
+const warn = (...args: any[]) => console.error('>>'.yellow, ...args);
 const log = (...args: any[]) => console.log('>>'.green, ...args);
 const verboseLog = (...args: any[]) => {
   if (!global.Omegga.VERBOSE) return;
@@ -323,6 +324,21 @@ program
     const { verbose } = program.opts();
     Omegga.VERBOSE = verbose;
     pluginUtil.check(plugins, { verbose });
+  });
+
+program
+  .command('init-plugin <pluginName>')
+  .description('Initializes a new plugin with the given name and settings')
+  .option(
+    '-t, --type <type>',
+    'The type of plugin to initialize. One of [safe, safe-ts, unsafe, rpc].',
+    'safe'
+  )
+  .option('-a, --author <author>', 'The author of this plugin.', 'AUTHOR')
+  .action(async (pluginName, { type, author }) => {
+    if (!pluginName.startsWith('omegga-')) pluginName = `omegga-${pluginName}`;
+
+    pluginUtil.init(pluginName, author, type ?? 'safe');
   });
 
 program.parseAsync(process.argv);
