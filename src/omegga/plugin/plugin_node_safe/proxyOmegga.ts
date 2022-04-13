@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import EventEmitter from 'events';
 import commandInjector from '@omegga/commandInjector';
 import LogWrangler from '@omegga/logWrangler';
 import Player from '@omegga/player';

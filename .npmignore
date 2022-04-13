@@ -8,7 +8,7 @@ omegga.json
 config.json
 webpack.config.js
 test.js
-src/frontend/components
-src/frontend/css
-src/frontend/views
-src/frontend/app.js
+src/
+omegga.d.ts
+.prettierrc
+.bablrc.json

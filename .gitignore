@@ -11,3 +11,4 @@ omegga.json
 config.json
 public/*
 dist/
+omegga.d.ts

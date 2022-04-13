@@ -63,6 +63,7 @@
     "@vue/babel-helper-vue-jsx-merge-props": "^1.2.1",
     "bufferutil": "^4.0.1",
     "css-loader": "^4.3.0",
+    "dts-bundle-generator": "^6.7.0",
     "file-loader": "^6.1.0",
     "jsdoc-to-markdown": "^7.0.1",
     "mini-css-extract-plugin": "^1.0.0",
@@ -92,7 +93,8 @@
     "watch": "npx webpack --watch",
     "dist": "MODE=production npx webpack",
     "build:frontend": "npx webpack",
-    "build": "npx ttsc --build \"src/\""
+    "build": "npx ttsc --build \"src/\"",
+    "dts": "npx dts-bundle-generator --no-banner --inline-declare-externals -o omegga.d.ts ./src/omeggaplugin.ts"
   },
   "author": "Meshiest",
   "license": "ISC",

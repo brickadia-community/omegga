@@ -3,7 +3,7 @@ import { IConfig } from '@config/types';
   Brickadia Server Wrapper
   Manages IO with the game server
 */
-import { EventEmitter } from 'events';
+import EventEmitter from 'events';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import readline from 'readline';
 import path from 'path';

@@ -3,6 +3,18 @@ import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
 import readline from 'readline';
 
+declare global {
+  interface String {
+    brightRed: string;
+    brightGreen: string;
+    brightYellow: string;
+    brightBlue: string;
+    brightMagenta: string;
+    brightCyan: string;
+    brightWhite: string;
+  }
+}
+
 let log: (...args: any[]) => void,
   err: (...args: any[]) => void,
   warn: (...args: any[]) => void;

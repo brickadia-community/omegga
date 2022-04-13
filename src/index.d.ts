@@ -10,15 +10,3 @@ declare global {
   var OMEGGA_UTIL: typeof util;
 }
 export default global;
-
-declare global {
-  interface String {
-    brightRed: string;
-    brightGreen: string;
-    brightYellow: string;
-    brightBlue: string;
-    brightMagenta: string;
-    brightCyan: string;
-    brightWhite: string;
-  }
-}

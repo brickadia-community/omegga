@@ -10,7 +10,7 @@ import { OmeggaPlugin, OmeggaPluginClass } from '@omegga/types';
 import { transformFileSync, transformSync } from '@swc/core';
 import { mkdir } from '@util/file';
 import 'colors';
-import { EventEmitter } from 'events';
+import EventEmitter from 'events';
 import fs from 'fs';
 import path from 'path';
 import { NodeVM } from 'vm2';

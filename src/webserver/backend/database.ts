@@ -5,7 +5,7 @@ import { explode } from '@util/pattern';
 import { parseBrickadiaTime } from '@util/time';
 import bcrypt from 'bcrypt';
 import chokidar from 'chokidar';
-import { EventEmitter } from 'events';
+import EventEmitter from 'events';
 import Datastore from 'nedb-promises';
 import path from 'path';
 import Calendar from './calendar';
