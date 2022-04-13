@@ -1,12 +1,12 @@
-import { ReadSaveObject, Brick } from 'brs-js/dist/src/types';
+import { ReadSaveObject, Brick } from 'brs-js';
 
 /**
  * sets all the bricks in saveData to target's ownership
- * @param player - playe
+ * @param player - player
  * @param saveData - save data with unknown ownership
  * @return save data with ownership changed
  */
-export default function setOwnership(
+export function setOwnership(
   player: { id: string; name: string },
   saveData: ReadSaveObject
 ) {
@@ -23,3 +23,5 @@ export default function setOwnership(
 
   return saveData;
 }
+
+export default setOwnership;

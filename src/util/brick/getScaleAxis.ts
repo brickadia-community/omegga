@@ -1,7 +1,7 @@
-import { Brick } from 'brs-js/dist/src/types';
+import { Brick } from 'brs-js';
 
 // get scale axis for scale when using rotation and orientation
-export default function getScaleAxis(brick: Brick, axis: number) {
+export function getScaleAxis(brick: Brick, axis: number) {
   const { direction, rotation } = brick;
   if ([0, 1].includes(direction)) {
     if (axis === 0) {
@@ -29,3 +29,4 @@ export default function getScaleAxis(brick: Brick, axis: number) {
 
   return axis;
 }
+export default getScaleAxis;

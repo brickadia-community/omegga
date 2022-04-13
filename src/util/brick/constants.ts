@@ -64,7 +64,7 @@ const translationTable: (([x, y, z]: [number, number, number]) => [
   ([x, y, z]) => [-y, -x, -z],
 ];
 
-const orientationMap = {
+const orientationMap: Record<string, [number, number]> = {
   X_Positive_0: [0, 0],
   X_Positive_90: [0, 1],
   X_Positive_180: [0, 2],

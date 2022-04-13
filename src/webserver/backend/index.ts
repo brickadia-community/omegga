@@ -1,21 +1,20 @@
-import type Omegga from 'omegga/server';
-
-import path from 'path';
-import http from 'http';
-import https from 'https';
-
+import { IServerStatus } from './../../omegga/types';
+import { IServerConfig } from '../../config/types';
+import bodyParser from 'body-parser';
 import express from 'express';
 import expressSession from 'express-session';
+import http from 'http';
+import https from 'https';
 import NedbStore from 'nedb-promises-session-store';
-import SocketIo from 'socket.io';
-import bodyParser from 'body-parser';
-
-import util from './util';
+import type Omegga from 'omegga/server';
+import path from 'path';
+import { Server as SocketIo } from 'socket.io';
+import soft from '../../softconfig';
 import setupApi from './api';
-import setupMetrics from './metrics';
 import Database from './database';
-
-import soft = require('../../softconfig');
+import setupMetrics from './metrics';
+import * as util from './util';
+import { IStoreUser, OmeggaSocketIo } from './types';
 
 // path to assets folder
 const ASSET_PATH = path.join(__dirname, '../frontend/assets');
@@ -26,18 +25,34 @@ const FRONTEND_PATH = path.join(__dirname, '../frontend');
 // path to webpacked data
 const PUBLIC_PATH = path.join(__dirname, '../../../public');
 
-const log = (...args) => global.Omegga.log(...args);
-const error = (...args) => global.Omegga.error(...args);
+const log = (...args: any[]) => global.Omegga.log(...args);
+const error = (...args: any[]) => global.Omegga.error(...args);
 
 // the webserver servers an authenticated
-class Webserver {
-  #database = undefined;
+export default class Webserver {
+  database: Database;
   port: number;
   omegga: Omegga;
 
+  app: express.Express;
+  server: http.Server | https.Server;
+  io: OmeggaSocketIo;
+
+  options: IServerConfig;
+  https: boolean;
+  started: boolean;
+  created: Promise<boolean>;
+
+  serverStatusInterval: ReturnType<typeof setInterval>;
+  lastReportedStatus: IServerStatus;
+
+  rooms: string[];
+
+  dataPath: string;
+
   // create a webserver
-  constructor(options, omegga) {
-    this.port = options.port || process.env.PORT || soft.DEFAULT_PORT;
+  constructor(options: IServerConfig, omegga: Omegga) {
+    this.port = Number(options.port || process.env.PORT || soft.DEFAULT_PORT);
     this.options = options;
     this.omegga = omegga;
     this.dataPath = path.join(omegga.path, soft.DATA_PATH);
@@ -98,7 +113,7 @@ class Webserver {
       }
 
       // fallback to http
-      return http.Server(this.app);
+      return new http.Server(this.app);
     };
 
     // create http(s) server based on openssl availability
@@ -128,23 +143,24 @@ class Webserver {
   }
 
   // setup the web ui routes
-  async initWebUI(session) {
-    const io = SocketIo(this.server);
-    this.io = io;
+  async initWebUI(session: ReturnType<typeof expressSession>) {
+    this.io = new SocketIo(this.server);
 
     await this.database.getInstanceId();
 
     // use the session middleware
-    io.use((socket, next) => {
-      session(socket.request, socket.request.res || {}, async () => {
+    this.io.use((socket, next) => {
+      const req = socket.request as express.Request;
+      const res = req.res as express.Response<any, { userId: string }>;
+
+      session(req, res, async () => {
         // check if user is authenticated
         const user = await this.database.findUserById(
-          socket.request.session.userId
+          req.session.userId as string
         );
         if (user && !user.isBanned) {
-          // TODO: check if user is banned while connected to disconnect websocket
-          socket.user = user;
-          await this.database.stores.users.update(
+          socket.data.user = user;
+          await this.database.stores.users.update<IStoreUser>(
             { _id: user._id },
             { $set: { lastOnline: Date.now() } }
           );
@@ -163,10 +179,10 @@ class Webserver {
     this.rooms = ['chat', 'status', 'plugins', 'server'];
 
     // setup the api
-    setupApi(this, io);
+    setupApi(this, this.io);
 
     // setup metrics and tracking
-    setupMetrics(this, io);
+    setupMetrics(this, this.io);
 
     // every request goes through the index file (frontend handles 404s)
     this.app.use(async (req, res) => {
@@ -185,7 +201,7 @@ class Webserver {
   async start() {
     if (this.started) return;
     await this.created;
-    return await new Promise(resolve => {
+    return await new Promise<void>(resolve => {
       this.server.listen(this.port, () => {
         log(
           `${'>>'.green} Web UI available at`,
@@ -206,5 +222,3 @@ class Webserver {
     clearInterval(this.serverStatusInterval);
   }
 }
-
-export default Webserver;

@@ -1,6 +1,3 @@
-// contains omegga server
-export * as Server from './server';
-
 // Plugin loader format
 export * as Plugin from './plugin';
 
@@ -18,3 +15,5 @@ export * as LogWrangler from './logWrangler';
 
 // injects commands that only need a log wrangler to function
 export * as commandInjector from './commandInjector';
+
+export * from './types';

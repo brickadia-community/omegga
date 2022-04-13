@@ -1,6 +1,6 @@
-import { Brick } from 'brs-js/dist/src/types';
-import getScaleAxis from './getScaleAxis';
-import getBrickSize from './getBrickSize';
+import { Brick, WriteSaveObject } from 'brs-js';
+import { getScaleAxis } from './getScaleAxis';
+import { getBrickSize } from './getBrickSize';
 import type { IBrickBounds } from './checkBounds';
 import type { brickSizeMap } from './constants';
 
@@ -22,14 +22,12 @@ function minMaxBound(
 }
 
 // returns bounds of the array of the brick
-export default function getBounds({
-  bricks,
-  brick_assets,
-}: {
-  bricks: Brick[];
-  brick_assets: string[];
-}) {
-  const bounds: IBrickBounds = { minBound: [], maxBound: [], center: [] };
+export function getBounds({ bricks, brick_assets }: WriteSaveObject) {
+  const bounds: IBrickBounds = {
+    minBound: [],
+    maxBound: [],
+    center: [],
+  } as unknown as IBrickBounds;
 
   bricks.forEach(brick => {
     minMaxBound(brick, brick_assets, bounds, 0);
@@ -42,7 +40,8 @@ export default function getBounds({
     const max = bounds.maxBound[index];
     const avg = (max + min) / 2;
     return Math.round(avg);
-  });
+  }) as [number, number, number];
 
   return bounds;
 }
+export default getBounds;

@@ -1,3 +1,4 @@
+import { IConfig } from './../config/types';
 /*
   The wrapper combines the things looking at or waiting for logs with the actual server logs
 */
@@ -7,9 +8,10 @@ import path from 'path';
 import BrickadiaServer from '../brickadia/server';
 import soft from '../softconfig';
 import LogWrangler from './logWrangler';
+import type Omegga from './server';
 
 class OmeggaWrapper extends EventEmitter {
-  #server: typeof BrickadiaServer = undefined;
+  #server: BrickadiaServer;
   dataPath: string;
   path: string;
 
@@ -19,7 +21,9 @@ class OmeggaWrapper extends EventEmitter {
   watchLogArray: LogWrangler['watchLogArray'];
   watchLogChunk: LogWrangler['watchLogChunk'];
 
-  constructor(serverPath: string, cfg) {
+  config: IConfig;
+
+  constructor(serverPath: string, cfg: IConfig) {
     super();
     this.setMaxListeners(Infinity);
 
@@ -32,7 +36,8 @@ class OmeggaWrapper extends EventEmitter {
     this.#server = new BrickadiaServer(this.dataPath, cfg);
 
     // log wrangler wrangles logs... it reads brickadia logs and clumps them together
-    this.logWrangler = new LogWrangler(this);
+    // this is cursed but the OmeggaWrapper will never be used without omegga...
+    this.logWrangler = new LogWrangler(this as unknown as Omegga);
     this.#server.on('line', this.logWrangler.callback);
     this.#server.on('line', line => this.emit('line', line));
     this.#server.on('closed', () => this.emit('closed'));

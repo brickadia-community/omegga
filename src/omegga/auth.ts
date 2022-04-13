@@ -1,3 +1,4 @@
+import { IConfig } from './../config/types';
 import fs from 'fs';
 import path from 'path';
 
@@ -5,11 +6,12 @@ const Omegga = require('./server').default;
 import soft from '../softconfig';
 import * as file from '../util/file';
 import { write as writeConfig } from '../brickadia/config';
+import { IOmeggaOptions } from './types';
 
 require('colors');
 
 const verboseLog = (...args: any[]) => {
-  if (!global.VERBOSE) return;
+  if (!Omegga.VERBOSE) return;
   if (Omegga.log) Omegga.log('V>'.magenta, ...args);
   else console.log('V>'.magenta, ...args);
 };
@@ -40,7 +42,7 @@ function readAuthFiles() {
 }
 
 // write auth files object to a server path
-export function writeAuthFiles(dstDir: string, files: Record<string, string>) {
+export function writeAuthFiles(dstDir: string, files: Record<string, Buffer>) {
   for (const f in files) {
     fs.writeFileSync(path.join(dstDir, f), files[f]);
   }
@@ -62,7 +64,7 @@ export async function genAuthFiles(
   }
 
   // dummy omegga config
-  const config = {
+  const config: IConfig = {
     server: {
       port: 7777,
       publiclyListed: false,
@@ -74,7 +76,7 @@ export async function genAuthFiles(
   };
 
   // dummy omegga launch options
-  const options = {
+  const options: IOmeggaOptions = {
     noauth: true,
     noplugin: true,
     noweb: true,

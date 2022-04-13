@@ -1,6 +1,8 @@
 import type Omegga from './server';
 
 import { color, brick as brickUtils } from '../util/';
+import { Brick, WriteSaveObject } from 'brs-js';
+import { IBrickBounds } from 'util/brick';
 
 const DEFAULT_PERMS: Record<string, string[]> = {
   moderator: [
@@ -38,7 +40,7 @@ const DEFAULT_PERMS: Record<string, string[]> = {
 };
 
 class Player {
-  #omegga: Omegga = null;
+  #omegga: Omegga;
   name: string;
   id: string;
   controller: string;
@@ -498,7 +500,7 @@ class Player {
       minBound: [+minBound.groups.x, +minBound.groups.y, +minBound.groups.z],
       maxBound: [+maxBound.groups.x, +maxBound.groups.y, +maxBound.groups.z],
       center: [+center.groups.x, +center.groups.y, +center.groups.z],
-    };
+    } as IBrickBounds;
   }
 
   /**
@@ -515,13 +517,13 @@ class Player {
     if (!saveData) return;
 
     // filter bricks outside the bounds
-    saveData.bricks = saveData.bricks.filter(brick => {
+    saveData.bricks = (saveData.bricks as Brick[]).filter(brick => {
       return brickUtils.checkBounds(
         brick,
         saveData.brick_assets,
         templateBounds
       );
-    });
+    }) as typeof saveData.bricks;
 
     if (saveData.bricks.length > 0) {
       return saveData;
@@ -532,15 +534,10 @@ class Player {
 
   /**
    * load bricks at ghost brick location
-   * @param  {SaveData} - player or player identifier
-   * @param  {Number} - save load X offset
-   * @param  {Number} - save load Y offset
-   * @param  {Number} - save load Z offset
-   * @param  {Boolean} - quiet mode
-   * @return {Promise} - BRS JS Save Data
+   * @param saveData player or player identifier
    */
   async loadDataAtGhostBrick(
-    saveData,
+    saveData: WriteSaveObject,
     { rotate = true, offX = 0, offY = 0, offZ = 0, quiet = true } = {}
   ) {
     const ghostBrickData = await this.getGhostBrick();

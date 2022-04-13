@@ -1,3 +1,3 @@
-import Webserver from './backend';
+import Backend from './backend';
 
-export const Webserver;
+export const Webserver = Backend;

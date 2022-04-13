@@ -67,8 +67,8 @@ export const sRGB = (linear: number[]) =>
 // convert (r, g, b), ([r, g, b]), and ({r, g, b}) to hex string
 export const rgbToHex = (
   r: number | [number, number, number] | { r: number; g: number; b: number },
-  g: number,
-  b: number
+  g?: number,
+  b?: number
 ) => {
   // parse array arguments
   if (typeof r === 'object' && 'length' in r && r.length > 0) [r, g, b] = r;

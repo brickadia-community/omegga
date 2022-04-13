@@ -3,7 +3,7 @@
     "allowJs": true,
     "baseUrl": ".",
     "declaration": true,
-    "module": "es6",
+    "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": true,
     "allowSyntheticDefaultImports": true,
@@ -13,7 +13,10 @@
     "declarationMap": true,
     "target": "es2020",
     "typeRoots": [
-      "./index.d.ts"
+      "index.d.ts"
     ]
   },
+  "exclude": [
+    "./webserver/frontend"
+  ]
 }

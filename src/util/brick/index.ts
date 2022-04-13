@@ -1,4 +1,4 @@
-export * from './constants';
+export * as BRICK_CONSTANTS from './constants';
 export * from './checkBounds';
 export * from './getBounds';
 export * from './getBrickSize';

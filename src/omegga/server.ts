@@ -1,70 +1,48 @@
-import {
-  BRRoleSetup,
-  BRRoleAssignments,
-  BRBanList,
-  BRPlayerNameCache,
-} from './../brickadia/types';
-import { existsSync, writeFileSync, readFileSync, unlinkSync } from 'fs';
-import { join, basename } from 'path';
+import { read, ReadSaveObject, write, WriteSaveObject } from 'brs-js';
+import 'colors';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { sync } from 'glob';
-import { write, read } from 'brs-js';
-
-import OmeggaWrapper from './wrapper';
-import { PluginLoader } from './plugin';
-import commandInjector from './commandInjector';
-import { Webserver } from '../webserver/index';
+import { basename, join } from 'path';
+import Webserver from 'webserver/backend';
+import Terminal from '../cli/terminal';
+import { includes } from '../info/default_commands.json';
 import {
+  BRICKADIA_AUTH_FILES,
+  CONFIG_AUTH_DIR,
+  CONFIG_HOME,
   DATA_PATH,
   PLUGIN_PATH,
-  CONFIG_HOME,
-  CONFIG_AUTH_DIR,
-  BRICKADIA_AUTH_FILES,
-} from '../softconfig.js';
-import { uuid, pattern, map as mapUtils } from '../util/index.js';
-import { mkdir, copyFiles, readWatchedJSON } from '../util/file.js';
-import Terminal from '../cli/terminal.js';
-import 'colors';
-
-import { includes } from '../info/default_commands.json';
+} from '../softconfig';
+import { map as mapUtils, pattern, uuid } from '../util';
+import { copyFiles, mkdir, readWatchedJSON } from '../util/file';
+import {
+  BRBanList,
+  BRPlayerNameCache,
+  BRRoleAssignments,
+  BRRoleSetup,
+} from './../brickadia/types';
+import { IConfig } from './../config/types';
+import commandInjector from './commandInjector';
 import Player from './player';
-import { ReadSaveObject, WriteSaveObject } from 'brs-js/dist/src/types';
+import { PluginLoader } from './plugin';
+import {
+  ILogMinigame,
+  IMinigameList,
+  IOmeggaOptions,
+  IPlayerPositions,
+  IServerStatus,
+} from './types';
+import OmeggaWrapper from './wrapper';
+
 const MISSING_CMD =
   '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
 
-const MATCHERS = [
-  require('./matchers/join.js'),
-  // 'join' event => { name, id, state, controller }
-
-  require('./matchers/leave.js'),
-  // 'leave' event => { name, id, state, controller }
-
-  require('./matchers/chat.js'),
-  // 'chat' event => name, message; 'chatcmd:command' event => name, [...args]
-  // 'kick' event => name, kicker, reason
-
-  require('./matchers/command.js'),
-  // 'cmd:command' event => name, args (string)
-
-  require('./matchers/auth.js'),
-  // assigns host, 'host' event, 'start' event, 'unauthorized' event
-
-  require('./matchers/exit.js'),
-  // 'exit' event
-
-  require('./matchers/version.js'),
-  // 'version' event, check game version
-
-  require('./matchers/init.js'),
-  // watch loginit for any funny business
-
-  require('./matchers/mapChange.js'),
-  // 'mapchange' event
-];
+import MATCHERS from './matchers';
 
 // TODO: safe broadcast parsing
 
 const verboseLog = (...args: unknown[]) => {
-  if (!global.VERBOSE) return;
+  if (!Omegga.VERBOSE) return;
   if (Omegga.log) Omegga.log('V>'.magenta, ...args);
   else console.log('V>'.magenta, ...args);
 };
@@ -77,6 +55,8 @@ class Omegga extends OmeggaWrapper {
 
   // allow a terminal to be used instead of console log
   static terminal: Terminal = undefined;
+
+  static VERBOSE: boolean;
 
   /**
    * send a console log to the readline terminal or stdout
@@ -121,6 +101,7 @@ class Omegga extends OmeggaWrapper {
   savePath: string;
   presetPath: string;
   configPath: string;
+  options: IOmeggaOptions;
 
   version: number;
 
@@ -132,12 +113,17 @@ class Omegga extends OmeggaWrapper {
   stopping: boolean;
   currentMap: string;
 
+  getServerStatus: () => Promise<IServerStatus>;
+  listMinigames: () => Promise<IMinigameList>;
+  getAllPlayerPositions: () => Promise<IPlayerPositions>;
+  getMinigames: () => Promise<ILogMinigame[]>;
+
   /**
    * Omegga instance
    */
-  constructor(serverPath: string, cfg, options = {}) {
+  constructor(serverPath: string, cfg: IConfig, options: IOmeggaOptions = {}) {
     super(serverPath, cfg);
-    this.verbose = global.VERBOSE;
+    this.verbose = Omegga.VERBOSE;
 
     // inject commands
     verboseLog('Setting up command injector');
@@ -170,7 +156,7 @@ class Omegga extends OmeggaWrapper {
     // and lets you view chat logs, disable plugins, etc
     if (!options.noweb) {
       verboseLog('Creating webserver');
-      this.webserver = new Webserver(options, this);
+      this.webserver = new Webserver(cfg.server, this);
     }
 
     if (!options.noplugin) {
@@ -257,10 +243,9 @@ class Omegga extends OmeggaWrapper {
   /**
    * start webserver, load plugins, start the brickadia server
    * this should not be called by a plugin
-   * @returns {Promise}
    */
   //
-  async start() {
+  async start(): Promise<any> {
     this.starting = true;
     if (this.webserver) await this.webserver.start();
     if (this.pluginLoader) {
@@ -281,7 +266,6 @@ class Omegga extends OmeggaWrapper {
   /**
    * unload plugins and stop the server
    * this should not be called by a plugin
-   * @returns {Promise}
    */
   async stop() {
     if (!this.started && !this.starting) {
@@ -376,21 +360,25 @@ class Omegga extends OmeggaWrapper {
    * Get up-to-date role setup from RoleSetup.json
    */
   getRoleSetup(): BRRoleSetup {
-    return readWatchedJSON(join(this.configPath, 'RoleSetup.json'));
+    return readWatchedJSON(
+      join(this.configPath, 'RoleSetup.json')
+    ) as BRRoleSetup;
   }
 
   /**
    * Get up-to-date role assignments from RoleAssignment.json
    */
   getRoleAssignments(): BRRoleAssignments {
-    return readWatchedJSON(join(this.configPath, 'RoleAssignments.json'));
+    return readWatchedJSON(
+      join(this.configPath, 'RoleAssignments.json')
+    ) as BRRoleAssignments;
   }
 
   /**
    * Get up-to-date ban list from BanList.json
    */
   getBanList(): BRBanList {
-    return readWatchedJSON(join(this.configPath, 'BanList.json'));
+    return readWatchedJSON(join(this.configPath, 'BanList.json')) as BRBanList;
   }
 
   /**
@@ -398,7 +386,9 @@ class Omegga extends OmeggaWrapper {
    * @return {object}
    */
   getNameCache(): BRPlayerNameCache {
-    return readWatchedJSON(join(this.configPath, 'PlayerNameCache.json'));
+    return readWatchedJSON(
+      join(this.configPath, 'PlayerNameCache.json')
+    ) as BRPlayerNameCache;
   }
 
   /**
@@ -734,31 +724,11 @@ class Omegga extends OmeggaWrapper {
   }
 
   /* Command injector methods are overwritten, this code is here for the doc */
-
-  /**
-   * Get a server status object containing bricks, time, players, player ping, player roles, etc
-   * @return {Promise<Object>} - Server Status
-   */
-  async getServerStatus() {}
-
-  /**
-   * Get a list of minigames
-   * @return {Promise<{index: number, name: string, numMembers: number, owner: {name: string, id: string}}[]>} - Minigame List
-   */
-  async listMinigames() {}
-
-  /**
-   * get every player's position and alive states
-   * @return {Promise<Array<Object>>}
-   */
-  async getAllPlayerPositions() {}
-
-  /**
-   * get all minigames and their players (and the player's teams)
-   * @return {Promise<Array<Object>>}
-   */
-  async getMinigames() {}
 }
 
 global.Omegga = Omegga;
 export default Omegga;
+type OmeggaType = typeof Omegga;
+declare global {
+  var Omegga: OmeggaType;
+}

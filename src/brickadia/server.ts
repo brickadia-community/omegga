@@ -1,9 +1,10 @@
+import { IConfig } from './../config/types';
 /*
   Brickadia Server Wrapper
   Manages IO with the game server
 */
 import { EventEmitter } from 'events';
-import { spawn } from 'child_process';
+import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import readline from 'readline';
 import path from 'path';
 import stripAnsi from 'strip-ansi';
@@ -11,7 +12,7 @@ import 'colors';
 import Omegga from '../omegga/server';
 
 const verboseLog = (...args: any[]) => {
-  if (!VERBOSE) return;
+  if (!Omegga.VERBOSE) return;
   if (Omegga.log) Omegga.log('V>'.magenta, ...args);
   else console.log('V>'.magenta, ...args);
 };
@@ -27,7 +28,12 @@ const warnLog = (...args: any[]) => {
 };
 
 // list of errors that can be solved by yelling at the user
-const knownErrors = [
+const knownErrors: {
+  name: string;
+  solution?: string;
+  match: RegExp;
+  message?: string;
+}[] = [
   {
     name: 'MISSING_LIBGL',
     solution: 'apt-get install libgl1-mesa-glx libglib2.0-0',
@@ -43,12 +49,15 @@ const knownErrors = [
 ];
 
 // Start a brickadia server
-class BrickadiaServer extends EventEmitter {
-  #child = null;
-  #errInterface = null;
-  #outInterface = null;
+export default class BrickadiaServer extends EventEmitter {
+  #child: ChildProcessWithoutNullStreams = null;
+  #errInterface: readline.Interface = null;
+  #outInterface: readline.Interface = null;
 
-  constructor(dataPath, config) {
+  config: IConfig;
+  path: string;
+
+  constructor(dataPath: string, config: IConfig) {
     super();
     this.config = config;
     // use the data path if it's absolute, otherwise build an absolute path
@@ -112,7 +121,7 @@ class BrickadiaServer extends EventEmitter {
 
     verboseLog('Spawn process', this.#child ? this.#child.pid : 'failed'.red);
 
-    this.#child.stdin.setEncoding('utf8');
+    this.#child.stdin.setDefaultEncoding('utf8');
     this.#outInterface = readline.createInterface({
       input: this.#child.stdout,
       terminal: false,
@@ -126,7 +135,7 @@ class BrickadiaServer extends EventEmitter {
   }
 
   // write a string to the child process
-  write(line) {
+  write(line: string) {
     if (line.length >= 512) {
       // show a warning
       warnLog(
@@ -150,7 +159,7 @@ class BrickadiaServer extends EventEmitter {
   }
 
   // write a line to the child process
-  writeln(line) {
+  writeln(line: string) {
     this.write(line + '\n');
   }
 
@@ -166,7 +175,7 @@ class BrickadiaServer extends EventEmitter {
     this.#child.kill('SIGINT');
 
     // ...kill it again just to make sure it's dead
-    spawn('kill', ['-9', this.#child.pid]);
+    spawn('kill', ['-9', this.#child.pid + '']);
   }
 
   // detaches listeners
@@ -200,7 +209,7 @@ class BrickadiaServer extends EventEmitter {
   }
 
   // -- listeners for basic events (line, err, exit)
-  errorListener(line) {
+  errorListener(line: string) {
     verboseLog('ERROR'.red, line);
     this.emit('err', line);
     for (const { match, solution, name, message } of knownErrors) {
@@ -214,15 +223,13 @@ class BrickadiaServer extends EventEmitter {
     }
   }
 
-  exitListener(...args) {
+  exitListener(...args: any[]) {
     verboseLog('Exit listener fired');
     this.emit('closed', ...args);
     this.cleanup();
   }
 
-  lineListener(line) {
+  lineListener(line: string) {
     this.emit('line', stripAnsi(line));
   }
 }
-
-module.exports = BrickadiaServer;

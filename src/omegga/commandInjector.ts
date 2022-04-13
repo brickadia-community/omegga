@@ -1,6 +1,11 @@
 import { color, time } from '../util';
 import _ from 'lodash';
-import { IServerStatus } from './types';
+import {
+  ILogMinigame,
+  IMinigameList,
+  IPlayerPositions,
+  IServerStatus,
+} from './types';
 import type Omegga from './server';
 import type LogWrangler from './logWrangler';
 
@@ -20,7 +25,7 @@ const buildTableHeaderRegex = (header: string) =>
 /**
  * List of injected commands
  */
-const COMMANDS: Record<string, Function> = {
+const COMMANDS = {
   /**
    * Get a server status object containing bricks, time, players, player ping, player roles, etc
    */
@@ -76,9 +81,9 @@ const COMMANDS: Record<string, Function> = {
 
   /**
    * Get a list of minigames
-   * @return {Promise<{index: number, name: string, numMembers: number, owner: {name: string, id: string}}[]>} - Minigame List
+   * @return Minigame List
    */
-  async listMinigames() {
+  async listMinigames(): Promise<IMinigameList> {
     const minigameLines = await (
       this as Omegga
     ).watchLogChunk<RegExpMatchArray>(
@@ -116,9 +121,8 @@ const COMMANDS: Record<string, Function> = {
 
   /**
    * get every player's position and alive states
-   * @return {Promise<Array<Object>>}
    */
-  async getAllPlayerPositions() {
+  async getAllPlayerPositions(): Promise<IPlayerPositions> {
     const pawnRegExp =
       /(?<index>\d+)\) BP_PlayerController_C .+?PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.Pawn = (?:None|BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+)')?$/;
     const posRegExp =
@@ -156,7 +160,7 @@ const COMMANDS: Record<string, Function> = {
         // iterate through the pawn+controllers
         .map(pawn => ({
           // find the player for the associated controller
-          player: this.getPlayer(pawn.groups.controller),
+          player: (this as Omegga).getPlayer(pawn.groups.controller),
           // find the position for the associated pawn
           pos: positions.find(pos => pawn.groups.pawn === pos.groups.pawn),
           isDead: deadFigures.find(
@@ -178,9 +182,8 @@ const COMMANDS: Record<string, Function> = {
 
   /**
    * get all minigames and their players (and the player's teams)
-   * @return {Promise<Array<Object>>}
    */
-  async getMinigames() {
+  async getMinigames(): Promise<ILogMinigame[]> {
     // patterns to match the console logs
     const ruleNameRegExp =
       /^(?<index>\d+)\) BP_Ruleset_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.RulesetName = (?<name>.*)$/;
@@ -260,7 +263,7 @@ const COMMANDS: Record<string, Function> = {
         members: ruleMembers
           .find(m => m.item.ruleset === r.groups.ruleset)
           .members // get the members from this ruleset
-          .map(m => this.getPlayer(m.state)), // get the players
+          .map(m => (this as Omegga).getPlayer(m.state)), // get the players
 
         // get the teams for this ruleset
         teams: teamMembers
@@ -270,7 +273,7 @@ const COMMANDS: Record<string, Function> = {
             name: _.get(
               teamNames.find(t => t.groups.team === m.item.team),
               'groups.name'
-            ),
+            ) as string,
             team: m.item.team,
 
             // get the colors (different for a4 and a5)
@@ -282,21 +285,26 @@ const COMMANDS: Record<string, Function> = {
             ),
 
             // get the players from the team
-            members: m.members.map(m => this.getPlayer(m.state)),
+            members: m.members.map(m => (this as Omegga).getPlayer(m.state)),
           })),
       }));
     } catch (e) {
-      Omegga.error('error getting minigames', e);
+      global.Omegga.error('error getting minigames', e);
       return undefined;
     }
   },
 };
 
+export type InjectedCommands = typeof COMMANDS;
+
 // inject the commands into the object given a log wrangler
-export default (obj: Omegga, logWrangler: typeof LogWrangler) => {
+export default <T extends InjectedCommands>(
+  obj: T,
+  logWrangler: LogWrangler
+) => {
   for (const cmd in COMMANDS) {
     // disgusting type casting because we're injecting functions
     (obj as unknown as Record<string, Function>)[cmd] =
-      COMMANDS[cmd].bind(logWrangler);
+      COMMANDS[cmd as keyof typeof COMMANDS].bind(logWrangler);
   }
 };

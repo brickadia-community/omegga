@@ -2,7 +2,7 @@
 The wrapper combines the things looking at or waiting for logs with the actual server logs
 */
 
-import type Omegga from './server';
+import Omegga from './server';
 
 const GENERIC_LINE_REGEX =
   /^(\[(?<date>\d{4}\.\d\d.\d\d-\d\d.\d\d.\d\d:\d{3})\]\[\s*(?<counter>\d+)\])?(?<generator>\w+): (?<data>.+)$/;
@@ -18,8 +18,8 @@ export type IMatcher<T> =
       callback: (match: RegExpMatchArray) => boolean;
     }
   | {
-      pattern: (line: string, match: RegExpMatchArray) => boolean;
-      callback: (match: RegExpMatchArray) => boolean;
+      pattern: (line: string, match: RegExpMatchArray) => T;
+      callback: (match: RegExpMatchArray) => T;
     };
 
 export type IWatcher<T> = {

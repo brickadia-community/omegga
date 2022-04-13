@@ -2,23 +2,22 @@
   Library module, includes all available resources
 */
 
-module.exports = {
-  brickadia: {
-    // BrickadiaServer - manages the server child process
-    Server: require('./brickadia/server'),
+// BrickadiaServer - manages the server child process
+import * as Server from './brickadia/server';
+// config writer for brickadia
+import * as brConfig from './brickadia/config';
 
-    // config writer for brickadia
-    config: require('./brickadia/config'),
-  },
+export const brickadia = { Server, config: brConfig };
 
-  // brickadia server wrapper, log parser, and plugin runner
-  omegga: require('./omegga'),
-  // the actual object can be required too
-  Omegga: require('./omegga/server'),
+// the actual object can be required too
+import Omegga from './omegga/server';
+export default Omegga;
 
-  // utility functions
-  util: require('./util'),
+// brickadia server wrapper, log parser, and plugin runner
+export * as omegga from './omegga';
 
-  // config
-  config: require('./config'),
-};
+// utility functions
+export * as util from './util';
+
+// config
+export * as config from './config';
