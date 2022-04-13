@@ -7,6 +7,7 @@
     "omegga": "./bin/omegga"
   },
   "dependencies": {
+    "@swc/core": "^1.2.165",
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
     "brs-js": "^2.0.3",
@@ -39,6 +40,7 @@
     "update-notifier": "^5.1.0",
     "vm2": "3.9.2 || >3.9.4"
   },
+  "types": "./dist/lib.d.ts",
   "devDependencies": {
     "@babel/core": "^7.13.8",
     "@babel/plugin-proposal-class-properties": "^7.13.0",

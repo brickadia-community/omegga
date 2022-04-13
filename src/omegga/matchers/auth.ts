@@ -18,7 +18,8 @@ const auth: MatchGenerator<
 
       const { generator, data } = logMatch.groups;
       // check if log is an auth log
-      if (generator !== 'LogAuthManager') return;
+      if (generator !== 'LogAuthManager' && generator !== 'LogAuthSubsystem')
+        return;
 
       // match against the patterns
       const hostMatch = data.match(hostRegExp);

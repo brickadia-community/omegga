@@ -1,6 +1,6 @@
-import { Plugin, PluginStorage } from '@omegga/plugin';
+import { Plugin } from '@omegga/plugin';
 import type Omegga from '@omegga/server';
-import { OmeggaPlugin, PluginStore } from '@omegga/types';
+import { PluginStore, OmeggaPluginClass } from '@omegga/types';
 import * as util from '@util';
 import disrequire from 'disrequire';
 import fs from 'fs';
@@ -92,7 +92,7 @@ export default class NodePlugin extends Plugin {
       }
 
       // require the plugin itself
-      const Plugin: typeof OmeggaPlugin = require(this.pluginFile);
+      const Plugin: OmeggaPluginClass = require(this.pluginFile);
 
       // node plugins must export a class with a constructor
       if (

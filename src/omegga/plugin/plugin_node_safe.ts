@@ -12,6 +12,7 @@ import { bootstrap } from './plugin_node_safe/proxyOmegga';
 // used with other loaders (rpc loader) and are too generic
 // omegga.main.js is rather unique and helps avoid collision
 const MAIN_FILE = 'omegga.plugin.js';
+const MAIN_FILE_TS = 'omegga.plugin.ts';
 
 // Documentation file (contains name, description, author, command helptext)
 const DOC_FILE = 'doc.json';
@@ -27,7 +28,8 @@ export default class NodeVmPlugin extends Plugin {
   // may evolve this so it checks the contents of the doc file later
   static canLoad(pluginPath: string) {
     return (
-      fs.existsSync(path.join(pluginPath, MAIN_FILE)) &&
+      (fs.existsSync(path.join(pluginPath, MAIN_FILE)) ||
+        fs.existsSync(path.join(pluginPath, MAIN_FILE_TS))) &&
       fs.existsSync(path.join(pluginPath, DOC_FILE)) &&
       fs.existsSync(path.join(pluginPath, ACCESS_FILE))
     );
@@ -41,6 +43,7 @@ export default class NodeVmPlugin extends Plugin {
   plugin: EventEmitter;
   messageCounter: number;
   access: string[];
+  isTypeScript: boolean;
 
   constructor(pluginPath: string, omegga: Omegga) {
     super(pluginPath, omegga);
@@ -51,6 +54,7 @@ export default class NodeVmPlugin extends Plugin {
 
     // TODO: validate documentation
     this.documentation = Plugin.readJSON(path.join(pluginPath, DOC_FILE));
+    this.isTypeScript = fs.existsSync(path.join(pluginPath, MAIN_FILE_TS));
     this.pluginConfig = Plugin.readJSON(path.join(pluginPath, PLUGIN_FILE));
 
     // access list is a list of builtin requires
@@ -229,6 +233,7 @@ export default class NodeVmPlugin extends Plugin {
     const vmOptions = {
       builtin: this.access, // TODO: reference access file
       external: true, // TODO: reference access file
+      isTypeScript: this.isTypeScript,
     };
     this.commands = [];
 

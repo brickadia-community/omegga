@@ -563,6 +563,40 @@ class PluginName {
 module.exports = PluginName;
 ```
 
+### `omegga.plugin.ts` (example)
+
+Be sure to put `.build/` and `node_modules/` in your `.gitignore`
+
+**Requires a `tsconfig.json`**:
+
+```json
+{
+  "compilerOptions": {
+    "noEmit": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "target": "es2017",
+    "typeRoots": []
+  }
+}
+```
+
+`omegga.plugin.ts`:
+
+```ts
+import { OmeggaPlugin } from 'omegga';
+
+type Config = { foo: string };
+type Storage = { foo: string };
+
+export default class Plugin extends OmeggaPlugin<Config, Storage> {
+  async init() {}
+
+  async stop() {}
+}
+```
+
 ## Node Plugins
 
 Node plugins are effectively `require`'d into omegga. They have the potential to crash the entire service through uncaught exceptions and also can be insecure. Develop and run these at your own risk - your server stability may suffer.

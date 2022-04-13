@@ -423,7 +423,7 @@ class Omegga extends OmeggaWrapper {
    * @return Host Id
    */
   getHostId(): string {
-    return this.host ? this.host.id : '';
+    return this.host?.id ?? '';
   }
 
   /**

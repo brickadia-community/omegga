@@ -4,9 +4,6 @@
     "baseUrl": ".",
     "rootDir": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ],
       "@omegga/*": [
         "./omegga/*"
       ],
@@ -31,6 +28,9 @@
       "@config": [
         "./config/index.ts"
       ],
+      "@/*": [
+        "./*"
+      ],
     },
     "plugins": [
       {
@@ -51,7 +51,6 @@
     "outDir": "../dist",
     "sourceMap": true,
     "declaration": true,
-    "declarationMap": false,
     "target": "es2017",
     "types": [
       "node"

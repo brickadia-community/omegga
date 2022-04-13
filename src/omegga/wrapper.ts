@@ -5,7 +5,7 @@
 import soft from '@/softconfig';
 import BrickadiaServer from '@brickadia/server';
 import { IConfig } from '@config/types';
-import { EventEmitter } from 'events';
+import EventEmitter from 'events';
 import path from 'path';
 import LogWrangler from './logWrangler';
 import type Omegga from './server';
@@ -39,7 +39,7 @@ class OmeggaWrapper extends EventEmitter {
     // this is cursed but the OmeggaWrapper will never be used without omegga...
     this.logWrangler = new LogWrangler(this as unknown as Omegga);
     this.#server.on('line', this.logWrangler.callback);
-    this.#server.on('line', line => this.emit('line', line));
+    this.#server.on('line', (line: string) => this.emit('line', line));
     this.#server.on('closed', () => this.emit('closed'));
     this.addMatcher = this.logWrangler.addMatcher;
     this.addWatcher = this.logWrangler.addWatcher;

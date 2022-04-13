@@ -53,27 +53,51 @@ export type ILogMinigame = {
   }[];
 };
 
-export interface PluginStore {
-  get<T>(key: string): Promise<T>;
-  set<T>(key: string, value: T): Promise<void>;
+export interface PluginStore<
+  Storage extends Record<string, unknown> = Record<string, unknown>
+> {
+  get<T extends keyof Storage>(key: T): Promise<Storage[T]>;
+  set<T extends keyof Storage>(key: T, value: Storage[T]): Promise<void>;
   delete(key: string): Promise<void>;
   wipe(): Promise<void>;
   count(): Promise<number>;
-  keys(): Promise<string[]>;
+  keys(): Promise<(keyof Storage)[]>;
 }
 
-export class OmeggaPlugin {
+export type PluginConfig<
+  T extends Record<string, unknown> = Record<string, unknown>
+> = T;
+
+export interface OmeggaPluginClass<
+  Config extends Record<string, unknown> = Record<string, unknown>,
+  Storage extends Record<string, unknown> = Record<string, unknown>
+> {
+  new (
+    omegga: Omegga,
+    config: PluginConfig<Config>,
+    store: PluginStore<Storage>
+  ): OmeggaPlugin<Config>;
+}
+
+export class OmeggaPlugin<
+  Config extends Record<string, unknown> = Record<string, unknown>,
+  Storage extends Record<string, unknown> = Record<string, unknown>
+> {
+  omegga: Omegga;
+  config: PluginConfig<Config>;
+  store: PluginStore<Storage>;
+
   constructor(
-    _omegga: Omegga,
-    _config: Record<string, unknown>,
-    _store: PluginStore
-  ) {}
+    omegga: Omegga,
+    config: PluginConfig<Config>,
+    store: PluginStore<Storage>
+  ) {
+    this.omegga = omegga;
+    this.config = config;
+    this.store = store;
+  }
 
   async init(): Promise<void | { registeredCommands: string[] }> {}
   async stop(): Promise<void> {}
-  async pluginEvent?(
-    event: string,
-    from: string,
-    ...args: any[]
-  ): Promise<unknown>;
+  pluginEvent?(event: string, from: string, ...args: any[]): Promise<unknown>;
 }

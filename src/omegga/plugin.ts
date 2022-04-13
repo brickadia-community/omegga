@@ -18,7 +18,7 @@ export interface IPluginJSON {
   emitConfig?: string;
 }
 
-export type IPluginConfig = {
+export type IPluginConfigDefinition = {
   description: string;
 } & (
   | {
@@ -78,7 +78,7 @@ export interface IPluginDocumentation {
   name: string;
   description: string;
   author: string;
-  config: Record<string, IPluginConfig>;
+  config: Record<string, IPluginConfigDefinition>;
   commands: IPluginCommand[];
 }
 

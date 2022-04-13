@@ -328,8 +328,7 @@ class LogWrangler {
       {
         array: this.#matchers,
         onMatch<T>(match: RegExpMatchArray, matcher: IMatcher<T>) {
-          // if the matcher's callback is a function, run it
-          if (typeof matcher.callback === 'function') matcher.callback(match);
+          matcher.callback?.(match);
         },
       },
       {
@@ -352,7 +351,7 @@ class LogWrangler {
               | T[];
 
             // check if this is the last line and terminate early
-            if (watcher.last && watcher.last(match as T)) {
+            if (watcher?.last?.(match as T)) {
               clearTimeout(watcher.timeout);
               watcher.done();
               return;

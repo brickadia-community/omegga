@@ -6,7 +6,9 @@
 import type { Plugin } from '@omegga/plugin';
 import type Omegga from '@omegga/server';
 import type { PluginStore } from '@omegga/types';
-import { OmeggaPlugin } from '@omegga/types';
+import { OmeggaPlugin, OmeggaPluginClass } from '@omegga/types';
+import { transformFileSync, transformSync } from '@swc/core';
+import { mkdir } from '@util/file';
 import 'colors';
 import { EventEmitter } from 'events';
 import fs from 'fs';
@@ -16,7 +18,8 @@ import { parentPort } from 'worker_threads';
 import { ProxyOmegga } from './proxyOmegga';
 
 const MAIN_FILE = 'omegga.plugin.js';
-let vm: NodeVM, PluginClass: typeof OmeggaPlugin, pluginInstance: OmeggaPlugin;
+const MAIN_FILE_TS = 'omegga.plugin.ts';
+let vm: NodeVM, PluginClass: OmeggaPluginClass, pluginInstance: OmeggaPlugin;
 let pluginName = 'unnamed plugin';
 let messageCounter = 0;
 // emitter that receives messages from the parent
@@ -92,8 +95,42 @@ parent.on('brickadiaEvent', (type, ...args) => {
 // create the node vm
 function createVm(
   pluginPath: string,
-  { builtin = ['*'], external = true } = {}
+  { builtin = ['*'], external = true, isTypeScript = false } = {}
 ) {
+  let targetFile = MAIN_FILE;
+  let pluginCode: string;
+
+  if (isTypeScript) {
+    try {
+      const tsBuildPath = path.join(pluginPath, '.build');
+      const sourceFileName = path.join(pluginPath, MAIN_FILE_TS);
+      targetFile = path.join(tsBuildPath, 'plugin.js');
+      mkdir(tsBuildPath);
+
+      const { code, map } = transformFileSync(sourceFileName, {
+        sourceMaps: true,
+        cwd: pluginPath,
+        isModule: true,
+        jsc: {
+          target: 'es2017',
+          parser: {
+            syntax: 'typescript',
+          },
+          transform: {},
+        },
+        module: {
+          type: 'commonjs',
+        },
+      });
+
+      pluginCode = code;
+      fs.writeFileSync(targetFile, code);
+      fs.writeFileSync(targetFile + '.map', map);
+    } catch (err) {
+      console.error(err);
+      return [false, 'failed compiling building typescript'];
+    }
+  }
   if (vm !== undefined) return [false, 'vm is already created'];
 
   // create the vm
@@ -130,20 +167,25 @@ function createVm(
   vm.freeze(global.OMEGGA_UTIL, 'OMEGGA_UTIL');
   vm.freeze(omegga, 'Omegga');
 
-  const file = path.join(pluginPath, MAIN_FILE);
-  let pluginCode;
-
-  try {
-    pluginCode = fs.readFileSync(file);
-  } catch (e) {
-    emit('error', 'failed to read plugin source: ' + e?.stack ?? e.toString());
-    throw 'failed to read plugin source: ' + e?.stack ?? e.toString();
+  const file = path.join(pluginPath, targetFile);
+  if (!isTypeScript) {
+    try {
+      pluginCode = fs.readFileSync(file).toString();
+    } catch (e) {
+      emit(
+        'error',
+        'failed to read plugin source: ' + e?.stack ?? e.toString()
+      );
+      throw 'failed to read plugin source: ' + e?.stack ?? e.toString();
+    }
   }
 
   // proxy the plugin out of the vm
   // potential for performance improvement by using VM.script to precompile plugins
   try {
-    PluginClass = vm.run(pluginCode.toString(), file);
+    const pluginOutput = vm.run(pluginCode, file);
+    PluginClass =
+      'default' in pluginOutput ? pluginOutput.default : pluginOutput;
   } catch (e) {
     emit('error', 'plugin failed to init');
     console.log(e);
@@ -206,11 +248,7 @@ parent.on('load', (resp, pluginPath, options) => {
 // to coordinate async funcs
 parent.on('start', async (resp, config) => {
   try {
-    pluginInstance = new PluginClass(
-      omegga as unknown as Omegga,
-      config,
-      store
-    );
+    pluginInstance = new PluginClass(omegga as any as Omegga, config, store);
     const result = await pluginInstance.init();
     // if a plugin init returns a list of strings, treat them as the list of commands
     if (typeof result === 'object' && result) {

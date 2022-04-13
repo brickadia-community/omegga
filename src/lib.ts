@@ -2,6 +2,10 @@
   Library module, includes all available resources
 */
 
+export * from '@omegga/types';
+export * from '@config/types';
+export * from '@brickadia/types';
+
 /** BrickadiaServer - manages the server child process */
 import * as Server from '@brickadia/server';
 /** config writer for brickadia */
@@ -12,6 +16,7 @@ export const brickadia = { Server, config: brConfig };
 /** the actual object can be required too */
 import Omegga from '@omegga/server';
 export default Omegga;
+export { Omegga };
 
 /** brickadia server wrapper, log parser, and plugin runner */
 export * as omegga from './omegga';
@@ -21,3 +26,5 @@ export * as util from '@util';
 
 /** config */
 export * as config from '@config';
+
+import './index.d.ts';
