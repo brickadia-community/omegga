@@ -496,6 +496,23 @@ export default class RpcPlugin extends Plugin {
         quiet?: boolean;
       }) => this.omegga.loadBricks(name, { offX, offY, offZ, quiet })
     );
+    rpc.addMethod(
+      'loadBricksOnPlayer',
+      ({
+        name,
+        player,
+        offX = 0,
+        offY = 0,
+        offZ = 0,
+      }: {
+        name: string;
+        player: string;
+        offX?: number;
+        offY?: number;
+        offZ?: number;
+        quiet?: boolean;
+      }) => this.omegga.loadBricksOnPlayer(name, player, { offX, offY, offZ })
+    );
     rpc.addMethod('readSaveData', name =>
       this.omegga.readSaveData(name as unknown as string)
     );
@@ -515,6 +532,23 @@ export default class RpcPlugin extends Plugin {
         offZ?: number;
         quiet?: boolean;
       }) => this.omegga.loadSaveData(data, { offX, offY, offZ, quiet })
+    );
+    rpc.addMethod(
+      'loadSaveDataOnPlayer',
+      ({
+        data,
+        player,
+        offX = 0,
+        offY = 0,
+        offZ = 0,
+      }: {
+        data: WriteSaveObject;
+        player: string;
+        offX?: number;
+        offY?: number;
+        offZ?: number;
+        quiet?: boolean;
+      }) => this.omegga.loadSaveDataOnPlayer(data, player, { offX, offY, offZ })
     );
     rpc.addMethod('changeMap', map =>
       this.omegga.changeMap(map as unknown as string)
@@ -618,4 +652,3 @@ export default class RpcPlugin extends Plugin {
     }
   }
 }
-

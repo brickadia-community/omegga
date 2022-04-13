@@ -112,7 +112,7 @@ function createVm(
         cwd: pluginPath,
         isModule: true,
         jsc: {
-          target: 'es2017',
+          target: 'es2020',
           parser: {
             syntax: 'typescript',
           },

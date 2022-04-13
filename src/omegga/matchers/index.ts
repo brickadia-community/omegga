@@ -1,3 +1,5 @@
+import { MatchGenerator } from './types';
+
 import join from './join';
 // 'join' event => { name, id, state, controller }
 
@@ -24,8 +26,10 @@ import init from './init';
 // watch loginit for any funny business
 
 import mapChange from './mapChange';
-import { MatchGenerator } from './types';
 // 'mapchange' event
+
+// interaction event
+import interact from './interact';
 
 export default [
   join,
@@ -37,4 +41,5 @@ export default [
   version,
   init,
   mapChange,
+  interact,
 ] as MatchGenerator<any>[];

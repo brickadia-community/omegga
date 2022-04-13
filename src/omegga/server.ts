@@ -155,7 +155,7 @@ class Omegga extends OmeggaWrapper {
     // and lets you view chat logs, disable plugins, etc
     if (!options.noweb) {
       verboseLog('Creating webserver');
-      this.webserver = new Webserver(cfg.server, this);
+      this.webserver = new Webserver(cfg.omegga, this);
     }
 
     if (!options.noplugin) {
@@ -569,6 +569,26 @@ class Omegga extends OmeggaWrapper {
   }
 
   /**
+   * Load bricks on the server into a player's clipbaord
+   */
+  loadBricksOnPlayer(
+    saveName: string,
+    player: string | Player,
+    { offX = 0, offY = 0, offZ = 0 } = {}
+  ) {
+    player = typeof player === 'string' ? this.getPlayer(player) : player;
+    if (!player) return;
+
+    // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
+    if (!(saveName.startsWith('"') && saveName.endsWith('"')))
+      saveName = `"${saveName}"`;
+
+    this.writeln(
+      `Bricks.LoadTemplate ${saveName} ${offX} ${offY} ${offZ} 0 0 "${player.name}"`
+    );
+  }
+
+  /**
    * get all saves in the save folder and child folders
    */
   getSaves(): string[] {
@@ -639,6 +659,43 @@ class Omegga extends OmeggaWrapper {
     // wait for the server to finish reading the save
     await this.watchLogChunk(
       `Bricks.Load "${saveFile}" ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`,
+      /^LogBrickSerializer: (.+)$/,
+      {
+        first: match => match[0].endsWith(saveFile + '.brs...'),
+        last: match => Boolean(match[1].match(/Read .+ bricks/)),
+        afterMatchDelay: 0,
+        timeoutDelay: 30000,
+      }
+    );
+
+    // delete the save file after we're done
+    const savePath = this.getSavePath(saveFile);
+    if (savePath) {
+      unlinkSync(savePath);
+    }
+  }
+
+  /**
+   * load bricks from save data and resolve when game finishes loading
+   * @param  saveData - BRS JS Save data
+   * @param  name - Player name/id or player object
+   */
+  async loadSaveDataOnPlayer(
+    saveData: WriteSaveObject,
+    player: string | Player,
+    { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
+  ) {
+    player = typeof player === 'string' ? this.getPlayer(player) : player;
+    if (!player) return;
+
+    const saveFile =
+      this._tempSavePrefix + Date.now() + '_' + this._tempSaveCounter++;
+    // write savedata to file
+    this.writeSaveData(saveFile, saveData);
+
+    // wait for the server to finish reading the save
+    await this.watchLogChunk(
+      `Bricks.LoadTemplate "${saveFile}" ${offX} ${offY} ${offZ} 0 0 ${player.name}`,
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),
