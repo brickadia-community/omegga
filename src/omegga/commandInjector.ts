@@ -1,13 +1,13 @@
-import { color, time } from '../util';
 import _ from 'lodash';
+import { color, time } from '@util';
+import type LogWrangler from './logWrangler';
+import type Omegga from './server';
 import {
   ILogMinigame,
   IMinigameList,
   IPlayerPositions,
   IServerStatus,
 } from './types';
-import type Omegga from './server';
-import type LogWrangler from './logWrangler';
 
 const buildTableHeaderRegex = (header: string) =>
   new RegExp(

@@ -1,10 +1,10 @@
+import Configstore from 'configstore';
 import fs from 'fs';
 import path from 'path';
-import soft from '../softconfig';
-import Configstore from 'configstore';
-import writer from './writer';
+import soft from '@/softconfig';
 import reader from './reader';
 import { IConfig, IConfigFormat } from './types';
+import writer from './writer';
 export * from './types';
 
 export const store = new Configstore(

@@ -1,4 +1,4 @@
-import { brn2n } from 'util/map';
+import { brn2n } from '@util/map';
 import { MatchGenerator } from './types';
 
 const mapChange: MatchGenerator<string> = omegga => {

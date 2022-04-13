@@ -1,16 +1,15 @@
+import soft from '@/softconfig';
+import * as config from '@config';
+import { exec as execNonPromise } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import simpleGit, { ResetMode, SimpleGit } from 'simple-git';
 import semver from 'semver';
-import util from 'util';
-import { exec as execNonPromise } from 'child_process';
-const exec = util.promisify(execNonPromise);
+import simpleGit, { ResetMode, SimpleGit } from 'simple-git';
+import { promisify } from 'util';
+import pkg from '~/package.json';
+const exec = promisify(execNonPromise);
 
 require('colors');
-
-import soft from '../softconfig';
-import pkg from '../../package.json';
-import * as config from '../config';
 
 const MAIN_BRANCHES = ['master', 'main'];
 
@@ -196,87 +195,282 @@ function checkPlugin(omeggaPath: string, plugin: IPlugin | IInstalledPlugin) {
   return true;
 }
 
-module.exports = {
-  // install plugins from a list of plugins
-  async install(plugins: string[], _options: unknown) {
-    const omeggaPath = getWorkDir();
-    if (!omeggaPath)
-      return err(
-        'Not an omegga directory, run ',
-        'omegga init'.yellow,
-        'to setup one.'
-      );
+// install plugins from a list of plugins
+export async function install(plugins: string[], _options: unknown) {
+  const omeggaPath = getWorkDir();
+  if (!omeggaPath)
+    return err(
+      'Not an omegga directory, run ',
+      'omegga init'.yellow,
+      'to setup one.'
+    );
 
-    log('Attempting to install', (plugins.length + '').yellow, 'plugins...');
+  log('Attempting to install', (plugins.length + '').yellow, 'plugins...');
 
-    for (const pluginUrl of plugins) {
-      const plugin = transformUrl(pluginUrl);
+  for (const pluginUrl of plugins) {
+    const plugin = transformUrl(pluginUrl);
 
-      // if the plugin wasn't transformed, try to extract its name from the git url
-      if (!('name' in plugin)) {
-        try {
-          const { name } = path.parse(plugin.url);
-          plugin.name = name.replace(/^omegga-/, '');
-        } catch (e) {
-          console.error('!>'.red, 'Error parsing name from url', plugin.url);
-          break;
-        }
+    // if the plugin wasn't transformed, try to extract its name from the git url
+    if (!('name' in plugin)) {
+      try {
+        const { name } = path.parse(plugin.url);
+        plugin.name = name.replace(/^omegga-/, '');
+      } catch (e) {
+        console.error('!>'.red, 'Error parsing name from url', plugin.url);
+        break;
       }
+    }
 
-      log(
-        'Installing plugin',
-        plugin.name.yellow,
-        'from',
-        plugin.url.yellow + '...'
+    log(
+      'Installing plugin',
+      plugin.name.yellow,
+      'from',
+      plugin.url.yellow + '...'
+    );
+
+    // plugin absolute path
+    const pluginPath = path.join(omeggaPath, soft.PLUGIN_PATH, plugin.name);
+
+    // check if plugin already exists
+    // TODO: if force is passed in, remove the old directory
+    if (
+      fs.existsSync(pluginPath) &&
+      fs.existsSync(path.join(pluginPath, 'doc.json'))
+    ) {
+      plgErr(
+        plugin,
+        'Directory already exists! Try',
+        ('omegga update ' + plugin.name).yellow,
+        'or check for plugin name collisions'
       );
+      continue;
+    }
 
-      // plugin absolute path
-      const pluginPath = path.join(omeggaPath, soft.PLUGIN_PATH, plugin.name);
+    if (!fs.existsSync(pluginPath)) {
+      // create plugin local directory
+      try {
+        fs.mkdirSync(pluginPath, { recursive: true });
+      } catch (e) {
+        plgErr(plugin, 'Error creating plugin directory', e);
+      }
+    }
 
-      // check if plugin already exists
-      // TODO: if force is passed in, remove the old directory
-      if (
-        fs.existsSync(pluginPath) &&
-        fs.existsSync(path.join(pluginPath, 'doc.json'))
-      ) {
-        plgErr(
-          plugin,
-          'Directory already exists! Try',
-          ('omegga update ' + plugin.name).yellow,
-          'or check for plugin name collisions'
-        );
+    // clone the plugin from git
+    try {
+      plgLog(plugin, 'Cloning...');
+      const git = simpleGit(pluginPath);
+      await git.clone(plugin.url, pluginPath);
+    } catch (e) {
+      plgErr(plugin, 'Error cloning plugin', e);
+    }
+
+    // check for the plugin file for issues
+    // TODO: if force is passed in, ignore the plugin check
+    if (!checkPlugin(omeggaPath, plugin)) continue;
+
+    const postInstallPath = path.join(pluginPath, soft.PLUGIN_POSTINSTALL);
+    if (fs.existsSync(postInstallPath)) {
+      plgLog(plugin, 'Running post install script...');
+      try {
+        fs.chmodSync(postInstallPath, '0755');
+        let { stdout, stderr } = await exec(postInstallPath, {
+          cwd: pluginPath,
+          shell: 'bash',
+        });
+
+        if (stderr.length) plgErr(plugin, stderr);
+
+        verboseLog(stdout);
+      } catch (e) {
+        plgErr(plugin, 'Error running post install script:', e);
+      }
+    }
+  }
+}
+export async function update(pluginsNames: string[], _options: unknown) {
+  const omeggaPath = getWorkDir();
+  if (!omeggaPath)
+    return err(
+      'Not an omegga directory, run ',
+      'omegga init'.yellow,
+      'to setup one.'
+    );
+
+  const pluginFolder = path.join(omeggaPath, soft.PLUGIN_PATH);
+
+  // if no plugins are passed in, use every plugin in the plugins folder
+  if (pluginsNames.length === 0) {
+    pluginsNames = fs.readdirSync(pluginFolder);
+  }
+
+  const plugins: IInstalledPlugin[] = pluginsNames
+    .map(dir => path.join(pluginFolder, dir))
+    // every plugin must be in a directory
+    .filter(
+      dir =>
+        fs.existsSync(dir) &&
+        fs.lstatSync(dir).isDirectory() &&
+        fs.existsSync(path.join(dir, '.git'))
+    )
+    .map(dir => ({ name: path.basename(dir) }));
+
+  if (plugins.length === 0) {
+    log('Found no plugins that can be updated');
+    return;
+  }
+
+  log('Checking', (plugins.length + '').yellow, 'plugins for updates...');
+
+  // list of plugins that will be updated
+  let pluginsToUpdate = [];
+
+  for (const plugin of plugins) {
+    if (needsNL) {
+      console.log();
+      needsNL = false;
+    }
+    plgLog(plugin, 'Checking...');
+    const pluginPath = path.join(pluginFolder, plugin.name);
+    plugin.path = pluginPath;
+    const git = simpleGit(pluginPath);
+    plugin.git = git;
+    if (!(await git.checkIsRepo())) {
+      plgErr(plugin, 'No git repo detected');
+      continue;
+    }
+
+    let status;
+    // get git status
+    try {
+      status = await git.status();
+    } catch (e) {
+      plgErr(plugin, 'Error getting status', e);
+    }
+
+    try {
+      // check for uncommitted changes
+      if (status.files.some(f => f.working_dir !== '?')) {
+        plgErr(plugin, 'Detected uncommitted changes - ignoring');
         continue;
       }
 
-      if (!fs.existsSync(pluginPath)) {
-        // create plugin local directory
-        try {
-          fs.mkdirSync(pluginPath, { recursive: true });
-        } catch (e) {
-          plgErr(plugin, 'Error creating plugin directory', e);
+      const remotes = await git.getRemotes();
+      const branches = await git.branch();
+
+      // check if we're on a weird branch
+      if (!MAIN_BRANCHES.includes(branches.current)) {
+        plgErr(plugin, 'Not on a main branch - ignoring');
+        continue;
+      }
+
+      // try to correct a weird detached branch
+      if (
+        remotes.length === 1 &&
+        remotes[0].name === 'origin' &&
+        !status.tracking
+      ) {
+        let skip = false;
+        for (const branch of MAIN_BRANCHES) {
+          if (
+            branches.current === branch &&
+            branches.branches[`remotes/origin/${branch}`]
+          ) {
+            plgLog(plugin, 'Correcting upstream...');
+            try {
+              await git.branch({ '--set-upstream-to': `origin/${branch}` });
+              status = await git.status();
+              break;
+            } catch (e) {
+              plgErr(plugin, 'Error getting status/fixing upstream branch', e);
+              skip = true;
+              break;
+            }
+          }
         }
+        if (skip) continue;
       }
 
-      // clone the plugin from git
+      // this should be corrected by the above check, though if it's not I am not fighting git lol
+      if (!status.tracking) {
+        plgErr(plugin, 'No upstream branch - ignoring');
+        continue;
+      }
+
+      // local developers, publish your code please!!! :)
+      if (remotes.length === 0) {
+        plgErr(plugin, 'No remotes - ignoring');
+        continue;
+      }
+
       try {
-        plgLog(plugin, 'Cloning...');
-        const git = simpleGit(pluginPath);
-        await git.clone(plugin.url, pluginPath);
+        plgLog(plugin, 'Fetching...');
+        await git.fetch();
+        status = await git.status();
       } catch (e) {
-        plgErr(plugin, 'Error cloning plugin', e);
+        plgErr(plugin, 'Error fetching remote code', e);
+        continue;
       }
 
-      // check for the plugin file for issues
-      // TODO: if force is passed in, ignore the plugin check
-      if (!checkPlugin(omeggaPath, plugin)) continue;
+      if (status.ahead > 0) {
+        plgErr(plugin, 'Detected plugin is ahead - ignoring');
+        continue;
+      }
 
-      const postInstallPath = path.join(pluginPath, soft.PLUGIN_POSTINSTALL);
+      if (status.behind === 0) {
+        plgLog(plugin, 'Already up-to-date!'.green);
+        continue;
+      }
+
+      plgLog(plugin, 'Update available');
+      pluginsToUpdate.push(plugin);
+    } catch (e) {
+      plgErr(plugin, 'Error', e);
+    }
+  }
+
+  if (pluginsToUpdate.length === 0) {
+    log('All plugins are currently up-to-date');
+    return;
+  }
+
+  log('Updating', (pluginsToUpdate.length + '').yellow, 'plugins...');
+  let updates = 0;
+
+  for (const plugin of pluginsToUpdate) {
+    const { git } = plugin;
+    if (needsNL) {
+      console.log();
+      needsNL = false;
+    }
+    plgLog(plugin, 'Creating backup branch...');
+    try {
+      const branches = await git.branch();
+      const mainBranch =
+        MAIN_BRANCHES.find(b => branches.branches[b]) ?? MAIN_BRANCHES[0];
+      if (branches.branches['omegga-upgrade-backup']) {
+        plgLog(plugin, 'Deleting leftover backup branch...');
+        await git.deleteLocalBranch('omegga-upgrade-backup', true);
+      }
+      await git.checkoutBranch('omegga-upgrade-backup', mainBranch);
+      await git.branch({ '--set-upstream-to': `origin/${mainBranch}` });
+      await git.checkout(mainBranch);
+      plgLog(plugin, 'Pulling update...');
+      await git.pull();
+      if ((await git.status()).behind > 0) {
+        throw '- still behind?';
+      }
+      plgLog(plugin, 'Checking plugin versions...');
+      if (!checkPlugin(omeggaPath, plugin)) {
+        throw 'Incompatible';
+      }
+
+      const postInstallPath = path.join(plugin.path, soft.PLUGIN_POSTINSTALL);
       if (fs.existsSync(postInstallPath)) {
         plgLog(plugin, 'Running post install script...');
         try {
           fs.chmodSync(postInstallPath, '0755');
           let { stdout, stderr } = await exec(postInstallPath, {
-            cwd: pluginPath,
+            cwd: plugin.path,
             shell: 'bash',
           });
 
@@ -287,306 +481,106 @@ module.exports = {
           plgErr(plugin, 'Error running post install script:', e);
         }
       }
-    }
-  },
 
-  async update(pluginsNames: string[], _options: unknown) {
-    const omeggaPath = getWorkDir();
-    if (!omeggaPath)
-      return err(
-        'Not an omegga directory, run ',
-        'omegga init'.yellow,
-        'to setup one.'
+      plgLog(plugin, 'Updated!'.green);
+      updates++;
+    } catch (e) {
+      plgErr(
+        plugin,
+        'Error updating - attempting to restore from backup branch',
+        e
       );
-
-    const pluginFolder = path.join(omeggaPath, soft.PLUGIN_PATH);
-
-    // if no plugins are passed in, use every plugin in the plugins folder
-    if (pluginsNames.length === 0) {
-      pluginsNames = fs.readdirSync(pluginFolder);
-    }
-
-    const plugins: IInstalledPlugin[] = pluginsNames
-      .map(dir => path.join(pluginFolder, dir))
-      // every plugin must be in a directory
-      .filter(
-        dir =>
-          fs.existsSync(dir) &&
-          fs.lstatSync(dir).isDirectory() &&
-          fs.existsSync(path.join(dir, '.git'))
-      )
-      .map(dir => ({ name: path.basename(dir) }));
-
-    if (plugins.length === 0) {
-      log('Found no plugins that can be updated');
-      return;
-    }
-
-    log('Checking', (plugins.length + '').yellow, 'plugins for updates...');
-
-    // list of plugins that will be updated
-    let pluginsToUpdate = [];
-
-    for (const plugin of plugins) {
-      if (needsNL) {
-        console.log();
-        needsNL = false;
-      }
-      plgLog(plugin, 'Checking...');
-      const pluginPath = path.join(pluginFolder, plugin.name);
-      plugin.path = pluginPath;
-      const git = simpleGit(pluginPath);
-      plugin.git = git;
-      if (!(await git.checkIsRepo())) {
-        plgErr(plugin, 'No git repo detected');
-        continue;
-      }
-
-      let status;
-      // get git status
       try {
-        status = await git.status();
-      } catch (e) {
-        plgErr(plugin, 'Error getting status', e);
-      }
-
-      try {
-        // check for uncommitted changes
-        if (status.files.some(f => f.working_dir !== '?')) {
-          plgErr(plugin, 'Detected uncommitted changes - ignoring');
-          continue;
-        }
-
-        const remotes = await git.getRemotes();
         const branches = await git.branch();
-
-        // check if we're on a weird branch
         if (!MAIN_BRANCHES.includes(branches.current)) {
-          plgErr(plugin, 'Not on a main branch - ignoring');
+          plgErr(
+            plugin,
+            'Not on expected branch - exiting before I break more things'
+          );
           continue;
         }
 
-        // try to correct a weird detached branch
-        if (
-          remotes.length === 1 &&
-          remotes[0].name === 'origin' &&
-          !status.tracking
-        ) {
-          let skip = false;
-          for (const branch of MAIN_BRANCHES) {
-            if (
-              branches.current === branch &&
-              branches.branches[`remotes/origin/${branch}`]
-            ) {
-              plgLog(plugin, 'Correcting upstream...');
-              try {
-                await git.branch({ '--set-upstream-to': `origin/${branch}` });
-                status = await git.status();
-                break;
-              } catch (e) {
-                plgErr(
-                  plugin,
-                  'Error getting status/fixing upstream branch',
-                  e
-                );
-                skip = true;
-                break;
-              }
-            }
-          }
-          if (skip) continue;
-        }
-
-        // this should be corrected by the above check, though if it's not I am not fighting git lol
-        if (!status.tracking) {
-          plgErr(plugin, 'No upstream branch - ignoring');
-          continue;
-        }
-
-        // local developers, publish your code please!!! :)
-        if (remotes.length === 0) {
-          plgErr(plugin, 'No remotes - ignoring');
-          continue;
-        }
-
-        try {
-          plgLog(plugin, 'Fetching...');
-          await git.fetch();
-          status = await git.status();
-        } catch (e) {
-          plgErr(plugin, 'Error fetching remote code', e);
-          continue;
-        }
-
-        if (status.ahead > 0) {
-          plgErr(plugin, 'Detected plugin is ahead - ignoring');
-          continue;
-        }
-
-        if (status.behind === 0) {
-          plgLog(plugin, 'Already up-to-date!'.green);
-          continue;
-        }
-
-        plgLog(plugin, 'Update available');
-        pluginsToUpdate.push(plugin);
-      } catch (e) {
-        plgErr(plugin, 'Error', e);
-      }
-    }
-
-    if (pluginsToUpdate.length === 0) {
-      log('All plugins are currently up-to-date');
-      return;
-    }
-
-    log('Updating', (pluginsToUpdate.length + '').yellow, 'plugins...');
-    let updates = 0;
-
-    for (const plugin of pluginsToUpdate) {
-      const { git } = plugin;
-      if (needsNL) {
-        console.log();
-        needsNL = false;
-      }
-      plgLog(plugin, 'Creating backup branch...');
-      try {
-        const branches = await git.branch();
         const mainBranch =
           MAIN_BRANCHES.find(b => branches.branches[b]) ?? MAIN_BRANCHES[0];
-        if (branches.branches['omegga-upgrade-backup']) {
-          plgLog(plugin, 'Deleting leftover backup branch...');
-          await git.deleteLocalBranch('omegga-upgrade-backup', true);
-        }
-        await git.checkoutBranch('omegga-upgrade-backup', mainBranch);
-        await git.branch({ '--set-upstream-to': `origin/${mainBranch}` });
-        await git.checkout(mainBranch);
-        plgLog(plugin, 'Pulling update...');
-        await git.pull();
-        if ((await git.status()).behind > 0) {
-          throw '- still behind?';
-        }
-        plgLog(plugin, 'Checking plugin versions...');
-        if (!checkPlugin(omeggaPath, plugin)) {
-          throw 'Incompatible';
-        }
 
-        const postInstallPath = path.join(plugin.path, soft.PLUGIN_POSTINSTALL);
-        if (fs.existsSync(postInstallPath)) {
-          plgLog(plugin, 'Running post install script...');
-          try {
-            fs.chmodSync(postInstallPath, '0755');
-            let { stdout, stderr } = await exec(postInstallPath, {
-              cwd: plugin.path,
-              shell: 'bash',
-            });
+        plg(plugin, 'Resetting current branch');
+        await git.reset(ResetMode.HARD);
+        plgLog(plugin, 'Attempting to checkout backup branch');
+        await git.checkout('omegga-upgrade-backup');
+        plgLog(plugin, `Replacing ${mainBranch} with backup`);
+        await git.deleteLocalBranch(mainBranch);
+        await git.checkoutBranch(mainBranch, 'omegga-upgrade-backup');
+        plgLog(plugin, 'Restored to backup branch');
 
-            if (stderr.length) plgErr(plugin, stderr);
-
-            verboseLog(stdout);
-          } catch (e) {
-            plgErr(plugin, 'Error running post install script:', e);
-          }
+        if ((await git.branch()).current !== mainBranch) {
+          plgErr(
+            plugin,
+            `Failed to checkout newly created ${mainBranch} branch`
+          );
+          continue;
+        } else {
+          plgWarn(plugin, 'Restored from backup and plugin not updated...');
         }
-
-        plgLog(plugin, 'Updated!'.green);
-        updates++;
       } catch (e) {
-        plgErr(
-          plugin,
-          'Error updating - attempting to restore from backup branch',
-          e
-        );
-        try {
-          const branches = await git.branch();
-          if (!MAIN_BRANCHES.includes(branches.current)) {
-            plgErr(
-              plugin,
-              'Not on expected branch - exiting before I break more things'
-            );
-            continue;
-          }
-
-          const mainBranch =
-            MAIN_BRANCHES.find(b => branches.branches[b]) ?? MAIN_BRANCHES[0];
-
-          plg(plugin, 'Resetting current branch');
-          await git.reset(ResetMode.HARD);
-          plgLog(plugin, 'Attempting to checkout backup branch');
-          await git.checkout('omegga-upgrade-backup');
-          plgLog(plugin, `Replacing ${mainBranch} with backup`);
-          await git.deleteLocalBranch(mainBranch);
-          await git.checkoutBranch(mainBranch, 'omegga-upgrade-backup');
-          plgLog(plugin, 'Restored to backup branch');
-
-          if ((await git.branch()).current !== mainBranch) {
-            plgErr(
-              plugin,
-              `Failed to checkout newly created ${mainBranch} branch`
-            );
-            continue;
-          } else {
-            plgWarn(plugin, 'Restored from backup and plugin not updated...');
-          }
-        } catch (e) {
-          plgErr(plugin, 'Error restoring from backup... Whelp...');
-        }
-        continue;
+        plgErr(plugin, 'Error restoring from backup... Whelp...');
       }
+      continue;
     }
+  }
 
-    log('Updated', (updates + '').yellow, 'plugins!');
-  },
+  log('Updated', (updates + '').yellow, 'plugins!');
+}
 
-  async check(pluginNames: string[], _options: unknown) {
-    const omeggaPath = getWorkDir();
-    if (!omeggaPath)
-      return err(
-        'Not an omegga directory, run ',
-        'omegga init'.yellow,
-        'to setup one.'
-      );
-
-    const pluginFolder = path.join(omeggaPath, soft.PLUGIN_PATH);
-
-    // if no plugins are passed in, use every plugin in the plugins folder
-    if (pluginNames.length === 0) {
-      pluginNames = fs.readdirSync(pluginFolder);
-    }
-
-    const plugins: IInstalledPlugin[] = pluginNames
-      .map(dir => path.join(pluginFolder, dir))
-      // every plugin must be in a directory
-      .filter(
-        dir =>
-          fs.existsSync(dir) &&
-          fs.lstatSync(dir).isDirectory() &&
-          fs.existsSync(path.join(dir, '.git'))
-      )
-      .map(dir => ({ name: path.basename(dir) }));
-
-    if (plugins.length === 0) {
-      log('Found no plugins that can be checked');
-      return;
-    }
-
-    log(
-      'Checking',
-      (plugins.length + '').yellow,
-      'plugins for valid plugin files'
+export async function check(pluginNames: string[], _options: unknown) {
+  const omeggaPath = getWorkDir();
+  if (!omeggaPath)
+    return err(
+      'Not an omegga directory, run ',
+      'omegga init'.yellow,
+      'to setup one.'
     );
 
-    for (const plugin of plugins) {
-      const pluginPath = path.join(pluginFolder, plugin.name);
-      plugin.path = pluginPath;
-      const git = simpleGit(pluginPath);
-      plugin.git = git;
-      if (!(await git.checkIsRepo())) {
-        plgErr(plugin, 'No git repo detected');
-        continue;
-      }
-      checkPlugin(omeggaPath, plugin);
+  const pluginFolder = path.join(omeggaPath, soft.PLUGIN_PATH);
+
+  // if no plugins are passed in, use every plugin in the plugins folder
+  if (pluginNames.length === 0) {
+    pluginNames = fs.readdirSync(pluginFolder);
+  }
+
+  const plugins: IInstalledPlugin[] = pluginNames
+    .map(dir => path.join(pluginFolder, dir))
+    // every plugin must be in a directory
+    .filter(
+      dir =>
+        fs.existsSync(dir) &&
+        fs.lstatSync(dir).isDirectory() &&
+        fs.existsSync(path.join(dir, '.git'))
+    )
+    .map(dir => ({ name: path.basename(dir) }));
+
+  if (plugins.length === 0) {
+    log('Found no plugins that can be checked');
+    return;
+  }
+
+  log(
+    'Checking',
+    (plugins.length + '').yellow,
+    'plugins for valid plugin files'
+  );
+
+  for (const plugin of plugins) {
+    const pluginPath = path.join(pluginFolder, plugin.name);
+    plugin.path = pluginPath;
+    const git = simpleGit(pluginPath);
+    plugin.git = git;
+    if (!(await git.checkIsRepo())) {
+      plgErr(plugin, 'No git repo detected');
+      continue;
     }
-    console.log();
-  },
-};
+    checkPlugin(omeggaPath, plugin);
+  }
+  console.log();
+}
+
+export default { install, update, check };

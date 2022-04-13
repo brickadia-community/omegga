@@ -2,7 +2,7 @@ import type Omegga from './server';
 
 import { color, brick as brickUtils } from '../util/';
 import { Brick, WriteSaveObject } from 'brs-js';
-import { IBrickBounds } from 'util/brick';
+import { IBrickBounds } from '../util/brick';
 
 const DEFAULT_PERMS: Record<string, string[]> = {
   moderator: [

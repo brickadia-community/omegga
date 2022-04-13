@@ -1,6 +1,5 @@
-import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { Server as SocketIo } from 'socket.io';
-import { BRBanListEntry } from 'brickadia/types';
+import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 
 declare module 'express-session' {
   interface SessionData {

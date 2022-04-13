@@ -6,10 +6,10 @@ import {
   JSONRPCServer,
   JSONRPCServerAndClient,
 } from 'json-rpc-2.0';
-import Omegga from 'omegga/server';
 import path from 'path';
 import readline from 'readline';
-import { Plugin } from '../plugin';
+import Omegga from '@omegga/server';
+import { Plugin } from '@omegga/plugin';
 import { bootstrap } from './plugin_node_safe/proxyOmegga';
 
 // TODO: check if version is compatible (v1 -> v2) from file
@@ -21,10 +21,10 @@ const DOC_FILE = 'doc.json';
 const PLUGIN_FILE = 'plugin.json';
 
 class RpcPlugin extends Plugin {
-  #child: ChildProcessWithoutNullStreams = null;
-  #rpc: JSONRPCServerAndClient = null;
-  #errInterface: readline.Interface = null;
-  #outInterface: readline.Interface = null;
+  #child: ChildProcessWithoutNullStreams;
+  #rpc: JSONRPCServerAndClient;
+  #errInterface: readline.Interface;
+  #outInterface: readline.Interface;
 
   messageCounter: number;
 

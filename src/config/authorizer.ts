@@ -2,9 +2,9 @@
   Determine if email+password combo is valid
 */
 
-import BrickadiaServer from '../brickadia/server';
-import config from '../softconfig';
-import { store } from '../config';
+import BrickadiaServer from '@brickadia/server';
+import { store } from '@config';
+import config from '@/softconfig';
 
 const invalidRegExp =
   /^(Error: AuthState is Invalid on dedicated server - exiting\.|Changing AuthState from \w+ to Invalid\.)$/;

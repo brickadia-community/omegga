@@ -1,13 +1,11 @@
+import { EventEmitter } from 'events';
 import fs from 'fs';
 import path from 'path';
-import { EventEmitter } from 'events';
 import readline from 'readline';
-
 import { Worker } from 'worker_threads';
-
-import { Plugin } from '../plugin';
+import { Plugin } from '@omegga/plugin';
+import Omegga from '@omegga/server';
 import { bootstrap } from './plugin_node_safe/proxyOmegga';
-import Omegga from '../server';
 
 // Main plugin file (like index.js)
 // this isn't named 'index.js' or 'plugin.js' because those may be filenames

@@ -1,13 +1,13 @@
+import soft from '@/softconfig';
+import { IServerConfig } from '@config/types';
+import type Omegga from '@omegga/server';
+import { explode } from '@util/pattern';
+import { parseBrickadiaTime } from '@util/time';
 import bcrypt from 'bcrypt';
 import chokidar from 'chokidar';
 import { EventEmitter } from 'events';
-import type Omegga from 'lib';
 import Datastore from 'nedb-promises';
 import path from 'path';
-import { explode } from 'util/pattern';
-import { parseBrickadiaTime } from 'util/time';
-import soft from '../../softconfig';
-import { IServerConfig } from './../../config/types';
 import Calendar from './calendar';
 import {
   IPlayer,

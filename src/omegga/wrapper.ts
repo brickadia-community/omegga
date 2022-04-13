@@ -1,12 +1,12 @@
-import { IConfig } from './../config/types';
 /*
   The wrapper combines the things looking at or waiting for logs with the actual server logs
 */
+
+import soft from '@/softconfig';
+import BrickadiaServer from '@brickadia/server';
+import { IConfig } from '@config/types';
 import { EventEmitter } from 'events';
 import path from 'path';
-
-import BrickadiaServer from '../brickadia/server';
-import soft from '../softconfig';
 import LogWrangler from './logWrangler';
 import type Omegga from './server';
 

@@ -3,18 +3,17 @@
 // this also lets plugins get terminated easier by killing the worker
 // rather than unloading and reloading code
 
+import type { Plugin } from '@omegga/plugin';
+import type Omegga from '@omegga/server';
+import type { PluginStore } from '@omegga/types';
+import { OmeggaPlugin } from '@omegga/types';
+import 'colors';
 import { EventEmitter } from 'events';
 import fs from 'fs';
-import type Omegga from 'lib';
-import type { Plugin } from 'omegga/plugin';
-import type { PluginStore } from 'omegga/types';
 import path from 'path';
 import { NodeVM } from 'vm2';
 import { parentPort } from 'worker_threads';
-import { OmeggaPlugin } from './../../types';
 import { ProxyOmegga } from './proxyOmegga';
-
-import 'colors';
 
 const MAIN_FILE = 'omegga.plugin.js';
 let vm: NodeVM, PluginClass: typeof OmeggaPlugin, pluginInstance: OmeggaPlugin;
@@ -242,7 +241,7 @@ parent.on('stop', async resp => {
     pluginInstance = undefined;
     emit(resp, true);
   } catch (err) {
-    emit('error', 'error stopping plugin', err?.stack ?? toString());
+    emit('error', 'error stopping plugin', err?.stack ?? err.toString());
     emit(resp, false);
   }
 });

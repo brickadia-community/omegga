@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import softconfig from '../../softconfig';
+import softconfig from '@/softconfig';
 import { MatchGenerator } from './types';
 
 const version: MatchGenerator<number> = omegga => {

@@ -1,0 +1,64 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    // "baseUrl": "./src",
+    // "rootDir": "./src",
+    "paths": {
+      "~/*": [
+        "./*"
+      ],
+      "@/*": [
+        "./src/*"
+      ],
+      "@omegga/*": [
+        "./src/omegga/*"
+      ],
+      "@cli/*": [
+        "./src/cli/*"
+      ],
+      "@util/*": [
+        "./src/util/*"
+      ],
+      "@util": [
+        "./src/util/index.ts"
+      ],
+      "@webserver/*": [
+        "./src/webserver/*"
+      ],
+      "@brickadia/*": [
+        "./src/brickadia/*"
+      ],
+      "@config/*": [
+        "./src/config/*"
+      ],
+      "@config": [
+        "./src/config/index.ts"
+      ],
+    },
+    "skipLibCheck": true,
+    "module": "commonjs",
+    "lib": [
+      "es2020"
+    ],
+    "moduleResolution": "node",
+    // "noImplicitAny": true,
+    "esModuleInterop": true,
+    // "strict": true,
+    "resolveJsonModule": true,
+    "outDir": "./dist",
+    // "sourceMap": true,
+    // "declaration": true,
+    // "declarationMap": true,
+    "target": "es6",
+    // "typeRoots": [
+    //   "./index.d.ts"
+    // ],
+    // "watch": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    // "./webserver/frontend",
+  ]
+}

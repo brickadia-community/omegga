@@ -1,28 +1,29 @@
-import { read, ReadSaveObject, write, WriteSaveObject } from 'brs-js';
-import 'colors';
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
-import { sync } from 'glob';
-import { basename, join } from 'path';
-import Webserver from 'webserver/backend';
-import Terminal from '../cli/terminal';
-import { includes } from '../info/default_commands.json';
+import { includes } from '@/info/default_commands.json';
 import {
   BRICKADIA_AUTH_FILES,
   CONFIG_AUTH_DIR,
   CONFIG_HOME,
   DATA_PATH,
   PLUGIN_PATH,
-} from '../softconfig';
-import { map as mapUtils, pattern, uuid } from '../util';
-import { copyFiles, mkdir, readWatchedJSON } from '../util/file';
+} from '@/softconfig';
 import {
   BRBanList,
   BRPlayerNameCache,
   BRRoleAssignments,
   BRRoleSetup,
-} from './../brickadia/types';
-import { IConfig } from './../config/types';
+} from '@brickadia/types';
+import Terminal from '@cli/terminal';
+import { IConfig } from '@config/types';
+import { map as mapUtils, pattern, uuid } from '@util';
+import { copyFiles, mkdir, readWatchedJSON } from '@util/file';
+import Webserver from '@webserver/backend';
+import { read, ReadSaveObject, write, WriteSaveObject } from 'brs-js';
+import 'colors';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
+import { sync } from 'glob';
+import { basename, join } from 'path';
 import commandInjector from './commandInjector';
+import MATCHERS from './matchers';
 import Player from './player';
 import { PluginLoader } from './plugin';
 import {
@@ -36,8 +37,6 @@ import OmeggaWrapper from './wrapper';
 
 const MISSING_CMD =
   '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
-
-import MATCHERS from './matchers';
 
 // TODO: safe broadcast parsing
 

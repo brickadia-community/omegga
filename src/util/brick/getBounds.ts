@@ -1,8 +1,7 @@
 import { Brick, WriteSaveObject } from 'brs-js';
-import { getScaleAxis } from './getScaleAxis';
-import { getBrickSize } from './getBrickSize';
 import type { IBrickBounds } from './checkBounds';
-import type { brickSizeMap } from './constants';
+import { getBrickSize } from './getBrickSize';
+import { getScaleAxis } from './getScaleAxis';
 
 // compare bound to see if it is new min or max, and then replace if it is
 function minMaxBound(

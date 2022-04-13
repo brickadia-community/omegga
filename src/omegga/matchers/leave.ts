@@ -1,4 +1,4 @@
-import Player from 'omegga/player';
+import Player from '@omegga/player';
 import { MatchGenerator } from './types';
 
 const leave: MatchGenerator<Promise<Player>> = omegga => {

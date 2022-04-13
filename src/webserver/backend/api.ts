@@ -1,3 +1,9 @@
+import Player from '@omegga/player';
+import { Plugin } from '@omegga/plugin';
+import { parseLinks, sanitize } from '@util/chat';
+import { rgbToHex } from '@util/color';
+import { parseBrickadiaTime } from '@util/time';
+import * as uuid from '@util/uuid';
 import express from 'express';
 import {
   JSONRPCClient,
@@ -5,24 +11,18 @@ import {
   JSONRPCServerAndClient,
 } from 'json-rpc-2.0';
 import _ from 'lodash';
-import { Plugin } from 'omegga/plugin';
-import { parseLinks, sanitize } from 'util/chat';
-import { rgbToHex } from 'util/color';
-import { parseBrickadiaTime } from 'util/time';
-import pkg from '../../../package.json';
-import Player from '../../omegga/player';
-import * as uuid from '../../util/uuid';
+import pkg from '~/package.json';
 import type Webserver from './index';
 import {
-  IStoreUser,
-  OmeggaSocketIo,
+  IFrontendBanEntry,
   IPlayer,
+  IStoreBanHistory,
   IStoreKickHistory,
+  IStoreUser,
   IUserAgo,
   IUserHistory,
-  IFrontendBanEntry,
-  IStoreBanHistory,
   IUserNote,
+  OmeggaSocketIo,
 } from './types';
 
 export default function (server: Webserver, io: OmeggaSocketIo) {

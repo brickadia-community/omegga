@@ -1,7 +1,8 @@
-import Omegga from 'lib';
-import { sanitize } from 'util/chat';
-import { IOmeggaOptions } from './../omegga/types';
+import Omegga from '@omegga/server';
+import { IOmeggaOptions } from '@omegga/types';
+import { sanitize } from '@util/chat';
 import readline from 'readline';
+
 let log: (...args: any[]) => void,
   err: (...args: any[]) => void,
   warn: (...args: any[]) => void;
@@ -9,7 +10,7 @@ let log: (...args: any[]) => void,
 interface ITermCommand {
   name: string;
   desc: string;
-  fn(this: Terminal, ...args: string[]): void;
+  fn(this: Terminal, ...args: string[]): void | Promise<void>;
 }
 
 // the terminal wraps omegga and displays console output and handles console input

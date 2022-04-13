@@ -1,4 +1,4 @@
-import soft from '../../softconfig';
+import soft from '@/softconfig';
 import type Webserver from './index';
 import { OmeggaSocketIo } from './types';
 

@@ -1,15 +1,15 @@
 import { EventEmitter } from 'events';
-import commandInjector from 'omegga/commandInjector';
-import LogWrangler from 'omegga/logWrangler';
-import Player from 'omegga/player';
-import { Plugin } from 'omegga/plugin';
-import Omegga from 'omegga/server';
+import commandInjector from '@omegga/commandInjector';
+import LogWrangler from '@omegga/logWrangler';
+import Player from '@omegga/player';
+import { Plugin } from '@omegga/plugin';
+import Omegga from '@omegga/server';
 import {
   ILogMinigame,
   IMinigameList,
   IPlayerPositions,
   IServerStatus,
-} from 'omegga/types';
+} from '@omegga/types';
 
 // bootstrap the proxy with initial omegga data
 export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({

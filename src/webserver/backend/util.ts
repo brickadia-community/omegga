@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import pem from 'pem';
 import { promisify } from 'util';
-import soft from '../../softconfig';
+import soft from '@/softconfig';
 
 const createCertificate: (
   options: pem.CertificateCreationOptions

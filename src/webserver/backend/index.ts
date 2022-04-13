@@ -1,20 +1,20 @@
-import { IServerStatus } from './../../omegga/types';
-import { IServerConfig } from '../../config/types';
+import soft from '@/softconfig';
+import { IServerConfig } from '@config/types';
+import type Omegga from '@omegga/server';
+import { IServerStatus } from '@omegga/types';
 import bodyParser from 'body-parser';
 import express from 'express';
 import expressSession from 'express-session';
 import http from 'http';
 import https from 'https';
 import NedbStore from 'nedb-promises-session-store';
-import type Omegga from 'omegga/server';
 import path from 'path';
 import { Server as SocketIo } from 'socket.io';
-import soft from '../../softconfig';
 import setupApi from './api';
 import Database from './database';
 import setupMetrics from './metrics';
-import * as util from './util';
 import { IStoreUser, OmeggaSocketIo } from './types';
+import * as util from './util';
 
 // path to assets folder
 const ASSET_PATH = path.join(__dirname, '../frontend/assets');

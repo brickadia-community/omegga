@@ -1,8 +1,8 @@
-import fs from 'fs';
-import path from 'path';
 import chokidar from 'chokidar';
-import rimraf from 'rimraf';
+import fs from 'fs';
 import _ from 'lodash';
+import path from 'path';
+import rimraf from 'rimraf';
 
 // objects to store cached data
 const cachedTimes: Record<string, number> = {};

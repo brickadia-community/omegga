@@ -1,12 +1,12 @@
+import { Plugin, PluginStorage } from '@omegga/plugin';
+import type Omegga from '@omegga/server';
+import { OmeggaPlugin, PluginStore } from '@omegga/types';
+import * as util from '@util';
 import disrequire from 'disrequire';
 import fs from 'fs';
-import type Omegga from 'omegga/server';
-import { PluginStore } from 'omegga/types';
 import path from 'path';
-import { Plugin, PluginStorage } from '../plugin';
-import { OmeggaPlugin } from './../types';
 
-global.OMEGGA_UTIL = require('../../util');
+global.OMEGGA_UTIL = util;
 
 // Main plugin file (like index.js)
 // this isn't named 'index.js' or 'plugin.js' because those may be filenames

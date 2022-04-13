@@ -1,5 +1,4 @@
-import { IConfig } from './../types';
-import type { IConfigFormat } from 'config/types';
+import type { IConfig, IConfigFormat } from '@config/types';
 import yaml from 'js-yaml';
 
 const format_yaml: IConfigFormat = {

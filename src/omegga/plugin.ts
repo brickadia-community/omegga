@@ -1,9 +1,9 @@
 import fs from 'fs';
-import path from 'path';
 import Datastore from 'nedb-promises';
-import soft from '../softconfig';
-import type Omegga from './server';
+import path from 'path';
+import soft from '@/softconfig';
 import type Player from './player';
+import type Omegga from './server';
 import { OmeggaPlugin } from './types';
 
 // Check if this plugin is disabled

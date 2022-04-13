@@ -1,14 +1,15 @@
+import soft from '@/softconfig';
+import * as config from '@config';
+import Omegga from '@omegga/server';
+import * as file from '@util/file';
 import 'colors';
 import commander from 'commander';
 import fs from 'fs';
-import Omegga from 'lib';
 import path from 'path';
 import updateNotifier from 'update-notifier';
-import pkg from '../package.json';
+import pkg from '~/package.json';
 import { auth, config as omeggaConfig, pluginUtil, Terminal } from './cli';
-import * as config from './config/index';
-import soft from './softconfig';
-import * as file from './util/file';
+import { IConfig } from './config/types';
 
 const notifier = updateNotifier({
   pkg,
@@ -74,7 +75,7 @@ const program = commander
 
     // find the config for the working directory
     const configFile = config.find(workDir);
-    let conf;
+    let conf: IConfig;
 
     // create a default config file if it does not already exist, otherwise load in the existing one
     if (!configFile) {
@@ -98,9 +99,9 @@ const program = commander
     ) {
       const success = await auth.prompt({
         debug,
-        email: process.env.BRICKADIA_USER ?? null,
-        password: process.env.BRICKADIA_PASS ?? null,
-        branch: conf?.server?.branch ?? null,
+        email: process.env.BRICKADIA_USER ?? undefined,
+        password: process.env.BRICKADIA_PASS ?? undefined,
+        branch: conf?.server?.branch ?? undefined,
       });
       if (!success) {
         err('Start aborted - could not generate auth tokens');
@@ -112,10 +113,10 @@ const program = commander
     // build options
     const options = {
       // default enable web ui (set to false)
-      noweb: typeof conf.omegga.webui === 'boolean' && !conf.omegga.webui,
+      noweb: typeof conf.omegga?.webui === 'boolean' && !conf.omegga?.webui,
       // default enable https (set to true, will not be https if it can't generate)
-      https: typeof conf.omegga.https !== 'boolean' || conf.omegga.https,
-      port: conf.omegga.port || soft.DEFAULT_PORT,
+      https: typeof conf.omegga?.https !== 'boolean' || conf.omegga?.https,
+      port: conf.omegga?.port || soft.DEFAULT_PORT,
       debug,
     };
 
@@ -237,9 +238,9 @@ program
             // read the config and extract the branch
             const conf = config.read(configFile);
             branch = conf?.server?.branch;
-          } catch (err) {
+          } catch (error) {
             err('Error reading config file');
-            verboseLog(err);
+            verboseLog(error);
           }
         }
 

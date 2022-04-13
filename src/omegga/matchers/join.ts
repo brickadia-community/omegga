@@ -1,4 +1,4 @@
-import Player from '../player';
+import Player from '@omegga/player';
 import { MatchGenerator } from './types';
 
 const join: MatchGenerator<Player> = omegga => {

@@ -1,4 +1,4 @@
-import type { IConfigFormat } from 'config/types';
+import type { IConfigFormat } from '@config/types';
 
 const format_js: IConfigFormat = {
   extension: 'js',

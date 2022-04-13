@@ -1,8 +1,8 @@
 // DEPRECATED
-import path from 'path';
-import readline from 'readline';
 import { spawn } from 'child_process';
 import 'colors';
+import path from 'path';
+import readline from 'readline';
 
 const err = (...args: any[]) => console.error('!>'.red, ...args);
 const log = (...args: any[]) => console.log('>>'.green, ...args);

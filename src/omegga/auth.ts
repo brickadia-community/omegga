@@ -1,18 +1,17 @@
-import { IConfig } from './../config/types';
+import soft from '@/softconfig';
+import { IConfig } from '@config/types';
+import * as file from '@util/file';
 import fs from 'fs';
 import path from 'path';
-
-const Omegga = require('./server').default;
-import soft from '../softconfig';
-import * as file from '../util/file';
 import { write as writeConfig } from '../brickadia/config';
 import { IOmeggaOptions } from './types';
+import Omegga from './server';
 
 require('colors');
 
 const verboseLog = (...args: any[]) => {
-  if (!Omegga.VERBOSE) return;
-  if (Omegga.log) Omegga.log('V>'.magenta, ...args);
+  if (!global.Omegga.VERBOSE) return;
+  if (global.Omegga.log) global.Omegga.log('V>'.magenta, ...args);
   else console.log('V>'.magenta, ...args);
 };
 

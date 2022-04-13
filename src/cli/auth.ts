@@ -1,11 +1,11 @@
+import soft from '@/softconfig';
+import { genAuthFiles, writeAuthFiles } from '@omegga/auth';
+import * as file from '@util/file';
 import fs from 'fs';
 import passwordPrompt from 'password-prompt';
-
 import path from 'path';
 import readline from 'readline';
-import { genAuthFiles, writeAuthFiles } from '../omegga/auth';
-import soft from '../softconfig';
-import * as file from '../util/file';
+
 require('colors');
 
 export const AUTH_PATH = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
@@ -44,8 +44,8 @@ async function authFromPrompt({
   debug = false,
   branch,
 }: {
-  email?: string;
-  password?: string;
+  email?: string | null;
+  password?: string | null;
   debug?: boolean;
   branch?: string;
 }) {
@@ -95,7 +95,7 @@ async function authFromPrompt({
 }
 
 // check if auth files exist
-function authExists(dir: string) {
+function authExists(dir?: string) {
   return soft.BRICKADIA_AUTH_FILES.every(f =>
     fs.existsSync(path.join(dir || AUTH_PATH, f))
   );
@@ -112,7 +112,7 @@ export const clean = deleteAuthFiles;
 
 export default {
   AUTH_PATH,
-  prompt: credentialPrompt,
+  prompt,
   exists,
   clean,
 };
