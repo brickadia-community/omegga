@@ -422,6 +422,11 @@ export default class RpcPlugin extends Plugin {
       ({ target, line }: { target: string; line: string }) =>
         this.omegga.whisper(target, line)
     );
+    rpc.addMethod(
+      'middlePrint',
+      ({ target, line }: { target: string; line: string }) =>
+        this.omegga.middlePrint(target, line)
+    );
     rpc.addMethod('getPlayers', () => this.omegga.getPlayers());
     rpc.addMethod('getPlayerPosition', name =>
       this.omegga.getPlayer(name as unknown as string)?.getPosition()

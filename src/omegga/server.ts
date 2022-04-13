@@ -343,6 +343,24 @@ class Omegga extends OmeggaWrapper {
   }
 
   /**
+   * prints text to the middle of a player's screen
+   * all messages longer than 512 characters are deleted automatically
+   * @param target - player identifier or player object
+   * @param message - unescaped chat messages to send. may need to wrap messages with quotes
+   */
+  //
+  middlePrint(target: string | Player, message: string) {
+    // find the target player
+    if (typeof target !== 'object') target = this.getPlayer(target);
+
+    // whisper the messages to that player
+    if (message.length > 512) return;
+    this.writeln(
+      `Chat.StatusMessage "${(target as { name: string }).name}" ${message}`
+    );
+  }
+
+  /**
    * get a list of players
    * @return list of players {id: uuid, name: name} objects
    */
@@ -432,7 +450,7 @@ class Omegga extends OmeggaWrapper {
    * @param name preset name
    */
   saveMinigame(index: number, name: string) {
-    this.writeln(`Server.Minigame.SavePreset ${index} "${name}"`);
+    this.writeln(`Server.Minigames.SavePreset ${index} "${name}"`);
   }
 
   /**
@@ -440,7 +458,7 @@ class Omegga extends OmeggaWrapper {
    * @param index minigame index
    */
   deleteMinigame(index: number) {
-    this.writeln(`Server.Minigame.Delete ${index}`);
+    this.writeln(`Server.Minigames.Delete ${index}`);
   }
 
   /**
@@ -448,7 +466,7 @@ class Omegga extends OmeggaWrapper {
    * @param index minigame index
    */
   resetMinigame(index: number) {
-    this.writeln(`Server.Minigame.Reset ${index}`);
+    this.writeln(`Server.Minigames.Reset ${index}`);
   }
 
   /**
@@ -456,7 +474,7 @@ class Omegga extends OmeggaWrapper {
    * @param index minigame index
    */
   nextRoundMinigame(index: number) {
-    this.writeln(`Server.Minigame.NextRound ${index}`);
+    this.writeln(`Server.Minigames.NextRound ${index}`);
   }
 
   /**
@@ -466,7 +484,7 @@ class Omegga extends OmeggaWrapper {
    */
   loadMinigame(presetName: string, owner = '') {
     this.writeln(
-      `Server.Minigame.LoadPreset "${presetName}" ${owner ? `"${owner}"` : ''}`
+      `Server.Minigames.LoadPreset "${presetName}" ${owner ? `"${owner}"` : ''}`
     );
   }
 

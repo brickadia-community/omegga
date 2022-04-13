@@ -9,18 +9,21 @@ import {
   IServerStatus,
 } from './types';
 
-const buildTableHeaderRegex = (header: string) =>
-  new RegExp(
-    header
-      .match(/[^|]+/g) // get all strings between the |'s'
-      .map((line, i) => [line.slice(1, -1), line.length - (i === 5 ? 1 : 2)]) // calculate the lengths (and remove the spaces)
+const buildTableHeaderRegex = (header: string) => {
+  const columns = header.match(/[^|]+/g);
+  return new RegExp(
+    columns // get all strings between the |'s'
+      .map((line, i) => [
+        line.slice(1, -1),
+        line.length - (i === columns.length - 1 ? 1 : 2),
+      ]) // calculate the lengths (and remove the spaces)
       .map(
         ([name, len]: [string, number]) =>
           ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`
       ) // create a regex pattern to match strings of that length (and trim off whitespace at the end)
       .join('\\|')
   ); // join the regexes with the |
-
+};
 // A list of commands that can be injected to things with the log wrangler
 /**
  * List of injected commands
@@ -107,14 +110,14 @@ const COMMANDS = {
     return tableLines.map(l => {
       // match the player row with the generated regex
       const {
-        groups: { id, name, ownername, ownerid, members: numMembers },
+        groups: { id, name, ownername, ownerid, member },
       } = l.match(columnRegExp);
       // trim and parse the matched data
       return {
-        index: id,
-        name,
-        numMembers,
-        owner: { name: ownername, id: ownerid },
+        index: Number(id),
+        name: name.trim(),
+        numMembers: Number(member),
+        owner: { name: ownername.trim(), id: ownerid },
       };
     });
   },

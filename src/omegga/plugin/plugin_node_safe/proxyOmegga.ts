@@ -34,6 +34,7 @@ export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({
 const STEAL_PROTOTYPES = [
   'broadcast',
   'whisper',
+  'middlePrint',
   'getPlayer',
   'getPlayers',
   'findPlayerByName',

@@ -25,9 +25,9 @@ export interface IServerStatus {
 }
 
 export type IMinigameList = {
-  index: string;
+  index: number;
   name: string;
-  numMembers: string;
+  numMembers: number;
   owner: {
     name: string;
     id: string;
