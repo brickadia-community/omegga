@@ -9,7 +9,7 @@ config.json
 webpack.config.js
 test.js
 src/
-omegga.d.ts
+/omegga.d.ts
 .prettierrc
 .bablrc.json
 templates

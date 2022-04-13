@@ -15,4 +15,4 @@ omegga.yml
 config.json
 public/*
 dist/
-omegga.d.ts
+/omegga.d.ts
