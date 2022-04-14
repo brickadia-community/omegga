@@ -3,10 +3,11 @@
 // this also lets plugins get terminated easier by killing the worker
 // rather than unloading and reloading code
 
+import OmeggaPlugin, { OmeggaLike, PluginConfig, PluginStore } from '@/plugin';
+import Player from '@omegga/player';
 import type { Plugin } from '@omegga/plugin';
 import type Omegga from '@omegga/server';
-import OmeggaPlugin, { PluginStore, PluginConfig, OmeggaLike } from '@/plugin';
-import { transformFileSync, transformSync } from '@swc/core';
+import { transformFileSync } from '@swc/core';
 import { mkdir } from '@util/file';
 import 'colors';
 import EventEmitter from 'events';
@@ -127,7 +128,7 @@ function createVm(
         },
         module: {
           type: 'commonjs',
-          strict: false,
+          strictMode: false,
         },
       });
 
@@ -174,6 +175,7 @@ function createVm(
   // pass in util functions
   vm.freeze(global.OMEGGA_UTIL, 'OMEGGA_UTIL');
   vm.freeze(omegga, 'Omegga');
+  vm.freeze(Player, 'Player');
 
   const file = path.join(pluginPath, targetFile);
   if (!isTypeScript) {
