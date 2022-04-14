@@ -595,6 +595,25 @@ export default class RpcPlugin extends Plugin {
           .getPlayer(target)
           ?.loadDataAtGhostBrick(data, { rotate, offX, offY, offZ, quiet })
     );
+    rpc.addMethod(
+      'player.loadSaveData',
+      ({
+        target,
+        data,
+        offX = 0,
+        offY = 0,
+        offZ = 0,
+      }: {
+        target: string;
+        data: WriteSaveObject;
+        offX?: number;
+        offY?: number;
+        offZ?: number;
+      }) =>
+        this.omegga
+          .getPlayer(target)
+          ?.loadSaveData(data, { offX, offY, offZ })
+    );
 
     // plugin related operations
     rpc.addMethod('plugin.get', async name => {
