@@ -94,7 +94,8 @@
     "dist": "MODE=production npx webpack",
     "build:frontend": "npx webpack",
     "build": "npx ttsc --build \"src/\"",
-    "dts": "npx dts-bundle-generator --no-banner --inline-declare-externals -o omegga.d.ts ./src/omeggaplugin.ts"
+    "dts": "npx dts-bundle-generator --no-banner --inline-declare-externals -o omegga.d.ts ./src/omeggaplugin.ts",
+    "prepare": "npm run build"
   },
   "author": "Meshiest",
   "license": "ISC",
