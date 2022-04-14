@@ -644,17 +644,23 @@ async function init(
     }
   };
 
+  const src = path.join(__dirname, `../../templates/${type}`)
+
   verboseLog('Copying and rendering template...');
-  copyAndRender(path.join(__dirname, `../../templates/${type}`), dest);
+  await copyAndRender(src, dest);
 
   if (require('hasbin').sync('git')) {
     verboseLog('Running', 'git init'.yellow, 'in the new plugin directory ...');
     await exec('git init', { cwd: dest });
   }
 
-  if (fs.existsSync(path.join(dest, 'package.json'))) {
+  if (fs.existsSync(path.join(src, 'package.json'))) {
     verboseLog('Running', 'npm i'.yellow, 'in the new plugin directory ...');
-    await exec('npm i', { cwd: dest });
+    try {
+      await exec('npm i', { cwd: dest });
+    } catch (e) {
+      log('Warning: npm i'.yellow, 'failed to execute. Proceeding anyway...');
+    }
   }
 
   log('Initialized', type.yellow, 'plugin', `${name}`.cyan, 'successfully!');

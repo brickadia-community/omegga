@@ -1,6 +1,6 @@
 # {{name}}
 
-A safe plugin for [omegga](https://github.com/brickadia-community/omegga).
+A typed safe plugin for [omegga](https://github.com/brickadia-community/omegga).
 
 This is an auto-generated README file. Please change it before publishing your plugin!
 
