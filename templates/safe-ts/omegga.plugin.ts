@@ -1,4 +1,4 @@
-import { OmeggaPlugin } from './omegga';
+import { OmeggaPlugin } from 'omegga';
 
 type Config = { foo: string; }
 type Storage = { bar: string; }

@@ -648,8 +648,13 @@ async function init(
   copyAndRender(path.join(__dirname, `../../templates/${type}`), dest);
 
   if (require('hasbin').sync('git')) {
-    await exec('git init', { cwd: dest });
     verboseLog('Running', 'git init'.yellow, 'in the new plugin directory ...');
+    await exec('git init', { cwd: dest });
+  }
+
+  if (fs.existsSync(path.join(dest, 'package.json'))) {
+    verboseLog('Running', 'npm i'.yellow, 'in the new plugin directory ...');
+    await exec('npm i', { cwd: dest });
   }
 
   log('Initialized', type.yellow, 'plugin', `${name}`.cyan, 'successfully!');

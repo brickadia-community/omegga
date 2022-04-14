@@ -1,0 +1,12 @@
+{
+  "name": "{{name}}",
+  "version": "1.0.0",
+  "description": "A plugin for Omegga",
+  "main": "omegga.plugin.ts",
+  "scripts": {},
+  "author": "{{author}}",
+  "license": "ISC",
+  "devDependencies": {
+    "omegga": "^{{omeggaVersion}}"
+  }
+}
