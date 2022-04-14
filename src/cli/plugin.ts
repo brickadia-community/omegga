@@ -4,6 +4,7 @@ import * as config from '@config';
 import { exec as execNonPromise } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import prompts from 'prompts';
 import semver from 'semver';
 import simpleGit, { ResetMode, SimpleGit } from 'simple-git';
 import { promisify } from 'util';
@@ -587,11 +588,46 @@ export async function check(pluginNames: string[], _options: unknown) {
   console.log();
 }
 
-async function init(
-  name: string,
-  author: string | undefined,
-  type: PluginType
-) {
+async function init() {
+  const { author, ...response } = await prompts([
+    {
+      type: 'text',
+      name: 'name',
+      message: 'What would you like to ' + 'name'.yellow + ' your plugin?',
+      validate: value =>
+        value.match(/^[\w-_]+$/) ? true : 'Invalid plugin name!',
+    },
+    {
+      type: 'select',
+      name: 'type',
+      message:
+        'What ' + 'type'.yellow + ' of plugin would you like to initialize?',
+      choices: [
+        { title: 'safe ' + '(default)'.italic, value: 'safe' },
+        { title: 'unsafe', value: 'unsafe' },
+        { title: 'rpc', value: 'rpc' },
+      ],
+    },
+    {
+      type: prev => (prev == 'safe' ? 'confirm' : null),
+      name: 'ts',
+      message:
+        'Would you like to use ' + 'TypeScript'.yellow + ' in your plugin?',
+      initial: false,
+    },
+    {
+      type: 'text',
+      name: 'author',
+      message: 'Who is the ' + 'author'.yellow + ' of this plugin?',
+    },
+  ]);
+
+  const name = response.name.startsWith('omegga-')
+    ? response.name
+    : 'omegga-' + response.name;
+  const type: PluginType =
+    response.type == 'safe' && response.ts ? 'safe-ts' : response.type;
+
   if (!PLUGIN_TYPES.includes(type)) {
     err('Invalid plugin type', type.red, '!');
     process.exit(1);

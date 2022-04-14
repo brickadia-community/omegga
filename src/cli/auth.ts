@@ -1,27 +1,12 @@
 import soft from '@/softconfig';
 import { genAuthFiles, writeAuthFiles } from '@omegga/auth';
 import * as file from '@util/file';
-import fs from 'fs';
-import passwordPrompt from 'password-prompt';
-import path from 'path';
-import readline from 'readline';
 import 'colors';
+import fs from 'fs';
+import path from 'path';
+import prompts from 'prompts';
 
 export const AUTH_PATH = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
-
-// prompt user for email
-const emailPrompt = (text: string) =>
-  new Promise<string>(resolve => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-
-    rl.question(text, (email: string) => {
-      rl.close();
-      resolve(email);
-    });
-  });
 
 // async function to prompt for credentials
 async function credentialPrompt() {
@@ -31,10 +16,21 @@ async function credentialPrompt() {
     'Brickadia'.green.underline,
     'credentials (not stored)'
   );
-  return [
-    await emailPrompt('     ' + 'email'.yellow.underline + ': '),
-    await passwordPrompt('  ' + 'password'.yellow.underline + ': '),
-  ];
+
+  const response = await prompts([
+    {
+      type: 'text',
+      name: 'email',
+      message: 'Email',
+    },
+    {
+      type: 'password',
+      name: 'password',
+      message: 'Password',
+    },
+  ]);
+
+  return [response.email, response.password];
 }
 
 async function authFromPrompt({

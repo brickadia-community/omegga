@@ -315,22 +315,14 @@ program
   });
 
 program
-  .command('init-plugin <pluginName>')
+  .command('init-plugin')
   .description('Initializes a new plugin with the given name and settings')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .option(
-    '-t, --type <type>',
-    'The type of plugin to initialize. One of [safe, safe-ts, unsafe, rpc].',
-    'safe'
-  )
-  .option('-a, --author <author>', 'The author of this plugin.', 'AUTHOR')
-  .action(async (pluginName, { type, author }) => {
+  .action(async () => {
     const { verbose } = program.opts();
     Logger.VERBOSE = verbose;
 
-    if (!pluginName.startsWith('omegga-')) pluginName = `omegga-${pluginName}`;
-
-    pluginUtil.init(pluginName, author, type ?? 'safe');
+    pluginUtil.init();
   });
 
 program.parseAsync(process.argv);
