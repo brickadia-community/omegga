@@ -81,7 +81,7 @@ Alternatively, you can use a development/local omegga.
     npm link
 
     # build omegga's dist from typescript
-    npm build
+    npm run build
 
     # build the web ui (once)
     npm run dist
