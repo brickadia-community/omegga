@@ -21,7 +21,6 @@ declare global {
 
 export * from '@brickadia/types';
 export * from '@omegga/types';
-export * from 'brs-js/dist/src/types';
 export { OmeggaPlugin };
 
 export type OL = OmeggaLike;
