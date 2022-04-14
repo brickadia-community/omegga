@@ -1,3 +1,4 @@
+import Logger from '@/logger';
 import soft from '@/softconfig';
 import * as config from '@config';
 import { exec as execNonPromise } from 'child_process';
@@ -97,7 +98,7 @@ const plg = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
   console.log(plugin.name, '>>'.green, ...args);
 };
 const plgLog = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
-  if (global.Omegga.VERBOSE) plg(plugin, ...args);
+  if (Logger.VERBOSE) plg(plugin, ...args);
   else rewriteLine(plugin.name, '>>'.green, ...args);
 };
 const plgWarn = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
@@ -130,7 +131,7 @@ const log = (...args: any[]) => {
   console.log('>>'.green, ...args);
 };
 const verboseLog = (...args: any[]) => {
-  if (!global.Omegga.VERBOSE) return;
+  if (!Logger.VERBOSE) return;
   if (needsNL) {
     needsNL = false;
     console.log();
@@ -605,8 +606,7 @@ async function init(
     dest = `./${name}`;
   } else {
     dest = `./plugins/${name}`;
-    if (!fs.existsSync('./plugins'))
-      fs.mkdirSync('./plugins');
+    if (!fs.existsSync('./plugins')) fs.mkdirSync('./plugins');
   }
 
   if (fs.existsSync(dest)) {
@@ -644,7 +644,7 @@ async function init(
     }
   };
 
-  const src = path.join(__dirname, `../../templates/${type}`)
+  const src = path.join(__dirname, `../../templates/${type}`);
 
   verboseLog('Copying and rendering template...');
   await copyAndRender(src, dest);

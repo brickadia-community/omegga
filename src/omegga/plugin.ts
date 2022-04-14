@@ -1,10 +1,11 @@
+import Logger from '@/logger';
+import OmeggaPlugin from '@/plugin';
+import soft from '@/softconfig';
 import fs from 'fs';
 import Datastore from 'nedb-promises';
 import path from 'path';
-import soft from '@/softconfig';
 import type Player from './player';
 import type Omegga from './server';
-import OmeggaPlugin from '@/plugin';
 
 // Check if this plugin is disabled
 const DISABLED_FILE = 'disabled.omegga';
@@ -320,7 +321,7 @@ export class PluginStorage {
   // set a stored value
   async set<T = unknown>(key: string, value: T) {
     if (typeof key !== 'string' || key.length === 0) return;
-    (await this.store.update)<IStoreItem>(
+    await this.store.update<IStoreItem>(
       { type: 'store', plugin: this.name, key },
       { $set: { value } },
       { upsert: true }
@@ -385,13 +386,13 @@ export class PluginLoader {
         // require all the formats
         .map(file => require('./plugin/' + file).default)
     );
-    global.Omegga.verbose('Found plugin formats:', this.formats);
+    Logger.verbose('Found plugin formats:', this.formats);
   }
 
   // unload and load all installed plugins
   async reload() {
     let ok = true;
-    global.Omegga.verbose('Reloading plugins');
+    Logger.verbose('Reloading plugins');
     for (const p of this.plugins) {
       try {
         // unload the plugin if it's loaded
@@ -401,7 +402,7 @@ export class PluginLoader {
         if (!p.isLoaded()) {
           // only load it if it is enabled
           if (p.isEnabled()) {
-            global.Omegga.verbose(
+            Logger.verbose(
               'Loading plugin',
               (p.constructor as typeof Plugin).getFormat(),
               p.getName().underline
@@ -409,16 +410,14 @@ export class PluginLoader {
             ok = (await p.load()) || ok;
           }
         } else {
-          global.Omegga.error(
-            '!>'.red,
+          Logger.errorp(
             'Did not successfully unload plugin',
             p.getName().brightRed.underline
           );
           ok = false;
         }
       } catch (err) {
-        global.Omegga.error(
-          '!>'.red,
+        Logger.errorp(
           'Error loading plugin',
           p.getName().brightRed.underline,
           err
@@ -426,13 +425,13 @@ export class PluginLoader {
         ok = false;
       }
     }
-    global.Omegga.verbose('Finished reloading plugins');
+    Logger.verbose('Finished reloading plugins');
     return ok;
   }
 
   // stop all plugins from running
   async unload() {
-    global.Omegga.verbose('Unloading plugins');
+    Logger.verbose('Unloading plugins');
     let ok = true;
     // potentually use Promise.all
     for (const p of this.plugins) {
@@ -440,20 +439,18 @@ export class PluginLoader {
         // unload the plugin if it's loaded
         if (p.isLoaded()) {
           if (!(await p.unload())) {
-            global.Omegga.error(
-              '!>'.red,
+            Logger.errorp(
               'Could not unloading plugin',
               p.getName().brightRed.underline
             );
             ok = false;
             continue;
           } else {
-            global.Omegga.verbose('Unloaded', p.getName().underline);
+            Logger.verbose('Unloaded', p.getName().underline);
           }
         }
       } catch (e) {
-        global.Omegga.error(
-          '!>'.red,
+        Logger.errorp(
           'Error unloading plugin',
           p.getName().brightRed.underline
         );
@@ -465,19 +462,16 @@ export class PluginLoader {
 
   // find every loadable plugin
   async scan() {
-    global.Omegga.verbose('Scanning plugin directory');
+    Logger.verbose('Scanning plugin directory');
     // plugin directory doesn't exist
     if (!fs.existsSync(this.path)) {
-      global.Omegga.verbose('Plugin directory is missing');
+      Logger.verbose('Plugin directory is missing');
       return false;
     }
 
     // make sure there are no plugins running
     if (this.plugins.some(p => p.isLoaded())) {
-      global.Omegga.error(
-        '!>'.red,
-        'Cannot re-scan plugins while a plugin is loaded'
-      );
+      Logger.errorp('Cannot re-scan plugins while a plugin is loaded');
       return false;
     }
 
@@ -496,18 +490,14 @@ export class PluginLoader {
 
             // let users know if there's a missing plugin format
             if (!PluginFormat) {
-              global.Omegga.error('!>'.red, 'Missing plugin format for', dir);
+              Logger.errorp('Missing plugin format for', dir);
               return;
             }
             try {
               // create the plugin format
               const plugin = PluginFormat && new PluginFormat(dir, this.omegga);
               if (!plugin.getDocumentation()) {
-                global.Omegga.error(
-                  '!>'.red,
-                  'Missing/invalid plugin documentation for',
-                  dir
-                );
+                Logger.errorp('Missing/invalid plugin documentation for', dir);
                 return;
               }
 
@@ -522,8 +512,7 @@ export class PluginLoader {
               return plugin;
             } catch (e) {
               // if a plugin format fails to load, prevent omegga from dying
-              global.Omegga.error(
-                '!>'.red,
+              Logger.errorp(
                 'Error loading plugin',
                 dir.brightRed.underline,
                 PluginFormat,

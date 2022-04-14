@@ -35,63 +35,18 @@ import {
   IServerStatus,
 } from './types';
 import OmeggaWrapper from './wrapper';
+import Logger from '@/logger';
 
 const MISSING_CMD =
   '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
 
 // TODO: safe broadcast parsing
 
-const verboseLog = (...args: unknown[]) => {
-  if (!Omegga.VERBOSE) return;
-  if (Omegga.log) Omegga.log('V>'.magenta, ...args);
-  else console.log('V>'.magenta, ...args);
-};
-
-class Omegga extends OmeggaWrapper implements OmeggaLike {
+export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   /** The save counter prevents omegga from saving over the same file */
   _tempSaveCounter = 0;
   /** The save prefix is prepended to all temporary saves */
   _tempSavePrefix = 'omegga_temp_';
-
-  // allow a terminal to be used instead of console log
-  static terminal: Terminal = undefined;
-
-  static VERBOSE: boolean;
-
-  /**
-   * send a console log to the readline terminal or stdout
-   */
-  static log(...args: unknown[]) {
-    (Omegga.terminal || console).log(...args);
-  }
-
-  /**
-   * send a console error to the readline terminal or stderr
-   */
-  static error(...args: unknown[]) {
-    (Omegga.terminal || console).error(...args);
-  }
-
-  /**
-   * send a console warn to the readline terminal or stdout
-   */
-  static warn(...args: unknown[]) {
-    (Omegga.terminal || console).warn(...args);
-  }
-
-  /**
-   * send a console log when omegga is launched when --verbose
-   */
-  static verbose(...args: unknown[]) {
-    verboseLog(...args);
-  }
-
-  /**
-   * send a console log to the readline terminal or console
-   */
-  static setTerminal(term: Terminal) {
-    if (term instanceof Terminal) Omegga.terminal = term;
-  }
 
   // pluginloader is not private so plugins can potentially add more formats
   pluginLoader: PluginLoader = undefined;
@@ -123,10 +78,10 @@ class Omegga extends OmeggaWrapper implements OmeggaLike {
    */
   constructor(serverPath: string, cfg: IConfig, options: IOmeggaOptions = {}) {
     super(serverPath, cfg);
-    this.verbose = Omegga.VERBOSE;
+    this.verbose = Logger.VERBOSE;
 
     // inject commands
-    verboseLog('Setting up command injector');
+    Logger.verbose('Setting up command injector');
     commandInjector(this, this.logWrangler);
 
     // launch options (disabling webserver)
@@ -141,13 +96,13 @@ class Omegga extends OmeggaWrapper implements OmeggaLike {
     this.configPath = join(this.path, DATA_PATH, 'Saved/Server');
 
     // create dir folders
-    verboseLog('Creating directories');
+    Logger.verbose('Creating directories');
     mkdir(this.savePath);
     mkdir(this.configPath);
 
     // ignore auth file copy
     if (!options.noauth) {
-      verboseLog('Copying auth files');
+      Logger.verbose('Copying auth files');
       this.copyAuthFiles();
     }
 
@@ -155,16 +110,16 @@ class Omegga extends OmeggaWrapper implements OmeggaLike {
     // the web interface provides access to server information while the server is running
     // and lets you view chat logs, disable plugins, etc
     if (!options.noweb) {
-      verboseLog('Creating webserver');
+      Logger.verbose('Creating webserver');
       this.webserver = new Webserver(cfg.omegga, this);
     }
 
     if (!options.noplugin) {
-      verboseLog('Creating plugin loader');
+      Logger.verbose('Creating plugin loader');
       // create the pluginloader
       this.pluginLoader = new PluginLoader(join(this.path, PLUGIN_PATH), this);
 
-      verboseLog('Creating loading plugins');
+      Logger.verbose('Creating loading plugins');
       // load all the plugin formats in
       this.pluginLoader.loadFormats(join(__dirname, 'plugin'));
     }
@@ -187,23 +142,23 @@ class Omegga extends OmeggaWrapper implements OmeggaLike {
     this.currentMap = '';
 
     // add all the matchers to the server
-    verboseLog('Adding matchers');
+    Logger.verbose('Adding matchers');
     for (const matcher of MATCHERS) {
       const { pattern, callback } = matcher(this);
       this.addMatcher(pattern, callback);
     }
 
     process.on('uncaughtException', async err => {
-      verboseLog('Uncaught exception', err);
+      Logger.verbose('Uncaught exception', err);
       this.emit('error', err);
+
       // publish stop to database
-      if (this.webserver && this.webserver.database) {
-        this.webserver.database.addChatLog('server', {}, 'Server error');
-      }
+      this.webserver?.database?.addChatLog('server', {}, 'Server error');
+
       try {
         await this.stop();
       } catch (e) {
-        Omegga.error(e);
+        Logger.error(e);
       }
       process.exit();
     });
@@ -250,15 +205,15 @@ class Omegga extends OmeggaWrapper implements OmeggaLike {
     if (this.webserver) await this.webserver.start();
     if (this.pluginLoader) {
       // scan for plugins
-      verboseLog('Scanning for plugins');
+      Logger.verbose('Scanning for plugins');
       await this.pluginLoader.scan();
 
       // load the plugins
-      verboseLog('Loading plugins');
+      Logger.verbose('Loading plugins');
       await this.pluginLoader.reload();
     }
 
-    verboseLog('Starting Brickadia');
+    Logger.verbose('Starting Brickadia');
     super.start();
     this.emit('server:starting');
   }
@@ -269,22 +224,22 @@ class Omegga extends OmeggaWrapper implements OmeggaLike {
    */
   async stop() {
     if (!this.started && !this.starting) {
-      verboseLog("Stop called while server wasn't started or was starting");
+      Logger.verbose("Stop called while server wasn't started or was starting");
       return;
     }
 
     if (this.stopping) {
-      verboseLog('Stop called while server was starting');
+      Logger.verbose('Stop called while server was starting');
       return;
     }
 
     this.stopping = true;
     this.emit('server:stopping');
     if (this.pluginLoader) {
-      verboseLog('Unloading plugins');
+      Logger.verbose('Unloading plugins');
       await this.pluginLoader.unload();
     }
-    verboseLog('Stopping server');
+    Logger.verbose('Stopping server');
     super.stop();
     if (this.stopping) this.emit('server:stopped');
     this.stopping = false;
@@ -653,11 +608,4 @@ class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   /* Command injector methods are overwritten, this code is here for the doc */
-}
-
-global.Omegga = Omegga;
-export default Omegga;
-type OmeggaType = typeof Omegga;
-declare global {
-  var Omegga: OmeggaType;
 }

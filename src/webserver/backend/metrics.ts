@@ -1,8 +1,9 @@
+import Logger from '@/logger';
 import soft from '@/softconfig';
 import type Webserver from './index';
 import { OmeggaSocketIo } from './types';
 
-const error = (...args: any[]) => global.Omegga.error(...args);
+const error = (...args: any[]) => Logger.error(...args);
 
 export default function (server: Webserver, io: OmeggaSocketIo) {
   const { database, omegga } = server;

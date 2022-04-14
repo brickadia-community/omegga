@@ -1,3 +1,4 @@
+import Logger from '@/logger';
 import Player from '@omegga/player';
 import { Plugin } from '@omegga/plugin';
 import { parseLinks, sanitize } from '@util/chat';
@@ -117,10 +118,8 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     const usernameText = `[${
       (socket.data.user.username || 'Admin').brightMagenta
     }]`;
-    const log = (...args: any[]) =>
-      global.Omegga.log('>>'.green, usernameText, ...args);
-    const error = (...args: any[]) =>
-      global.Omegga.error('!>'.red, usernameText, ...args);
+    const log = (...args: any[]) => Logger.logp(usernameText, ...args);
+    const error = (...args: any[]) => Logger.errorp(usernameText, ...args);
 
     // rpc connection
     const rpcServer = new JSONRPCServer();
@@ -166,7 +165,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       );
 
       // broadcast to terminal
-      Omegga.log(`[${user.name.brightMagenta.underline}]: ${message}`);
+      Logger.log(`[${user.name.brightMagenta.underline}]: ${message}`);
 
       return 'ok';
     });

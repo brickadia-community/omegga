@@ -11,6 +11,7 @@ import readline from 'readline';
 import Omegga from '@omegga/server';
 import { Plugin } from '@omegga/plugin';
 import { bootstrap } from './plugin_node_safe/proxyOmegga';
+import Logger from '@/logger';
 
 // TODO: check if version is compatible (v1 -> v2) from file
 // TODO: write jsonrpc wrappers in a few languages, implement a few simple plugins
@@ -73,7 +74,7 @@ export default class RpcPlugin extends Plugin {
   // spawn the plugin as a child process
   async load() {
     const name = this.getName();
-    const verbose = (...msg: any[]) => Omegga.verbose(name.underline, ...msg);
+    const verbose = (...msg: any[]) => Logger.verbose(name.underline, ...msg);
     verbose('Load method invoked');
     let frozen = true,
       timed = false;
@@ -114,8 +115,7 @@ export default class RpcPlugin extends Plugin {
       });
       this.attachListeners();
     } catch (err) {
-      Omegga.error(
-        '!>'.red,
+      Logger.errorp(
         'error loading stdio rpc plugin',
         name.brightRed.underline,
         err
@@ -161,12 +161,7 @@ export default class RpcPlugin extends Plugin {
             }
           } catch (e) {
             if (!e.message) return;
-            Omegga.error(
-              '!>'.red,
-              name.brightRed.underline,
-              'error starting: ',
-              e
-            );
+            Logger.errorp(name.brightRed.underline, 'error starting: ', e);
           }
 
           // plugin is not frozen, resolve that it has loaded
@@ -176,8 +171,7 @@ export default class RpcPlugin extends Plugin {
           return true;
         } catch (e) {
           if (timed) return;
-          Omegga.error(
-            '!>'.red,
+          Logger.errorp(
             'error loading stdio rpc plugin',
             name.brightRed.underline,
             e
@@ -201,8 +195,7 @@ export default class RpcPlugin extends Plugin {
         // check if the child is frozen (while true)
         setTimeout(() => {
           if (!frozen) return;
-          Omegga.error(
-            '!>'.red,
+          Logger.errorp(
             'I appear to be unresponsive when starting (maybe I forgot to respond to start)',
             name.brightRed.underline
           );
@@ -245,8 +238,7 @@ export default class RpcPlugin extends Plugin {
           return true;
         } catch (e) {
           if (timed) return;
-          Omegga.error(
-            '!>'.red,
+          Logger.errorp(
             'error unloading rpc plugin',
             name.brightRed.underline,
             e
@@ -261,8 +253,7 @@ export default class RpcPlugin extends Plugin {
         // check if the child is frozen (while true)
         setTimeout(() => {
           if (!frozen) return;
-          Omegga.error(
-            '!>'.red,
+          Logger.errorp(
             'I appear to be unresponsive when stopping (maybe I forgot to respond to stop)',
             name.brightRed.underline
           );
@@ -283,7 +274,7 @@ export default class RpcPlugin extends Plugin {
       try {
         this.#rpc.receiveAndSend(JSON.parse(line));
       } catch (e) {
-        Omegga.error(
+        Logger.error(
           this.getName().brightRed.underline,
           '!>'.red,
           'error parsing rpc data',
@@ -295,13 +286,13 @@ export default class RpcPlugin extends Plugin {
 
     // stderr - print out the errors
     this.#errInterface.on('line', err => {
-      Omegga.error(name.brightRed.underline, '!>'.red, err);
+      Logger.error(name.brightRed.underline, '!>'.red, err);
     });
 
     this.#child.on('error', () => this.kill());
     this.#child.on('close', () => this.kill());
     this.#child.on('exit', code => {
-      Omegga.error(
+      Logger.errorp(
         '!>'.red,
         'rpc plugin',
         name.brightRed.underline,

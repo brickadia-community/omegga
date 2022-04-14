@@ -26,7 +26,7 @@ const interact: MatchGenerator<BrickInteraction> = omegga => {
             controller: match.groups.controller,
             pawn: match.groups.pawn,
           },
-          brick_asset: match.groups.brick,
+          brick_name: match.groups.brick,
           position: [
             Number(match.groups.x),
             Number(match.groups.y),

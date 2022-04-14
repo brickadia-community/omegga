@@ -5,6 +5,7 @@ The wrapper combines the things looking at or waiting for logs with the actual s
 import Omegga from './server';
 
 import { IMatcher, IWatcher, LogWrangling } from '@/plugin';
+import Logger from '@/logger';
 
 const GENERIC_LINE_REGEX =
   /^(\[(?<date>\d{4}\.\d\d.\d\d-\d\d.\d\d.\d\d:\d{3})\]\[\s*(?<counter>\d+)\])?(?<generator>\w+): (?<data>.+)$/;
@@ -359,7 +360,7 @@ class LogWrangler implements LogWrangling {
               matcher as IWatcher<unknown> & IMatcher<unknown>
             );
         } catch (e) {
-          Omegga.error('error in matcher', matcher.pattern, e);
+          Logger.error('error in matcher', matcher.pattern, e);
         }
       }
     }

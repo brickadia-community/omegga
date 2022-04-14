@@ -1,3 +1,4 @@
+import Logger from '@/logger';
 import soft from '@/softconfig';
 import { IServerConfig } from '@config/types';
 import type Omegga from '@omegga/server';
@@ -25,8 +26,8 @@ const ASSET_PATH = path.join(FRONTEND_PATH, 'assets');
 // path to webpacked data
 const PUBLIC_PATH = path.join(__dirname, '../../../public');
 
-const log = (...args: any[]) => global.Omegga.log(...args);
-const error = (...args: any[]) => global.Omegga.error(...args);
+const log = (...args: any[]) => Logger.log(...args);
+const error = (...args: any[]) => Logger.error(...args);
 
 // the webserver servers an authenticated
 export default class Webserver {

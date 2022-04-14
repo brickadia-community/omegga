@@ -1,5 +1,6 @@
 import { MatchGenerator } from './types';
 import { OmeggaPlayer } from '@/plugin';
+import Logger from '@/logger';
 
 const leave: MatchGenerator<Promise<OmeggaPlayer>> = omegga => {
   // pattern to get PlayerController from a leave message
@@ -54,7 +55,7 @@ const leave: MatchGenerator<Promise<OmeggaPlayer>> = omegga => {
           omegga.players.map(p => p.raw())
         );
       } catch (e) {
-        Omegga.error('error getting player leave', e);
+        Logger.error('error getting player leave', e);
       }
     },
   };

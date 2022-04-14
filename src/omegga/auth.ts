@@ -1,24 +1,19 @@
+import Logger from '@/logger';
 import soft from '@/softconfig';
 import { IConfig } from '@config/types';
 import * as file from '@util/file';
 import fs from 'fs';
 import path from 'path';
 import { write as writeConfig } from '../brickadia/config';
-import { IOmeggaOptions } from './types';
 import Omegga from './server';
+import { IOmeggaOptions } from './types';
 
 require('colors');
-
-const verboseLog = (...args: any[]) => {
-  if (!global.Omegga.VERBOSE) return;
-  if (global.Omegga.log) global.Omegga.log('V>'.magenta, ...args);
-  else console.log('V>'.magenta, ...args);
-};
 
 // remove the temporary install
 async function removeTempDir() {
   if (fs.existsSync(soft.TEMP_DIR_NAME)) {
-    verboseLog('Removing temporary auth directory');
+    Logger.verbose('Removing temporary auth directory');
 
     // attempt to remove the temporary dir
     try {
@@ -53,13 +48,13 @@ export async function genAuthFiles(
   password: string,
   { debug = false, branch }: { debug?: boolean; branch?: string }
 ) {
-  verboseLog('Generating auth files');
+  Logger.verbose('Generating auth files');
 
   // remove existing temporary install path
   await removeTempDir();
 
   if (fs.existsSync(soft.LOCAL_LAUNCHER)) {
-    verboseLog('Generating auth with local launcher');
+    Logger.verbose('Generating auth with local launcher');
   }
 
   // dummy omegga config
@@ -94,7 +89,7 @@ export async function genAuthFiles(
     let resolved = false;
     // auth succeeded if the server starts
     omegga.once('start', () => {
-      verboseLog('Auth succeeded');
+      Logger.verbose('Auth succeeded');
       resolved = true;
       resolve(true);
 
@@ -104,7 +99,7 @@ export async function genAuthFiles(
 
     // auth failed if we get 'unauthorized'
     omegga.once('unauthorized', () => {
-      verboseLog('Auth failed');
+      Logger.verbose('Auth failed');
       resolved = true;
       resolve(false);
 
@@ -118,7 +113,7 @@ export async function genAuthFiles(
       (...args: any[]) => {
         if (finished) return;
         finished = true;
-        verboseLog('Brickadia', name, 'with code', ...args);
+        Logger.verbose('Brickadia', name, 'with code', ...args);
         if (!resolved) reject('temp server could not start');
       };
 

@@ -1,31 +1,16 @@
-import { IConfig } from '@config/types';
 /*
   Brickadia Server Wrapper
   Manages IO with the game server
 */
-import EventEmitter from 'events';
+
+import Logger from '@/logger';
+import { IConfig } from '@config/types';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import readline from 'readline';
-import path from 'path';
-import stripAnsi from 'strip-ansi';
 import 'colors';
-import Omegga from '../omegga/server';
-
-const verboseLog = (...args: any[]) => {
-  if (!Omegga.VERBOSE) return;
-  if (Omegga.log) Omegga.log('V>'.magenta, ...args);
-  else console.log('V>'.magenta, ...args);
-};
-
-const errorLog = (...args: any[]) => {
-  if (Omegga.error) Omegga.error('!>'.red, ...args);
-  else console.error('!>'.red, ...args);
-};
-
-const warnLog = (...args: any[]) => {
-  if (Omegga.error) Omegga.warn('W>'.yellow, ...args);
-  else console.warn('W>'.yellow, ...args);
-};
+import EventEmitter from 'events';
+import path from 'path';
+import readline from 'readline';
+import stripAnsi from 'strip-ansi';
 
 // list of errors that can be solved by yelling at the user
 const knownErrors: {
@@ -74,12 +59,12 @@ export default class BrickadiaServer extends EventEmitter {
   // start the server child process
   start() {
     const { email, password } = this.config.credentials || {};
-    verboseLog(
+    Logger.verbose(
       'Starting server',
       (!email && !password ? 'without' : 'with').yellow,
       'credentials'
     );
-    verboseLog(
+    Logger.verbose(
       'Running',
       (this.config.server.__LOCAL
         ? path.join(__dirname, '../../tools/brickadia.sh')
@@ -87,7 +72,7 @@ export default class BrickadiaServer extends EventEmitter {
       ).yellow
     );
     if (typeof this.config.server.branch === 'string')
-      verboseLog('Using branch', this.config.server.branch.yellow);
+      Logger.verbose('Using branch', this.config.server.branch.yellow);
 
     // handle local launcher support
     const launchArgs = [
@@ -119,7 +104,10 @@ export default class BrickadiaServer extends EventEmitter {
       ].filter(Boolean)
     ); // remove unused arguments
 
-    verboseLog('Spawn process', this.#child ? this.#child.pid : 'failed'.red);
+    Logger.verbose(
+      'Spawn process',
+      this.#child ? this.#child.pid : 'failed'.red
+    );
 
     this.#child.stdin.setDefaultEncoding('utf8');
     this.#outInterface = readline.createInterface({
@@ -131,29 +119,29 @@ export default class BrickadiaServer extends EventEmitter {
       terminal: false,
     });
     this.attachListeners();
-    verboseLog('Attached listeners');
+    Logger.verbose('Attached listeners');
   }
 
   // write a string to the child process
   write(line: string) {
     if (line.length >= 512) {
       // show a warning
-      warnLog(
+      Logger.warn(
         'WARNING'.yellow,
         'The following line was called and is',
         'longer than allowed limit'.red
       );
-      warnLog(line.replace(/\n$/, ''));
+      Logger.warn(line.replace(/\n$/, ''));
       // throw a fake error to get the line number
       try {
         throw new Error('Console Line Too Long');
       } catch (err) {
-        warnLog(err);
+        Logger.warn(err);
       }
       return;
     }
     if (this.#child) {
-      verboseLog('WRITE'.green, line.replace(/\n$/, ''));
+      Logger.verbose('WRITE'.green, line.replace(/\n$/, ''));
       this.#child.stdin.write(line);
     }
   }
@@ -166,11 +154,11 @@ export default class BrickadiaServer extends EventEmitter {
   // forcibly kills the server
   stop() {
     if (!this.#child) {
-      verboseLog('Cannot stop server as no subprocess exists');
+      Logger.verbose('Cannot stop server as no subprocess exists');
       return;
     }
 
-    verboseLog('Forcibly stopping server');
+    Logger.verbose('Forcibly stopping server');
     // kill the process
     this.#child.kill('SIGINT');
 
@@ -182,7 +170,7 @@ export default class BrickadiaServer extends EventEmitter {
   cleanup() {
     if (!this.#child) return;
 
-    verboseLog('Cleaning up brickadia server');
+    Logger.verbose('Cleaning up brickadia server');
 
     // detach listener
     this.detachListeners();
@@ -210,11 +198,11 @@ export default class BrickadiaServer extends EventEmitter {
 
   // -- listeners for basic events (line, err, exit)
   errorListener(line: string) {
-    verboseLog('ERROR'.red, line);
+    Logger.verbose('ERROR'.red, line);
     this.emit('err', line);
     for (const { match, solution, name, message } of knownErrors) {
       if (line.match(match)) {
-        errorLog(
+        Logger.error(
           `Encountered ${name.red}. ${
             solution ? 'Known fix:\n  ' + solution : message || 'Unknown error.'
           }`
@@ -224,7 +212,7 @@ export default class BrickadiaServer extends EventEmitter {
   }
 
   exitListener(...args: any[]) {
-    verboseLog('Exit listener fired');
+    Logger.verbose('Exit listener fired');
     this.emit('closed', ...args);
     this.cleanup();
   }

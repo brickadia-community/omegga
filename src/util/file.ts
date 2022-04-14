@@ -1,3 +1,4 @@
+import Logger from '@/logger';
 import chokidar from 'chokidar';
 import fs from 'fs';
 import _ from 'lodash';
@@ -23,9 +24,8 @@ function updateJSONCache(file: string) {
     cachedJSON[file] = JSON.parse(body);
     cachedTimes[file] = Date.now();
   } catch (err) {
-    const log = (global.Omegga && global.Omegga.error) || console.error;
-    log('Error updating JSON cache for file', file, err);
-    if (body) log('File contents:', body);
+    Logger.errorp('Error updating JSON cache for file', file, err);
+    if (body) Logger.errorp('File contents:', body);
   }
   return cachedJSON[file];
 }

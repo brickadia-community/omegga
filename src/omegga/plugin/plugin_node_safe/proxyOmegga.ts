@@ -10,7 +10,7 @@ import {
   IPlayerPositions,
   IServerStatus,
 } from '@omegga/types';
-import { OmeggaLike, OmeggaPlayer, WatcherPattern } from '@/plugin';
+import { OmeggaLike, OmeggaCore, OmeggaPlayer, WatcherPattern } from '@/plugin';
 import {
   BRRoleSetup,
   BRRoleAssignments,
@@ -18,6 +18,7 @@ import {
   BRPlayerNameCache,
 } from '@brickadia/types';
 import { WriteSaveObject, ReadSaveObject } from 'brs-js';
+import Logger from '@/logger';
 
 // bootstrap the proxy with initial omegga data
 export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({
@@ -26,7 +27,7 @@ export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({
     {
       host: Object.freeze({ ...omegga.host }),
       version: omegga.version,
-      verbose: global.Omegga.VERBOSE,
+      verbose: Logger.VERBOSE,
       savePath: omegga.savePath,
       path: omegga.path,
       configPath: omegga.configPath,
@@ -39,42 +40,42 @@ export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({
 });
 
 // prototypes that can be directly stolen from omegga
-const STEAL_PROTOTYPES = [
-  'broadcast',
-  'whisper',
-  'middlePrint',
-  'getPlayer',
-  'getPlayers',
-  'findPlayerByName',
-  'getHostId',
-  'clearBricks',
-  'clearAllBricks',
-  'loadBricks',
-  'loadBricksOnPlayer',
-  'saveBricks',
-  'getSavePath',
-  'getSaves',
-  'writeSaveData',
-  'readSaveData',
-  'loadSaveData',
-  'loadSaveDataOnPlayer',
-  'getSaveData',
-  'getRoleSetup',
-  'getRoleAssignments',
-  'getBanList',
-  'getNameCache',
-  'changeMap',
-  'saveMinigame',
-  'deleteMinigame',
-  'resetMinigame',
-  'nextRoundMinigame',
-  'loadMinigame',
-  'getMinigamePresets',
-  'resetEnvironment',
-  'saveEnvironment',
-  'loadEnvironment',
-  'getEnvironmentPresets',
-];
+const STEAL_PROTOTYPES: Record<keyof Required<OmeggaCore>, true> = {
+  broadcast: true,
+  whisper: true,
+  middlePrint: true,
+  getPlayer: true,
+  getPlayers: true,
+  findPlayerByName: true,
+  getHostId: true,
+  clearBricks: true,
+  clearAllBricks: true,
+  loadBricks: true,
+  loadBricksOnPlayer: true,
+  saveBricks: true,
+  getSavePath: true,
+  getSaves: true,
+  writeSaveData: true,
+  readSaveData: true,
+  loadSaveData: true,
+  loadSaveDataOnPlayer: true,
+  getSaveData: true,
+  getRoleSetup: true,
+  getRoleAssignments: true,
+  getBanList: true,
+  getNameCache: true,
+  changeMap: true,
+  saveMinigame: true,
+  deleteMinigame: true,
+  resetMinigame: true,
+  nextRoundMinigame: true,
+  loadMinigame: true,
+  getMinigamePresets: true,
+  resetEnvironment: true,
+  saveEnvironment: true,
+  loadEnvironment: true,
+  getEnvironmentPresets: true,
+};
 
 const badBorrow = (name: string) =>
   new Error(`Method "${name}" not properly borrowed.`);
@@ -96,6 +97,10 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   starting: boolean;
   stopping: boolean;
   currentMap: string;
+
+  configPath: string;
+  savePath: string;
+  presetPath: string;
 
   logWrangler: LogWrangler;
 
@@ -141,7 +146,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     this.on(
       'plugin:players:raw',
       (players: [string, string, string, string][]) =>
-        (this.players = players.map(p => new Player(this, ...p)))
+        (this.players = players.map(p => new Player(this as OmeggaLike, ...p)))
     );
 
     this.on('start', ({ map }) => {
@@ -337,6 +342,6 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
 }
 
 // copy prototypes from core omegga to the proxy omegga
-for (const fn of STEAL_PROTOTYPES) {
-  ProxyOmegga.prototype[fn] = (Omegga.prototype as any)[fn];
+for (const fn in STEAL_PROTOTYPES) {
+  (ProxyOmegga as any).prototype[fn] = Omegga.prototype[fn];
 }

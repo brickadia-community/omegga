@@ -11,6 +11,13 @@ import {
   IServerStatus,
 } from '@omegga/types';
 import type { ReadSaveObject, WriteSaveObject } from 'brs-js';
+import type util from '@util';
+
+declare global {
+  export var Omegga: OmeggaLike;
+  export var Player: StaticPlayer;
+  export var OMEGGA_UTIL: typeof util;
+}
 
 export * from '@brickadia/types';
 export * from '@omegga/types';
@@ -30,7 +37,7 @@ export interface BrickBounds {
 }
 
 export type BrickInteraction = {
-  brick_asset: string;
+  brick_name: string;
   player: { id: string; name: string; controller: string; pawn: string };
   position: [number, number, number];
 };
@@ -145,6 +152,24 @@ export interface OmeggaPlayer {
   ): Promise<void>;
 }
 
+export interface StaticPlayer {
+  /**
+   * get a player's roles, if any
+   * @param omegga omegga instance
+   * @param id player uuid
+   * @return list of roles
+   */
+  getRoles(omegga: OmeggaLike, id: string): readonly string[];
+
+  /**
+   * get a player's permissions in a map like `{"Bricks.ClearOwn": true, ...}`
+   * @param omegga Omegga instance
+   * @param id player uuid
+   * @return permissions map
+   */
+  getPermissions(omegga: OmeggaLike, id: string): Record<string, boolean>;
+}
+
 export interface InjectedCommands {
   /** Get server status */
   getServerStatus(this: OmeggaLike): Promise<IServerStatus>;
@@ -195,7 +220,8 @@ export interface MockEventEmitter {
 }
 
 export interface OmeggaLike
-  extends LogWrangling,
+  extends OmeggaCore,
+    LogWrangling,
     InjectedCommands,
     MockEventEmitter {
   writeln(line: string): void;
@@ -218,6 +244,15 @@ export interface OmeggaLike
   /** current map */
   currentMap: string;
 
+  /** path to config files */
+  configPath: string;
+  /** path to saves */
+  savePath: string;
+  /** path to presets */
+  presetPath: string;
+}
+
+export interface OmeggaCore {
   /**
    * get a list of players
    * @return list of players {id: uuid, name: name} objects

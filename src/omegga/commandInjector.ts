@@ -8,6 +8,7 @@ import {
   IServerStatus,
 } from './types';
 import { InjectedCommands, OmeggaPlayer, OmeggaLike } from '@/plugin';
+import Logger from '@/logger';
 
 const buildTableHeaderRegex = (header: string) => {
   const columns = header.match(/[^|]+/g);
@@ -294,7 +295,7 @@ const COMMANDS: InjectedCommands = {
           })),
       }));
     } catch (e) {
-      global.Omegga.error('error getting minigames', e);
+      Logger.error('error getting minigames', e);
       return undefined;
     }
   },

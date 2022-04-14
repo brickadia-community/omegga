@@ -5,6 +5,7 @@ import * as util from '@util';
 import disrequire from 'disrequire';
 import fs from 'fs';
 import path from 'path';
+import Logger from '@/logger';
 
 global.OMEGGA_UTIL = util;
 
@@ -62,20 +63,11 @@ export default class NodePlugin extends Plugin {
   // require the plugin into the system, run the init func
   async load() {
     const stopPlugin = (reason?: string) => {
-      global.Omegga.error(
-        'error launching node plugin',
-        this.getName(),
-        ':',
-        reason
-      );
+      Logger.errorp('error launching node plugin', this.getName(), ':', reason);
       try {
         this.disrequireAll();
       } catch (e) {
-        global.Omegga.error(
-          'error unloading node plugin (2)',
-          this.getName(),
-          e
-        );
+        Logger.errorp('error unloading node plugin (2)', this.getName(), e);
       }
       this.emitStatus();
       return false;
@@ -134,7 +126,7 @@ export default class NodePlugin extends Plugin {
       this.emitStatus();
       return true;
     } catch (e) {
-      global.Omegga.error('error loading node plugin', this.getName(), e);
+      Logger.errorp('error loading node plugin', this.getName(), e);
       this.emitStatus();
       return false;
     }
@@ -160,7 +152,7 @@ export default class NodePlugin extends Plugin {
       this.commands = [];
       return true;
     } catch (e) {
-      global.Omegga.error('error unloading node plugin', this.getName(), e);
+      Logger.errorp('error unloading node plugin', this.getName(), e);
       this.emitStatus();
       return false;
     }

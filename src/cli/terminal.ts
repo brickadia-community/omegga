@@ -473,6 +473,14 @@ export default class Terminal {
     this.rl.prompt(true);
   }
 
+  // let readline render a debug log without interrupting user input
+  debug(...args: any[]) {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
+    console.debug(...args);
+    this.rl.prompt(true);
+  }
+
   // let readline render a warning log without interrupting user input
   warn(...args: any[]) {
     process.stdout.clearLine(0);

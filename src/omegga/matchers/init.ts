@@ -1,3 +1,4 @@
+import Logger from '@/logger';
 import { MatchGenerator } from './types';
 
 const init: MatchGenerator<void> = _omegga => {
@@ -13,7 +14,7 @@ const init: MatchGenerator<void> = _omegga => {
 
       // check if log is the kill server log
       if (data.match(/we are not the first instance of this executable/)) {
-        Omegga.warn(
+        Logger.warn(
           'W> WARNING'.yellow,
           'You are running multiple brickadia instances, this better be intentional'
         );

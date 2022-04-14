@@ -1,11 +1,11 @@
-import type Omegga from './omegga/server';
+import type Logger from './logger';
 import type Player from './omegga/player';
 import type * as util from './util';
 
-type OmeggaType = typeof Omegga;
+type LoggerType = typeof Logger;
 type PlayerType = typeof Player;
 declare global {
-  var Omegga: OmeggaType;
+  var Logger: LoggerType;
   var Player: PlayerType;
   var OMEGGA_UTIL: typeof util;
 }

@@ -1,3 +1,4 @@
+import Logger from '@/logger';
 import EventEmitter from 'events';
 import fs from 'fs';
 import path from 'path';
@@ -77,11 +78,11 @@ export default class NodeVmPlugin extends Plugin {
 
     // when the worker emits an error or a log, pass it up to omegga
     this.plugin.on('error', (resp, ...args) => {
-      Omegga.error(name.brightRed.underline, '!>'.red, ...args);
+      Logger.error(name.brightRed.underline, '!>'.red, ...args);
       this.notify(resp);
     });
     this.plugin.on('log', (resp, ...args) => {
-      Omegga.log(name.underline, '>>'.green, ...args);
+      Logger.log(name.underline, '>>'.green, ...args);
       this.notify(resp);
     });
 
@@ -93,11 +94,12 @@ export default class NodeVmPlugin extends Plugin {
       try {
         this.notify(resp, await this.storage.get(key));
       } catch (e) {
-        Omegga.error(
+        Logger.error(
           name.brightRed.underline,
           '!>'.red,
           'error in store.get of',
-          key
+          key,
+          e
         );
       }
     });
@@ -105,12 +107,13 @@ export default class NodeVmPlugin extends Plugin {
       try {
         await this.storage.set(key, JSON.parse(value));
       } catch (e) {
-        Omegga.error(
+        Logger.error(
           name.brightRed.underline,
           '!>'.red,
           'error in store.set of',
           key,
-          value
+          value,
+          e
         );
       }
       this.notify(resp);
@@ -119,11 +122,12 @@ export default class NodeVmPlugin extends Plugin {
       try {
         await this.storage.delete(key);
       } catch (e) {
-        Omegga.error(
+        Logger.error(
           name.brightRed.underline,
           '!>'.red,
           'error in store.delete of',
-          key
+          key,
+          e
         );
       }
       this.notify(resp);
@@ -132,7 +136,12 @@ export default class NodeVmPlugin extends Plugin {
       try {
         await this.storage.wipe();
       } catch (e) {
-        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.wipe');
+        Logger.error(
+          name.brightRed.underline,
+          '!>'.red,
+          'error in store.wipe',
+          e
+        );
       }
       this.notify(resp);
     });
@@ -140,10 +149,11 @@ export default class NodeVmPlugin extends Plugin {
       try {
         this.notify(resp, await this.storage.count());
       } catch (e) {
-        Omegga.error(
+        Logger.error(
           name.brightRed.underline,
           '!>'.red,
-          'error in store.count'
+          'error in store.count',
+          e
         );
       }
     });
@@ -151,7 +161,12 @@ export default class NodeVmPlugin extends Plugin {
       try {
         this.notify(resp, await this.storage.keys());
       } catch (e) {
-        Omegga.error(name.brightRed.underline, '!>'.red, 'error in store.keys');
+        Logger.error(
+          name.brightRed.underline,
+          '!>'.red,
+          'error in store.keys',
+          e
+        );
       }
     });
 
@@ -181,7 +196,7 @@ export default class NodeVmPlugin extends Plugin {
         let r = await plugin.emitPlugin(ev, name, args);
         this.notify(resp, r);
       } else {
-        Omegga.error(name.brightRed.underline, '!>'.red, 'error in emitPlugin');
+        Logger.error(name.brightRed.underline, '!>'.red, 'error in emitPlugin');
       }
     });
 
@@ -279,7 +294,7 @@ export default class NodeVmPlugin extends Plugin {
       // kill the worker
       await this.emit('kill');
 
-      Omegga.error(
+      Logger.error(
         '!>'.red,
         'error loading node vm plugin',
         this.getName().brightRed.underline,
@@ -327,7 +342,7 @@ export default class NodeVmPlugin extends Plugin {
           frozen = false;
           if (timed) return;
 
-          Omegga.error(
+          Logger.error(
             '!>'.red,
             'error unloading node plugin',
             this.getName().brightRed.underline,
@@ -422,8 +437,8 @@ export default class NodeVmPlugin extends Plugin {
       input: this.#worker.stderr,
       terminal: false,
     });
-    this.#outInterface.on('line', Omegga.log);
-    this.#errInterface.on('line', Omegga.error);
+    this.#outInterface.on('line', Logger.log);
+    this.#errInterface.on('line', Logger.error);
 
     // attach message emitter
     this.#worker.on('message', ({ action, args }) =>
@@ -432,7 +447,7 @@ export default class NodeVmPlugin extends Plugin {
 
     // broadcast an error if there is one
     this.#worker.on('error', err => {
-      Omegga.error(
+      Logger.error(
         '!>'.red,
         'error in plugin',
         this.getName().brightRed.underline,
@@ -448,7 +463,7 @@ export default class NodeVmPlugin extends Plugin {
       try {
         if (this.#worker) this.#worker.terminate();
       } catch (err) {
-        Omegga.error(
+        Logger.error(
           '!>'.red,
           'Error terminating worker for',
           this.getName().brightRed.underline,
@@ -472,7 +487,7 @@ export default class NodeVmPlugin extends Plugin {
       });
     } catch (e) {
       // make sure post message doesn't crash the entire app
-      Omegga.error('!>'.red, 'error sending to plugin', ...args, e);
+      Logger.error('!>'.red, 'error sending to plugin', ...args, e);
     }
   }
 }

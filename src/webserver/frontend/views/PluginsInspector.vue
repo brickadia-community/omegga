@@ -126,7 +126,7 @@
             <b>Description:</b>
             {{
               (plugin.documentation && plugin.documentation.description) ||
-                'none'
+              'none'
             }}
           </div>
           <div class="stat">
@@ -338,7 +338,7 @@ export default {
     },
   },
   methods: {
-    saveConfig: debounce(async function() {
+    saveConfig: debounce(async function () {
       const diff = {};
       for (const c in this.plugin.config) {
         if (this.plugin.config[c] !== this.config[c]) diff[c] = true;
@@ -356,7 +356,7 @@ export default {
           this.plugin.config = config;
         }, 1000);
       }
-    }, 2000),
+    }, 500),
     updateConfig(key, val) {
       // update the object
       this.config = { ...this.config, [key]: val };
