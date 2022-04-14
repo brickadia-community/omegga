@@ -45,23 +45,11 @@ class Player implements OmeggaPlayer {
   controller: string;
   state: string;
 
-  /**
-   * get a player's roles, if any
-   * @param omegga omegga instance
-   * @param id player uuid
-   * @return list of roles
-   */
   static getRoles(omegga: OmeggaLike, id: string): readonly string[] {
     const data = omegga.getRoleAssignments().savedPlayerRoles[id];
     return Object.freeze(data && data.roles ? data.roles : []);
   }
 
-  /**
-   * get a player's permissions in a map like `{"Bricks.ClearOwn": true, ...}`
-   * @param omegga Omegga instance
-   * @param id player uuid
-   * @return permissions map
-   */
   static getPermissions(
     omegga: OmeggaLike,
     id: string
@@ -152,6 +140,53 @@ class Player implements OmeggaPlayer {
     return Object.freeze(permissions);
   }
 
+  static kill(omegga: OmeggaLike, target: string | OmeggaPlayer) {
+    if (typeof target === 'string') target = omegga.getPlayer(target);
+    if (target?.name) omegga.writeln(`Server.Players.Kill "${target?.name}"`);
+  }
+
+  static damage(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    amount: number
+  ) {
+    if (typeof target === 'string') target = omegga.getPlayer(target);
+    if (amount === 0) return;
+    if (target?.name)
+      omegga.writeln(`Server.Players.Damage "${target?.name}" ${amount}`);
+  }
+
+  static heal(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    amount: number
+  ) {
+    if (amount === 0) return;
+    Player.damage(omegga, target, -amount);
+  }
+
+  static giveItem(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    item: string
+  ) {
+    if (typeof target === 'string') target = omegga.getPlayer(target);
+    if (!item) return;
+    if (target?.name)
+      omegga.writeln(`Server.Players.GiveItem "${target?.name}" ${item}`);
+  }
+
+  static removeItem(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    item: string
+  ) {
+    if (typeof target === 'string') target = omegga.getPlayer(target);
+    if (!item) return;
+    if (target?.name)
+      omegga.writeln(`Server.Players.RemoveItem "${target?.name}" ${item}`);
+  }
+
   /**
    * players are not to be constructed
    * @constructor
@@ -179,7 +214,7 @@ class Player implements OmeggaPlayer {
     return this.#omegga;
   }
 
-  clone(): Player {
+  clone(): OmeggaPlayer {
     return new Player(
       this.#omegga,
       this.name,
@@ -407,10 +442,6 @@ class Player implements OmeggaPlayer {
     };
   }
 
-  /**
-   * gets the bounds of the template in the user's clipboard (bounds of original selection box)
-   * @return
-   */
   async getTemplateBounds() {
     const { controller } = this;
 
@@ -482,24 +513,36 @@ class Player implements OmeggaPlayer {
 
     if (!templateBounds) return;
 
-    const saveData = await this.#omegga.getSaveData();
+    const saveData = await this.#omegga.getSaveData({
+      center: templateBounds.center,
+      extent: [
+        templateBounds.maxBound[0] - templateBounds.minBound[0],
+        templateBounds.maxBound[1] - templateBounds.minBound[1],
+        templateBounds.maxBound[2] - templateBounds.minBound[2],
+      ],
+    });
 
     if (!saveData) return;
 
     // filter bricks outside the bounds
-    saveData.bricks = (saveData.bricks as Brick[]).filter(brick => {
+    // no longer necessary thanks to Bricks.SaveRegion
+    /* saveData.bricks = (saveData.bricks as Brick[]).filter(brick => {
       return brickUtils.checkBounds(
         brick,
         saveData.brick_assets,
         templateBounds
       );
-    }) as typeof saveData.bricks;
+    }) as typeof saveData.bricks; */
 
     if (saveData.bricks.length > 0) {
       return saveData;
     }
 
     return undefined;
+  }
+
+  loadBricks(saveName: string) {
+    this.#omegga.loadBricksOnPlayer(saveName, this);
   }
 
   async loadDataAtGhostBrick(
@@ -543,6 +586,26 @@ class Player implements OmeggaPlayer {
       offZ: offZ + offset[2],
       quiet,
     });
+  }
+
+  kill() {
+    Player.kill(this.#omegga, this);
+  }
+
+  damage(amount: number): void {
+    Player.damage(this.#omegga, this, amount);
+  }
+
+  heal(amount: number): void {
+    Player.heal(this.#omegga, this, amount);
+  }
+
+  giveItem(item: string): void {
+    Player.giveItem(this.#omegga, this, item);
+  }
+
+  removeItem(item: string): void {
+    Player.removeItem(this.#omegga, this, item);
   }
 }
 

@@ -410,15 +410,53 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     this.writeln(`Bricks.Clear ${target} ${quiet ? 1 : ''}`);
   }
 
+  clearRegion(
+    region: {
+      center: [number, number, number];
+      extent: [number, number, number];
+    },
+    options: { target: string | OmeggaPlayer }
+  ) {
+    let target: string;
+
+    // target is a player object, just use that id
+    if (typeof options.target === 'object') target = options.target.id;
+    // if the target isn't a uuid already, find the player by name or controller and use that uuid
+
+    if (typeof target === 'string' && !uuid.match(target)) {
+      // only set the target if the player exists
+      const player = this.getPlayer(target);
+      target = player && player.id;
+    }
+
+    this.writeln(
+      `Bricks.ClearRegion ${region.center.join(' ')} ${region.extent.join(
+        ' '
+      )} ${target}`
+    );
+  }
+
   clearAllBricks(quiet = false) {
     this.writeln(`Bricks.ClearAll ${quiet ? 1 : ''}`);
   }
 
-  saveBricks(saveName: string) {
+  saveBricks(
+    saveName: string,
+    region?: {
+      center: [number, number, number];
+      extent: [number, number, number];
+    }
+  ) {
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
     if (!(saveName.startsWith('"') && saveName.endsWith('"')))
       saveName = `"${saveName}"`;
-    this.writeln(`Bricks.Save ${saveName}`);
+    if (region?.center && region?.extent)
+      this.writeln(
+        `Bricks.SaveRegion ${saveName} ${region.center.join(
+          ' '
+        )} ${region.extent.join(' ')}`
+      );
+    else this.writeln(`Bricks.Save ${saveName}`);
   }
 
   loadBricks(
@@ -547,26 +585,32 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     }
   }
 
-  async getSaveData() {
+  async getSaveData(region?: {
+    center: [number, number, number];
+    extent: [number, number, number];
+  }) {
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempSaveCounter++;
 
+    const command =
+      region?.center && region?.extent
+        ? `Bricks.SaveRegion ${saveFile} ${region.center.join(
+            ' '
+          )} ${region.extent.join(' ')}`
+        : `Bricks.Save ${saveFile}`;
+
     // wait for the server to save the file
-    await this.watchLogChunk(
-      `Bricks.Save "${saveFile}"`,
-      /^(LogBrickSerializer|LogTemp): (.+)$/,
-      {
-        first: match => match[0].endsWith(saveFile + '.brs...'),
-        last: match =>
-          Boolean(
-            match[2].match(
-              /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/
-            )
-          ),
-        afterMatchDelay: 0,
-        timeoutDelay: 30000,
-      }
-    );
+    await this.watchLogChunk(command, /^(LogBrickSerializer|LogTemp): (.+)$/, {
+      first: match => match[0].endsWith(saveFile + '.brs...'),
+      last: match =>
+        Boolean(
+          match[2].match(
+            /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/
+          )
+        ),
+      afterMatchDelay: 0,
+      timeoutDelay: 30000,
+    });
 
     // read the save file
     const savePath = this.getSavePath(saveFile);

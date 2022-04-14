@@ -125,20 +125,20 @@ export interface OmeggaPlayer {
   }>;
 
   /**
-   * gets the bounds of the template in the user's clipboard (bounds of original selection box)
+   * Gets the bounds of the template in the user's clipboard (bounds of original selection box)
    * @return template bounds
    */
   getTemplateBounds(): Promise<BrickBounds>;
 
   /**
-   * get bricks inside template bounds
+   * Get bricks inside template bounds
    * @return BRS JS Save Data
    */
   getTemplateBoundsData(): Promise<ReadSaveObject>;
 
   /**
-   * load bricks at ghost brick location
-   * @param saveData player or player identifier
+   * Load bricks at ghost brick location
+   * @param saveData save data to load
    */
   loadDataAtGhostBrick(
     saveData: WriteSaveObject,
@@ -150,6 +150,41 @@ export interface OmeggaPlayer {
       quiet?: boolean;
     }
   ): Promise<void>;
+
+  /**
+   * Load bricks on this player's clipboard
+   * @param saveName Save to load
+   */
+  loadBricks(saveName: string): void;
+
+  /**
+   * Kills this player
+   */
+  kill(): void;
+
+  /**
+   * Damages a player
+   * @param amount Amount to damage
+   */
+  damage(amount: number): void;
+
+  /**
+   * Heal this player
+   * @param amount to heal
+   */
+  heal(amount: number): void;
+
+  /**
+   * Gives a player an item
+   * @param item Item name (Weapon_Bow)
+   */
+  giveItem(item: string): void;
+
+  /**
+   * Removes an item from a player's inventory
+   * @param item Item name (Weapon_Bow)
+   */
+  removeItem(item: string): void;
 }
 
 export interface StaticPlayer {
@@ -168,6 +203,57 @@ export interface StaticPlayer {
    * @return permissions map
    */
   getPermissions(omegga: OmeggaLike, id: string): Record<string, boolean>;
+
+  /**
+   * Kills a player
+   * @param omegga Omegga instance
+   * @param target Player or player name/id
+   */
+  kill(omegga: OmeggaLike, target: string | OmeggaPlayer): void;
+
+  /**
+   * Damages a player
+   * @param omegga Omegga instance
+   * @param target Player or player name/id
+   * @param amount Damage amount
+   */
+  damage(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    amount: number
+  ): void;
+
+  /**
+   * Heal a player
+   * @param omegga Omegga instance
+   * @param target Player or player name/id
+   * @param amount Heal amount
+   */
+  heal(omegga: OmeggaLike, target: string | OmeggaPlayer, amount: number): void;
+
+  /**
+   * Gives a player an item
+   * @param omegga Omegga instance
+   * @param target Player or player name/id
+   * @param item Item name (Weapon_Bow)
+   */
+  giveItem(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    item: string
+  ): void;
+
+  /**
+   * Removes an item from a player's inventory
+   * @param omegga Omegga instance
+   * @param target Player or player name/id
+   * @param item Item name (Weapon_Bow)
+   */
+  removeItem(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    item: string
+  ): void;
 }
 
 export interface InjectedCommands {
@@ -376,6 +462,21 @@ export interface OmeggaCore {
   clearBricks(target: string | { id: string }, quiet?: boolean): void;
 
   /**
+   * Clear a region of bricks
+   * @param region region to clear
+   * @param options optional settings
+   */
+  clearRegion(
+    region: {
+      center: [number, number, number];
+      extent: [number, number, number];
+    },
+    options: {
+      target: string | OmeggaPlayer;
+    }
+  ): void;
+
+  /**
    * Clear all bricks on the server
    * @param quiet quietly clear bricks
    */
@@ -384,8 +485,15 @@ export interface OmeggaCore {
   /**
    * Save bricks under a name
    * @param saveName save file name
+   * @param region region of bricks to save
    */
-  saveBricks(saveName: string): void;
+  saveBricks(
+    saveName: string,
+    region?: {
+      center: [number, number, number];
+      extent: [number, number, number];
+    }
+  ): void;
 
   /**
    * Load bricks on the server
@@ -454,7 +562,10 @@ export interface OmeggaCore {
   /**
    * get current bricks as save data
    */
-  getSaveData(): Promise<ReadSaveObject>;
+  getSaveData(region?: {
+    center: [number, number, number];
+    extent: [number, number, number];
+  }): Promise<ReadSaveObject>;
 
   /**
    * Change server map

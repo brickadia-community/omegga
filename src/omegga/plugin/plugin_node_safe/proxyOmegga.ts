@@ -49,6 +49,7 @@ const STEAL_PROTOTYPES: Record<keyof Required<OmeggaCore>, true> = {
   findPlayerByName: true,
   getHostId: true,
   clearBricks: true,
+  clearRegion: true,
   clearAllBricks: true,
   loadBricks: true,
   loadBricksOnPlayer: true,
@@ -277,10 +278,27 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   clearBricks(target: string | { id: string }, quiet?: boolean): void {
     throw badBorrow('clearBricks');
   }
+  clearRegion(
+    region: {
+      center: [number, number, number];
+      extent: [number, number, number];
+    },
+    options: {
+      target: string | OmeggaPlayer;
+    }
+  ): void {
+    throw badBorrow('clearRegion');
+  }
   clearAllBricks(quiet?: boolean): void {
     throw badBorrow('clearAllBricks');
   }
-  saveBricks(saveName: string): void {
+  saveBricks(
+    saveName: string,
+    region?: {
+      center: [number, number, number];
+      extent: [number, number, number];
+    }
+  ): void {
     throw badBorrow('saveBricks');
   }
   loadBricks(
@@ -321,7 +339,10 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   ): Promise<void> {
     throw badBorrow('loadSaveDataOnPlayer');
   }
-  getSaveData(): Promise<ReadSaveObject> {
+  getSaveData(region?: {
+    center: [number, number, number];
+    extent: [number, number, number];
+  }): Promise<ReadSaveObject> {
     throw badBorrow('getSaveData');
   }
   changeMap(map: string): Promise<boolean> {
