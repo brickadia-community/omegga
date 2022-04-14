@@ -158,6 +158,22 @@ export interface OmeggaPlayer {
   loadBricks(saveName: string): void;
 
   /**
+   * Load bricks on this player's clipboard passing save data
+   * @param saveData save data to load
+   */
+  loadSaveData(
+    saveData: WriteSaveObject,
+    options?: {
+      rotate?: boolean;
+      offX?: number;
+      offY?: number;
+      offZ?: number;
+      quiet?: boolean;
+    }
+  ): Promise<void>;
+
+
+  /**
    * Kills this player
    */
   kill(): void;

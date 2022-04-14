@@ -516,9 +516,9 @@ class Player implements OmeggaPlayer {
     const saveData = await this.#omegga.getSaveData({
       center: templateBounds.center,
       extent: [
-        templateBounds.maxBound[0] - templateBounds.minBound[0],
-        templateBounds.maxBound[1] - templateBounds.minBound[1],
-        templateBounds.maxBound[2] - templateBounds.minBound[2],
+        (templateBounds.maxBound[0] - templateBounds.minBound[0]) / 2,
+        (templateBounds.maxBound[1] - templateBounds.minBound[1]) / 2,
+        (templateBounds.maxBound[2] - templateBounds.minBound[2]) / 2,
       ],
     });
 
@@ -543,6 +543,13 @@ class Player implements OmeggaPlayer {
 
   loadBricks(saveName: string) {
     this.#omegga.loadBricksOnPlayer(saveName, this);
+  }
+
+  async loadSaveData(
+    saveData: WriteSaveObject,
+    { offX = 0, offY = 0, offZ = 0 } = {}
+  ) {
+    await this.#omegga.loadSaveDataOnPlayer(saveData, this, { offX, offY, offZ });
   }
 
   async loadDataAtGhostBrick(
