@@ -31,7 +31,7 @@ const command: MatchGenerator<{
         return { name, command, args: args.split(' ') };
       }
 
-      return null;
+      return;
     },
     // when there's a match, emit the comand event
     callback({ name, command, args }) {
