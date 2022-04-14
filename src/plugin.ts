@@ -172,7 +172,6 @@ export interface OmeggaPlayer {
     }
   ): Promise<void>;
 
-
   /**
    * Kills this player
    */
@@ -370,13 +369,13 @@ export interface OmeggaCore {
    * find a player by name, id, controller, or state
    * @param target - name, id, controller, or state
    */
-  getPlayer(target: string): OmeggaPlayer;
+  getPlayer(target: string): OmeggaPlayer | null;
 
   /**
    * find a player by rough name, prioritize exact matches and get fuzzier
    * @param name player name, fuzzy
    */
-  findPlayerByName(name: string): OmeggaPlayer;
+  findPlayerByName(name: string): OmeggaPlayer | null;
 
   /**
    * get the host's ID
