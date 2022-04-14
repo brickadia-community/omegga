@@ -1,5 +1,4 @@
-import type Player from './player';
-import type Omegga from './server';
+import type { OmeggaPlayer } from '@/plugin';
 
 export interface IOmeggaOptions {
   noauth?: boolean;
@@ -35,7 +34,7 @@ export type IMinigameList = {
 }[];
 
 export type IPlayerPositions = {
-  player: Player;
+  player: OmeggaPlayer;
   pawn: string;
   pos: number[];
   isDead: boolean;
@@ -44,60 +43,11 @@ export type IPlayerPositions = {
 export type ILogMinigame = {
   name: string;
   ruleset: string;
-  members: Player[];
+  members: OmeggaPlayer[];
   teams: {
     name: string;
     team: string;
     color: number[];
-    members: Player[];
+    members: OmeggaPlayer[];
   }[];
 };
-
-export interface PluginStore<
-  Storage extends Record<string, unknown> = Record<string, unknown>
-> {
-  get<T extends keyof Storage>(key: T): Promise<Storage[T]>;
-  set<T extends keyof Storage>(key: T, value: Storage[T]): Promise<void>;
-  delete(key: string): Promise<void>;
-  wipe(): Promise<void>;
-  count(): Promise<number>;
-  keys(): Promise<(keyof Storage)[]>;
-}
-
-export type PluginConfig<
-  T extends Record<string, unknown> = Record<string, unknown>
-> = T;
-
-export interface OmeggaPluginClass<
-  Config extends Record<string, unknown> = Record<string, unknown>,
-  Storage extends Record<string, unknown> = Record<string, unknown>
-> {
-  new (
-    omegga: Omegga,
-    config: PluginConfig<Config>,
-    store: PluginStore<Storage>
-  ): OmeggaPlugin<Config>;
-}
-
-export class OmeggaPlugin<
-  Config extends Record<string, unknown> = Record<string, unknown>,
-  Storage extends Record<string, unknown> = Record<string, unknown>
-> {
-  omegga: Omegga;
-  config: PluginConfig<Config>;
-  store: PluginStore<Storage>;
-
-  constructor(
-    omegga: Omegga,
-    config: PluginConfig<Config>,
-    store: PluginStore<Storage>
-  ) {
-    this.omegga = omegga;
-    this.config = config;
-    this.store = store;
-  }
-
-  async init(): Promise<void | { registeredCommands: string[] }> {}
-  async stop(): Promise<void> {}
-  pluginEvent?(event: string, from: string, ...args: any[]): Promise<unknown>;
-}

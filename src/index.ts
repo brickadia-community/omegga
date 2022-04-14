@@ -6,6 +6,8 @@ export * from '@omegga/types';
 export * from '@config/types';
 export * from '@brickadia/types';
 
+export * from './plugin';
+
 /** BrickadiaServer - manages the server child process */
 import * as Server from '@brickadia/server';
 /** config writer for brickadia */

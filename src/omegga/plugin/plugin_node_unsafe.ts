@@ -1,6 +1,6 @@
 import { Plugin } from '@omegga/plugin';
 import type Omegga from '@omegga/server';
-import { PluginStore, OmeggaPluginClass } from '@omegga/types';
+import OmeggaPlugin, { PluginStore } from '@/plugin';
 import * as util from '@util';
 import disrequire from 'disrequire';
 import fs from 'fs';
@@ -92,12 +92,12 @@ export default class NodePlugin extends Plugin {
       }
 
       // require the plugin itself
-      const Plugin: OmeggaPluginClass = require(this.pluginFile);
+      const Plugin: OmeggaPlugin = require(this.pluginFile);
 
       // node plugins must export a class with a constructor
       if (
-        typeof Plugin.prototype !== 'object' ||
-        typeof Plugin.prototype.constructor !== 'function'
+        typeof (Plugin as any).prototype !== 'object' ||
+        typeof (Plugin as any).prototype.constructor !== 'function'
       )
         return stopPlugin();
 
@@ -112,7 +112,7 @@ export default class NodePlugin extends Plugin {
       };
 
       // create the loaded plugin
-      this.loadedPlugin = new Plugin(this.omegga, config, store);
+      this.loadedPlugin = new (Plugin as any)(this.omegga, config, store);
 
       // start the loaded plugin
       if (typeof this.loadedPlugin.init === 'function') {

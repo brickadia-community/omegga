@@ -4,7 +4,7 @@ import path from 'path';
 import soft from '@/softconfig';
 import type Player from './player';
 import type Omegga from './server';
-import { OmeggaPlugin } from './types';
+import OmeggaPlugin from '@/plugin';
 
 // Check if this plugin is disabled
 const DISABLED_FILE = 'disabled.omegga';

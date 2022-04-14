@@ -1,7 +1,7 @@
-import Player from '@omegga/player';
 import { MatchGenerator } from './types';
+import { OmeggaPlayer } from '@/plugin';
 
-const leave: MatchGenerator<Promise<Player>> = omegga => {
+const leave: MatchGenerator<Promise<OmeggaPlayer>> = omegga => {
   // pattern to get PlayerController from a leave message
   const ownerRegExp = /Owner: (BP_PlayerController_C_\d+)/;
 

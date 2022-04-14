@@ -13,5 +13,8 @@
   "javascript.preferences.importModuleSpecifierEnding": "minimal",
   "eslint.lintTask.enable": true,
   "git.autofetch": true,
-  "editor.linkedEditing": true
+  "editor.linkedEditing": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }

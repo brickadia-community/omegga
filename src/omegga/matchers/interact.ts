@@ -1,10 +1,5 @@
 import { MatchGenerator } from './types';
-
-export type BrickInteraction = {
-  brick_asset: string;
-  player: { id: string; name: string; controller: string; pawn: string };
-  position: [number, number, number];
-};
+import { BrickInteraction } from '@/plugin';
 
 const interactRegExp =
   /^Player "(?<name>[^"]+)" \((?<id>[^,]+), (?<pawn>[^,]+), (?<controller>[^)]+)\) interacted with brick "(?<brick>[^\"]+)" at (?<x>-?\d+) (?<y>-?\d+) (?<z>-?\d+).$/;

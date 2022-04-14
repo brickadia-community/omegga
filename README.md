@@ -592,8 +592,11 @@ Be sure to put `.build/` and `node_modules/` in your `.gitignore`
     "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "target": "es2017",
-    "typeRoots": []
+    "target": "es2020",
+    "baseUrl": ".",
+    "paths": {
+      "omegga/*": ["node_modules/omegga/dist/*"]
+    }
   }
 }
 ```
@@ -601,15 +604,34 @@ Be sure to put `.build/` and `node_modules/` in your `.gitignore`
 `omegga.plugin.ts`:
 
 ```ts
-import { OmeggaPlugin } from 'omegga';
+import type { OmeggaPlugin, OL, PS, PC } from 'omegga/plugin';
 
 type Config = { foo: string };
-type Storage = { foo: string };
+type Storage = { bar: string };
 
-export default class Plugin extends OmeggaPlugin<Config, Storage> {
-  async init() {}
+export default class Plugin implements OmeggaPlugin<Config, Storage> {
+  omegga: OL;
+  config: PC<Config>;
+  store: PS<Storage>;
 
-  async stop() {}
+  constructor(omegga: OL, config: PC<Config>, store: PS<Storage>) {
+    this.omegga = omegga;
+    this.config = config;
+    this.store = store;
+  }
+
+  async init() {
+    // Write your plugin!
+    this.omegga.on('cmd:test', (speaker: string) => {
+      this.omegga.broadcast(`Hello, ${speaker}!`);
+    });
+
+    return { registeredCommands: ['test'] };
+  }
+
+  async stop() {
+    // Anything that needs to be cleaned up...
+  }
 }
 ```
 

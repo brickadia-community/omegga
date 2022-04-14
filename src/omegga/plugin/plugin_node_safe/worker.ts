@@ -5,8 +5,7 @@
 
 import type { Plugin } from '@omegga/plugin';
 import type Omegga from '@omegga/server';
-import type { PluginStore } from '@omegga/types';
-import { OmeggaPlugin, OmeggaPluginClass } from '@omegga/types';
+import OmeggaPlugin, { PluginStore } from '@/plugin';
 import { transformFileSync, transformSync } from '@swc/core';
 import { mkdir } from '@util/file';
 import 'colors';
@@ -19,7 +18,7 @@ import { ProxyOmegga } from './proxyOmegga';
 
 const MAIN_FILE = 'omegga.plugin.js';
 const MAIN_FILE_TS = 'omegga.plugin.ts';
-let vm: NodeVM, PluginClass: OmeggaPluginClass, pluginInstance: OmeggaPlugin;
+let vm: NodeVM, PluginClass: any, pluginInstance: OmeggaPlugin;
 let pluginName = 'unnamed plugin';
 let messageCounter = 0;
 // emitter that receives messages from the parent
@@ -120,6 +119,7 @@ function createVm(
         },
         module: {
           type: 'commonjs',
+          strict: false,
         },
       });
 
@@ -184,8 +184,7 @@ function createVm(
   // potential for performance improvement by using VM.script to precompile plugins
   try {
     const pluginOutput = vm.run(pluginCode, file);
-    PluginClass =
-      'default' in pluginOutput ? pluginOutput.default : pluginOutput;
+    PluginClass = pluginOutput?.default ?? pluginOutput;
   } catch (e) {
     emit('error', 'plugin failed to init');
     console.log(e);

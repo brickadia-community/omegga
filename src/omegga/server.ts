@@ -1,4 +1,4 @@
-import { includes } from '@/info/default_commands.json';
+import default_commands from '@/info/default_commands.json';
 import {
   BRICKADIA_AUTH_FILES,
   CONFIG_AUTH_DIR,
@@ -22,6 +22,7 @@ import 'colors';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { sync } from 'glob';
 import { basename, join } from 'path';
+import { OmeggaLike, OmeggaPlayer } from '@/plugin';
 import commandInjector from './commandInjector';
 import MATCHERS from './matchers';
 import Player from './player';
@@ -46,7 +47,7 @@ const verboseLog = (...args: unknown[]) => {
   else console.log('V>'.magenta, ...args);
 };
 
-class Omegga extends OmeggaWrapper {
+class Omegga extends OmeggaWrapper implements OmeggaLike {
   /** The save counter prevents omegga from saving over the same file */
   _tempSaveCounter = 0;
   /** The save prefix is prepended to all temporary saves */
@@ -105,7 +106,7 @@ class Omegga extends OmeggaWrapper {
   version: number;
 
   host?: { id: string; name: string };
-  players: Player[];
+  players: OmeggaPlayer[];
 
   started: boolean;
   starting: boolean;
@@ -231,7 +232,7 @@ class Omegga extends OmeggaWrapper {
       // if it's not in the default commands and it's not registered to a plugin,
       // it's okay to send the missing command message
       if (
-        !includes(cmd) &&
+        !default_commands.includes(cmd) &&
         (!this.pluginLoader || !this.pluginLoader.isCommand(cmd))
       ) {
         this.whisper(name, MISSING_CMD);
@@ -305,14 +306,6 @@ class Omegga extends OmeggaWrapper {
 
   // TODO: split messages that longer than 512 characters
   // TODO: delete characters that are known to crash the game
-  /**
-   * broadcast messages to chat
-   * messages are broken by new line
-   * multiple arguments are additional lines
-   * all messages longer than 512 characters are deleted automatically, though omegga wouldn't have sent them anyway
-   * @param messages unescaped chat messages to send. may need to wrap messages with quotes
-   */
-  //
   broadcast(...messages: string[]) {
     messages
       .flatMap(m => m.toString().split('\n'))
@@ -320,16 +313,7 @@ class Omegga extends OmeggaWrapper {
       .forEach(m => this.writeln(`Chat.Broadcast ${m}`));
   }
 
-  /**
-   * whisper messages to a player's chat
-   * messages are broken by new line
-   * multiple arguments are additional lines
-   * all messages longer than 512 characters are deleted automatically, though omegga wouldn't have sent them anyway
-   * @param target - player identifier or player object
-   * @param messages - unescaped chat messages to send. may need to wrap messages with quotes
-   */
-  //
-  whisper(target: string | Player, ...messages: string[]) {
+  whisper(target: string | OmeggaPlayer, ...messages: string[]) {
     // find the target player
     if (typeof target !== 'object') target = this.getPlayer(target);
 
@@ -342,14 +326,7 @@ class Omegga extends OmeggaWrapper {
       );
   }
 
-  /**
-   * prints text to the middle of a player's screen
-   * all messages longer than 512 characters are deleted automatically
-   * @param target - player identifier or player object
-   * @param message - unescaped chat messages to send. may need to wrap messages with quotes
-   */
-  //
-  middlePrint(target: string | Player, message: string) {
+  middlePrint(target: string | OmeggaPlayer, message: string) {
     // find the target player
     if (typeof target !== 'object') target = this.getPlayer(target);
 
@@ -360,10 +337,6 @@ class Omegga extends OmeggaWrapper {
     );
   }
 
-  /**
-   * get a list of players
-   * @return list of players {id: uuid, name: name} objects
-   */
   getPlayers(): {
     id: string;
     name: string;
@@ -373,46 +346,29 @@ class Omegga extends OmeggaWrapper {
     return this.players.map(p => ({ ...p }));
   }
 
-  /**
-   * Get up-to-date role setup from RoleSetup.json
-   */
   getRoleSetup(): BRRoleSetup {
     return readWatchedJSON(
       join(this.configPath, 'RoleSetup.json')
     ) as BRRoleSetup;
   }
 
-  /**
-   * Get up-to-date role assignments from RoleAssignment.json
-   */
   getRoleAssignments(): BRRoleAssignments {
     return readWatchedJSON(
       join(this.configPath, 'RoleAssignments.json')
     ) as BRRoleAssignments;
   }
 
-  /**
-   * Get up-to-date ban list from BanList.json
-   */
   getBanList(): BRBanList {
     return readWatchedJSON(join(this.configPath, 'BanList.json')) as BRBanList;
   }
 
-  /**
-   * Get up-to-date name cache from PlayerNameCache.json
-   * @return {object}
-   */
   getNameCache(): BRPlayerNameCache {
     return readWatchedJSON(
       join(this.configPath, 'PlayerNameCache.json')
     ) as BRPlayerNameCache;
   }
 
-  /**
-   * find a player by name, id, controller, or state
-   * @param target - name, id, controller, or state
-   */
-  getPlayer(target: string): Player {
+  getPlayer(target: string): OmeggaPlayer {
     return this.players.find(
       p =>
         p.name === target ||
@@ -422,11 +378,7 @@ class Omegga extends OmeggaWrapper {
     );
   }
 
-  /**
-   * find a player by rough name, prioritize exact matches and get fuzzier
-   * @param name player name, fuzzy
-   */
-  findPlayerByName(name: string): Player {
+  findPlayerByName(name: string): OmeggaPlayer {
     name = name.toLowerCase();
     const exploded = pattern.explode(name);
     return (
@@ -436,61 +388,32 @@ class Omegga extends OmeggaWrapper {
     ); // find by exploded regex match (ck finds cake, tbp finds TheBlackParrot)
   }
 
-  /**
-   * get the host's ID
-   * @return Host Id
-   */
   getHostId(): string {
     return this.host?.id ?? '';
   }
 
-  /**
-   * Save a minigame preset based on a minigame index
-   * @param index minigame index
-   * @param name preset name
-   */
   saveMinigame(index: number, name: string) {
     this.writeln(`Server.Minigames.SavePreset ${index} "${name}"`);
   }
 
-  /**
-   * Delete a minigame
-   * @param index minigame index
-   */
   deleteMinigame(index: number) {
     this.writeln(`Server.Minigames.Delete ${index}`);
   }
 
-  /**
-   * Reset a minigame
-   * @param index minigame index
-   */
   resetMinigame(index: number) {
     this.writeln(`Server.Minigames.Reset ${index}`);
   }
 
-  /**
-   * Force the next round in a minigame
-   * @param index minigame index
-   */
   nextRoundMinigame(index: number) {
     this.writeln(`Server.Minigames.NextRound ${index}`);
   }
 
-  /**
-   * Load an Minigame preset
-   * @param presetName preset name
-   * @param owner owner id/name
-   */
   loadMinigame(presetName: string, owner = '') {
     this.writeln(
       `Server.Minigames.LoadPreset "${presetName}" ${owner ? `"${owner}"` : ''}`
     );
   }
 
-  /**
-   * get all presets in the minigame folder and child folders
-   */
   getMinigamePresets(): string[] {
     const presetPath = join(this.presetPath, 'Minigames');
     return existsSync(presetPath)
@@ -498,32 +421,18 @@ class Omegga extends OmeggaWrapper {
       : [];
   }
 
-  /**
-   * Reset the environment settings
-   */
   resetEnvironment() {
     this.writeln(`Server.Environment.Reset`);
   }
 
-  /**
-   * Save an environment preset
-   * @param presetName preset name
-   */
   saveEnvironment(presetName: string) {
     this.writeln(`Server.Environment.SavePreset "${presetName}"`);
   }
 
-  /**
-   * Load an environment preset
-   * @param presetName preset name
-   */
   loadEnvironment(presetName: string) {
     this.writeln(`Server.Environment.LoadPreset "${presetName}"`);
   }
 
-  /**
-   * get all presets in the environment folder and child folders
-   */
   getEnvironmentPresets(): string[] {
     const presetPath = join(this.presetPath, 'Environment');
     return existsSync(presetPath)
@@ -531,11 +440,6 @@ class Omegga extends OmeggaWrapper {
       : [];
   }
 
-  /**
-   * clear a user's bricks (by uuid, name, controller, or player object)
-   * @param target player or player identifier
-   * @param quiet quietly clear bricks
-   */
   clearBricks(target: string | { id: string }, quiet = false) {
     // target is a player object, just use that id
     if (typeof target === 'object' && target.id) target = target.id;
@@ -551,18 +455,10 @@ class Omegga extends OmeggaWrapper {
     this.writeln(`Bricks.Clear ${target} ${quiet ? 1 : ''}`);
   }
 
-  /**
-   * Clear all bricks on the server
-   * @param quiet quietly clear bricks
-   */
   clearAllBricks(quiet = false) {
     this.writeln(`Bricks.ClearAll ${quiet ? 1 : ''}`);
   }
 
-  /**
-   * Save bricks under a name
-   * @param saveName save file name
-   */
   saveBricks(saveName: string) {
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
     if (!(saveName.startsWith('"') && saveName.endsWith('"')))
@@ -570,9 +466,6 @@ class Omegga extends OmeggaWrapper {
     this.writeln(`Bricks.Save ${saveName}`);
   }
 
-  /**
-   * Load bricks on the server
-   */
   loadBricks(
     saveName: string,
     { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
@@ -586,12 +479,9 @@ class Omegga extends OmeggaWrapper {
     );
   }
 
-  /**
-   * Load bricks on the server into a player's clipbaord
-   */
   loadBricksOnPlayer(
     saveName: string,
-    player: string | Player,
+    player: string | OmeggaPlayer,
     { offX = 0, offY = 0, offZ = 0 } = {}
   ) {
     player = typeof player === 'string' ? this.getPlayer(player) : player;
@@ -606,18 +496,10 @@ class Omegga extends OmeggaWrapper {
     );
   }
 
-  /**
-   * get all saves in the save folder and child folders
-   */
   getSaves(): string[] {
     return existsSync(this.savePath) ? sync(this.savePath + '/**/*.brs') : [];
   }
 
-  /**
-   * Checks if a save exists and returns an absolute path
-   * @param saveName Save filename
-   * @return Path to string
-   */
   getSavePath(saveName: string) {
     const file = join(
       this.savePath,
@@ -626,11 +508,6 @@ class Omegga extends OmeggaWrapper {
     return existsSync(file) ? file : undefined;
   }
 
-  /**
-   * unsafely load save data (wrap in try/catch)
-   * @param saveName {String} - save file name
-   * @param saveData {SaveData} - BRS JS Save data
-   */
   writeSaveData(saveName: string, saveData: WriteSaveObject) {
     if (typeof saveName !== 'string')
       throw 'expected name argument for writeSaveData';
@@ -641,12 +518,6 @@ class Omegga extends OmeggaWrapper {
     writeFileSync(file, new Uint8Array(write(saveData)));
   }
 
-  /**
-   * unsafely read save data (wrap in try/catch)
-   * @param saveName save file name
-   * @param nobricks only read save header data
-   * @return BRS JS Save Data
-   */
   readSaveData(saveName: string, nobricks = false): ReadSaveObject {
     if (typeof saveName !== 'string')
       throw 'expected name argument for readSaveData';
@@ -661,10 +532,6 @@ class Omegga extends OmeggaWrapper {
       });
   }
 
-  /**
-   * load bricks from save data and resolve when game finishes loading
-   * @param  saveData - BRS JS Save data
-   */
   async loadSaveData(
     saveData: WriteSaveObject,
     { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
@@ -693,15 +560,10 @@ class Omegga extends OmeggaWrapper {
     }
   }
 
-  /**
-   * load bricks from save data and resolve when game finishes loading
-   * @param  saveData - BRS JS Save data
-   * @param  name - Player name/id or player object
-   */
   async loadSaveDataOnPlayer(
     saveData: WriteSaveObject,
-    player: string | Player,
-    { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
+    player: string | OmeggaPlayer,
+    { offX = 0, offY = 0, offZ = 0 } = {}
   ) {
     player = typeof player === 'string' ? this.getPlayer(player) : player;
     if (!player) return;
@@ -730,9 +592,6 @@ class Omegga extends OmeggaWrapper {
     }
   }
 
-  /**
-   * get current bricks as save data
-   */
   async getSaveData() {
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempSaveCounter++;
@@ -770,10 +629,6 @@ class Omegga extends OmeggaWrapper {
     return undefined;
   }
 
-  /**
-   * Change server map
-   * @param  map Map name
-   */
   async changeMap(map: string) {
     if (!map) return;
 

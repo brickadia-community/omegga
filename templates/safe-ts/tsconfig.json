@@ -4,7 +4,12 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "target": "es2017",
-    "typeRoots": []
+    "target": "es2020",
+    "baseUrl": ".",
+    "paths": {
+      "omegga/*": [
+        "node_modules/omegga/dist/*"
+      ]
+    },
   }
 }

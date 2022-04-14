@@ -4,47 +4,12 @@ The wrapper combines the things looking at or waiting for logs with the actual s
 
 import Omegga from './server';
 
+import { IMatcher, IWatcher, LogWrangling } from '@/plugin';
+
 const GENERIC_LINE_REGEX =
   /^(\[(?<date>\d{4}\.\d\d.\d\d-\d\d.\d\d.\d\d:\d{3})\]\[\s*(?<counter>\d+)\])?(?<generator>\w+): (?<data>.+)$/;
 
-export type WatcherPattern<T> = (
-  line: string,
-  match: RegExpMatchArray
-) => T | RegExpMatchArray | '[OMEGGA_WATCHER_DONE]';
-
-export type IMatcher<T> =
-  | {
-      pattern: RegExp;
-      callback: (match: RegExpMatchArray) => boolean;
-    }
-  | {
-      pattern: (line: string, match: RegExpMatchArray) => T;
-      callback: (match: RegExpMatchArray) => T;
-    };
-
-export type IWatcher<T> = {
-  bundle: boolean;
-  debounce: boolean;
-  timeoutDelay: number;
-  afterMatchDelay: number;
-  last: (match: T) => boolean;
-  callback: () => void;
-  resolve: (...args: any[]) => void;
-  remove: () => void;
-  done: () => void;
-  timeout: ReturnType<typeof setTimeout>;
-} & (
-  | {
-      pattern: WatcherPattern<T>;
-      matches: T[];
-    }
-  | {
-      pattern: RegExp;
-      matches: RegExpMatchArray[];
-    }
-);
-
-class LogWrangler {
+class LogWrangler implements LogWrangling {
   // list of patterns and callbacks watching the brickadia logs in general
   #matchers: IMatcher<unknown>[] = [];
 

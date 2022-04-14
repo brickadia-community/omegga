@@ -62,13 +62,13 @@ class OmeggaWrapper extends EventEmitter {
   }
 
   // event emitter to catch everything
-  emit(type: string, ...args: any[]) {
+  emit(type: string, ...args: any) {
     try {
-      super.emit('*', type, ...args);
+      (super.emit as any)('*', type, ...args);
     } catch (e) {
       // error emitting
     }
-    return super.emit(type, ...args);
+    return (super.emit as any)(type, ...args);
   }
 }
 

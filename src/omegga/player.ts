@@ -1,8 +1,7 @@
-import type Omegga from './server';
-
 import { color, brick as brickUtils } from '../util/';
 import { Brick, WriteSaveObject } from 'brs-js';
-import { IBrickBounds } from '../util/brick';
+import { IBrickBounds } from '@util/brick';
+import type { OmeggaPlayer, OmeggaLike } from '@/plugin';
 
 const DEFAULT_PERMS: Record<string, string[]> = {
   moderator: [
@@ -39,76 +38,12 @@ const DEFAULT_PERMS: Record<string, string[]> = {
   ],
 };
 
-class Player {
-  #omegga: Omegga;
+class Player implements OmeggaPlayer {
+  #omegga: OmeggaLike;
   name: string;
   id: string;
   controller: string;
   state: string;
-
-  /**
-   * players are not to be constructed
-   * @constructor
-   * @param  omegga Omegga Instance
-   * @param  name Player Name
-   * @param  id Player Id
-   * @param  controller Player Controller
-   * @param  state Player State
-   */
-  constructor(
-    omegga: Omegga,
-    name: string,
-    id: string,
-    controller: string,
-    state: string
-  ) {
-    this.#omegga = omegga;
-    this.name = name;
-    this.id = id;
-    this.controller = controller;
-    this.state = state;
-  }
-
-  /**
-   * Returns omegga
-   */
-  getOmegga(): Omegga {
-    return this.#omegga;
-  }
-
-  /**
-   * Clone a player
-   */
-  clone(): Player {
-    return new Player(
-      this.#omegga,
-      this.name,
-      this.id,
-      this.controller,
-      this.state
-    );
-  }
-
-  /**
-   * Get raw player info (to feed into a constructor)
-   */
-  raw(): [string, string, string, string] {
-    return [this.name, this.id, this.controller, this.state];
-  }
-
-  /**
-   * true if the player is the host
-   */
-  isHost(): boolean {
-    return this.#omegga.host.id === this.id;
-  }
-
-  /**
-   * clear this player's bricks
-   */
-  clearBricks(quiet = false) {
-    this.#omegga.clearBricks(this.id, quiet);
-  }
 
   /**
    * get a player's roles, if any
@@ -116,16 +51,9 @@ class Player {
    * @param id player uuid
    * @return list of roles
    */
-  static getRoles(omegga: Omegga, id: string): readonly string[] {
+  static getRoles(omegga: OmeggaLike, id: string): readonly string[] {
     const data = omegga.getRoleAssignments().savedPlayerRoles[id];
     return Object.freeze(data && data.roles ? data.roles : []);
-  }
-
-  /**
-   * get a player's roles, if any
-   */
-  getRoles(): readonly string[] {
-    return Player.getRoles(this.#omegga, this.id);
   }
 
   /**
@@ -134,7 +62,10 @@ class Player {
    * @param id player uuid
    * @return permissions map
    */
-  static getPermissions(omegga: Omegga, id: string): Record<string, boolean> {
+  static getPermissions(
+    omegga: OmeggaLike,
+    id: string
+  ): Record<string, boolean> {
     const { roles, defaultRole } = omegga.getRoleSetup();
 
     // if the player is the host, the player has every permission
@@ -222,18 +153,63 @@ class Player {
   }
 
   /**
-   * get a player's permissions in a map like `{"Bricks.ClearOwn": true, ...}`
-   * @return {Object} - permissions map
+   * players are not to be constructed
+   * @constructor
+   * @param omegga Omegga Instance
+   * @param name Player Name
+   * @param id Player Id
+   * @param controller Player Controller
+   * @param state Player State
    */
-  getPermissions() {
+  constructor(
+    omegga: OmeggaLike,
+    name: string,
+    id: string,
+    controller: string,
+    state: string
+  ) {
+    this.#omegga = omegga;
+    this.name = name;
+    this.id = id;
+    this.controller = controller;
+    this.state = state;
+  }
+
+  getOmegga(): OmeggaLike {
+    return this.#omegga;
+  }
+
+  clone(): Player {
+    return new Player(
+      this.#omegga,
+      this.name,
+      this.id,
+      this.controller,
+      this.state
+    );
+  }
+
+  raw(): [string, string, string, string] {
+    return [this.name, this.id, this.controller, this.state];
+  }
+
+  isHost(): boolean {
+    return this.#omegga.host.id === this.id;
+  }
+
+  clearBricks(quiet = false) {
+    this.#omegga.clearBricks(this.id, quiet);
+  }
+
+  getRoles(): readonly string[] {
+    return Player.getRoles(this.#omegga, this.id);
+  }
+
+  getPermissions(): Record<string, boolean> {
     return Player.getPermissions(this.#omegga, this.id);
   }
 
-  /**
-   * get player's name color
-   * @return 6 character hex string
-   */
-  getNameColor() {
+  getNameColor(): string {
     const { roles, defaultRole, ownerRoleColor, bOwnerRoleHasColor } =
       this.#omegga.getRoleSetup();
 
@@ -265,11 +241,7 @@ class Player {
     );
   }
 
-  /**
-   * get player's position
-   * @return {Promise<List<Number>>} - [x, y, z] coordinates
-   */
-  async getPosition() {
+  async getPosition(): Promise<[number, number, number]> {
     // this is here because my text editor had weird syntax highlighting glitches when the other omeggas were replaced with this.#omegga...
     // guess the code is "too new" :egg:
     const omegga = this.#omegga;
@@ -313,14 +285,14 @@ class Player {
     });
 
     // return the player's position as an array of numbers
-    return [x, y, z].map(Number);
+    return [Number(x), Number(y), Number(z)];
   }
 
-  /**
-   * gets a user's ghost brick info (by uuid, name, controller, or player object)
-   * @return {Promise<Object>} - ghost brick data
-   */
-  async getGhostBrick() {
+  async getGhostBrick(): Promise<{
+    targetGrid: string;
+    location: number[];
+    orientation: string;
+  }> {
     const { controller } = this;
 
     const ownerRegExp =
@@ -365,10 +337,12 @@ class Player {
     };
   }
 
-  /**
-   * gets a user's paint tool properties
-   */
-  async getPaint() {
+  async getPaint(): Promise<{
+    materialIndex: string;
+    materialAlpha: string;
+    material: string;
+    color: number[];
+  }> {
     const { controller } = this;
 
     const ownerRegExp =
@@ -435,7 +409,7 @@ class Player {
 
   /**
    * gets the bounds of the template in the user's clipboard (bounds of original selection box)
-   * @return {Promise<Object>} - template bounds
+   * @return
    */
   async getTemplateBounds() {
     const { controller } = this;
@@ -503,10 +477,6 @@ class Player {
     } as IBrickBounds;
   }
 
-  /**
-   * get bricks inside template bounds
-   * @return {Promise<SaveData>} - BRS JS Save Data
-   */
   async getTemplateBoundsData() {
     const templateBounds = await this.getTemplateBounds();
 
@@ -532,10 +502,6 @@ class Player {
     return undefined;
   }
 
-  /**
-   * load bricks at ghost brick location
-   * @param saveData player or player identifier
-   */
   async loadDataAtGhostBrick(
     saveData: WriteSaveObject,
     { rotate = true, offX = 0, offY = 0, offZ = 0, quiet = true } = {}
