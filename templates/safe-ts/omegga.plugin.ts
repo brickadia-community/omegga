@@ -1,4 +1,4 @@
-import type { OmeggaPlugin, OL, PS, PC } from 'omegga/plugin';
+import OmeggaPlugin, { OL, PS, PC } from 'omegga';
 
 type Config = { foo: string };
 type Storage = { bar: string };
