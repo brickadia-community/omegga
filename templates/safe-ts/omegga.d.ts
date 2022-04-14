@@ -4,6 +4,11 @@ export interface BRColor {
 	g: number;
 	a: number;
 }
+export interface BRVector {
+	x: number;
+	y: number;
+	z: number;
+}
 export interface BRBanListEntry {
 	bannerId: string;
 	created: string;
@@ -263,6 +268,70 @@ export interface WriteSaveObject {
 	save_time?: ArrayLike<number>;
 	components?: DefinedComponents;
 }
+export declare type Preset<T extends string, D> = {
+	formatVersion?: "1";
+	presetVersion?: "1";
+	type?: T;
+	data?: D;
+};
+export declare type EnvironmentPreset = Preset<"Environment", {
+	groups?: {
+		Sky?: {
+			timeOfDay?: number;
+			timeChangeSpeed?: number;
+			sunAngle?: number;
+			sunScale?: number;
+			sunHorizonScaleMultiplier?: number;
+			sunlightColor?: BRColor;
+			skyIntensity?: number;
+			skyColor?: BRColor;
+			moonScale?: number;
+			moonlightIntensity?: number;
+			moonlightColor?: BRColor;
+			starsIntensity?: number;
+			starsColor?: BRColor;
+			auroraIntensity?: number;
+			weatherIntensity?: BRColor;
+			rainSnow?: number;
+			cloudCoverage?: number;
+			cloudSpeedMultiplier?: number;
+			precipitationParticleAmount?: number;
+			bCloseLightning?: boolean;
+			rainVolume?: number;
+			closeThunderVolume?: number;
+			distantThunderVolume?: number;
+			windVolume?: number;
+			clearFogDensity?: number;
+			cloudyFogDensity?: number;
+			clearFogHeightFalloff?: number;
+			cloudyFogHeightFalloff?: number;
+			fogColor?: BRColor;
+		};
+		GroundPlate?: {
+			variance?: number;
+			varianceBrickSize?: number;
+			groundColor?: BRColor;
+			groundAccentColor?: BRColor;
+			isVisible?: boolean;
+			bUseStudTexture?: boolean;
+		};
+		Water?: {
+			waterHeight?: number;
+			waterAbsorption?: BRVector;
+			waterScattering?: BRVector;
+			waterFogIntensity?: number;
+			waterFogAmbientColor?: BRColor;
+			waterFogAmbientScale?: number;
+			waterFogScatteringColor?: BRColor;
+			waterFogScatteringScale?: number;
+		};
+		Ambience?: {
+			selectedAmbienceTypeInt?: number;
+			ambienceVolume?: number;
+			reverbEffect?: string;
+		};
+	};
+}>;
 export declare type OL = OmeggaLike;
 export declare type OP = OmeggaPlugin;
 export declare type PC<T extends Record<string, unknown> = Record<string, unknown>> = PluginConfig<T>;
@@ -654,7 +723,12 @@ export interface OmeggaCore {
 	 */
 	loadEnvironment(presetName: string): void;
 	/**
-	 * G+et all presets in the environment folder and child folders
+	 * Load some environment preset data
+	 * @param preset preset data
+	 */
+	loadEnvironmentData(preset: EnvironmentPreset): void;
+	/**
+	 * Get all presets in the environment folder and child folders
 	 */
 	getEnvironmentPresets(): string[];
 	/**

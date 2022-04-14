@@ -36,6 +36,7 @@ import {
 } from './types';
 import OmeggaWrapper from './wrapper';
 import Logger from '@/logger';
+import { EnvironmentPreset } from '@brickadia/presets';
 
 const MISSING_CMD =
   '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
@@ -44,7 +45,7 @@ const MISSING_CMD =
 
 export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   /** The save counter prevents omegga from saving over the same file */
-  _tempSaveCounter = 0;
+  _tempCounter = { save: 0, environment: 0 };
   /** The save prefix is prepended to all temporary saves */
   _tempSavePrefix = 'omegga_temp_';
 
@@ -385,7 +386,30 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   loadEnvironment(presetName: string) {
-    this.writeln(`Server.Environment.LoadPreset "${presetName}"`);
+    this.writeln(`Server.Environment.LoadPreset ${presetName}`);
+  }
+
+  loadEnvironmentData(preset: EnvironmentPreset) {
+    const saveFile =
+      this._tempSavePrefix + Date.now() + '_' + this._tempCounter.environment++;
+
+    const path = join(this.presetPath, 'Environment', saveFile + '.bp');
+
+    writeFileSync(
+      path,
+      JSON.stringify({
+        formatVersion: '1',
+        presetVersion: '1',
+        type: 'Environment',
+        ...preset,
+      })
+    );
+
+    this.loadEnvironment(saveFile);
+
+    // this is lazy, but environments should load much faster than builds
+    // do, so it's not really worth keeping track of logs for this
+    setTimeout(() => unlinkSync(path), 5000);
   }
 
   getEnvironmentPresets(): string[] {
@@ -530,7 +554,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
   ) {
     const saveFile =
-      this._tempSavePrefix + Date.now() + '_' + this._tempSaveCounter++;
+      this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
     // write savedata to file
     this.writeSaveData(saveFile, saveData);
 
@@ -562,7 +586,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     if (!player) return;
 
     const saveFile =
-      this._tempSavePrefix + Date.now() + '_' + this._tempSaveCounter++;
+      this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
     // write savedata to file
     this.writeSaveData(saveFile, saveData);
 
@@ -590,7 +614,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     extent: [number, number, number];
   }) {
     const saveFile =
-      this._tempSavePrefix + Date.now() + '_' + this._tempSaveCounter++;
+      this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
 
     const command =
       region?.center && region?.extent

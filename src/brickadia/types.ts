@@ -5,6 +5,12 @@ export interface BRColor {
   a: number;
 }
 
+export interface BRVector {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface BRBanListEntry {
   bannerId: string;
   created: string;

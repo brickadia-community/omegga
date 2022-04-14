@@ -12,6 +12,7 @@ import Omegga from '@omegga/server';
 import { Plugin } from '@omegga/plugin';
 import { bootstrap } from './plugin_node_safe/proxyOmegga';
 import Logger from '@/logger';
+import { EnvironmentPreset } from '@brickadia/presets';
 
 // TODO: check if version is compatible (v1 -> v2) from file
 // TODO: write jsonrpc wrappers in a few languages, implement a few simple plugins
@@ -435,6 +436,9 @@ export default class RpcPlugin extends Plugin {
     rpc.addMethod('loadEnvironment', name =>
       this.omegga.loadEnvironment(name as unknown as string)
     );
+    rpc.addMethod('loadEnvironmentData', data =>
+      this.omegga.loadEnvironmentData(data as EnvironmentPreset)
+    );
     rpc.addMethod('getServerStatus', () => this.omegga.getServerStatus());
     rpc.addMethod('getMinigames', () => this.omegga.getMinigames());
     rpc.addMethod('getMinigamePresets', () => this.omegga.getMinigamePresets());
@@ -610,9 +614,7 @@ export default class RpcPlugin extends Plugin {
         offY?: number;
         offZ?: number;
       }) =>
-        this.omegga
-          .getPlayer(target)
-          ?.loadSaveData(data, { offX, offY, offZ })
+        this.omegga.getPlayer(target)?.loadSaveData(data, { offX, offY, offZ })
     );
 
     // plugin related operations

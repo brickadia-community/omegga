@@ -19,6 +19,7 @@ import {
 } from '@brickadia/types';
 import { WriteSaveObject, ReadSaveObject } from 'brs-js';
 import Logger from '@/logger';
+import { EnvironmentPreset } from '@brickadia/presets';
 
 // bootstrap the proxy with initial omegga data
 export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({
@@ -31,6 +32,7 @@ export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({
       savePath: omegga.savePath,
       path: omegga.path,
       configPath: omegga.configPath,
+      presetPath: omegga.presetPath,
       starting: omegga.starting,
       started: omegga.started,
       config: omegga.config,
@@ -75,6 +77,7 @@ const STEAL_PROTOTYPES: Record<keyof Required<OmeggaCore>, true> = {
   resetEnvironment: true,
   saveEnvironment: true,
   loadEnvironment: true,
+  loadEnvironmentData: true,
   getEnvironmentPresets: true,
 };
 
@@ -85,7 +88,7 @@ const badBorrow = (name: string) =>
 // it is built to mimic the core omegga
 // it does not provide direct write access to
 export class ProxyOmegga extends EventEmitter implements OmeggaLike {
-  _tempSaveCounter = 0;
+  _tempCounter = { save: 0, environment: 0 };
   _tempSavePrefix = 'omegga_plugin_temp_';
 
   writeln: (line: string) => void;
@@ -271,6 +274,9 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   }
   loadEnvironment(presetName: string): void {
     throw badBorrow('loadEnvironment');
+  }
+  loadEnvironmentData(preset: EnvironmentPreset): void {
+    throw badBorrow('loadEnvironmentData');
   }
   getEnvironmentPresets(): string[] {
     throw badBorrow('getEnvironmentPresets');

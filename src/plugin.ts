@@ -12,6 +12,7 @@ import {
 } from '@omegga/types';
 import type { ReadSaveObject, WriteSaveObject } from 'brs-js';
 import type util from '@util';
+import { EnvironmentPreset } from '@brickadia/presets';
 
 declare global {
   export var Omegga: OmeggaLike;
@@ -465,7 +466,13 @@ export interface OmeggaCore {
   loadEnvironment(presetName: string): void;
 
   /**
-   * G+et all presets in the environment folder and child folders
+   * Load some environment preset data
+   * @param preset preset data
+   */
+  loadEnvironmentData(preset: EnvironmentPreset): void;
+
+  /**
+   * Get all presets in the environment folder and child folders
    */
   getEnvironmentPresets(): string[];
 
