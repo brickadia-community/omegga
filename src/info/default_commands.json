@@ -22,5 +22,7 @@
   "ghost",
   "ping",
   "gettransform",
-  "back"
+  "back",
+  "loadautosave",
+  "listautosaves"
 ]
