@@ -49,6 +49,7 @@ export type BrickInteraction = {
 
 /** AutoRestart options */
 export type AutoRestartConfig = {
+  players: boolean;
   bricks: boolean;
   minigames: boolean;
   environment: boolean;

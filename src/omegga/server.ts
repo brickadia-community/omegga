@@ -202,6 +202,20 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   /** attempt to save server state */
   async saveServer(config: AutoRestartConfig) {
+    if (config.players) {
+      Logger.logp('Getting player positions...');
+      const players = await this.getAllPlayerPositions();
+      Logger.logp(`Saving ${players.length} player positions...`);
+      const data = players
+        .filter(p => !p.isDead && p.pos)
+        .map(p => ({ position: p.pos, id: p.player.id }));
+      if (players.length > 0)
+        writeFileSync(
+          join(this.path, DATA_PATH, 'omegga_temp_players.json'),
+          JSON.stringify(data)
+        );
+    }
+
     if (config.minigames) {
       try {
         Logger.logp('Getting minigames...');
@@ -232,6 +246,45 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   /** attempt to restore the server's state */
   async restoreServer() {
     try {
+      const tempPlayersFile = join(
+        this.path,
+        DATA_PATH,
+        'omegga_temp_players.json'
+      );
+      if (existsSync(tempPlayersFile)) {
+        Logger.logp('Loading previous player positions...');
+
+        // player positions are an array to address multi-clienting
+        const players: { position: number[]; id: string }[] = JSON.parse(
+          readFileSync(tempPlayersFile).toString()
+        );
+
+        // restore player position on join
+        const callback = (player: OmeggaPlayer) => {
+          const index = players.findIndex(p => p.id === player.id);
+          if (index > -1) {
+            const { position } = players[index];
+            this.writeln(
+              `Chat.Command /TP "${player.name}" ${position.join(' ')} 0`
+            );
+
+            // remove the entry
+            players[index] = players[players.length - 1];
+            players.pop();
+          }
+        };
+        this.on('join', callback);
+
+        setTimeout(() => {
+          try {
+            this.off('join', callback);
+            unlinkSync(tempPlayersFile);
+          } catch (err) {
+            Logger.error('Error removing omegga_temp_players.json', err);
+          }
+        }, 10000);
+      }
+
       const tempSave = this.getSavePath('omegga_temp');
       if (tempSave) {
         Logger.logp('Loading previous bricks...');

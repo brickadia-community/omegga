@@ -30,6 +30,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
   async function restartServer(config: IStoreAutoRestartConfig) {
     lastRestart = Date.now();
     const iconfig: AutoRestartConfig = {
+      players: config.playersEnabled,
       bricks: config.bricksEnabled,
       announcement: config.announcementEnabled,
       minigames: config.minigamesEnabled,

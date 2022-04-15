@@ -720,6 +720,7 @@ export default class Database extends EventEmitter {
         bricksEnabled: true,
         minigamesEnabled: true,
         environmentEnabled: true,
+        playersEnabled: true,
       });
     }
 

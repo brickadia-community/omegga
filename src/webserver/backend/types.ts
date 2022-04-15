@@ -40,6 +40,7 @@ export interface IStoreAutoRestartConfig {
   dailyHour: number;
   dailyHourEnabled: boolean;
   announcementEnabled: boolean;
+  playersEnabled: boolean;
   bricksEnabled: boolean;
   minigamesEnabled: boolean;
   environmentEnabled: boolean;

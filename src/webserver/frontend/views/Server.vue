@@ -138,6 +138,19 @@
           </div>
           <div
             class="inputs-item"
+            data-tooltip="When enabled, reconnects players at their previous positions"
+          >
+            <label>Reload Players</label>
+            <div class="inputs">
+              <br-toggle
+                tooltip="Enabled"
+                v-model="playersEnabled"
+                @input="sendConfig"
+              />
+            </div>
+          </div>
+          <div
+            class="inputs-item"
             data-tooltip="When enabled, saves and re-loads bricks on autorestart"
           >
             <label>Reload Bricks</label>
@@ -251,6 +264,7 @@ export default {
         dailyHourEnabled: this.dailyHourEnabled,
         announcementEnabled: this.announcementEnabled,
         bricksEnabled: this.bricksEnabled,
+        playersEnabled: this.playersEnabled,
         minigamesEnabled: this.minigamesEnabled,
         environmentEnabled: this.environmentEnabled,
       };
@@ -306,6 +320,7 @@ export default {
       dailyHourEnabled: false,
       announcementEnabled: true,
       bricksEnabled: true,
+      playersEnabled: true,
       minigamesEnabled: true,
       environmentEnabled: true,
     };
