@@ -113,6 +113,7 @@ export declare type UnrealRotator = [
 	number
 ];
 export declare type UnrealType = UnrealClass | UnrealObject | UnrealBoolean | UnrealFloat | UnrealColor | UnrealByte | UnrealRotator;
+export declare type UnrealTypeFromString<T> = T extends "Class" ? UnrealClass : T extends "Object" ? UnrealObject : T extends "Boolean" ? UnrealBoolean : T extends "Float" ? UnrealFloat : T extends "Color" ? UnrealColor : T extends "Byte" ? UnrealByte : T extends "Rotator" ? UnrealRotator : UnrealType;
 export interface User {
 	id: Uuid;
 	name: string;
@@ -151,7 +152,7 @@ export interface AppliedComponent {
 export interface DefinedComponents {
 	BCD_SpotLight?: {
 		version: 1;
-		brick_indices: number[];
+		brick_indices?: number[];
 		properties: {
 			Rotation: "Rotator";
 			InnerConeAngle: "Float";
@@ -165,7 +166,7 @@ export interface DefinedComponents {
 	};
 	BCD_PointLight?: {
 		version: 1;
-		brick_indices: number[];
+		brick_indices?: number[];
 		properties: {
 			bMatchBrickShape: "Boolean";
 			Brightness: "Float";
@@ -177,7 +178,7 @@ export interface DefinedComponents {
 	};
 	BCD_ItemSpawn?: {
 		version: 1;
-		brick_indices: number[];
+		brick_indices?: number[];
 		properties: {
 			PickupClass: "Class";
 			bPickupEnabled: "Boolean";
@@ -200,14 +201,14 @@ export interface DefinedComponents {
 	};
 	BCD_Interact?: {
 		version: 1;
-		brick_indices: number[];
+		brick_indices?: number[];
 		properties: {
 			bPlayInteractSound: "Boolean";
 		};
 	};
 	BCD_AudioEmitter?: {
 		version: 1;
-		brick_indices: number[];
+		brick_indices?: number[];
 		properties: {
 			AudioDescriptor: "Object";
 			VolumeMultiplier: "Float";
@@ -219,63 +220,19 @@ export interface DefinedComponents {
 	};
 	[component_name: string]: {
 		version: number;
-		brick_indices: number[];
+		brick_indices?: number[];
 		properties: {
 			[property: string]: string;
 		};
 	};
 }
-export interface Components {
-	BCD_SpotLight?: {
-		Rotation: UnrealRotator;
-		InnerConeAngle: UnrealFloat;
-		OuterConeAngle: UnrealFloat;
-		Brightness: UnrealFloat;
-		Radius: UnrealFloat;
-		Color: UnrealColor;
-		bUseBrickColor: UnrealBoolean;
-		bCastShadows: UnrealBoolean;
+export declare type Components = {
+	[T in keyof DefinedComponents]: {
+		[V in keyof DefinedComponents[T]["properties"]]: UnrealTypeFromString<DefinedComponents[T]["properties"][V]>;
 	};
-	BCD_PointLight?: {
-		bMatchBrickShape: UnrealBoolean;
-		Brightness: UnrealFloat;
-		Radius: UnrealFloat;
-		Color: UnrealColor;
-		bUseBrickColor: UnrealBoolean;
-		bCastShadows: UnrealBoolean;
-	};
-	BCD_ItemSpawn?: {
-		PickupClass: UnrealClass;
-		bPickupEnabled: UnrealBoolean;
-		bPickupRespawnOnMinigameReset: UnrealBoolean;
-		PickupMinigameResetRespawnDelay: UnrealFloat;
-		bPickupAutoDisableOnPickup: UnrealBoolean;
-		PickupRespawnTime: UnrealFloat;
-		PickupOffsetDirection: UnrealByte;
-		PickupOffsetDistance: UnrealFloat;
-		PickupRotation: UnrealRotator;
-		PickupScale: UnrealFloat;
-		bPickupAnimationEnabled: UnrealBoolean;
-		PickupAnimationAxis: UnrealByte;
-		bPickupAnimationAxisLocal: UnrealBoolean;
-		PickupSpinSpeed: UnrealFloat;
-		PickupBobSpeed: UnrealFloat;
-		PickupBobHeight: UnrealFloat;
-		PickupAnimationPhase: UnrealFloat;
-	};
-	BCD_Interact?: {
-		bPlayInteractSound: UnrealBoolean;
-	};
-	BCD_AudioEmitter?: {
-		AudioDescriptor: UnrealObject;
-		VolumeMultiplier: UnrealFloat;
-		PitchMultiplier: UnrealFloat;
-		InnerRadius: UnrealFloat;
-		MaxDistance: UnrealFloat;
-		bSpatialization: UnrealBoolean;
-	};
+} & {
 	[component_name: string]: AppliedComponent;
-}
+};
 export declare type Vector = [
 	number,
 	number,
@@ -469,19 +426,30 @@ export interface BrickBounds {
 		number
 	];
 }
+/** Created when a player clicks on a brick with an interact component */
 export declare type BrickInteraction = {
+	/** Brick name from catalog (Turkey Body, 4x Cube) */
 	brick_name: string;
+	/** Player information, id, name, controller, and pawn */
 	player: {
 		id: string;
 		name: string;
 		controller: string;
 		pawn: string;
 	};
+	/** Brick center position */
 	position: [
 		number,
 		number,
 		number
 	];
+};
+/** AutoRestart options */
+export declare type AutoRestartConfig = {
+	bricks: boolean;
+	minigames: boolean;
+	environment: boolean;
+	announcement: boolean;
 };
 export interface OmeggaPlayer {
 	/** player name */
@@ -681,11 +649,6 @@ export interface InjectedCommands {
 	/** Get minigames and members */
 	getMinigames(this: OmeggaLike): Promise<ILogMinigame[]>;
 }
-export declare type OmeggaWrapperEvents = {
-	line: (line: string) => void;
-	closed: () => void;
-	"*": (event: string, ...args: any) => void;
-};
 export interface MockEventEmitter {
 	addListener(event: string, listener: Function): this;
 	emit(event: string, ...args: any[]): boolean;
@@ -715,6 +678,7 @@ export interface MockEventEmitter {
 	on(event: "mapchange", listener: (info: {
 		map: string;
 	}) => void): this;
+	on(event: "autorestart", listener: (config: AutoRestartConfig) => void): this;
 	on(event: "interact", listener: (interaction: BrickInteraction) => void): this;
 }
 export interface OmeggaLike extends OmeggaCore, LogWrangling, InjectedCommands, MockEventEmitter {
@@ -993,24 +957,40 @@ export interface OmeggaCore {
 	 */
 	getNameCache(): BRPlayerNameCache;
 }
+/** A simple document store for plugins */
 export interface PluginStore<Storage extends Record<string, unknown> = Record<string, unknown>> {
+	/** Get a value from plugin storage */
 	get<T extends keyof Storage>(key: T): Promise<Storage[T]>;
+	/** Set a value to plugin storage */
 	set<T extends keyof Storage>(key: T, value: Storage[T]): Promise<void>;
+	/** Delete a value from plugin storage */
 	delete(key: string): Promise<void>;
+	/** Wipe all values in plugin storage */
 	wipe(): Promise<void>;
+	/** Count entries in plugin storage */
 	count(): Promise<number>;
+	/** Get a list of keys in plugin storage */
 	keys(): Promise<(keyof Storage)[]>;
 }
+/** A config representative of the config outlined in doc.json */
 export declare type PluginConfig<T extends Record<string, unknown> = Record<string, unknown>> = T;
+/** An omegga plugin */
 export default abstract class OmeggaPlugin<Config extends Record<string, unknown> = Record<string, unknown>, Storage extends Record<string, unknown> = Record<string, unknown>> {
 	omegga: OmeggaLike;
 	config: PluginConfig<Config>;
 	store: PluginStore<Storage>;
 	constructor(omegga: OmeggaLike, config: PluginConfig<Config>, store: PluginStore<Storage>);
+	/** Run when plugin starts, returns /commands it uses */
 	abstract init(): Promise<void | {
 		registeredCommands?: string[];
 	}>;
+	/** Run when plugin is stopped */
 	abstract stop(): Promise<void>;
+	/** Run when another plugin tries to interact with this plugin
+	 * @param event Event name
+	 * @param from Name of origin plugin
+	 * @return value other plugin expects
+	 */
 	abstract pluginEvent?(event: string, from: string, ...args: any[]): Promise<unknown>;
 }
 export interface LogWrangling {

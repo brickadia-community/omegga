@@ -889,7 +889,12 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
 
       try {
         const config = await database.getAutoRestartConfig();
-        await omegga.saveServer(config);
+        await omegga.saveServer({
+          bricks: config.bricksEnabled,
+          announcement: config.announcementEnabled,
+          minigames: config.minigamesEnabled,
+          environment: config.environmentEnabled,
+        });
       } catch (err) {
         error('Error while saving server setup', err);
       }

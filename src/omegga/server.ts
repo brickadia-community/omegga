@@ -38,6 +38,7 @@ import OmeggaWrapper from './wrapper';
 import Logger from '@/logger';
 import { EnvironmentPreset } from '@brickadia/presets';
 import { IStoreAutoRestartConfig } from '@webserver/backend/types';
+import { AutoRestartConfig } from '..';
 
 const MISSING_CMD =
   '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
@@ -200,8 +201,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   /** attempt to save server state */
-  async saveServer(config: IStoreAutoRestartConfig) {
-    if (config.minigamesEnabled) {
+  async saveServer(config: AutoRestartConfig) {
+    if (config.minigames) {
       try {
         Logger.logp('Getting minigames...');
         const minigames = await this.listMinigames();
@@ -217,12 +218,12 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       }
     }
 
-    if (config.environmentEnabled) {
+    if (config.environment) {
       Logger.logp('Saving environment...');
       this.saveEnvironment('omegga_temp');
     }
 
-    if (config.bricksEnabled) {
+    if (config.bricks) {
       Logger.logp('Saving bricks...');
       this.saveBricks('omegga_temp');
     }

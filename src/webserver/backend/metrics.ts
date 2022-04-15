@@ -1,5 +1,5 @@
 import Logger from '@/logger';
-import { IServerStatus, OmeggaLike } from '@/plugin';
+import { AutoRestartConfig, IServerStatus, OmeggaLike } from '@/plugin';
 import soft from '@/softconfig';
 import type Webserver from './index';
 import { OmeggaSocketIo, IStoreAutoRestartConfig } from './types';
@@ -29,7 +29,13 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
 
   async function restartServer(config: IStoreAutoRestartConfig) {
     lastRestart = Date.now();
-    omegga.emit('autorestart', config);
+    const iconfig: AutoRestartConfig = {
+      bricks: config.bricksEnabled,
+      announcement: config.announcementEnabled,
+      minigames: config.minigamesEnabled,
+      environment: config.environmentEnabled,
+    };
+    omegga.emit('autorestart', iconfig);
     await sleep(1000);
     exitOnStop();
 
@@ -60,7 +66,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
 
     exitOnStop();
 
-    await omegga.saveServer(config);
+    await omegga.saveServer(iconfig);
 
     Logger.logp('Restarting...');
     database.addChatLog('server', {}, 'Restarting server...');

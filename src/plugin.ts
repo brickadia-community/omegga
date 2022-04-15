@@ -13,7 +13,6 @@ import {
 import type { ReadSaveObject, WriteSaveObject } from 'brs-js';
 import type util from '@util';
 import { EnvironmentPreset } from '@brickadia/presets';
-import { IStoreAutoRestartConfig } from '@webserver/backend/types';
 
 declare global {
   export var Omegga: OmeggaLike;
@@ -38,10 +37,22 @@ export interface BrickBounds {
   center: [number, number, number];
 }
 
+/** Created when a player clicks on a brick with an interact component */
 export type BrickInteraction = {
+  /** Brick name from catalog (Turkey Body, 4x Cube) */
   brick_name: string;
+  /** Player information, id, name, controller, and pawn */
   player: { id: string; name: string; controller: string; pawn: string };
+  /** Brick center position */
   position: [number, number, number];
+};
+
+/** AutoRestart options */
+export type AutoRestartConfig = {
+  bricks: boolean;
+  minigames: boolean;
+  environment: boolean;
+  announcement: boolean;
 };
 
 export interface OmeggaPlayer {
@@ -310,10 +321,7 @@ export interface MockEventEmitter {
   on(event: 'leave', listener: (player: OmeggaPlayer) => void): this;
   on(event: 'chat', listener: (name: string, message: string) => void): this;
   on(event: 'mapchange', listener: (info: { map: string }) => void): this;
-  on(
-    event: 'autorestart',
-    listener: (config: IStoreAutoRestartConfig) => void
-  ): this;
+  on(event: 'autorestart', listener: (config: AutoRestartConfig) => void): this;
   on(
     event: 'interact',
     listener: (interaction: BrickInteraction) => void
@@ -615,38 +623,34 @@ export interface OmeggaCore {
   getNameCache(): BRPlayerNameCache;
 }
 
+/** A simple document store for plugins */
 export interface PluginStore<
   Storage extends Record<string, unknown> = Record<string, unknown>
 > {
+  /** Get a value from plugin storage */
   get<T extends keyof Storage>(key: T): Promise<Storage[T]>;
+  /** Set a value to plugin storage */
   set<T extends keyof Storage>(key: T, value: Storage[T]): Promise<void>;
+  /** Delete a value from plugin storage */
   delete(key: string): Promise<void>;
+  /** Wipe all values in plugin storage */
   wipe(): Promise<void>;
+  /** Count entries in plugin storage */
   count(): Promise<number>;
+  /** Get a list of keys in plugin storage */
   keys(): Promise<(keyof Storage)[]>;
 }
 
+/** A config representative of the config outlined in doc.json */
 export type PluginConfig<
   T extends Record<string, unknown> = Record<string, unknown>
 > = T;
 
+/** An omegga plugin */
 export default abstract class OmeggaPlugin<
   Config extends Record<string, unknown> = Record<string, unknown>,
   Storage extends Record<string, unknown> = Record<string, unknown>
 > {
-  /*   omegga: OmeggaLike;
-  config: PluginConfig<Config>;
-  store: PluginStore<Storage>;
-
-  constructor(
-    omegga: OmeggaLike,
-    config: PluginConfig<Config>,
-    store: PluginStore<Storage>
-  ) {
-    this.omegga = omegga;
-    this.config = config;
-    this.store = store;
-  } */
   omegga: OmeggaLike;
   config: PluginConfig<Config>;
   store: PluginStore<Storage>;
@@ -661,8 +665,17 @@ export default abstract class OmeggaPlugin<
     this.store = store;
   }
 
+  /** Run when plugin starts, returns /commands it uses */
   abstract init(): Promise<void | { registeredCommands?: string[] }>;
+
+  /** Run when plugin is stopped */
   abstract stop(): Promise<void>;
+
+  /** Run when another plugin tries to interact with this plugin
+   * @param event Event name
+   * @param from Name of origin plugin
+   * @return value other plugin expects
+   */
   abstract pluginEvent?(
     event: string,
     from: string,
