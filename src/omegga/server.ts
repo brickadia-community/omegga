@@ -37,6 +37,7 @@ import {
 import OmeggaWrapper from './wrapper';
 import Logger from '@/logger';
 import { EnvironmentPreset } from '@brickadia/presets';
+import { IStoreAutoRestartConfig } from '@webserver/backend/types';
 
 const MISSING_CMD =
   '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
@@ -170,6 +171,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       this.starting = false;
       this.currentMap = map;
       this.writeln('Chat.MessageForUnknownCommands 0');
+
+      this.restoreServer();
     });
 
     // when brickadia exits, stop omegga
@@ -194,6 +197,89 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         this.whisper(name, MISSING_CMD);
       }
     });
+  }
+
+  /** attempt to save server state */
+  async saveServer(config: IStoreAutoRestartConfig) {
+    if (config.minigamesEnabled) {
+      try {
+        Logger.logp('Getting minigames...');
+        const minigames = await this.listMinigames();
+        Logger.logp(`Saving ${minigames.length} minigames...`);
+        for (const minigame of minigames) {
+          Logger.log(
+            ` - Saved "${minigame.name}" as omegga_temp_${minigame.index}`
+          );
+          this.saveMinigame(minigame.index, 'omegga_temp_' + minigame.index);
+        }
+      } catch (err) {
+        Logger.errorp('Error getting minigames...', err);
+      }
+    }
+
+    if (config.environmentEnabled) {
+      Logger.logp('Saving environment...');
+      this.saveEnvironment('omegga_temp');
+    }
+
+    if (config.bricksEnabled) {
+      Logger.logp('Saving bricks...');
+      this.saveBricks('omegga_temp');
+    }
+  }
+
+  /** attempt to restore the server's state */
+  async restoreServer() {
+    try {
+      const tempSave = this.getSavePath('omegga_temp');
+      if (tempSave) {
+        Logger.logp('Loading previous bricks...');
+        this.loadBricks('omegga_temp');
+        setTimeout(() => {
+          try {
+            unlinkSync(tempSave);
+          } catch (err) {
+            Logger.error('Error removing omegga_temp.brs', err);
+          }
+        }, 10000);
+      }
+
+      const minigames = this.getMinigamePresets().filter(s =>
+        s.startsWith('omegga_temp_')
+      );
+      if (minigames.length > 0) {
+        Logger.logp('Loading previous minigames...');
+        for (const minigame of minigames) {
+          this.loadMinigame(minigame);
+          setTimeout(() => {
+            try {
+              unlinkSync(join(this.presetPath, 'Minigame', minigame + '.bp'));
+            } catch (err) {
+              Logger.error(`Error removing minigame ${minigame}`, err);
+            }
+          }, 10000);
+        }
+      }
+
+      const tempEnvironment = join(
+        this.presetPath,
+        'Environment',
+        'omegga_temp.bp'
+      );
+      if (existsSync(tempEnvironment)) {
+        Logger.logp('Loading previous environment...');
+        this.loadEnvironment('omegga_temp');
+        setTimeout(() => {
+          try {
+            unlinkSync(tempEnvironment);
+          } catch (err) {
+            Logger.error('Error removing environment omegga_temp.bp', err);
+          }
+        }, 10000);
+      }
+    } catch (err) {
+      Logger.error('Error restoring previous server state', err);
+    }
   }
 
   /**
@@ -371,9 +457,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   getMinigamePresets(): string[] {
-    const presetPath = join(this.presetPath, 'Minigames');
+    const presetPath = join(this.presetPath, 'Minigame');
     return existsSync(presetPath)
-      ? sync(presetPath + '/**/*.bp').map(f => basename(f))
+      ? sync(presetPath + '/**/*.bp').map(f => basename(f).replace(/\.bp$/, ''))
       : [];
   }
 
@@ -415,7 +501,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   getEnvironmentPresets(): string[] {
     const presetPath = join(this.presetPath, 'Environment');
     return existsSync(presetPath)
-      ? sync(presetPath + '/**/*.bp').map(f => basename(f))
+      ? sync(presetPath + '/**/*.bp').map(f => basename(f).replace(/\.bp$/, ''))
       : [];
   }
 

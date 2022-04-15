@@ -1,9 +1,13 @@
 import Logger from '@/logger';
+import { IServerStatus, OmeggaLike } from '@/plugin';
 import soft from '@/softconfig';
 import type Webserver from './index';
-import { OmeggaSocketIo } from './types';
+import { OmeggaSocketIo, IStoreAutoRestartConfig } from './types';
 
 const error = (...args: any[]) => Logger.error(...args);
+let lastRestart = 0;
+
+const sleep = t => new Promise(resolve => setTimeout(resolve, t));
 
 export default function (server: Webserver, io: OmeggaSocketIo) {
   const { database, omegga } = server;
@@ -18,6 +22,92 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
   // players that have joined in the last hour
   let hourlyPlayers: string[] = [];
 
+  const exitOnStop = () => {
+    if (omegga.stopping || !omegga.started)
+      throw new Error('Omegga is already closing');
+  };
+
+  async function restartServer(config: IStoreAutoRestartConfig) {
+    lastRestart = Date.now();
+    omegga.emit('autorestart', config);
+    await sleep(1000);
+    exitOnStop();
+
+    if (config.announcementEnabled) {
+      Logger.logp('Restarting in 30 seconds...');
+      const announce = (t: number) =>
+        omegga.broadcast(
+          `<size="20">Server restart in <b><color="ffffbb">${t} second${
+            t !== 1 ? 's' : ''
+          }</></></>`
+        );
+      announce(30);
+      await sleep(15000);
+      announce(15);
+      await sleep(10000);
+      announce(5);
+      await sleep(1000);
+      announce(4);
+      await sleep(1000);
+      announce(3);
+      await sleep(1000);
+      announce(2);
+      await sleep(1000);
+      announce(1);
+      await sleep(1000);
+    }
+
+    exitOnStop();
+
+    await omegga.saveServer(config);
+
+    Logger.logp('Restarting...');
+    omegga.once('mapchange', () => {
+      omegga.restoreServer();
+    });
+    omegga.changeMap(omegga.currentMap);
+  }
+
+  async function checkAutoRestart(status: IServerStatus) {
+    const now = new Date();
+    const currHour = now.getHours();
+    const currMinute = now.getMinutes();
+    Logger.verbose('Autorestart check');
+
+    /// skip restart check if we sent restart command within 5 minutes
+    if (lastRestart > now.getTime() - 5 * 60 * 1000) {
+      Logger.verbose('Skipping autorestart');
+      return;
+    }
+
+    const config = await database.getAutoRestartConfig();
+    const uptimeMinutes = Math.floor(status.time / 1000 / 60);
+    const uptimeHours = Math.floor(uptimeMinutes / 60);
+
+    if (config.maxUptimeEnabled && uptimeHours >= config.maxUptime) {
+      Logger.verbose('Restarting due to max uptime');
+      return await restartServer(config);
+    }
+
+    if (
+      config.emptyUptimeEnabled &&
+      uptimeHours >= config.emptyUptime &&
+      status.players.length === 0
+    ) {
+      Logger.verbose('Restarting due to max empty uptime');
+      return await restartServer(config);
+    }
+
+    if (
+      config.dailyHourEnabled &&
+      currHour === config.dailyHour &&
+      uptimeMinutes > currMinute
+    ) {
+      Logger.verbose('Restarting due to daily schedule');
+      return await restartServer(config);
+    }
+  }
+
   server.lastReportedStatus = null;
   server.serverStatusInterval = setInterval(async () => {
     if (!omegga.started) return;
@@ -25,6 +115,12 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       // get the server status
       const status = await omegga.getServerStatus();
       if (!status) return;
+
+      try {
+        checkAutoRestart(status);
+      } catch (err) {
+        error('Error in autorestart check', err);
+      }
 
       // get players by id
       const players = status.players.map(p => p.id);

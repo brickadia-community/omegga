@@ -53,7 +53,7 @@
           </br-button>
           <br-button
             warn
-            data-tooltip="Stop the server if it's running, then start the server"
+            data-tooltip="Stop the server if it's running, then start the server. Saves minigames/environment/bricks if enabled below."
             :disabled="starting || stopping || loading"
             @click="restart()"
           >
@@ -69,11 +69,17 @@
           >
             <label>Max Server Uptime (Hours)</label>
             <div class="inputs">
-              <br-toggle tooltip="Enabled" />
+              <br-toggle
+                tooltip="Enabled"
+                v-model="maxUptimeEnabled"
+                @input="sendConfig"
+              />
               <br-input
                 type="number"
                 placeholder="Hours"
                 tooltip="Uptime Hours"
+                v-model="maxUptime"
+                @input="sendConfig"
               />
             </div>
           </div>
@@ -83,11 +89,17 @@
           >
             <label>Empty Server Lifetime (Hours)</label>
             <div class="inputs">
-              <br-toggle tooltip="Enabled" />
+              <br-toggle
+                tooltip="Enabled"
+                v-model="emptyUptimeEnabled"
+                @input="sendConfig"
+              />
               <br-input
                 type="number"
                 placeholder="Hours"
                 tooltip="Uptime Hours"
+                v-model="emptyUptime"
+                @input="sendConfig"
               />
             </div>
           </div>
@@ -97,11 +109,17 @@
           >
             <label>Daily at a Specific Hour</label>
             <div class="inputs">
-              <br-toggle tooltip="Enabled" />
+              <br-toggle
+                tooltip="Enabled"
+                v-model="dailyHourEnabled"
+                @input="sendConfig"
+              />
               <br-input
                 type="number"
                 placeholder="Hour"
                 tooltip="Hour (0 = 12am, 13 = 1pm)"
+                v-model="dailyHour"
+                @input="sendConfig"
               />
             </div>
           </div>
@@ -111,7 +129,11 @@
           >
             <label>Restart Announcement</label>
             <div class="inputs">
-              <br-toggle tooltip="Enabled" />
+              <br-toggle
+                tooltip="Enabled"
+                v-model="announcementEnabled"
+                @input="sendConfig"
+              />
             </div>
           </div>
           <div
@@ -120,7 +142,11 @@
           >
             <label>Reload Bricks</label>
             <div class="inputs">
-              <br-toggle tooltip="Enabled" />
+              <br-toggle
+                tooltip="Enabled"
+                v-model="bricksEnabled"
+                @input="sendConfig"
+              />
             </div>
           </div>
           <div
@@ -129,7 +155,11 @@
           >
             <label>Reload Minigames</label>
             <div class="inputs">
-              <br-toggle tooltip="Enabled" />
+              <br-toggle
+                tooltip="Enabled"
+                v-model="minigamesEnabled"
+                @input="sendConfig"
+              />
             </div>
           </div>
           <div
@@ -138,7 +168,11 @@
           >
             <label>Reload Environment</label>
             <div class="inputs">
-              <br-toggle tooltip="Enabled" />
+              <br-toggle
+                tooltip="Enabled"
+                v-model="environmentEnabled"
+                @input="sendConfig"
+              />
             </div>
           </div>
         </div>
@@ -206,6 +240,23 @@ export default {
         };
       });
     },
+    sendConfig() {
+      const config = {
+        type: 'autoRestartConfig',
+        maxUptime: Math.round(Math.max(1, Math.min(this.maxUptime, 168))),
+        maxUptimeEnabled: this.maxUptimeEnabled,
+        emptyUptime: Math.round(Math.max(1, Math.min(this.emptyUptime, 168))),
+        emptyUptimeEnabled: this.emptyUptimeEnabled,
+        dailyHour: Math.round(Math.max(0, Math.min(this.dailyHour, 24))),
+        dailyHourEnabled: this.dailyHourEnabled,
+        announcementEnabled: this.announcementEnabled,
+        bricksEnabled: this.bricksEnabled,
+        minigamesEnabled: this.minigamesEnabled,
+        environmentEnabled: this.environmentEnabled,
+      };
+      this.$$notify('server.autorestart.set', config);
+      this.$forceUpdate();
+    },
     async getStatus() {
       this.$$emit('subscribe', 'server');
       this.loading = true;
@@ -215,6 +266,12 @@ export default {
       this.started = started;
       this.starting = starting;
       this.stopping = stopping;
+      const config = await this.$$request('server.autorestart.get');
+      for (const key in config) {
+        if (key in this) {
+          this[key] = config[key];
+        }
+      }
       this.loading = false;
     },
   },
@@ -240,6 +297,17 @@ export default {
       message: '',
       showConfirm: false,
       resolve: undefined,
+
+      maxUptime: 48,
+      maxUptimeEnabled: true,
+      emptyUptime: 24,
+      emptyUptimeEnabled: true,
+      dailyHour: 2,
+      dailyHourEnabled: false,
+      announcementEnabled: true,
+      bricksEnabled: true,
+      minigamesEnabled: true,
+      environmentEnabled: true,
     };
   },
 };

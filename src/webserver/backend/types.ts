@@ -31,6 +31,20 @@ export interface IStoreServerInstance {
   date: number;
 }
 
+export interface IStoreAutoRestartConfig {
+  type: 'autoRestartConfig';
+  maxUptime: number;
+  maxUptimeEnabled: boolean;
+  emptyUptime: number;
+  emptyUptimeEnabled: boolean;
+  dailyHour: number;
+  dailyHourEnabled: boolean;
+  announcementEnabled: boolean;
+  bricksEnabled: boolean;
+  minigamesEnabled: boolean;
+  environmentEnabled: boolean;
+}
+
 export interface IStoreChat {
   type: 'chat';
   created: number;

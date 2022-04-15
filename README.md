@@ -769,6 +769,7 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `chat`               | [playerName, message]                                                                                                            | Runs when a player sends a chat message                      |          |
 | `interact`           | {brick_asset: string;player: { id: string; name: string; controller: string; pawn: string };position: [number, number, number];} | Runs when a player clicks a brick with an interact component |          |
 | `mapchange`          | [{map}]                                                                                                                          | Runs when the map changes                                    |          |
+| `autorestart`        | [autorestart config]                                                                                                             | Runs server has an autorestart scheduled                     |          |
 
 ### Folder Structure
 

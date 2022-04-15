@@ -13,6 +13,7 @@ import {
 import type { ReadSaveObject, WriteSaveObject } from 'brs-js';
 import type util from '@util';
 import { EnvironmentPreset } from '@brickadia/presets';
+import { IStoreAutoRestartConfig } from '@webserver/backend/types';
 
 declare global {
   export var Omegga: OmeggaLike;
@@ -283,12 +284,6 @@ export interface InjectedCommands {
   getMinigames(this: OmeggaLike): Promise<ILogMinigame[]>;
 }
 
-export type OmeggaWrapperEvents = {
-  line: (line: string) => void;
-  closed: () => void;
-  '*': (event: string, ...args: any) => void;
-};
-
 export interface MockEventEmitter {
   addListener(event: string, listener: Function): this;
   emit(event: string, ...args: any[]): boolean;
@@ -315,6 +310,10 @@ export interface MockEventEmitter {
   on(event: 'leave', listener: (player: OmeggaPlayer) => void): this;
   on(event: 'chat', listener: (name: string, message: string) => void): this;
   on(event: 'mapchange', listener: (info: { map: string }) => void): this;
+  on(
+    event: 'autorestart',
+    listener: (config: IStoreAutoRestartConfig) => void
+  ): this;
   on(
     event: 'interact',
     listener: (interaction: BrickInteraction) => void

@@ -69,6 +69,8 @@
     <input
       spellcheck="false"
       :value="value"
+      @blur="$emit('blur')"
+      @focus="$emit('focus')"
       @input="
         $emit(
           'input',

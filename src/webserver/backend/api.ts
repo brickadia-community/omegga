@@ -12,11 +12,11 @@ import {
   JSONRPCServerAndClient,
 } from 'json-rpc-2.0';
 import _ from 'lodash';
-const pkg = require('../../../package.json');
 import type Webserver from './index';
 import {
   IFrontendBanEntry,
   IPlayer,
+  IStoreAutoRestartConfig,
   IStoreBanHistory,
   IStoreKickHistory,
   IStoreUser,
@@ -25,6 +25,7 @@ import {
   IUserNote,
   OmeggaSocketIo,
 } from './types';
+const pkg = require('../../../package.json');
 
 export default function (server: Webserver, io: OmeggaSocketIo) {
   const { database, omegga } = server;
@@ -810,6 +811,45 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       }
     );
 
+    rpc.addMethod('server.autorestart.get', async () => {
+      return await database.getAutoRestartConfig();
+    });
+
+    const autorestartConfigFields: Record<
+      keyof IStoreAutoRestartConfig,
+      string
+    > = {
+      type: 'string',
+      maxUptime: 'number',
+      maxUptimeEnabled: 'boolean',
+      emptyUptime: 'number',
+      emptyUptimeEnabled: 'boolean',
+      dailyHour: 'number',
+      dailyHourEnabled: 'boolean',
+      announcementEnabled: 'boolean',
+      bricksEnabled: 'boolean',
+      minigamesEnabled: 'boolean',
+      environmentEnabled: 'boolean',
+    };
+
+    rpc.addMethod(
+      'server.autorestart.set',
+      async ([config]: [IStoreAutoRestartConfig]) => {
+        // validate the autorestart config
+        if (
+          typeof config !== 'object' ||
+          !Object.entries(autorestartConfigFields).every(
+            ([k, v]) =>
+              k in config && typeof config[k] === v && !Number.isNaN(v)
+          ) ||
+          config.type !== 'autoRestartConfig'
+        )
+          return false;
+        await database.setAutoRestartConfig(config);
+        return true;
+      }
+    );
+
     // send server status at request
     // TODO: server status permission check
     rpc.addMethod('server.status', () => {
@@ -846,6 +886,14 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     // TODO: server status permission check
     rpc.addMethod('server.restart', async () => {
       if (omegga.starting || omegga.stopping) return;
+
+      try {
+        const config = await database.getAutoRestartConfig();
+        await omegga.saveServer(config);
+      } catch (err) {
+        error('Error while saving server setup', err);
+      }
+
       log('Restarting server...');
       if (omegga.started) await omegga.stop();
       await omegga.start();

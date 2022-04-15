@@ -12,6 +12,7 @@ import Calendar from './calendar';
 import {
   IPlayer,
   IPunchcard,
+  IStoreAutoRestartConfig,
   IStoreBanHistory,
   IStoreChat,
   IStoreKickHistory,
@@ -699,6 +700,46 @@ export default class Database extends EventEmitter {
             }
           )
         )
+    );
+  }
+
+  async getAutoRestartConfig(): Promise<IStoreAutoRestartConfig> {
+    let config = await this.stores.server.findOne<IStoreAutoRestartConfig>({
+      type: 'autoRestartConfig',
+    });
+    if (!config) {
+      config = await this.stores.server.insert({
+        type: 'autoRestartConfig',
+        maxUptime: 48,
+        maxUptimeEnabled: true,
+        emptyUptime: 24,
+        emptyUptimeEnabled: true,
+        dailyHour: 2,
+        dailyHourEnabled: false,
+        announcementEnabled: true,
+        bricksEnabled: true,
+        minigamesEnabled: true,
+        environmentEnabled: true,
+      });
+    }
+
+    return config;
+  }
+
+  async setAutoRestartConfig(config: IStoreAutoRestartConfig): Promise<void> {
+    config.maxUptime = Math.round(Math.max(1, Math.min(config.maxUptime, 168)));
+    config.emptyUptime = Math.round(
+      Math.max(1, Math.min(config.emptyUptime, 168))
+    );
+    config.dailyHour = Math.round(Math.max(0, Math.min(config.dailyHour, 23)));
+    await this.stores.server.update(
+      { type: 'autoRestartConfig' },
+      {
+        $set: {
+          ...config,
+        },
+      },
+      { upsert: false }
     );
   }
 
