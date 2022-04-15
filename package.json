@@ -10,7 +10,7 @@
     "@swc/core": "^1.2.165",
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
-    "brs-js": "^2.0.3",
+    "brs-js": "^2.0.4",
     "child_process": "^1.0.2",
     "chokidar": "^3.4.2",
     "colors": "^1.4.0",

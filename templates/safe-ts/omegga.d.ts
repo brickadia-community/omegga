@@ -149,6 +149,74 @@ export interface AppliedComponent {
 	[property: string]: UnrealType;
 }
 export interface DefinedComponents {
+	BCD_SpotLight?: {
+		version: 1;
+		brick_indices: number[];
+		properties: {
+			Rotation: "Rotator";
+			InnerConeAngle: "Float";
+			OuterConeAngle: "Float";
+			Brightness: "Float";
+			Radius: "Float";
+			Color: "Color";
+			bUseBrickColor: "Boolean";
+			bCastShadows: "Boolean";
+		};
+	};
+	BCD_PointLight?: {
+		version: 1;
+		brick_indices: number[];
+		properties: {
+			bMatchBrickShape: "Boolean";
+			Brightness: "Float";
+			Radius: "Float";
+			Color: "Color";
+			bUseBrickColor: "Boolean";
+			bCastShadows: "Boolean";
+		};
+	};
+	BCD_ItemSpawn?: {
+		version: 1;
+		brick_indices: number[];
+		properties: {
+			PickupClass: "Class";
+			bPickupEnabled: "Boolean";
+			bPickupRespawnOnMinigameReset: "Boolean";
+			PickupMinigameResetRespawnDelay: "Float";
+			bPickupAutoDisableOnPickup: "Boolean";
+			PickupRespawnTime: "Float";
+			PickupOffsetDirection: "Byte";
+			PickupOffsetDistance: "Float";
+			PickupRotation: "Rotator";
+			PickupScale: "Float";
+			bPickupAnimationEnabled: "Boolean";
+			PickupAnimationAxis: "Byte";
+			bPickupAnimationAxisLocal: "Boolean";
+			PickupSpinSpeed: "Float";
+			PickupBobSpeed: "Float";
+			PickupBobHeight: "Float";
+			PickupAnimationPhase: "Float";
+		};
+	};
+	BCD_Interact?: {
+		version: 1;
+		brick_indices: number[];
+		properties: {
+			bPlayInteractSound: "Boolean";
+		};
+	};
+	BCD_AudioEmitter?: {
+		version: 1;
+		brick_indices: number[];
+		properties: {
+			AudioDescriptor: "Object";
+			VolumeMultiplier: "Float";
+			PitchMultiplier: "Float";
+			InnerRadius: "Float";
+			MaxDistance: "Float";
+			bSpatialization: "Boolean";
+		};
+	};
 	[component_name: string]: {
 		version: number;
 		brick_indices: number[];
@@ -158,6 +226,54 @@ export interface DefinedComponents {
 	};
 }
 export interface Components {
+	BCD_SpotLight?: {
+		Rotation: UnrealRotator;
+		InnerConeAngle: UnrealFloat;
+		OuterConeAngle: UnrealFloat;
+		Brightness: UnrealFloat;
+		Radius: UnrealFloat;
+		Color: UnrealColor;
+		bUseBrickColor: UnrealBoolean;
+		bCastShadows: UnrealBoolean;
+	};
+	BCD_PointLight?: {
+		bMatchBrickShape: UnrealBoolean;
+		Brightness: UnrealFloat;
+		Radius: UnrealFloat;
+		Color: UnrealColor;
+		bUseBrickColor: UnrealBoolean;
+		bCastShadows: UnrealBoolean;
+	};
+	BCD_ItemSpawn?: {
+		PickupClass: UnrealClass;
+		bPickupEnabled: UnrealBoolean;
+		bPickupRespawnOnMinigameReset: UnrealBoolean;
+		PickupMinigameResetRespawnDelay: UnrealFloat;
+		bPickupAutoDisableOnPickup: UnrealBoolean;
+		PickupRespawnTime: UnrealFloat;
+		PickupOffsetDirection: UnrealByte;
+		PickupOffsetDistance: UnrealFloat;
+		PickupRotation: UnrealRotator;
+		PickupScale: UnrealFloat;
+		bPickupAnimationEnabled: UnrealBoolean;
+		PickupAnimationAxis: UnrealByte;
+		bPickupAnimationAxisLocal: UnrealBoolean;
+		PickupSpinSpeed: UnrealFloat;
+		PickupBobSpeed: UnrealFloat;
+		PickupBobHeight: UnrealFloat;
+		PickupAnimationPhase: UnrealFloat;
+	};
+	BCD_Interact?: {
+		bPlayInteractSound: UnrealBoolean;
+	};
+	BCD_AudioEmitter?: {
+		AudioDescriptor: UnrealObject;
+		VolumeMultiplier: UnrealFloat;
+		PitchMultiplier: UnrealFloat;
+		InnerRadius: UnrealFloat;
+		MaxDistance: UnrealFloat;
+		bSpatialization: UnrealBoolean;
+	};
 	[component_name: string]: AppliedComponent;
 }
 export declare type Vector = [
