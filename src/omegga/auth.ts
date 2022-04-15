@@ -10,6 +10,8 @@ import { IOmeggaOptions } from './types';
 
 require('colors');
 
+const PORT = 63281;
+
 // remove the temporary install
 async function removeTempDir() {
   if (fs.existsSync(soft.TEMP_DIR_NAME)) {
@@ -57,10 +59,12 @@ export async function genAuthFiles(
     Logger.verbose('Generating auth with local launcher');
   }
 
+  Logger.verbose('Using auth port ' + PORT);
+
   // dummy omegga config
   const config: IConfig = {
     server: {
-      port: 7777,
+      port: PORT,
       publiclyListed: false,
       name: 'omegga auth init',
       __LOCAL: fs.existsSync(soft.LOCAL_LAUNCHER),
