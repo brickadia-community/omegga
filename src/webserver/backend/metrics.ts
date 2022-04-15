@@ -34,6 +34,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     exitOnStop();
 
     if (config.announcementEnabled) {
+      database.addChatLog('server', {}, 'Restarting in 30 seconds...');
       Logger.logp('Restarting in 30 seconds...');
       const announce = (t: number) =>
         omegga.broadcast(
@@ -62,6 +63,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     await omegga.saveServer(config);
 
     Logger.logp('Restarting...');
+    database.addChatLog('server', {}, 'Restarting server...');
     omegga.once('mapchange', () => {
       omegga.restoreServer();
     });
@@ -117,7 +119,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       if (!status) return;
 
       try {
-        checkAutoRestart(status);
+        await checkAutoRestart(status);
       } catch (err) {
         error('Error in autorestart check', err);
       }
