@@ -504,8 +504,8 @@ export interface OmeggaCore {
       center: [number, number, number];
       extent: [number, number, number];
     },
-    options: {
-      target: string | OmeggaPlayer;
+    options?: {
+      target?: string | OmeggaPlayer;
     }
   ): void;
 

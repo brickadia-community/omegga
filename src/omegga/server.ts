@@ -609,9 +609,12 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       extent: [number, number, number];
     }
   ) {
+    if (!saveName) return;
+
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
     if (!(saveName.startsWith('"') && saveName.endsWith('"')))
       saveName = `"${saveName}"`;
+
     if (region?.center && region?.extent)
       this.writeln(
         `Bricks.SaveRegion ${saveName} ${region.center.join(
@@ -628,15 +631,19 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       extent: [number, number, number];
     }
   ): Promise<void> {
+    if (!saveName) return;
+
+    let saveNameClean = saveName;
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
     if (!(saveName.startsWith('"') && saveName.endsWith('"')))
-      saveName = `"${saveName}"`;
+      saveNameClean = `"${saveName}"`;
+
     const command =
       region?.center && region?.extent
-        ? `Bricks.SaveRegion ${saveName} ${region.center.join(
+        ? `Bricks.SaveRegion ${saveNameClean} ${region.center.join(
             ' '
           )} ${region.extent.join(' ')}`
-        : `Bricks.Save ${saveName}`;
+        : `Bricks.Save ${saveNameClean}`;
 
     // wait for the server to save the file
     await this.watchLogChunk(command, /^(LogBrickSerializer|LogTemp): (.+)$/, {
