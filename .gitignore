@@ -17,3 +17,4 @@ public/*
 dist/
 omegga.d.ts
 templates/safe-ts/omegga.d.ts
+.vsls.json
