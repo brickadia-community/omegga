@@ -80,10 +80,7 @@ Alternatively, you can use a development/local omegga.
     # point development omegga to global npm bin
     npm link
 
-    # build omegga's dist from typescript
-    npm run build
-
-    # build the web ui (once)
+    # build the web ui, build omegga's typescript, and the plugin omegga.d.ts
     npm run dist
 
 If you accidentally install both from Github and `npm i -g omegga`, you can run `npm unlink omegga` to stop npm from using the git one.
