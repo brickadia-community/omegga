@@ -336,8 +336,11 @@ export interface OmeggaLike
     MockEventEmitter {
   writeln(line: string): void;
 
-  /** game CL verison*/
+  /** game CL version*/
   version: number;
+
+  /** verbose logging is enabled*/
+  verbose: boolean;
 
   /** list of players */
   players: OmeggaPlayer[];

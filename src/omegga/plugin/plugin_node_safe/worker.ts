@@ -105,14 +105,13 @@ function createVm(
   pluginPath: string,
   { builtin = ['*'], external = true, isTypeScript = false } = {}
 ) {
-  let targetFile = MAIN_FILE;
   let pluginCode: string;
 
   if (isTypeScript) {
     try {
       const tsBuildPath = path.join(pluginPath, '.build');
       const sourceFileName = path.join(pluginPath, MAIN_FILE_TS);
-      targetFile = path.join(tsBuildPath, 'plugin.js');
+      const outputPath = path.join(tsBuildPath, 'plugin.js');
       mkdir(tsBuildPath);
 
       const { code, map } = transformFileSync(sourceFileName, {
@@ -133,11 +132,47 @@ function createVm(
       });
 
       pluginCode = code;
-      fs.writeFileSync(targetFile, code);
-      fs.writeFileSync(targetFile + '.map', map);
+      fs.writeFileSync(outputPath, code);
+      fs.writeFileSync(outputPath + '.map', map);
     } catch (err) {
       console.error(err);
       return [false, 'failed compiling building typescript'];
+    }
+
+    // update omegga.d.ts to latest on plugin compile
+    try {
+      const gitIgnore = path.join(pluginPath, '.gitignore');
+      const omeggaTypesDst = path.join(pluginPath, 'omegga.d.ts');
+      const omeggaTypesSrc = path.join(
+        __dirname,
+        '../../../../templates/safe-ts/omegga.d.ts'
+      );
+
+      // plugin has gitignore with "omegga.d.ts" in it and omegga has omegga.d.ts
+      if (fs.existsSync(gitIgnore) && fs.existsSync(omeggaTypesSrc)) {
+        // and the gitignore covers the omegga.d.ts
+        const hasOmeggaTypesIgnored = fs
+          .readFileSync(gitIgnore)
+          .toString()
+          .match(/(\.\/)?omegga\.d\.ts/);
+
+        // compare last modified times to avoid unnecessary copies
+        const srcLastModified = fs.statSync(omeggaTypesSrc).mtime.getTime();
+        const dstLastModified = fs.existsSync(omeggaTypesDst)
+          ? fs.statSync(omeggaTypesDst).mtime.getTime()
+          : null;
+        if (
+          hasOmeggaTypesIgnored &&
+          (!dstLastModified || srcLastModified > dstLastModified)
+        ) {
+          fs.copyFileSync(omeggaTypesSrc, omeggaTypesDst);
+        }
+      }
+    } catch (err) {
+      console.error(
+        'error copying latest omegga.d.ts to typescript plugin',
+        err
+      );
     }
   }
   if (vm !== undefined) return [false, 'vm is already created'];
@@ -177,7 +212,7 @@ function createVm(
   vm.freeze(omegga, 'Omegga');
   vm.freeze(Player, 'Player');
 
-  const file = path.join(pluginPath, targetFile);
+  const file = path.join(pluginPath, MAIN_FILE);
   if (!isTypeScript) {
     try {
       pluginCode = fs.readFileSync(file).toString();

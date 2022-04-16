@@ -98,6 +98,8 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
 
   host: { id: string; name: string };
 
+  verbose: boolean;
+
   started: boolean;
   starting: boolean;
   stopping: boolean;
