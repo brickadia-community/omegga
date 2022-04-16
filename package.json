@@ -10,7 +10,7 @@
     "@swc/core": "^1.2.165",
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
-    "brs-js": "^2.0.5",
+    "brs-js": "^2.0.6",
     "child_process": "^1.0.2",
     "chokidar": "^3.4.2",
     "colors": "^1.4.0",
@@ -99,8 +99,7 @@
     "dist": "MODE=production npx webpack",
     "build:frontend": "npx webpack",
     "build": "npx ttsc --build \"src/\"",
-    "dts": "npx dts-bundle-generator --export-referenced-types --no-banner --external-inlines brs-js -o templates/safe-ts/omegga.d.ts -- ./src/plugin.ts",
-    "prepare": "npm run build"
+    "dts": "npx dts-bundle-generator --export-referenced-types --no-banner --external-inlines brs-js -o templates/safe-ts/omegga.d.ts -- ./src/plugin.ts"
   },
   "author": "Meshiest",
   "license": "ISC",
