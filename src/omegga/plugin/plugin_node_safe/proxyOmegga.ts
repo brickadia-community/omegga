@@ -56,6 +56,7 @@ const STEAL_PROTOTYPES: Record<keyof Required<OmeggaCore>, true> = {
   loadBricks: true,
   loadBricksOnPlayer: true,
   saveBricks: true,
+  saveBricksAsync: true,
   getSavePath: true,
   getSaves: true,
   writeSaveData: true,
@@ -221,7 +222,6 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   getMinigames(): Promise<ILogMinigame[]> {
     throw badBorrow('getMinigames');
   }
-
   getPlayers(): {
     id: string;
     name: string;
@@ -298,14 +298,11 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   clearAllBricks(quiet?: boolean): void {
     throw badBorrow('clearAllBricks');
   }
-  saveBricks(
-    saveName: string,
-    region?: {
-      center: [number, number, number];
-      extent: [number, number, number];
-    }
-  ): void {
+  saveBricks(saveName: string, region?: {}): void {
     throw badBorrow('saveBricks');
+  }
+  saveBricksAsync(saveName: string, region?: {}): Promise<void> {
+    throw badBorrow('saveBricksAsync');
   }
   loadBricks(
     saveName: string,

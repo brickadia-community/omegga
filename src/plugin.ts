@@ -513,7 +513,7 @@ export interface OmeggaCore {
   clearAllBricks(quiet?: boolean): void;
 
   /**
-   * Save bricks under a name
+   * Save bricks under a filename
    * @param saveName save file name
    * @param region region of bricks to save
    */
@@ -524,6 +524,19 @@ export interface OmeggaCore {
       extent: [number, number, number];
     }
   ): void;
+
+  /**
+   * Save bricks under a filename, with a promise
+   * @param saveName save file name
+   * @param region region of bricks to save
+   */
+  saveBricksAsync(
+    saveName: string,
+    region?: {
+      center: [number, number, number];
+      extent: [number, number, number];
+    }
+  ): Promise<void>;
 
   /**
    * Load bricks on the server

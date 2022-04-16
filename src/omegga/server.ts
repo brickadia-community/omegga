@@ -1,4 +1,6 @@
 import default_commands from '@/info/default_commands.json';
+import Logger from '@/logger';
+import { OmeggaLike, OmeggaPlayer } from '@/plugin';
 import {
   BRICKADIA_AUTH_FILES,
   CONFIG_AUTH_DIR,
@@ -6,13 +8,13 @@ import {
   DATA_PATH,
   PLUGIN_PATH,
 } from '@/softconfig';
+import { EnvironmentPreset } from '@brickadia/presets';
 import {
   BRBanList,
   BRPlayerNameCache,
   BRRoleAssignments,
   BRRoleSetup,
 } from '@brickadia/types';
-import Terminal from '@cli/terminal';
 import { IConfig } from '@config/types';
 import { map as mapUtils, pattern, uuid } from '@util';
 import { copyFiles, mkdir, readWatchedJSON } from '@util/file';
@@ -22,7 +24,7 @@ import 'colors';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { sync } from 'glob';
 import { basename, join } from 'path';
-import { OmeggaLike, OmeggaPlayer } from '@/plugin';
+import { AutoRestartConfig } from '..';
 import commandInjector from './commandInjector';
 import MATCHERS from './matchers';
 import Player from './player';
@@ -35,10 +37,6 @@ import {
   IServerStatus,
 } from './types';
 import OmeggaWrapper from './wrapper';
-import Logger from '@/logger';
-import { EnvironmentPreset } from '@brickadia/presets';
-import { IStoreAutoRestartConfig } from '@webserver/backend/types';
-import { AutoRestartConfig } from '..';
 
 const MISSING_CMD =
   '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
@@ -202,7 +200,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   /** attempt to save server state */
   async saveServer(config: AutoRestartConfig) {
-    if (config.players) {
+    if (config.players && this.players.length > 0) {
       Logger.logp('Getting player positions...');
       const players = await this.getAllPlayerPositions();
       Logger.logp(`Saving ${players.length} player positions...`);
@@ -239,7 +237,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     if (config.bricks) {
       Logger.logp('Saving bricks...');
-      this.saveBricks('omegga_temp');
+      await this.saveBricksAsync('omegga_temp');
     }
   }
 
@@ -623,6 +621,37 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     else this.writeln(`Bricks.Save ${saveName}`);
   }
 
+  async saveBricksAsync(
+    saveName: string,
+    region?: {
+      center: [number, number, number];
+      extent: [number, number, number];
+    }
+  ): Promise<void> {
+    // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
+    if (!(saveName.startsWith('"') && saveName.endsWith('"')))
+      saveName = `"${saveName}"`;
+    const command =
+      region?.center && region?.extent
+        ? `Bricks.SaveRegion ${saveName} ${region.center.join(
+            ' '
+          )} ${region.extent.join(' ')}`
+        : `Bricks.Save ${saveName}`;
+
+    // wait for the server to save the file
+    await this.watchLogChunk(command, /^(LogBrickSerializer|LogTemp): (.+)$/, {
+      first: match => match[0].endsWith(saveName + '.brs...'),
+      last: match =>
+        Boolean(
+          match[2].match(
+            /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/
+          )
+        ),
+      afterMatchDelay: 0,
+      timeoutDelay: 30000,
+    });
+  }
+
   loadBricks(
     saveName: string,
     { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
@@ -756,25 +785,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
 
-    const command =
-      region?.center && region?.extent
-        ? `Bricks.SaveRegion ${saveFile} ${region.center.join(
-            ' '
-          )} ${region.extent.join(' ')}`
-        : `Bricks.Save ${saveFile}`;
-
-    // wait for the server to save the file
-    await this.watchLogChunk(command, /^(LogBrickSerializer|LogTemp): (.+)$/, {
-      first: match => match[0].endsWith(saveFile + '.brs...'),
-      last: match =>
-        Boolean(
-          match[2].match(
-            /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/
-          )
-        ),
-      afterMatchDelay: 0,
-      timeoutDelay: 30000,
-    });
+    await this.saveBricksAsync(saveFile, region);
 
     // read the save file
     const savePath = this.getSavePath(saveFile);
@@ -814,6 +825,4 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     );
     return success;
   }
-
-  /* Command injector methods are overwritten, this code is here for the doc */
 }
