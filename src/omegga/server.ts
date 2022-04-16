@@ -577,24 +577,25 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       center: [number, number, number];
       extent: [number, number, number];
     },
-    options: { target: string | OmeggaPlayer }
+    options?: { target: string | OmeggaPlayer }
   ) {
-    let target: string;
+    let target = '';
 
     // target is a player object, just use that id
-    if (typeof options.target === 'object') target = options.target.id;
+    if (options && typeof options.target === 'object')
+      target = ' ' + options.target.id;
     // if the target isn't a uuid already, find the player by name or controller and use that uuid
 
     if (typeof target === 'string' && !uuid.match(target)) {
       // only set the target if the player exists
       const player = this.getPlayer(target);
-      target = player && player.id;
+      if (player) target = ' ' + player.id;
     }
 
     this.writeln(
       `Bricks.ClearRegion ${region.center.join(' ')} ${region.extent.join(
         ' '
-      )} ${target}`
+      )}${target}`
     );
   }
 

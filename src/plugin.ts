@@ -13,6 +13,7 @@ import {
 import type { ReadSaveObject, WriteSaveObject } from 'brs-js';
 import type util from '@util';
 import { EnvironmentPreset } from '@brickadia/presets';
+import { PawnDataField } from '@omegga/commandInjector';
 
 declare global {
   export var Omegga: OmeggaLike;
@@ -113,6 +114,12 @@ export interface OmeggaPlayer {
   getNameColor(): string;
 
   /**
+   * Get the player's pawn
+   * @return pawn
+   */
+  getPawn(): Promise<string>;
+
+  /**
    * Get player's position
    * @return [x, y, z] coordinates
    */
@@ -137,6 +144,16 @@ export interface OmeggaPlayer {
     material: string;
     color: number[];
   }>;
+
+  /**
+   * gets whether or not the player is crouching
+   */
+  isCrouched(pawn?: string): Promise<boolean>;
+
+  /**
+   * gets whether or not the player is dead
+   */
+  isDead(pawn?: string): Promise<boolean>;
 
   /**
    * Gets the bounds of the template in the user's clipboard (bounds of original selection box)
@@ -290,6 +307,8 @@ export interface InjectedCommands {
   getServerStatus(this: OmeggaLike): Promise<IServerStatus>;
   /** Get a list of minigames and their indices */
   listMinigames(this: OmeggaLike): Promise<IMinigameList>;
+  // /** Get all pawn data */
+  // getAllPawnData(this: OmeggaLike, fields: PawnDataField[]): void;
   /** Get all player positions and pawns */
   getAllPlayerPositions(this: OmeggaLike): Promise<IPlayerPositions>;
   /** Get minigames and members */

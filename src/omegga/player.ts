@@ -276,6 +276,26 @@ class Player implements OmeggaPlayer {
     );
   }
 
+  async getPawn(): Promise<string> {
+    // given a player controller, match the player's pawn
+    const pawnRegExp = new RegExp(
+      `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\\d+)'`
+    );
+
+    // wait for the pawn watcher to return a pawn
+    const [
+      {
+        groups: { pawn },
+      },
+    ] = await this.#omegga.watchLogChunk<RegExpMatchArray>(
+      'GetAll BP_PlayerController_C Pawn Name=' + this.controller,
+      pawnRegExp,
+      { first: 'index', timeoutDelay: 500 }
+    );
+
+    return pawn;
+  }
+
   async getPosition(): Promise<[number, number, number]> {
     // this is here because my text editor had weird syntax highlighting glitches when the other omeggas were replaced with this.#omegga...
     // guess the code is "too new" :egg:
@@ -442,6 +462,42 @@ class Player implements OmeggaPlayer {
     };
   }
 
+  async isCrouched(pawn?: string): Promise<boolean> {
+    if (!pawn) pawn = await this.getPawn();
+
+    const reg =
+      /(?<index>\d+)\) BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.bIsCrouched = (?<crouched>True|False)$/;
+
+    const resp = await this.#omegga.watchLogChunk<RegExpMatchArray>(
+      'GetAll BP_FigureV2_C bIsCrouched Name=' + pawn,
+      reg,
+      { first: 'index', timeoutDelay: 500 }
+    );
+
+    const me = resp.find(r => r.groups.pawn === pawn);
+    if (!me) return false;
+
+    return me.groups.crouched == 'True';
+  }
+
+  async isDead(pawn?: string): Promise<boolean> {
+    if (!pawn) pawn = await this.getPawn();
+
+    const reg =
+      /(?<index>\d+)\) BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.bIsDead = (?<dead>True|False)$/;
+
+    const resp = await this.#omegga.watchLogChunk<RegExpMatchArray>(
+      'GetAll BP_FigureV2_C bIsDead Name=' + pawn,
+      reg,
+      { first: 'index', timeoutDelay: 500 }
+    );
+
+    const me = resp.find(r => r.groups.pawn === pawn);
+    if (!me) return true;
+
+    return me.groups.dead == 'True';
+  }
+
   async getTemplateBounds() {
     const { controller } = this;
 
@@ -549,7 +605,11 @@ class Player implements OmeggaPlayer {
     saveData: WriteSaveObject,
     { offX = 0, offY = 0, offZ = 0 } = {}
   ) {
-    await this.#omegga.loadSaveDataOnPlayer(saveData, this, { offX, offY, offZ });
+    await this.#omegga.loadSaveDataOnPlayer(saveData, this, {
+      offX,
+      offY,
+      offZ,
+    });
   }
 
   async loadDataAtGhostBrick(

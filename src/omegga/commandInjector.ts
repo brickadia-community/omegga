@@ -10,6 +10,55 @@ import {
 import { InjectedCommands, OmeggaPlayer, OmeggaLike } from '@/plugin';
 import Logger from '@/logger';
 
+type Cast<X, Y> = X extends Y ? X : Y;
+type ArrayElement<A> = A extends readonly (infer T)[] ? T : never;
+type Extract<T, U> = T extends U ? T : never;
+type FromEntriesDataField<T> = T extends PawnDataField<infer Key, any>[]
+  ? {
+      [K in Cast<Key, string>]: ReturnType<
+        Extract<ArrayElement<T>, PawnDataField<K, any>>['valueTransform']
+      >;
+    }
+  : { [key in string]: any };
+
+export type PawnDataField<F, T = string> = {
+  /**
+   * The command to execute and listen to.
+   */
+  command: string;
+
+  /**
+   * The game object name, like `BP_FigureV2_C`.
+   */
+  object: string;
+
+  /**
+   * What object should be matched, like `/(?<pawn>BP_FigureV2_C_\d+)/`.
+   */
+  objectMatcher: RegExp;
+
+  /**
+   * The field on the game object, like `bIsDead`.
+   */
+  objectField: string;
+
+  /**
+   * The regex that should match the value of the game object field.
+   * If `valueTransform` is not specified, `value` becomes the first capture group.
+   */
+  valueMatcher: RegExp;
+
+  /**
+   * An optional closure to transform what `valueMatcher` matched.
+   */
+  valueTransform?: (match: RegExpMatchArray) => T;
+
+  /**
+   * The field on the final object.
+   */
+  field: F;
+};
+
 const buildTableHeaderRegex = (header: string) => {
   const columns = header.match(/[^|]+/g);
   return new RegExp(
@@ -124,6 +173,37 @@ const COMMANDS: InjectedCommands = {
       };
     });
   },
+
+  // async getAllPawnData<T extends PawnDataField<string, any>[]>(
+  //   fields: T
+  // ): Promise<{
+  //   controller: string;
+  //   data: FromEntriesDataField<[PawnDataField<'pawn', string>, ...T]>;
+  // }> {
+  //   const restFields: [PawnDataField<'pawn', string>, ...T] = [
+  //     {
+  //       command: 'GetAll BP_PlayerController_C Pawn',
+  //       object: 'BP_PlayerController_C',
+  //       objectMatcher: /(?<controller>BP_PlayerController_C_\d+)/,
+  //       objectField: 'Pawn',
+  //       valueMatcher:
+  //         /(?:None|BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\d+)')?$/,
+  //       valueTransform: matches => matches.groups.pawn ?? null,
+  //       field: 'pawn',
+  //     } as PawnDataField<'pawn', string>,
+  //     ...fields,
+  //   ];
+
+  //   return {
+  //     controller: 'test',
+  //     data: Object.fromEntries(
+  //       restFields.map(f => [
+  //         f.field,
+  //         f.valueTransform({ groups: { pawn: 'foo' } } as any),
+  //       ])
+  //     ) as FromEntriesDataField<[PawnDataField<'pawn', string>, ...T]>,
+  //   };
+  // },
 
   /**
    * get every player's position and alive states
