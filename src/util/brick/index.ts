@@ -1,4 +1,5 @@
-export * as BRICK_CONSTANTS from './constants';
+import constants from './constants';
+export const BRICK_CONSTANTS = constants;
 export * from './checkBounds';
 export * from './getBounds';
 export * from './getBrickSize';

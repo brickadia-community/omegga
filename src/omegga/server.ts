@@ -527,7 +527,11 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     this.writeln(`Server.Environment.LoadPreset ${presetName}`);
   }
 
-  loadEnvironmentData(preset: EnvironmentPreset) {
+  loadEnvironmentData(
+    preset: EnvironmentPreset | EnvironmentPreset['data']['groups']
+  ) {
+    if ('data' in preset) preset = preset.data.groups;
+
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.environment++;
 
@@ -539,7 +543,11 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         formatVersion: '1',
         presetVersion: '1',
         type: 'Environment',
-        ...preset,
+        data: {
+          groups: {
+            ...preset,
+          },
+        },
       })
     );
 
@@ -662,21 +670,36 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   loadBricks(
     saveName: string,
-    { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
+    {
+      offX = 0,
+      offY = 0,
+      offZ = 0,
+      quiet = false,
+      correctPalette = false,
+      correctCustom = false,
+    } = {}
   ) {
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
     if (!(saveName.startsWith('"') && saveName.endsWith('"')))
       saveName = `"${saveName}"`;
 
     this.writeln(
-      `Bricks.Load ${saveName} ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`
+      `Bricks.Load ${saveName} ${offX} ${offY} ${offZ} ${quiet ? 1 : 0} ${
+        correctPalette ? 1 : 0
+      } ${correctCustom ? 1 : 0}`
     );
   }
 
   loadBricksOnPlayer(
     saveName: string,
     player: string | OmeggaPlayer,
-    { offX = 0, offY = 0, offZ = 0 } = {}
+    {
+      offX = 0,
+      offY = 0,
+      offZ = 0,
+      correctPalette = false,
+      correctCustom = false,
+    } = {}
   ) {
     player = typeof player === 'string' ? this.getPlayer(player) : player;
     if (!player) return;
@@ -686,7 +709,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       saveName = `"${saveName}"`;
 
     this.writeln(
-      `Bricks.LoadTemplate ${saveName} ${offX} ${offY} ${offZ} 0 0 "${player.name}"`
+      `Bricks.LoadTemplate ${saveName} ${offX} ${offY} ${offZ}  ${
+        correctPalette ? 1 : 0
+      } ${correctCustom ? 1 : 0} "${player.name}"`
     );
   }
 
@@ -728,7 +753,14 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   async loadSaveData(
     saveData: WriteSaveObject,
-    { offX = 0, offY = 0, offZ = 0, quiet = false } = {}
+    {
+      offX = 0,
+      offY = 0,
+      offZ = 0,
+      quiet = false,
+      correctPalette = false,
+      correctCustom = false,
+    } = {}
   ) {
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
@@ -737,7 +769,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     // wait for the server to finish reading the save
     await this.watchLogChunk(
-      `Bricks.Load "${saveFile}" ${offX} ${offY} ${offZ} ${quiet ? 1 : ''}`,
+      `Bricks.Load "${saveFile}" ${offX} ${offY} ${offZ} ${quiet ? 1 : 0} ${
+        correctPalette ? 1 : 0
+      } ${correctCustom ? 1 : 0}`,
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),
@@ -757,7 +791,13 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   async loadSaveDataOnPlayer(
     saveData: WriteSaveObject,
     player: string | OmeggaPlayer,
-    { offX = 0, offY = 0, offZ = 0 } = {}
+    {
+      offX = 0,
+      offY = 0,
+      offZ = 0,
+      correctPalette = false,
+      correctCustom = false,
+    } = {}
   ) {
     player = typeof player === 'string' ? this.getPlayer(player) : player;
     if (!player) return;
@@ -769,7 +809,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     // wait for the server to finish reading the save
     await this.watchLogChunk(
-      `Bricks.LoadTemplate "${saveFile}" ${offX} ${offY} ${offZ} 0 0 ${player.name}`,
+      `Bricks.LoadTemplate "${saveFile}" ${offX} ${offY} ${offZ} ${
+        correctPalette ? 1 : 0
+      } ${correctCustom ? 1 : 0} ${player.name}`,
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),

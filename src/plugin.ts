@@ -1,3 +1,4 @@
+import { EnvironmentPreset } from '@brickadia/presets';
 import {
   BRBanList,
   BRPlayerNameCache,
@@ -10,15 +11,20 @@ import {
   IPlayerPositions,
   IServerStatus,
 } from '@omegga/types';
-import type { ReadSaveObject, WriteSaveObject } from 'brs-js';
-import type util from '@util';
-import { EnvironmentPreset } from '@brickadia/presets';
-import { PawnDataField } from '@omegga/commandInjector';
+import util from '@util';
+import brs, { ReadSaveObject, WriteSaveObject } from 'brs-js';
 
+// brs-js has trouble exporting these for some reason
+export const read = brs.read;
+export const write = brs.write;
+export const utils = brs.utils;
+export const constants = brs.constants;
+
+export const _OMEGGA_UTILS_IMPORT = util;
 declare global {
   export var Omegga: OmeggaLike;
   export var Player: StaticPlayer;
-  export var OMEGGA_UTIL: typeof util;
+  export var OMEGGA_UTIL: typeof _OMEGGA_UTILS_IMPORT;
 }
 
 export * from '@brickadia/types';
@@ -565,7 +571,14 @@ export interface OmeggaCore {
    */
   loadBricks(
     saveName: string,
-    options?: { offX?: number; offY?: number; offZ?: number; quiet?: boolean }
+    options?: {
+      offX?: number;
+      offY?: number;
+      offZ?: number;
+      quiet?: boolean;
+      correctPalette?: boolean;
+      correctCustom?: boolean;
+    }
   ): void;
 
   /**
@@ -574,7 +587,13 @@ export interface OmeggaCore {
   loadBricksOnPlayer(
     saveName: string,
     player: string | OmeggaPlayer,
-    options?: { offX?: number; offY?: number; offZ?: number }
+    options?: {
+      offX?: number;
+      offY?: number;
+      offZ?: number;
+      correctPalette?: boolean;
+      correctCustom?: boolean;
+    }
   ): void;
 
   /**
@@ -610,7 +629,14 @@ export interface OmeggaCore {
    */
   loadSaveData(
     saveData: WriteSaveObject,
-    options?: { offX?: number; offY?: number; offZ?: number; quiet?: boolean }
+    options?: {
+      offX?: number;
+      offY?: number;
+      offZ?: number;
+      quiet?: boolean;
+      correctPalette?: boolean;
+      correctCustom?: boolean;
+    }
   ): Promise<void>;
 
   /**
@@ -621,7 +647,13 @@ export interface OmeggaCore {
   loadSaveDataOnPlayer(
     saveData: WriteSaveObject,
     player: string | OmeggaPlayer,
-    options?: { offX?: number; offY?: number; offZ?: number }
+    options?: {
+      offX?: number;
+      offY?: number;
+      offZ?: number;
+      correctPalette?: boolean;
+      correctCustom?: boolean;
+    }
   ): Promise<void>;
 
   /**

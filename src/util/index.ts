@@ -1,33 +1,59 @@
 // santize chat, emote list
-export * as chat from './chat';
-import * as chat from './chat';
+import { EMOTES, sanitize, parseLinks } from './chat';
+export const chat = { EMOTES, sanitize, parseLinks };
 
 // hsv and sRGB to linearRGB helpers
-export * as color from './color';
-import * as color from './color';
+import { hsv, linearRGB, sRGB, rgbToHex, DEFAULT_COLORSET } from './color';
+export const color = { hsv, linearRGB, sRGB, rgbToHex, DEFAULT_COLORSET };
 
 // uuid utils
-export * as uuid from './uuid';
-import * as uuid from './uuid';
+import { UUID_PATTERN, match } from './uuid';
+export const uuid = { UUID_PATTERN, match };
 
 // pattern matching utils
-export * as pattern from './pattern';
-import * as pattern from './pattern';
+import { explode } from './pattern';
+export const pattern = { explode };
 
 // time parsing utils
-export * as time from './time';
-import * as time from './time';
+import { parseDuration, parseBrickadiaTime } from './time';
+export const time = { parseDuration, parseBrickadiaTime };
 
 // map parsing utils
-export * as map from './map';
-import * as map from './map';
+import { DEFAULT_MAPS, brn2n, n2brn } from './map';
+export const map = { DEFAULT_MAPS, brn2n, n2brn };
 
 // brick utils
-export * as brick from './brick';
-import * as brick from './brick';
+import {
+  BRICK_CONSTANTS,
+  checkBounds,
+  getBounds,
+  getBrickSize,
+  getScaleAxis,
+  setOwnership,
+  rotate,
+  rotate_x,
+  rotate_y,
+  rotate_z,
+  d2o,
+  o2d,
+} from './brick';
+export const brick = {
+  BRICK_CONSTANTS,
+  checkBounds,
+  getBounds,
+  getBrickSize,
+  getScaleAxis,
+  setOwnership,
+  rotate,
+  rotate_x,
+  rotate_y,
+  rotate_z,
+  d2o,
+  o2d,
+};
 
 // wsl
-export const wsl = () => require('./wsl');
+export const wsl = (): number => require('./wsl');
 
 // brs
 export * as brs from 'brs-js';

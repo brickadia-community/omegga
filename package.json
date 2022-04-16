@@ -99,7 +99,7 @@
     "dist": "MODE=production npx webpack && npm run build && npm run dts",
     "build:frontend": "npx webpack",
     "build": "npx ttsc --build \"src/\"",
-    "dts": "npx dts-bundle-generator --export-referenced-types --no-banner --external-inlines brs-js -o templates/safe-ts/omegga.d.ts -- ./src/plugin.ts"
+    "dts": "npx dts-bundle-generator --inline-declare-global --no-banner --external-inlines brs-js -o templates/safe-ts/omegga.d.ts -- ./src/plugin.ts"
   },
   "author": "Meshiest",
   "license": "ISC",

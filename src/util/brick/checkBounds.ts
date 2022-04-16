@@ -1,12 +1,12 @@
-import { Brick } from 'brs-js';
+import { Brick, Vector } from 'brs-js';
 
 import { getScaleAxis } from './getScaleAxis';
 import { getBrickSize } from './getBrickSize';
 
 export interface IBrickBounds {
-  minBound: [number, number, number];
-  maxBound: [number, number, number];
-  center: [number, number, number];
+  minBound: Vector;
+  maxBound: Vector;
+  center: Vector;
 }
 
 // check if the brick is in bounds for 1 axis

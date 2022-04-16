@@ -15,5 +15,5 @@ omegga.yml
 config.json
 public/*
 dist/
-/omegga.d.ts
+omegga.d.ts
 templates/safe-ts/omegga.d.ts

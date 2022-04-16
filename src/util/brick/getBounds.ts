@@ -1,4 +1,4 @@
-import { Brick, WriteSaveObject } from 'brs-js';
+import { Brick, Vector, WriteSaveObject } from 'brs-js';
 import type { IBrickBounds } from './checkBounds';
 import { getBrickSize } from './getBrickSize';
 import { getScaleAxis } from './getScaleAxis';
@@ -39,7 +39,7 @@ export function getBounds({ bricks, brick_assets }: WriteSaveObject) {
     const max = bounds.maxBound[index];
     const avg = (max + min) / 2;
     return Math.round(avg);
-  }) as [number, number, number];
+  }) as Vector;
 
   return bounds;
 }
