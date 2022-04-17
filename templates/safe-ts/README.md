@@ -1,3 +1,14 @@
+<!--
+
+When uploading your plugin to github/gitlab
+start your repo name with "omegga-"
+
+example: https://github.com/{{author}}/omegga-{{shortName}}
+
+Your plugin will be installed via omegga install gh:{{author}}/{{shortName}}
+
+-->
+
 # {{name}}
 
 A typed safe plugin for [omegga](https://github.com/brickadia-community/omegga).
@@ -11,8 +22,8 @@ remove it entirely if it is unnecessary.
 
 `omegga install gh:{{author}}/{{shortName}}`
 
-*TODO: more steps...?*
+_TODO: more steps...?_
 
 ## Usage
 
-*TODO: include some usage information*
+_TODO: include some usage information_
