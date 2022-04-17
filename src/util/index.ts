@@ -1,6 +1,54 @@
 // santize chat, emote list
-import { EMOTES, sanitize, parseLinks } from './chat';
-export const chat = { EMOTES, sanitize, parseLinks };
+import {
+  EMOTES,
+  sanitize,
+  parseLinks,
+  attr,
+  attrParam,
+  color as chatColor,
+  bold,
+  italic,
+  underline,
+  emoji,
+  code,
+  font,
+  size,
+  link,
+  red,
+  green,
+  blue,
+  yellow,
+  cyan,
+  magenta,
+  black,
+  white,
+  gray,
+} from './chat';
+export const chat = {
+  EMOTES,
+  sanitize,
+  parseLinks,
+  attr,
+  attrParam,
+  color: chatColor,
+  bold,
+  italic,
+  underline,
+  emoji,
+  code,
+  font,
+  size,
+  link,
+  red,
+  green,
+  blue,
+  yellow,
+  cyan,
+  magenta,
+  black,
+  white,
+  gray,
+};
 
 // hsv and sRGB to linearRGB helpers
 import { hsv, linearRGB, sRGB, rgbToHex, DEFAULT_COLORSET } from './color';
