@@ -660,7 +660,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       last: match =>
         Boolean(
           match[2].match(
-            /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!/
+            /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!|Error: No bricks selected to save!/
           )
         ),
       afterMatchDelay: 0,
