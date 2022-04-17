@@ -10,7 +10,13 @@ import {
   IPlayerPositions,
   IServerStatus,
 } from '@omegga/types';
-import { OmeggaLike, OmeggaCore, OmeggaPlayer, WatcherPattern } from '@/plugin';
+import {
+  OmeggaLike,
+  OmeggaCore,
+  OmeggaPlayer,
+  WatcherPattern,
+  PluginInterop,
+} from '@/plugin';
 import {
   BRRoleSetup,
   BRRoleAssignments,
@@ -111,11 +117,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
 
   logWrangler: LogWrangler;
 
-  getPlugin: (
-    name: string
-  ) => Promise<
-    Plugin & { emit(event: string, ...args: any[]): Promise<unknown> }
-  >;
+  getPlugin: (name: string) => Promise<PluginInterop>;
 
   constructor(exec: (line: string) => void) {
     super();

@@ -236,7 +236,7 @@ export interface OmeggaPlayer {
    * Removes an item from a player's inventory
    * @param item Item name (Weapon_Bow)
    */
-  removeItem(item: string): void;
+  takeItem(item: string): void;
 }
 
 export interface StaticPlayer {
@@ -301,7 +301,7 @@ export interface StaticPlayer {
    * @param target Player or player name/id
    * @param item Item name (Weapon_Bow)
    */
-  removeItem(
+  takeItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
     item: string
@@ -388,6 +388,12 @@ export interface OmeggaLike
   savePath: string;
   /** path to presets */
   presetPath: string;
+
+  /** get a plugin's name, documentation, and loaded status
+   * If run in an unsafe plugin, the emitPlugin method sends events from
+   * an "unsafe" plugin
+   */
+  getPlugin(name: string): Promise<PluginInterop>;
 }
 
 export interface OmeggaCore {
@@ -505,7 +511,9 @@ export interface OmeggaCore {
    * Load some environment preset data
    * @param preset preset data
    */
-  loadEnvironmentData(preset: EnvironmentPreset): void;
+  loadEnvironmentData(
+    preset: EnvironmentPreset | EnvironmentPreset['data']['groups']
+  ): void;
 
   /**
    * Get all presets in the environment folder and child folders
@@ -830,3 +838,74 @@ export type IWatcher<T> = {
       matches: RegExpMatchArray[];
     }
 );
+
+export declare type IPluginConfigDefinition = {
+  description: string;
+} & (
+  | {
+      type: 'string' | 'password' | 'role';
+      default: string;
+    }
+  | {
+      type: 'boolean';
+      default: boolean;
+    }
+  | {
+      type: 'number';
+      default: number;
+    }
+  | {
+      type: 'enum';
+      options: (string | number)[];
+      default: string | number;
+    }
+  | {
+      type: 'players';
+      default: {
+        id: string;
+        name: string;
+      };
+    }
+  | ({
+      type: 'list';
+    } & (
+      | {
+          itemType: 'string';
+          default: string[];
+        }
+      | {
+          itemType: 'number';
+          default: number[];
+        }
+      | {
+          itemType: 'enum';
+          options: (string | number)[];
+          default: string | number;
+        }
+    ))
+);
+export interface IPluginCommandArgument {
+  name: string;
+  description: string;
+  required?: boolean;
+}
+export interface IPluginCommand {
+  name: string;
+  description: string;
+  example?: string;
+  args: IPluginCommandArgument[];
+}
+export interface IPluginDocumentation {
+  name: string;
+  description: string;
+  author: string;
+  config: Record<string, IPluginConfigDefinition>;
+  commands: IPluginCommand[];
+}
+
+export interface PluginInterop {
+  name: string;
+  documentation: IPluginDocumentation;
+  loaded: boolean;
+  emitPlugin?(event: string, args: any[]): Promise<any>;
+}

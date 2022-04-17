@@ -1,6 +1,6 @@
 import default_commands from '@/info/default_commands.json';
 import Logger from '@/logger';
-import { OmeggaLike, OmeggaPlayer } from '@/plugin';
+import { OmeggaLike, OmeggaPlayer, PluginInterop } from '@/plugin';
 import {
   BRICKADIA_AUTH_FILES,
   CONFIG_AUTH_DIR,
@@ -874,5 +874,22 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       match[0].groups.map
     );
     return success;
+  }
+
+  async getPlugin(name: string): Promise<PluginInterop> {
+    const plugin = this.pluginLoader.plugins.find(p => p.getName() === name);
+
+    if (plugin) {
+      return {
+        name,
+        documentation: plugin.getDocumentation(),
+        loaded: plugin.isLoaded(),
+        emitPlugin: (event: string, ...args: any[]) => {
+          return plugin.emitPlugin(event, 'unsafe', args);
+        },
+      };
+    } else {
+      return null;
+    }
   }
 }

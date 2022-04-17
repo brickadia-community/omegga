@@ -176,7 +176,7 @@ class Player implements OmeggaPlayer {
       omegga.writeln(`Server.Players.GiveItem "${target?.name}" ${item}`);
   }
 
-  static removeItem(
+  static takeItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
     item: string
@@ -671,8 +671,8 @@ class Player implements OmeggaPlayer {
     Player.giveItem(this.#omegga, this, item);
   }
 
-  removeItem(item: string): void {
-    Player.removeItem(this.#omegga, this, item);
+  takeItem(item: string): void {
+    Player.takeItem(this.#omegga, this, item);
   }
 }
 

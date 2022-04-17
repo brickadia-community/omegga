@@ -3,9 +3,13 @@
 // this also lets plugins get terminated easier by killing the worker
 // rather than unloading and reloading code
 
-import OmeggaPlugin, { OmeggaLike, PluginConfig, PluginStore } from '@/plugin';
+import OmeggaPlugin, {
+  OmeggaLike,
+  PluginConfig,
+  PluginInterop,
+  PluginStore,
+} from '@/plugin';
 import Player from '@omegga/player';
-import type { Plugin } from '@omegga/plugin';
 import type Omegga from '@omegga/server';
 import { transformFileSync } from '@swc/core';
 import { mkdir } from '@util/file';
@@ -66,11 +70,11 @@ const omegga = new ProxyOmegga(exec);
 
 // add plugin fetcher
 omegga.getPlugin = async name => {
-  let plugin = (await emit('getPlugin', name)) as Plugin & {
-    emit(event: string, ...args: any[]): Promise<unknown>;
+  let plugin = (await emit('getPlugin', name)) as PluginInterop & {
+    emitPlugin(event: string, ...args: any[]): Promise<any>;
   };
   if (plugin) {
-    plugin.emit = async (ev: string, ...args: unknown[]) => {
+    plugin.emitPlugin = async (ev: string, ...args: any[]) => {
       return await emit('emitPlugin', name, ev, args);
     };
     return plugin;

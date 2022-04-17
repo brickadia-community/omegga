@@ -6,12 +6,8 @@ import Datastore from 'nedb-promises';
 import path from 'path';
 import type Player from './player';
 import type Omegga from './server';
-
-// Check if this plugin is disabled
-const DISABLED_FILE = 'disabled.omegga';
-
-// TODO: move doc.json to this file (maybe)
-// TODO: cleaner plugin error messages
+import { IPluginDocumentation, IPluginCommand } from '@/plugin';
+import { PluginInterop } from '..';
 
 export interface IPluginJSON {
   formatVersion: number;
@@ -19,69 +15,11 @@ export interface IPluginJSON {
   emitConfig?: string;
 }
 
-export type IPluginConfigDefinition = {
-  description: string;
-} & (
-  | {
-      type: 'string' | 'password' | 'role';
-      default: string;
-    }
-  | {
-      type: 'boolean';
-      default: boolean;
-    }
-  | {
-      type: 'number';
-      default: number;
-    }
-  | {
-      type: 'enum';
-      options: (string | number)[];
-      default: string | number;
-    }
-  | {
-      type: 'players';
-      default: { id: string; name: string };
-    }
-  | ({
-      type: 'list';
-    } & (
-      | {
-          itemType: 'string';
-          default: string[];
-        }
-      | {
-          itemType: 'number';
-          default: number[];
-        }
-      | {
-          itemType: 'enum';
-          options: (string | number)[];
-          default: string | number;
-        }
-    ))
-);
+// Check if this plugin is disabled
+const DISABLED_FILE = 'disabled.omegga';
 
-export interface IPluginCommandArgument {
-  name: string;
-  description: string;
-  required?: boolean;
-}
-
-export interface IPluginCommand {
-  name: string;
-  description: string;
-  example?: string;
-  args: IPluginCommandArgument[];
-}
-
-export interface IPluginDocumentation {
-  name: string;
-  description: string;
-  author: string;
-  config: Record<string, IPluginConfigDefinition>;
-  commands: IPluginCommand[];
-}
+// TODO: move doc.json to this file (maybe)
+// TODO: cleaner plugin error messages
 
 export interface IStoreItem<T = unknown> {
   type: 'store';

@@ -622,9 +622,7 @@ async function init() {
     },
   ]);
 
-  const name = response.name.startsWith('omegga-')
-    ? response.name
-    : 'omegga-' + response.name;
+  const name = response.name
   const type: PluginType =
     response.type == 'safe' && response.ts ? 'safe-ts' : response.type;
 
