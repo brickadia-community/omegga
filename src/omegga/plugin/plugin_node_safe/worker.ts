@@ -20,6 +20,7 @@ import path from 'path';
 import { NodeVM } from 'vm2';
 import { parentPort } from 'worker_threads';
 import { ProxyOmegga } from './proxyOmegga';
+import { cloneDeep } from 'lodash';
 
 const MAIN_FILE = 'omegga.plugin.js';
 const MAIN_FILE_TS = 'omegga.plugin.ts';
@@ -75,8 +76,7 @@ omegga.getPlugin = async name => {
   };
   if (plugin) {
     plugin.emitPlugin = async (ev: string, ...args: any[]) => {
-      args = args ? args.map(arg => JSON.parse(JSON.stringify(arg))) : null;
-      return await emit('emitPlugin', name, ev, args);
+      return await emit('emitPlugin', name, ev, cloneDeep(args));
     };
     return plugin;
   } else {
