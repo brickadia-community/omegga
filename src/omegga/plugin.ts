@@ -7,7 +7,6 @@ import path from 'path';
 import type Player from './player';
 import type Omegga from './server';
 import { IPluginDocumentation, IPluginCommand } from '@/plugin';
-import { PluginInterop } from '..';
 
 export interface IPluginJSON {
   formatVersion: number;

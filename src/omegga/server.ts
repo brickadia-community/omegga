@@ -283,19 +283,6 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         }, 10000);
       }
 
-      const tempSave = this.getSavePath('omegga_temp');
-      if (tempSave) {
-        Logger.logp('Loading previous bricks...');
-        this.loadBricks('omegga_temp');
-        setTimeout(() => {
-          try {
-            unlinkSync(tempSave);
-          } catch (err) {
-            Logger.error('Error removing omegga_temp.brs', err);
-          }
-        }, 10000);
-      }
-
       const minigames = this.getMinigamePresets().filter(s =>
         s.startsWith('omegga_temp_')
       );
@@ -326,6 +313,19 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
             unlinkSync(tempEnvironment);
           } catch (err) {
             Logger.error('Error removing environment omegga_temp.bp', err);
+          }
+        }, 10000);
+      }
+
+      const tempSave = this.getSavePath('omegga_temp');
+      if (tempSave) {
+        Logger.logp('Loading previous bricks...');
+        this.loadBricks('omegga_temp');
+        setTimeout(() => {
+          try {
+            unlinkSync(tempSave);
+          } catch (err) {
+            Logger.error('Error removing omegga_temp.brs', err);
           }
         }, 10000);
       }
