@@ -75,6 +75,7 @@ omegga.getPlugin = async name => {
   };
   if (plugin) {
     plugin.emitPlugin = async (ev: string, ...args: any[]) => {
+      args = args ? args.map(arg => JSON.parse(JSON.stringify(arg))) : null;
       return await emit('emitPlugin', name, ev, args);
     };
     return plugin;
