@@ -622,7 +622,7 @@ async function init() {
     },
   ]);
 
-  const name = response.name
+  const name = response.name;
   const type: PluginType =
     response.type == 'safe' && response.ts ? 'safe-ts' : response.type;
 
@@ -659,6 +659,8 @@ async function init() {
 
   const copyAndRender = async (src: string, dest: string) => {
     const stats = fs.statSync(src);
+    // remove .rename suffix from files
+    dest = dest.replace(/\.rename$/, '');
     if (stats.isDirectory()) {
       await fs.promises.mkdir(dest);
       const contents = await fs.promises.readdir(src);
