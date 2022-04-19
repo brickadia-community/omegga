@@ -224,13 +224,13 @@ export interface OmeggaPlayer {
    * Gives a player an item
    * @param item Item name (Weapon_Bow)
    */
-  giveItem(item: WeaponClass | string): void;
+  giveItem(item: WeaponClass): void;
 
   /**
    * Removes an item from a player's inventory
    * @param item Item name (Weapon_Bow)
    */
-  takeItem(item: WeaponClass | string): void;
+  takeItem(item: WeaponClass): void;
 }
 
 export interface StaticPlayer {
@@ -286,7 +286,7 @@ export interface StaticPlayer {
   giveItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    item: WeaponClass | string
+    item: WeaponClass
   ): void;
 
   /**
@@ -298,7 +298,7 @@ export interface StaticPlayer {
   takeItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    item: WeaponClass | string
+    item: WeaponClass
   ): void;
 }
 

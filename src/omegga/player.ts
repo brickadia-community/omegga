@@ -168,7 +168,7 @@ class Player implements OmeggaPlayer {
   static giveItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    item: WeaponClass | string
+    item: WeaponClass
   ) {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (!item) return;
@@ -179,7 +179,7 @@ class Player implements OmeggaPlayer {
   static takeItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    item: WeaponClass | string
+    item: WeaponClass
   ) {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (!item) return;
@@ -667,11 +667,11 @@ class Player implements OmeggaPlayer {
     Player.heal(this.#omegga, this, amount);
   }
 
-  giveItem(item: WeaponClass | string): void {
+  giveItem(item: WeaponClass): void {
     Player.giveItem(this.#omegga, this, item);
   }
 
-  takeItem(item: WeaponClass | string): void {
+  takeItem(item: WeaponClass): void {
     Player.takeItem(this.#omegga, this, item);
   }
 }
