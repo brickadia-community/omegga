@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Brickadia server installer, manager, wrapper, configurator, and automator",
   "main": "index.js",
   "bin": {
@@ -10,7 +10,7 @@
     "@swc/core": "^1.2.165",
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
-    "brs-js": "^2.0.6",
+    "brs-js": "^2.0.8",
     "child_process": "^1.0.2",
     "chokidar": "^3.4.2",
     "colors": "^1.4.0",
@@ -27,7 +27,6 @@
     "lodash": "^4.17.20",
     "nedb-promises": "^5.0.1",
     "nedb-promises-session-store": "1.0.0",
-    "npm": "^7.20.6",
     "pem": "^1.14.4",
     "prompts": "^2.4.2",
     "readline": "^1.3.0",
@@ -41,13 +40,7 @@
     "vm2": "3.9.2 || >3.9.4"
   },
   "types": "./dist/lib.d.ts",
-  "exports": {
-    ".": "./dist/index.js",
-    "./plugin": "./dist/plugin.js"
-  },
   "devDependencies": {
-    "@babel/core": "^7.13.8",
-    "@babel/plugin-proposal-class-properties": "^7.13.0",
     "@interactjs/interactjs": "1.10.11",
     "@tabler/icons": "^1.39.1",
     "@types/bcrypt": "^5.0.0",

@@ -14,12 +14,6 @@ import {
 import util from '@util';
 import brs, { ReadSaveObject, WriteSaveObject } from 'brs-js';
 
-// brs-js has trouble exporting these for some reason
-export const read = brs.read;
-export const write = brs.write;
-export const utils = brs.utils;
-export const constants = brs.constants;
-
 export const _OMEGGA_UTILS_IMPORT = util;
 declare global {
   export var Omegga: OmeggaLike;
@@ -230,13 +224,13 @@ export interface OmeggaPlayer {
    * Gives a player an item
    * @param item Item name (Weapon_Bow)
    */
-  giveItem(item: string): void;
+  giveItem(item: WeaponClass | string): void;
 
   /**
    * Removes an item from a player's inventory
    * @param item Item name (Weapon_Bow)
    */
-  takeItem(item: string): void;
+  takeItem(item: WeaponClass | string): void;
 }
 
 export interface StaticPlayer {
@@ -292,7 +286,7 @@ export interface StaticPlayer {
   giveItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    item: string
+    item: WeaponClass | string
   ): void;
 
   /**
@@ -304,7 +298,7 @@ export interface StaticPlayer {
   takeItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    item: string
+    item: WeaponClass | string
   ): void;
 }
 
@@ -909,3 +903,66 @@ export interface PluginInterop {
   loaded: boolean;
   emitPlugin?(event: string, args: any[]): Promise<any>;
 }
+
+export type WeaponClass =
+  | 'Weapon_AntiMaterielRifle'
+  | 'Weapon_ArmingSword'
+  | 'Weapon_AssaultRifle'
+  | 'Weapon_AutoShotgun'
+  | 'Weapon_Battleaxe'
+  | 'Weapon_Bazooka'
+  | 'Weapon_Bow'
+  | 'Weapon_BullpupRifle'
+  | 'Weapon_BullpupSMG'
+  | 'Weapon_ChargedLongsword'
+  | 'Weapon_CrystalKalis'
+  | 'Weapon_Derringer'
+  | 'Weapon_FlintlockPistol'
+  | 'Weapon_GrenadeLauncher'
+  | 'Weapon_Handaxe'
+  | 'Weapon_HealthPotion'
+  | 'Weapon_HeavyAssaultRifle'
+  | 'Weapon_HeavySMG'
+  | 'Weapon_HeroSword'
+  | 'Weapon_HighPowerPistol'
+  | 'Weapon_HoloBlade'
+  | 'Weapon_HuntingShotgun'
+  | 'Weapon_Ikakalaka'
+  | 'Weapon_ImpactGrenade'
+  | 'Weapon_ImpactGrenadeLauncher'
+  | 'Weapon_ImpulseGrenade'
+  | 'Weapon_Khopesh'
+  | 'Weapon_Knife'
+  | 'Weapon_LeverActionRifle'
+  | 'Weapon_LightMachineGun'
+  | 'Weapon_LongSword'
+  | 'Weapon_MagnumPistol'
+  | 'Weapon_MicroSMG'
+  | 'Weapon_Minigun'
+  | 'Weapon_Pistol'
+  | 'Weapon_PulseCarbine'
+  | 'Weapon_QuadLauncher'
+  | 'Weapon_Revolver'
+  | 'Weapon_RocketJumper'
+  | 'Weapon_RocketLauncher'
+  | 'Weapon_Sabre'
+  | 'Weapon_SemiAutoRifle'
+  | 'Weapon_ServiceRifle'
+  | 'Weapon_Shotgun'
+  | 'Weapon_SlugShotgun'
+  | 'Weapon_Sniper'
+  | 'Weapon_Spatha'
+  | 'Weapon_StandardSubmachineGun'
+  | 'Weapon_StickGrenade'
+  | 'Weapon_SubmachineGun'
+  | 'Weapon_SuperShotgun'
+  | 'Weapon_SuppressedAssaultRifle'
+  | 'Weapon_SuppressedBullpupSMG'
+  | 'Weapon_SuppressedPistol'
+  | 'Weapon_SuppressedServiceRifle'
+  | 'Weapon_TacticalShotgun'
+  | 'Weapon_TacticalSMG'
+  | 'Weapon_Tomahawk'
+  | 'Weapon_TwinCannon'
+  | 'Weapon_TypewriterSMG'
+  | 'Weapon_Zweihander';

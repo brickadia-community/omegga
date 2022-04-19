@@ -24,7 +24,7 @@ import {
   white,
   gray,
 } from './chat';
-export const chat = {
+const chat = {
   EMOTES,
   sanitize,
   parseLinks,
@@ -52,23 +52,23 @@ export const chat = {
 
 // hsv and sRGB to linearRGB helpers
 import { hsv, linearRGB, sRGB, rgbToHex, DEFAULT_COLORSET } from './color';
-export const color = { hsv, linearRGB, sRGB, rgbToHex, DEFAULT_COLORSET };
+const color = { hsv, linearRGB, sRGB, rgbToHex, DEFAULT_COLORSET };
 
 // uuid utils
 import { UUID_PATTERN, match } from './uuid';
-export const uuid = { UUID_PATTERN, match };
+const uuid = { UUID_PATTERN, match };
 
 // pattern matching utils
 import { explode } from './pattern';
-export const pattern = { explode };
+const pattern = { explode };
 
 // time parsing utils
 import { parseDuration, parseBrickadiaTime } from './time';
-export const time = { parseDuration, parseBrickadiaTime };
+const time = { parseDuration, parseBrickadiaTime };
 
 // map parsing utils
 import { DEFAULT_MAPS, brn2n, n2brn } from './map';
-export const map = { DEFAULT_MAPS, brn2n, n2brn };
+const map = { DEFAULT_MAPS, brn2n, n2brn };
 
 // brick utils
 import {
@@ -85,7 +85,8 @@ import {
   d2o,
   o2d,
 } from './brick';
-export const brick = {
+
+const brick = {
   BRICK_CONSTANTS,
   checkBounds,
   getBounds,
@@ -101,10 +102,35 @@ export const brick = {
 };
 
 // wsl
-export const wsl = (): number => require('./wsl');
+const wsl = (): number => require('./wsl');
 
-// brs
+import brs_, { ReadSaveObject, WriteSaveObject, Uuid } from 'brs-js';
+
+// this type has to exist or the dts exporter will try to dynamically export brs-js
+const brs: {
+  read(
+    rawBytes: Uint8Array,
+    options?: {
+      bricks?: boolean;
+      preview?: boolean;
+    }
+  ): ReadSaveObject;
+  write(
+    save: WriteSaveObject,
+    options?: {
+      compress?: boolean;
+    }
+  ): Uint8Array;
+  utils: any;
+  constants: {
+    MAGIC: Uint8Array;
+    LATEST_VERSION: number;
+    MAX_INT: number;
+    DEFAULT_UUID: Uuid;
+  };
+} = brs_ as any;
+
 export * as brs from 'brs-js';
-import * as brs from 'brs-js';
+export { chat, color, uuid, pattern, time, map, brick, wsl };
 
 export default { chat, color, uuid, pattern, time, map, brick, wsl, brs };

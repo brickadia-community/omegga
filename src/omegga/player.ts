@@ -1,7 +1,7 @@
-import { color, brick as brickUtils } from '../util/';
-import { Brick, WriteSaveObject } from 'brs-js';
+import type { OmeggaLike, OmeggaPlayer, WeaponClass } from '@/plugin';
 import { IBrickBounds } from '@util/brick';
-import type { OmeggaPlayer, OmeggaLike } from '@/plugin';
+import { WriteSaveObject } from 'brs-js';
+import { brick as brickUtils, color } from '../util/';
 
 const DEFAULT_PERMS: Record<string, string[]> = {
   moderator: [
@@ -168,7 +168,7 @@ class Player implements OmeggaPlayer {
   static giveItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    item: string
+    item: WeaponClass | string
   ) {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (!item) return;
@@ -179,7 +179,7 @@ class Player implements OmeggaPlayer {
   static takeItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    item: string
+    item: WeaponClass | string
   ) {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (!item) return;
@@ -667,11 +667,11 @@ class Player implements OmeggaPlayer {
     Player.heal(this.#omegga, this, amount);
   }
 
-  giveItem(item: string): void {
+  giveItem(item: WeaponClass | string): void {
     Player.giveItem(this.#omegga, this, item);
   }
 
-  takeItem(item: string): void {
+  takeItem(item: WeaponClass | string): void {
     Player.takeItem(this.#omegga, this, item);
   }
 }
