@@ -325,4 +325,15 @@ program
     pluginUtil.init();
   });
 
+program
+  .command('plugin-init')
+  .description('Alias for init-plugin')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .action(async () => {
+    const { verbose } = program.opts();
+    Logger.VERBOSE = verbose;
+
+    pluginUtil.init();
+  });
+
 program.parseAsync(process.argv);

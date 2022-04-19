@@ -652,7 +652,7 @@ async function init() {
 
   const templateData = {
     name,
-    shortName: name.substring(7),
+    shortName: name,
     author: author ?? 'AUTHOR',
     omeggaVersion: pkg.version,
   };
