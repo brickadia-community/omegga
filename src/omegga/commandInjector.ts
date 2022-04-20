@@ -349,7 +349,8 @@ const COMMANDS: InjectedCommands = {
         members: ruleMembers
           .find(m => m.item.ruleset === r.groups.ruleset)
           .members // get the members from this ruleset
-          .map(m => this.getPlayer(m.state)), // get the players
+          .map(m => this.getPlayer(m.state))
+          .filter(Boolean), // get the players
 
         // get the teams for this ruleset
         teams: teamMembers
@@ -365,13 +366,21 @@ const COMMANDS: InjectedCommands = {
             // get the colors (different for a4 and a5)
             color: handleColor(
               _.pick(
-                teamColors.find(t => t.groups.team === m.item.team).groups,
+                teamColors.find(t => t.groups.team === m.item.team)?.groups ??
+                  ({
+                    r: 0,
+                    g: 0,
+                    b: 0,
+                    a: 0,
+                  } as any),
                 ['r', 'g', 'b', 'a']
               )
             ),
 
             // get the players from the team
-            members: m.members.map(m => this.getPlayer(m.state)),
+            members: m.members
+              .map(m => this.getPlayer(m.state))
+              .filter(Boolean),
           })),
       }));
     } catch (e) {
