@@ -1,5 +1,55 @@
-import debounce from 'lodash/debounce';
-export { debounce };
+import _debounce from 'lodash/debounce';
+
+export interface DebouncedFunc<T extends (...args: any[]) => any> {
+  /**
+   * Call the original function, but applying the debounce rules.
+   *
+   * If the debounced function can be run immediately, this calls it and returns its return
+   * value.
+   *
+   * Otherwise, it returns the return value of the last invocation, or undefined if the debounced
+   * function was not invoked yet.
+   */
+  (...args: Parameters<T>): ReturnType<T> | undefined;
+
+  /**
+   * Throw away any pending invocation of the debounced function.
+   */
+  cancel(): void;
+
+  /**
+   * If there is a pending invocation of the debounced function, invoke it immediately and return
+   * its return value.
+   *
+   * Otherwise, return the value from the last invocation, or undefined if the debounced function
+   * was never invoked.
+   */
+  flush(): ReturnType<T> | undefined;
+}
+export interface DebouncedFuncLeading<T extends (...args: any[]) => any>
+  extends DebouncedFunc<T> {
+  (...args: Parameters<T>): ReturnType<T>;
+  flush(): ReturnType<T>;
+}
+export interface DebounceSettings {
+  leading?: boolean | undefined;
+  maxWait?: number | undefined;
+  trailing?: boolean | undefined;
+}
+export interface DebounceSettingsLeading extends DebounceSettings {
+  leading: true;
+}
+export const debounce:
+  | (<T extends (...args: any) => any>(
+      func: T,
+      wait: number | undefined,
+      options: DebounceSettingsLeading
+    ) => DebouncedFuncLeading<T>)
+  | (<T extends (...args: any) => any>(
+      func: T,
+      wait?: number,
+      options?: DebounceSettings
+    ) => DebouncedFunc<T>) = _debounce;
 
 const UNIT_CONVERSION: Record<string, number> = {
   ms: 1, // milliseconds

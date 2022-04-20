@@ -63,8 +63,8 @@ import { explode } from './pattern';
 const pattern = { explode };
 
 // time parsing utils
-import { parseDuration, parseBrickadiaTime } from './time';
-const time = { parseDuration, parseBrickadiaTime };
+import { parseDuration, parseBrickadiaTime, debounce } from './time';
+const time = { parseDuration, parseBrickadiaTime, debounce };
 
 // map parsing utils
 import { DEFAULT_MAPS, brn2n, n2brn } from './map';
