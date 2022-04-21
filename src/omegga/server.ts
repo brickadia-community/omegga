@@ -811,7 +811,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     await this.watchLogChunk(
       `Bricks.LoadTemplate "${saveFile}" ${offX} ${offY} ${offZ} ${
         correctPalette ? 1 : 0
-      } ${correctCustom ? 1 : 0} ${player.name}`,
+      } ${correctCustom ? 1 : 0} "${player.name}"`,
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),
