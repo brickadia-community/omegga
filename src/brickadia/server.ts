@@ -44,6 +44,7 @@ export default class BrickadiaServer extends EventEmitter {
 
   constructor(dataPath: string, config: IConfig) {
     super();
+
     this.config = config;
     // use the data path if it's absolute, otherwise build an absolute path
     this.path =

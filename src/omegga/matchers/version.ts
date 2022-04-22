@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import softconfig from '@/softconfig';
 import { MatchGenerator } from './types';
+import Logger from '@/logger';
 
 const version: MatchGenerator<number> = omegga => {
   const versionRegExp = /^Using libcurl (?<curlversion>.+)$/;
@@ -43,6 +44,7 @@ const version: MatchGenerator<number> = omegga => {
     // when there's a match, emit the chat message event
     callback(version) {
       omegga.emit('version', version);
+      Logger.verbose('Brickadia Version', version);
       omegga.version = version;
     },
   };
