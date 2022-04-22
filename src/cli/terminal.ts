@@ -17,7 +17,8 @@ declare global {
 
 let log: (...args: any[]) => void,
   err: (...args: any[]) => void,
-  warn: (...args: any[]) => void;
+  warn: (...args: any[]) => void,
+  info: (...args: any[]) => void;
 
 interface ITermCommand {
   name: string;
@@ -49,6 +50,7 @@ export default class Terminal {
     // shortand fns
     log = (...args) => this.log('>>'.green, ...args);
     err = (...args) => this.error('!>'.red, ...args);
+    info = (...args) => this.log('?>'.blue, ...args);
     warn = (...args) => this.warn('W>'.yellow, ...args);
 
     // print log line if debug is enabled
@@ -57,6 +59,13 @@ export default class Terminal {
     omegga.on('line', l => {
       if (options.debug) this.log('::'.blue, l);
       else if (!launcherDone) {
+        if (l.match(/Update Failed/)) {
+          err(l);
+          info(
+            'This might be resolved by deleting brickadia and reinstalling:'
+          );
+          info('  rm -rf ~/.local/share/brickadia-launcher'.grey);
+        }
         if (l.startsWith('DOWNLOADING')) {
           // TOOD: if someone is proactive enough in the future, you could turn these steps into a legitimate progress bar
           /* Here's some launcher log lines that might be helpful
