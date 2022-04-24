@@ -523,8 +523,37 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     this.writeln(`Server.Environment.Reset`);
   }
 
-  saveEnvironment(presetName: string) {
-    this.writeln(`Server.Environment.SavePreset "${presetName}"`);
+  async saveEnvironment(presetName: string): Promise<void> {
+    await this.addWatcher(/Environment preset saved.$/, {
+      // request the pawn for this player's controller (should only be one)
+      exec: () => this.writeln(`Server.Environment.SavePreset "${presetName}"`),
+      timeoutDelay: 100,
+    });
+  }
+
+  async getEnvironmentData(): Promise<EnvironmentPreset> {
+    const saveName =
+      this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
+
+    await this.saveEnvironment(saveName);
+    const data = this.readEnvironmentData(saveName);
+    const file = join(this.presetPath, 'Environment', saveName + '.bp');
+    if (existsSync(file)) unlinkSync(file);
+
+    return data;
+  }
+
+  readEnvironmentData(saveName: string): EnvironmentPreset {
+    if (typeof saveName !== 'string')
+      throw 'expected name argument for readEnvironmentData';
+
+    const file = join(this.presetPath, 'Environment', saveName + '.bp');
+    try {
+      if (existsSync(file)) return JSON.parse(readFileSync(file).toString());
+    } catch (err) {
+      Logger.verbose('Error parsing save data in readEnvironmentData', err);
+    }
+    return null;
   }
 
   loadEnvironment(presetName: string) {

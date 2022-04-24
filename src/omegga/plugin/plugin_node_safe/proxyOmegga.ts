@@ -83,6 +83,8 @@ const STEAL_PROTOTYPES: Record<keyof Required<OmeggaCore>, true> = {
   getMinigamePresets: true,
   resetEnvironment: true,
   saveEnvironment: true,
+  readEnvironmentData: true,
+  getEnvironmentData: true,
   loadEnvironment: true,
   loadEnvironmentData: true,
   getEnvironmentPresets: true,
@@ -273,11 +275,17 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   resetEnvironment(): void {
     throw badBorrow('resetEnvironment');
   }
-  saveEnvironment(presetName: string): void {
+  saveEnvironment(presetName: string): Promise<void> {
     throw badBorrow('saveEnvironment');
+  }
+  getEnvironmentData(): Promise<EnvironmentPreset> {
+    throw badBorrow('getEnvironmentData');
   }
   loadEnvironment(presetName: string): void {
     throw badBorrow('loadEnvironment');
+  }
+  readEnvironmentData(presetName: string): void {
+    throw badBorrow('readEnvironmentData');
   }
   loadEnvironmentData(preset: EnvironmentPreset): void {
     throw badBorrow('loadEnvironmentData');

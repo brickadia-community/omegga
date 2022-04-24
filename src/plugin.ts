@@ -559,7 +559,16 @@ export interface OmeggaCore {
    * Save an environment preset
    * @param presetName preset name
    */
-  saveEnvironment(presetName: string): void;
+  saveEnvironment(presetName: string): Promise<void>;
+
+  /** Save a temporary environment preset and return its contents */
+  getEnvironmentData(): Promise<EnvironmentPreset>;
+
+  /**
+   * Read environment data as json
+   * @param presetName preset name
+   */
+  readEnvironmentData(presetName: string): void;
 
   /**
    * Load an environment preset
