@@ -255,9 +255,16 @@ export interface OmeggaPlayer {
 
   /**
    * Changes a player's score
+   * @param minigameIndex minigame index
    * @param score Score
    */
-  setScore(score: number): void;
+  setScore(minigameIndex: number, score: number): void;
+
+  /**
+   * Fetch a player's score
+   * @param minigameIndex minigame index
+   */
+  getScore(minigameIndex: number): Promise<number>;
 }
 
 export interface StaticPlayer {
@@ -356,13 +363,27 @@ export interface StaticPlayer {
    * Changes a player's score
    * @param omegga Omegga instance
    * @param target Player or player name/id
+   * @param minigameIndex minigame index
    * @param score Score
    */
   setScore(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
+    minigameIndex: number,
     score: number
   ): void;
+
+  /**
+   * Fetches a player's score
+   * @param omegga Omegga instance
+   * @param target Player or player name/id
+   * @param minigameIndex minigame index
+   */
+  getScore(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    minigameIndex: number
+  ): Promise<number>;
 }
 
 export interface InjectedCommands {

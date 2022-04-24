@@ -211,13 +211,49 @@ class Player implements OmeggaPlayer {
   static setScore(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
+    minigameIndex: number,
     score: number
   ) {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (target?.name)
       omegga.writeln(
-        `Server.Players.SetLeaderboardValue "${target?.name}" ${score}`
+        `Server.Players.SetLeaderboardValue "${target?.name}" ${minigameIndex} ${score}`
       );
+  }
+
+  static async getScore(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    minigameIndex: number
+  ): Promise<number> {
+    if (typeof target === 'string') target = omegga.getPlayer(target);
+    if (target?.name) {
+      const name = target?.name;
+      const id = target?.id;
+
+      const match = await omegga.addWatcher(
+        (line, match) => {
+          if (match && match.groups.generator === 'LogConsoleCommands') {
+            const test = match.groups.data.match(
+              /^(?<uuid>.+) leaderboard value (?<minigame>\d+) = (?<score>-?\d+)$/
+            );
+            if (!test) return;
+            if (test.groups.uuid !== id) return;
+            if (Number(test.groups.minigame) !== minigameIndex) return;
+            return test;
+          }
+        },
+        {
+          timeoutDelay: 1000,
+          exec: () =>
+            omegga.writeln(
+              `Server.Players.PrintLeaderboardValue "${name}" ${minigameIndex}`
+            ),
+        }
+      );
+      if (match) return Number(match[0].groups.score);
+    }
+    return 0;
   }
 
   /**
@@ -716,8 +752,12 @@ class Player implements OmeggaPlayer {
     Player.setMinigame(this.#omegga, this, index);
   }
 
-  setScore(score: number): void {
-    Player.setScore(this.#omegga, this, score);
+  setScore(minigameIndex: number, score: number): void {
+    Player.setScore(this.#omegga, this, minigameIndex, score);
+  }
+
+  getScore(minigameIndex: number): Promise<number> {
+    return Player.getScore(this.#omegga, this, minigameIndex);
   }
 }
 
