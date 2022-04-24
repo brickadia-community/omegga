@@ -1,23 +1,20 @@
 import { MatchGenerator } from './types';
-import { BrickClick, BrickInteraction } from '@/plugin';
+import { BrickInteraction } from '@/plugin';
 import Logger from '@/logger';
 
 const interactRegExp =
-  /^Player "(?<name>[^"]+)" \((?<id>[^,]+), (?<pawn>[^,]+), (?<controller>[^)]+)\) interacted with brick "(?<brick>[^\"]+)" at (?<x>-?\d+) (?<y>-?\d+) (?<z>-?\d+).$/;
+  /^Player "(?<name>[^"]+)" \((?<id>[^,]+), (?<pawn>[^,]+), (?<controller>[^)]+)\) interacted with brick "(?<brick>[^\"]+)" at (?<x>-?\d+) (?<y>-?\d+) (?<z>-?\d+), message: "(?<message>.*)".$/;
 
-const customEventRegExp = /^event:(?<name>[^:]+):(?<args>.+)$/;
+const customEventRegExp = /^event:(?<name>[^:]+)(:(?<args>.*))?$/;
 
-let lastInteract: BrickInteraction;
-let lastCounter: string;
-
-const interact: MatchGenerator<BrickInteraction | BrickClick> = omegga => {
+const interact: MatchGenerator<BrickInteraction> = omegga => {
   return {
     // listen for auth messages
     pattern(_line, logMatch) {
       // line is not generic console log
       if (!logMatch) return;
 
-      const { generator, data, counter } = logMatch.groups;
+      const { generator, data } = logMatch.groups;
 
       if (generator !== 'LogBrickadia') return;
 
@@ -25,7 +22,20 @@ const interact: MatchGenerator<BrickInteraction | BrickClick> = omegga => {
 
       // check if log is the kill server log
       if (match) {
-        return (lastInteract = {
+        let blob: any = null,
+          error = false,
+          json = false;
+        if (match.groups.message?.startsWith('json:')) {
+          json = true;
+          try {
+            blob = JSON.parse(match.groups.message.slice(5));
+          } catch (err) {
+            Logger.verbose('Error parsing interact event json', data, err);
+            error = true;
+          }
+        }
+
+        return {
           player: {
             id: match.groups.id,
             name: match.groups.name,
@@ -38,53 +48,29 @@ const interact: MatchGenerator<BrickInteraction | BrickClick> = omegga => {
             Number(match.groups.y),
             Number(match.groups.z),
           ],
-        } as BrickInteraction);
-        // if the counter is the same, it's safe to assunme
-      } else if (counter === lastCounter) {
-        let blob: any = null,
-          error = false,
-          json = false;
-        if (data.startsWith('json:')) {
-          json = true;
-          try {
-            blob = JSON.parse(data.slice(5));
-          } catch (err) {
-            Logger.verbose('Error parsing interact event json', data, err);
-            error = true;
-          }
-        }
-
-        const click: BrickClick = {
-          ...lastInteract,
-          line: data,
+          message: match.groups.message,
           json,
           error,
           data: blob,
         };
-        lastInteract = null;
-        lastCounter = '';
-        return click;
-      } else {
-        lastCounter = '';
-        lastInteract = null;
       }
     },
 
     callback(interaction) {
-      if ('line' in interaction) {
-        omegga.emit('click', interaction);
-        const match = interaction.line.match(customEventRegExp);
-        if (match) {
-          omegga.emit(
-            `event:${match.groups.name}`,
-            interaction.player,
-            ...match.groups.params
-              .replace(/\\,/g, '{ESCAPED_COMMA}')
-              .split(',')
-              .map(v => v.replace(/\{ESCAPED_COMMA\}/g, ','))
-          );
-        }
-      } else omegga.emit('interact', interaction);
+      const match = interaction.message.match(customEventRegExp);
+      if (match) {
+        omegga.emit(
+          `event:${match.groups.name}`,
+          interaction.player,
+          ...(match.groups.args
+            ?.replace(/\\,/g, '{ESCAPED_COMMA}')
+            .split(',')
+            .filter(v => typeof v !== 'undefined')
+            .map(v => v.replace(/\{ESCAPED_COMMA\}/g, ',')) ?? [])
+        );
+      }
+
+      omegga.emit('interact', interaction);
     },
   };
 };

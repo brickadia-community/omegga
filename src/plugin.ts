@@ -46,11 +46,9 @@ export interface BrickInteraction {
   player: { id: string; name: string; controller: string; pawn: string };
   /** Brick center position */
   position: [number, number, number];
-}
 
-export interface BrickClick extends BrickInteraction {
-  /** line sent from a brick click interaction */
-  line: string;
+  /** message sent from a brick click interaction */
+  message: string;
   /** data parsed from the line (if it starts with json:) */
   data: null | number | string | boolean | Record<string, unknown>;
   /** True when there was a json payload */
