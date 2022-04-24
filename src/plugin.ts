@@ -245,9 +245,9 @@ export interface OmeggaPlayer {
 
   /**
    * Changes a player's team
-   * @param team Team name? index?
+   * @param teamIndex Team index
    */
-  setTeam(team: string): void;
+  setTeam(teamIndex: number): void;
 
   /**
    * Changes a player's minigame
@@ -334,12 +334,12 @@ export interface StaticPlayer {
    * Changes a player's team
    * @param omegga Omegga instance
    * @param target Player or player name/id
-   * @param team Team name? index?
+   * @param teamIndex Team name? index?
    */
   setTeam(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    team: string
+    teamIndex: number
   ): void;
 
   /**

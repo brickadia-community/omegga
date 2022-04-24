@@ -190,12 +190,11 @@ class Player implements OmeggaPlayer {
   static setTeam(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    team: string
+    teamIndex: number
   ) {
     if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (!team) return;
     if (target?.name)
-      omegga.writeln(`Server.Players.SetTeam "${target?.name}" ${team}`);
+      omegga.writeln(`Server.Players.SetTeam "${target?.name}" ${teamIndex}`);
   }
 
   static setMinigame(
@@ -709,8 +708,8 @@ class Player implements OmeggaPlayer {
     Player.takeItem(this.#omegga, this, item);
   }
 
-  setTeam(team: string): void {
-    Player.setTeam(this.#omegga, this, team);
+  setTeam(teamIndex: number): void {
+    Player.setTeam(this.#omegga, this, teamIndex);
   }
 
   setMinigame(index: number): void {
