@@ -409,7 +409,6 @@ export interface MockEventEmitter {
     event: 'interact',
     listener: (interaction: BrickInteraction) => void
   ): this;
-  on(event: 'click', listener: (interaction: BrickInteraction) => void): this;
 }
 
 export interface OmeggaLike
