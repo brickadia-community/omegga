@@ -187,6 +187,40 @@ class Player implements OmeggaPlayer {
       omegga.writeln(`Server.Players.RemoveItem "${target?.name}" ${item}`);
   }
 
+  static setTeam(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    team: string
+  ) {
+    if (typeof target === 'string') target = omegga.getPlayer(target);
+    if (!team) return;
+    if (target?.name)
+      omegga.writeln(`Server.Players.SetTeam "${target?.name}" ${team}`);
+  }
+
+  static setMinigame(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    index: number
+  ) {
+    if (typeof target === 'string') target = omegga.getPlayer(target);
+    if (index < 0) return;
+    if (target?.name)
+      omegga.writeln(`Server.Players.SetMinigame "${target?.name}" ${index}`);
+  }
+
+  static setScore(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    score: number
+  ) {
+    if (typeof target === 'string') target = omegga.getPlayer(target);
+    if (target?.name)
+      omegga.writeln(
+        `Server.Players.SetLeaderboardValue "${target?.name}" ${score}`
+      );
+  }
+
   /**
    * players are not to be constructed
    * @constructor
@@ -673,6 +707,18 @@ class Player implements OmeggaPlayer {
 
   takeItem(item: WeaponClass): void {
     Player.takeItem(this.#omegga, this, item);
+  }
+
+  setTeam(team: string): void {
+    Player.setTeam(this.#omegga, this, team);
+  }
+
+  setMinigame(index: number): void {
+    Player.setMinigame(this.#omegga, this, index);
+  }
+
+  setScore(score: number): void {
+    Player.setScore(this.#omegga, this, score);
   }
 }
 

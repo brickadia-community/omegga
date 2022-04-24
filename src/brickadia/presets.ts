@@ -26,7 +26,7 @@ export type EnvironmentPreset = Preset<
         starsIntensity?: number;
         starsColor?: BRColor;
         auroraIntensity?: number;
-        weatherIntensity?: BRColor;
+        weatherIntensity?: number;
         rainSnow?: number;
         cloudCoverage?: number;
         cloudSpeedMultiplier?: number;

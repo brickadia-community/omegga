@@ -39,14 +39,25 @@ export interface BrickBounds {
 }
 
 /** Created when a player clicks on a brick with an interact component */
-export type BrickInteraction = {
+export interface BrickInteraction {
   /** Brick name from catalog (Turkey Body, 4x Cube) */
   brick_name: string;
   /** Player information, id, name, controller, and pawn */
   player: { id: string; name: string; controller: string; pawn: string };
   /** Brick center position */
   position: [number, number, number];
-};
+}
+
+export interface BrickClick extends BrickInteraction {
+  /** line sent from a brick click interaction */
+  line: string;
+  /** data parsed from the line (if it starts with json:) */
+  data: null | number | string | boolean | Record<string, unknown>;
+  /** True when there was a json payload */
+  json: boolean;
+  /** True when there was a parse error */
+  error: boolean;
+}
 
 /** AutoRestart options */
 export type AutoRestartConfig = {
@@ -231,6 +242,24 @@ export interface OmeggaPlayer {
    * @param item Item name (Weapon_Bow)
    */
   takeItem(item: WeaponClass): void;
+
+  /**
+   * Changes a player's team
+   * @param team Team name? index?
+   */
+  setTeam(team: string): void;
+
+  /**
+   * Changes a player's minigame
+   * @param index Minigame index
+   */
+  setMinigame(index: number): void;
+
+  /**
+   * Changes a player's score
+   * @param score Score
+   */
+  setScore(score: number): void;
 }
 
 export interface StaticPlayer {
@@ -300,6 +329,42 @@ export interface StaticPlayer {
     target: string | OmeggaPlayer,
     item: WeaponClass
   ): void;
+
+  /**
+   * Changes a player's team
+   * @param omegga Omegga instance
+   * @param target Player or player name/id
+   * @param team Team name? index?
+   */
+  setTeam(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    team: string
+  ): void;
+
+  /**
+   * Changes a player's minigame
+   * @param omegga Omegga instance
+   * @param target Player or player name/id
+   * @param index Minigame index
+   */
+  setMinigame(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    index: number
+  ): void;
+
+  /**
+   * Changes a player's score
+   * @param omegga Omegga instance
+   * @param target Player or player name/id
+   * @param score Score
+   */
+  setScore(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    score: number
+  ): void;
 }
 
 export interface InjectedCommands {
@@ -346,6 +411,7 @@ export interface MockEventEmitter {
     event: 'interact',
     listener: (interaction: BrickInteraction) => void
   ): this;
+  on(event: 'click', listener: (interaction: BrickInteraction) => void): this;
 }
 
 export interface OmeggaLike
