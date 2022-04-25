@@ -3,9 +3,9 @@
 When uploading your plugin to github/gitlab
 start your repo name with "omegga-"
 
-example: https://github.com/{{author}}/omegga-{{shortName}}
+example: https://github.com/{{author}}/omegga-{{name}}
 
-Your plugin will be installed via omegga install gh:{{author}}/{{shortName}}
+Your plugin will be installed via omegga install gh:{{author}}/{{name}}
 
 -->
 
@@ -20,7 +20,7 @@ remove it entirely if it is unnecessary.
 
 ## Install
 
-`omegga install gh:{{author}}/{{shortName}}`
+`omegga install gh:{{author}}/{{name}}`
 
 _TODO: more steps...?_
 

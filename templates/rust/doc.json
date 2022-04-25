@@ -1,6 +1,6 @@
 {
   "name": "{{name}}",
-  "description": "An RPC Omegga plugin.",
+  "description": "A Rust Omegga plugin.",
   "author": "{{author}}",
   "config": {},
   "commands": []
