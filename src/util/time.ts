@@ -43,7 +43,7 @@ export const debounce:
   | (<T extends (...args: any) => any>(
       func: T,
       wait: number | undefined,
-      options: DebounceSettingsLeading
+      options?: DebounceSettingsLeading
     ) => DebouncedFuncLeading<T>)
   | (<T extends (...args: any) => any>(
       func: T,
