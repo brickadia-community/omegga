@@ -48,7 +48,7 @@ interface ITransformer {
   fn(match: Record<string, string>): IPlugin;
 }
 
-const PLUGIN_TYPES = ['safe', 'safe-ts', 'unsafe', 'rpc'];
+const PLUGIN_TYPES = ['safe', 'safe-ts', 'unsafe', 'rust', 'rpc'];
 type PluginType = typeof PLUGIN_TYPES[number];
 
 // plugin url transformers
@@ -605,6 +605,7 @@ async function init() {
       choices: [
         { title: 'safe ' + '(default)'.italic, value: 'safe' },
         { title: 'unsafe', value: 'unsafe' },
+        { title: 'rust', value: 'rust' },
         { title: 'rpc', value: 'rpc' },
       ],
     },
@@ -652,7 +653,6 @@ async function init() {
 
   const templateData = {
     name,
-    shortName: name,
     author: author ?? 'AUTHOR',
     omeggaVersion: pkg.version,
   };

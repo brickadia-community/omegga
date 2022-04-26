@@ -1,5 +1,5 @@
 {
-  "name": "{{shortName}}",
+  "name": "{{name}}",
   "description": "A safe Omegga plugin.",
   "author": "{{author}}",
   "config": {},

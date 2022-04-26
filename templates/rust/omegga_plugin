@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+FILE={{name}}
+BASE=$(dirname "$0")
+DEBUG=./target/debug/
+RELEASE=./target/release/
+
+cd $BASE
+if test -f "$DEBUG$FILE"; then
+    $DEBUG$FILE
+elif test -f "$RELEASE$FILE"; then
+    $RELEASE$FILE
+else
+    echo "The rust plugin {{name}} is not built! Please build it first."
+fi

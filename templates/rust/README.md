@@ -11,14 +11,16 @@ Your plugin will be installed via omegga install gh:{{author}}/{{name}}
 
 # {{name}}
 
-An unsafe plugin for [omegga](https://github.com/brickadia-community/omegga).
+A Rust plugin for [omegga](https://github.com/brickadia-community/omegga).
 
 This is an auto-generated README file. Please change it before publishing your plugin!
 
-Be sure to edit the script in `setup.sh` to configure your plugin on install, or
-remove it entirely if it is unnecessary.
+Be sure to edit the script in `setup.sh` to configure your plugin on install, and
+edit `omegga_plugin` to point to your plugin's executable.
 
 ## Install
+
+[Rust](https://rust-lang.org/) must be installed.
 
 `omegga install gh:{{author}}/{{name}}`
 
