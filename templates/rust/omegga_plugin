@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-FILE={{name}}
+FILE=omegga-{{name}}
 BASE=$(dirname "$0")
 DEBUG=./target/debug/
 RELEASE=./target/release/
