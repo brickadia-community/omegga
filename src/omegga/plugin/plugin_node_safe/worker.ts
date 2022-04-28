@@ -136,6 +136,10 @@ async function createVm(
           },
           resolve: {
             extensions: ['.ts', '.js', '.json'],
+            alias: {
+              // src is the only hard coded path
+              src: path.resolve(pluginPath, 'src'),
+            },
           },
           module: {
             rules: [
