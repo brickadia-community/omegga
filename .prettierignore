@@ -3,3 +3,4 @@
 **/*.md
 **/*.vue
 **/*.scss
+templates/**/*.js
