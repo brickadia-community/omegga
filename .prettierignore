@@ -1,0 +1,6 @@
+**/*.json
+**/*.html
+**/*.md
+**/*.vue
+**/*.scss
+templates/**/*.js

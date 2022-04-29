@@ -11,16 +11,16 @@ import OmeggaPlugin, {
 } from '@/plugin';
 import Player from '@omegga/player';
 import type Omegga from '@omegga/server';
-import { transformFileSync } from '@swc/core';
 import { mkdir } from '@util/file';
 import 'colors';
 import EventEmitter from 'events';
 import fs from 'fs';
+import { cloneDeep } from 'lodash';
 import path from 'path';
 import { NodeVM } from 'vm2';
+import webpack, { Stats } from 'webpack';
 import { parentPort } from 'worker_threads';
 import { ProxyOmegga } from './proxyOmegga';
-import { cloneDeep } from 'lodash';
 
 const MAIN_FILE = 'omegga.plugin.js';
 const MAIN_FILE_TS = 'omegga.plugin.ts';
@@ -106,10 +106,10 @@ parent.on('brickadiaEvent', (type, ...args) => {
 });
 
 // create the node vm
-function createVm(
+async function createVm(
   pluginPath: string,
   { builtin = ['*'], external = true, isTypeScript = false } = {}
-) {
+): Promise<[boolean, string]> {
   let pluginCode: string;
 
   if (isTypeScript) {
@@ -119,26 +119,80 @@ function createVm(
       const outputPath = path.join(tsBuildPath, 'plugin.js');
       mkdir(tsBuildPath);
 
-      const { code, map } = transformFileSync(sourceFileName, {
-        sourceMaps: true,
-        cwd: pluginPath,
-        isModule: true,
-        jsc: {
-          target: 'es2020',
-          parser: {
-            syntax: 'typescript',
+      const compiler = webpack(
+        Object.freeze({
+          target: 'node',
+          context: __dirname,
+          mode: 'development',
+          entry: sourceFileName,
+          devtool: 'source-map',
+          output: {
+            iife: false,
+            library: {
+              type: 'commonjs',
+            },
+            path: tsBuildPath,
+            filename: 'plugin.js',
           },
-          transform: {},
-        },
-        module: {
-          type: 'commonjs',
-          strictMode: false,
-        },
-      });
+          resolve: {
+            extensions: ['.ts', '.js', '.json'],
+            alias: {
+              // src is the only hard coded path
+              src: path.resolve(pluginPath, 'src'),
+            },
+          },
+          module: {
+            rules: [
+              {
+                test: /\.[jt]s$/,
+                exclude: /(node_modules)/,
+                use: {
+                  loader: 'swc-loader',
+                  options: {
+                    sourceMaps: true,
+                    cwd: pluginPath,
+                    isModule: true,
+                    jsc: {
+                      target: 'es2020',
+                      parser: {
+                        syntax: 'typescript',
+                      },
+                      transform: {},
+                    },
 
-      pluginCode = code;
-      fs.writeFileSync(outputPath, code);
-      fs.writeFileSync(outputPath + '.map', map);
+                    module: {
+                      type: 'commonjs',
+                      strictMode: false,
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        })
+      );
+      const stats = await new Promise<Stats>((resolve, reject) =>
+        compiler.run((err, stats) => {
+          if (err) reject(err);
+          resolve(stats);
+        })
+      );
+
+      if (stats.hasErrors()) {
+        for (const err of stats.toJson().errors) {
+          console.error(err.moduleName, err.file);
+          console.error(err.message);
+        }
+      }
+
+      if (stats.hasWarnings()) {
+        for (const warning of stats.toJson().warnings) {
+          console.warn(warning.moduleName, warning.file);
+          console.warn(warning.message);
+        }
+      }
+
+      pluginCode = fs.readFileSync(outputPath).toString();
     } catch (err) {
       console.error(err);
       return [false, 'failed compiling building typescript'];
@@ -282,9 +336,9 @@ parent.on('name', (resp, name) => {
 parent.on('mem', resp => emit(resp, 'mem', process.memoryUsage()));
 
 // create the vm
-parent.on('load', (resp, pluginPath, options) => {
+parent.on('load', async (resp, pluginPath, options) => {
   try {
-    createVm(pluginPath, options);
+    await createVm(pluginPath, options);
     emit(resp, true);
   } catch (err) {
     console.error('error creating vm', err?.stack ?? err.toString());
