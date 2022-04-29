@@ -55,8 +55,8 @@ import { hsv, linearRGB, sRGB, rgbToHex, DEFAULT_COLORSET } from './color';
 const color = { hsv, linearRGB, sRGB, rgbToHex, DEFAULT_COLORSET };
 
 // uuid utils
-import { UUID_PATTERN, match } from './uuid';
-const uuid = { UUID_PATTERN, match };
+import { UUID_PATTERN, match, random } from './uuid';
+const uuid = { UUID_PATTERN, match, random };
 
 // pattern matching utils
 import { explode } from './pattern';

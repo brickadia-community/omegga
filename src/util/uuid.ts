@@ -1,3 +1,5 @@
+export { randomUUID as random } from 'crypto';
+
 // regex pattern that matches uuids
 export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
