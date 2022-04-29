@@ -273,15 +273,21 @@ export default class RpcPlugin extends Plugin {
 
     this.#outInterface.on('line', line => {
       try {
-        this.#rpc.receiveAndSend(JSON.parse(line));
-      } catch (e) {
-        Logger.error(
-          this.getName().brightRed.underline,
-          '!>'.red,
-          'error parsing rpc data',
-          e,
-          line
-        );
+        const rpcData = JSON.parse(line);
+        try {
+          this.#rpc.receiveAndSend(rpcData);
+        } catch (e) {
+          Logger.error(
+            this.getName().brightRed.underline,
+            '!>'.red,
+            'error parsing rpc data',
+            e,
+            line
+          );
+        }
+      } catch {
+        // fallback to logging
+        Logger.log(name.underline, '>>'.green, line);
       }
     });
 
