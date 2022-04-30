@@ -14,7 +14,7 @@ import type Omegga from '@omegga/server';
 import { mkdir } from '@util/file';
 import 'colors';
 import EventEmitter from 'events';
-import fs from 'fs';
+import fs, { stat } from 'fs';
 import { cloneDeep } from 'lodash';
 import path from 'path';
 import { NodeVM } from 'vm2';
@@ -118,65 +118,74 @@ async function createVm(
       const sourceFileName = path.join(pluginPath, MAIN_FILE_TS);
       const outputPath = path.join(tsBuildPath, 'plugin.js');
       mkdir(tsBuildPath);
+      mkdir(path.join(tsBuildPath, '.cache'));
 
-      const compiler = webpack(
-        Object.freeze({
-          target: 'node',
-          context: __dirname,
-          mode: 'development',
-          entry: sourceFileName,
-          devtool: 'source-map',
-          output: {
-            iife: false,
-            library: {
-              type: 'commonjs',
+      const stats = await new Promise<Stats>((resolve, reject) => {
+        webpack(
+          Object.freeze({
+            target: 'node',
+            context: __dirname,
+            mode: 'development',
+            entry: sourceFileName,
+            devtool: 'source-map',
+            output: {
+              iife: false,
+              library: {
+                type: 'commonjs',
+              },
+              path: tsBuildPath,
+              filename: 'plugin.js',
             },
-            path: tsBuildPath,
-            filename: 'plugin.js',
-          },
-          resolve: {
-            extensions: ['.ts', '.js', '.json'],
-            alias: {
-              // src is the only hard coded path
-              src: path.resolve(pluginPath, 'src'),
+            resolve: {
+              extensions: ['.ts', '.js', '.json'],
+              alias: {
+                // src is the only hard coded path
+                src: path.resolve(pluginPath, 'src'),
+              },
             },
-          },
-          module: {
-            rules: [
-              {
-                test: /\.[jt]s$/,
-                exclude: /(node_modules)/,
-                use: {
-                  loader: 'swc-loader',
-                  options: {
-                    sourceMaps: true,
-                    cwd: pluginPath,
-                    isModule: true,
-                    jsc: {
-                      target: 'es2020',
-                      parser: {
-                        syntax: 'typescript',
+            cache: {
+              type: 'filesystem',
+              cacheLocation: path.join(tsBuildPath, '.cache'),
+              allowCollectingMemory: false,
+              idleTimeout: 0,
+              idleTimeoutForInitialStore: 0,
+              // cache age is one week. plugins probably do not need
+              // to be rebuilt every day
+              maxAge: 1000 * 60 * 60 * 24 * 7,
+              profile: true,
+            },
+            module: {
+              rules: [
+                {
+                  test: /\.[jt]s$/,
+                  exclude: /(node_modules)/,
+                  use: {
+                    loader: 'swc-loader',
+                    options: {
+                      sourceMaps: true,
+                      cwd: pluginPath,
+                      isModule: true,
+                      jsc: {
+                        target: 'es2020',
+                        parser: {
+                          syntax: 'typescript',
+                        },
+                        transform: {},
                       },
-                      transform: {},
-                    },
 
-                    module: {
-                      type: 'commonjs',
-                      strictMode: false,
+                      module: {
+                        type: 'commonjs',
+                        strictMode: false,
+                      },
                     },
                   },
                 },
-              },
-            ],
-          },
-        })
-      );
-      const stats = await new Promise<Stats>((resolve, reject) =>
-        compiler.run((err, stats) => {
-          if (err) reject(err);
-          resolve(stats);
-        })
-      );
+              ],
+            },
+          }),
+          (err, stats) => (err ? reject(err) : resolve(stats))
+        );
+      });
 
       if (stats.hasErrors()) {
         for (const err of stats.toJson().errors) {
@@ -339,6 +348,7 @@ parent.on('mem', resp => emit(resp, 'mem', process.memoryUsage()));
 parent.on('load', async (resp, pluginPath, options) => {
   try {
     await createVm(pluginPath, options);
+
     emit(resp, true);
   } catch (err) {
     console.error('error creating vm', err?.stack ?? err.toString());

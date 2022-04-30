@@ -266,11 +266,13 @@ export default class NodeVmPlugin extends Plugin {
       await this.emit('name', this.getName());
 
       // create the vm, export the plugin's class
+      Logger.verbose('Loading safe plugin');
       if (!(await this.emit('load', this.path, vmOptions))[0]) throw '';
 
       // get some initial information to create an omegga proxy
       const initialData = bootstrap(this.omegga);
       // send all of the mock events to the proxy omegga
+      Logger.verbose('Sending initial data to safe plugin');
       for (const ev in initialData) {
         try {
           (this.#worker as Worker).postMessage({
@@ -284,7 +286,7 @@ export default class NodeVmPlugin extends Plugin {
 
       // pass events through
       this.omegga.on('*', this.eventPassthrough);
-
+      Logger.verbose('Starting safe plugin');
       // actually start the plugin
       if (!(await this.emit('start', config))[0]) throw 'plugin failed start';
 
@@ -369,7 +371,11 @@ export default class NodeVmPlugin extends Plugin {
           if (this.#worker) this.#worker.emit('exit');
 
           // terminate the worker if it still exists
-          if (this.#worker) this.#worker.terminate();
+          try {
+            if (this.#worker) this.#worker.terminate();
+          } catch (err) {
+            console.error('error terminating worker:', err);
+          }
 
           timed = true;
           resolve(true);
