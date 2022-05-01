@@ -588,6 +588,8 @@ export async function check(pluginNames: string[], _options: unknown) {
   console.log();
 }
 
+const EXECUTABLES = ['setup.sh', 'omegga_plugin'];
+
 async function init() {
   const { author, ...response } = await prompts([
     {
@@ -669,13 +671,12 @@ async function init() {
     } else {
       // copy and render the file
       const data = (await fs.promises.readFile(src)).toString();
+      const mode = EXECUTABLES.includes(path.basename(dest)) ? 0o755 : 0o644;
 
       await fs.promises.writeFile(
         dest,
         data.replace(/{{(\w+)}}/g, (_, p) => templateData[p] ?? `{{${p}}}`),
-        {
-          mode: stats.mode,
-        }
+        { mode }
       );
     }
   };
