@@ -2,6 +2,7 @@ import Omegga from '@omegga/server';
 import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
 import readline from 'readline';
+import { install } from './plugin';
 
 declare global {
   interface String {
@@ -20,24 +21,443 @@ let log: (...args: any[]) => void,
   warn: (...args: any[]) => void,
   info: (...args: any[]) => void;
 
-interface ITermCommand {
-  name: string;
+type TerminalCommand = {
+  aliases: string[];
   desc: string;
+  descLines?: () => string[];
   fn(this: Terminal, ...args: string[]): void | Promise<void>;
+};
+
+function gameCommand(
+  aliases: string[],
+  desc: string,
+  usage: string,
+  command: string,
+  quoteArgs?: boolean
+): TerminalCommand {
+  return {
+    aliases,
+    desc,
+    fn(...args) {
+      if (!this.omegga.started) {
+        err('The server is not running');
+        return;
+      }
+      if (!args.length) {
+        err('usage:', ('/' + aliases[0] + ' ' + usage).yellow);
+        return;
+      }
+      this.omegga.writeln(
+        `${command} ${quoteArgs ? '"' : ''}${args.join(' ')}${
+          quoteArgs ? '"' : ''
+        }`
+      );
+      this.rl.prompt(true);
+    },
+  };
 }
+
+const COMMANDS: TerminalCommand[] = [
+  // Brickadia commands
+  gameCommand(
+    ['kick'],
+    'kick a player',
+    '<name|id> [reason]',
+    'Chat.Command /Kick'
+  ),
+  gameCommand(
+    ['ban', 'banish'],
+    'ban a player',
+    '<name|id> [time] [reason]',
+    'Ban'
+  ),
+  gameCommand(
+    ['unban', 'pardon'],
+    'unban a player',
+    '<name|id>',
+    'Chat.Command /Unban'
+  ),
+  gameCommand(
+    ['grantrole', 'giverole'],
+    'grant a role to a player',
+    '<role> <name|id>',
+    'Chat.Command /GrantRole'
+  ),
+  gameCommand(
+    ['revokerole', 'takerole'],
+    'revoke a role from a player',
+    '<role> <name|id>',
+    'Chat.Command /RevokeRole'
+  ),
+  gameCommand(
+    ['clearbricks'],
+    "clear a player's bricks",
+    '<name|id>',
+    'Bricks.Clear',
+    true
+  ),
+  gameCommand(['clearallbricks'], 'clear all bricks', '', 'Bricks.ClearAll'),
+
+  // Help command
+  {
+    aliases: ['help', 'cmds', 'commands'],
+    desc: 'list supported commands and their descriptions',
+    fn() {
+      const maxLen = Math.max(...COMMANDS.map(c => c.aliases[0].length));
+      log('Omegga Help Text:\n');
+      log(
+        '  Console input not starting with / will be sent in chat from a "SERVER" user'
+      );
+      log(
+        '  Console input starting with / will be treated as one of the following commands\n'
+      );
+      log(
+        '-- Available Omegga commands (type',
+        '/command'.yellow.underline,
+        'to run)'
+      );
+
+      for (const command of COMMANDS.sort((a, b) =>
+        a.aliases[0].localeCompare(b.aliases[0])
+      )) {
+        const name = command.aliases[0];
+        this.log(
+          '  ',
+          ('/' + name).yellow.underline,
+          '-'.padStart(maxLen - name.length + 1),
+          command.desc
+        );
+        if (command.descLines)
+          for (const descLine of command.descLines())
+            this.log('    ', ' '.repeat(maxLen + 1), descLine);
+      }
+    },
+  },
+
+  // Server controls
+  {
+    aliases: ['stop'],
+    desc: 'stop the server and close Omegga',
+    async fn() {
+      log('Stopping server...');
+      await this.omegga.stop();
+      process.exit();
+    },
+  },
+  {
+    aliases: ['kill'],
+    desc: 'forcefully kill brickadia server process without closing omegga',
+    async fn() {
+      log('Stopping server...');
+      await this.omegga.stop();
+    },
+  },
+  {
+    aliases: ['start'],
+    desc: 'start the server if it is stopped',
+    fn() {
+      if (
+        !this.omegga ||
+        (this.omegga && (this.omegga.starting || this.omegga.started))
+      ) {
+        err('The server is already running');
+        return;
+      }
+
+      log('Starting server...');
+      this.omegga.start();
+    },
+  },
+  {
+    aliases: ['cmd'],
+    desc: 'run a console command on the Brickadia server. requires /debug for log to show',
+    fn(...args) {
+      if (!this.omegga.started) {
+        err('The server is not running');
+        return;
+      }
+      this.omegga.writeln(args.join(' '));
+    },
+  },
+  {
+    aliases: ['debug'],
+    desc: 'toggle visibility of brickadia console logs',
+    fn() {
+      this.options.debug = !this.options.debug;
+      log(
+        'Brickadia logs now',
+        this.options.debug ? 'visible'.green : 'hidden'.red
+      );
+    },
+  },
+  {
+    aliases: ['status'],
+    desc: 'display server status information. brick count, online players, etc',
+    async fn() {
+      if (!this.omegga.started) {
+        err('Omegga is not running');
+        return;
+      }
+      const msToTime = (ms: number) => new Date(ms).toISOString().slice(11, 19);
+      try {
+        const status = await this.omegga.getServerStatus();
+
+        log('Server Status');
+        this.log(`
+${status.serverName.yellow}
+Bricks: ${(status.bricks + '').yellow}
+Components: ${(status.components + '').yellow}
+Uptime: ${msToTime(status.time).yellow}
+Players: ${status.players.length === 0 ? 'none'.grey : ''}
+  ${status.players
+    .map(p => `[${msToTime(p.time).grey}] ${p.name.brightYellow}`)
+    .join('\n      ')}
+`);
+      } catch (e) {
+        err('An error occurred while getting server status');
+      }
+    },
+  },
+
+  // plugin stuff
+  {
+    aliases: ['reload'],
+    desc: 'shorthand for /plugins reload',
+    async fn() {
+      await COMMANDS.find(c => c.aliases.includes('plugins')).fn.bind(this)(
+        'reload'
+      );
+    },
+  },
+  {
+    aliases: ['plugins', 'plugin', 'p'],
+    desc: 'manage Omegga plugins',
+    descLines: () => [
+      '/plugins install <...plugin names>'.yellow + ' installs plugins',
+      '/plugins load <...plugin names>'.yellow +
+        ' loads plugins, and enables if they were disabled',
+      '/plugins unload <...plugin names>'.yellow + ' unloads plugins',
+      '/plugins reload [...plugin names]'.yellow +
+        ' reloads all plugins, or those specified',
+      '/plugins enable <...plugin names>'.yellow + ' enables plugins',
+      '/plugins disable <...plugin names>'.yellow +
+        ' disables plugins, and unloads if they were loaded',
+    ],
+    async fn(subcommand: string, ...args: string[]) {
+      if (!this.omegga.pluginLoader) {
+        err('Omegga is not using plugins');
+        return;
+      }
+
+      if (!subcommand) {
+        const plugins = this.omegga.pluginLoader.plugins;
+        if (plugins.length === 0) {
+          log('No plugins are installed');
+          log('  Install some with', '/plugins install'.yellow.underline);
+        } else {
+          log('Installed plugins'.yellow.underline);
+          for (const plugin of plugins) {
+            const name = plugin.getName();
+            const docs = plugin.getDocumentation();
+            if (plugin.isLoaded()) log(name.cyan.underline + ' (loaded)');
+            else if (plugin.isEnabled())
+              log(name.green.underline + ' (enabled, not loaded)');
+            else log(name.red.underline + ' (disabled)');
+
+            log('  ' + docs.description);
+            log(('  Author: ' + docs.author).gray);
+          }
+        }
+      } else if (subcommand === 'install') {
+        // install plugins
+        await install(args, { verbose: true });
+        log();
+        log(
+          'Use',
+          '/plugins reload'.yellow,
+          'to reload all plugins and use the installed ones'
+        );
+      } else if (subcommand === 'load') {
+        if (args.length === 0) {
+          log('Please specify at least one plugin to load');
+          return;
+        }
+
+        for (const pluginName of args) {
+          const plugin = this.omegga.pluginLoader.plugins.find(
+            p => p.getName().toLowerCase() === pluginName.toLowerCase()
+          );
+
+          if (!plugin) {
+            warn('No plugin by the name', pluginName.cyan);
+            continue;
+          }
+
+          const name = plugin.getName();
+          if (plugin.isLoaded()) {
+            warn(
+              name.cyan,
+              'is already loaded, reload with',
+              ('/plugins reload ' + name).yellow
+            );
+            return;
+          }
+
+          if (!plugin.isEnabled()) {
+            log('Enabling and loading', name.cyan.underline);
+            plugin.setEnabled(true);
+            await plugin.load();
+          } else {
+            log('Loading', name.cyan.underline);
+            await plugin.load();
+          }
+        }
+      } else if (subcommand === 'unload') {
+        if (args.length === 0) {
+          log('Please specify at least one plugin to unload');
+          return;
+        }
+
+        for (const pluginName of args) {
+          const plugin = this.omegga.pluginLoader.plugins.find(
+            p => p.getName().toLowerCase() === pluginName.toLowerCase()
+          );
+
+          if (!plugin) {
+            warn('No plugin by the name', pluginName.cyan);
+            continue;
+          }
+
+          const name = plugin.getName();
+          if (!plugin.isLoaded()) {
+            warn(
+              name.cyan,
+              'is already unloaded, load with',
+              ('/plugins load ' + name).yellow
+            );
+            return;
+          }
+
+          log('Unloading', name.cyan.underline);
+          await plugin.unload();
+        }
+      } else if (subcommand === 'reload') {
+        let plugins = (
+          args.length === 0
+            ? this.omegga.pluginLoader.plugins
+            : this.omegga.pluginLoader.plugins.filter(p =>
+                args
+                  .map(a => a.toLowerCase())
+                  .includes(p.getName().toLowerCase())
+              )
+        ).filter(p => p.isEnabled());
+
+        const loaded = plugins.filter(p => p.isLoaded());
+        log('Unloading', loaded.length, 'plugins');
+        for (const plugin of loaded) await plugin.unload();
+
+        log('Scanning for new plugins');
+        if (!(await this.omegga.pluginLoader.scan())) {
+          err('Could not scan for plugins. All plugins are unloaded');
+          return;
+        }
+
+        plugins = (
+          args.length === 0
+            ? this.omegga.pluginLoader.plugins
+            : this.omegga.pluginLoader.plugins.filter(p =>
+                args
+                  .map(a => a.toLowerCase())
+                  .includes(p.getName().toLowerCase())
+              )
+        ).filter(p => p.isEnabled());
+        log('Loading', plugins.length, 'plugins');
+        for (const plugin of plugins) await plugin.load();
+
+        log('Reloaded', plugins.length, 'plugins');
+      } else if (subcommand === 'enable') {
+        if (args.length === 0) {
+          log('Please specify at least one plugin to enable');
+          return;
+        }
+
+        for (const pluginName of args) {
+          const plugin = this.omegga.pluginLoader.plugins.find(
+            p => p.getName().toLowerCase() === pluginName.toLowerCase()
+          );
+
+          if (!plugin) {
+            warn('No plugin by the name', pluginName.cyan);
+            continue;
+          }
+
+          const name = plugin.getName();
+          if (plugin.isEnabled()) {
+            warn(
+              name.cyan,
+              'is already enabled, disable with',
+              ('/plugins disable ' + name).yellow
+            );
+            return;
+          }
+
+          log(
+            'Enabling',
+            name.cyan.underline,
+            '(load with',
+            ('/plugins load ' + name).yellow + ')'
+          );
+          plugin.setEnabled(true);
+        }
+      } else if (subcommand === 'disable') {
+        if (args.length === 0) {
+          log('Please specify at least one plugin to disable');
+          return;
+        }
+
+        for (const pluginName of args) {
+          const plugin = this.omegga.pluginLoader.plugins.find(
+            p => p.getName().toLowerCase() === pluginName.toLowerCase()
+          );
+
+          if (!plugin) {
+            warn('No plugin by the name', pluginName.cyan);
+            continue;
+          }
+
+          const name = plugin.getName();
+          if (!plugin.isEnabled()) {
+            warn(
+              name.cyan,
+              'is already disabled, enable with',
+              ('/plugins enable ' + name).yellow
+            );
+            return;
+          }
+
+          if (plugin.isLoaded()) {
+            log('Unloading and disabling', name.cyan.underline);
+            await plugin.unload();
+            plugin.setEnabled(false);
+          } else {
+            log('Disabling', name.cyan.underline);
+            plugin.setEnabled(false);
+          }
+        }
+      }
+    },
+  },
+];
 
 // the terminal wraps omegga and displays console output and handles console input
 export default class Terminal {
   options: IOmeggaOptions;
   omegga: Omegga;
-  commands: Record<string, ITermCommand>;
   rl: readline.Interface;
 
   constructor(omegga: Omegga, options: IOmeggaOptions = {}) {
     this.options = options;
     this.omegga = omegga;
-
-    this.commands = {};
 
     // terminal interface
     this.rl = readline.createInterface({
@@ -155,293 +575,20 @@ export default class Terminal {
     );
 
     this.rl.on('line', this.handleLine.bind(this));
-
-    // console commands
-    Object.entries({
-      debug: {
-        desc: 'toggle visibility of brickadia console logs',
-        fn() {
-          options.debug = !options.debug;
-          log(
-            'Brickadia logs now',
-            options.debug ? 'visible'.green : 'hidden'.red
-          );
-        },
-      },
-
-      help: {
-        desc: 'list supported commands and their descriptions',
-        fn() {
-          const maxCmdLen = Math.max(
-            ...Object.keys(this.commands).map(s => s.length)
-          );
-          log('Omegga Help Text:\n');
-          this.log(
-            '  Console input not starting with / will be sent in chat from a "SERVER" user'
-          );
-          this.log(
-            '  Console input starting with / will be treated as one of the following commands\n'
-          );
-          this.log(
-            '-- Available Omegga commands (type',
-            '/command'.yellow.underline,
-            'to run)'
-          );
-          Object.keys(this.commands)
-            .sort()
-            .forEach(k => {
-              this.log(
-                '  ',
-                k.yellow.underline,
-                '-'.padStart(maxCmdLen - k.length + 1),
-                this.commands[k].desc
-              );
-            });
-          this.log('');
-        },
-      },
-
-      cmd: {
-        desc: 'run a console command on the brickadia server. requires debug for log to show',
-        fn(...args) {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
-          this.omegga.writeln(args.join(' '));
-        },
-      },
-
-      ban: {
-        desc: 'ban a player',
-        fn(...args) {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
-          if (!args.length) {
-            return err(
-              'usage:',
-              '/ban <name|id> [duration in mins] [reason]'.yellow
-            );
-          }
-          this.omegga.writeln('Chat.Command /ban ' + args.join(' '));
-        },
-      },
-      unban: {
-        desc: 'unban a player',
-        fn(...args) {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
-          if (!args.length) {
-            return err('usage:', '/unban <name|id>'.yellow);
-          }
-          this.omegga.writeln('Chat.Command /unban ' + args.join(' '));
-        },
-      },
-      kick: {
-        desc: 'kick a player',
-        fn(...args) {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
-          if (!args.length) {
-            return err('usage:', '/kick <name|id> [reason]'.yellow);
-          }
-          this.omegga.writeln('Chat.Command /kick ' + args.join(' '));
-        },
-      },
-      grantrole: {
-        desc: 'grant a role to a player',
-        fn(...args) {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
-          if (!args.length) {
-            return err('usage:', '/grantrole <role name> <name|id>'.yellow);
-          }
-          this.omegga.writeln('Chat.Command /grantrole ' + args.join(' '));
-        },
-      },
-      revokerole: {
-        desc: 'revoke a role from a player',
-        fn(...args) {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
-          if (!args.length) {
-            return err('usage:', '/revokerole <role name> <name|id>'.yellow);
-          }
-          this.omegga.writeln('Chat.Command /revokerole ' + args.join(' '));
-        },
-      },
-      clearbricks: {
-        desc: "clear a player's bricks",
-        fn(...args) {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
-          if (!args.length) {
-            return err('usage:', '/clearbricks <name>'.yellow);
-          }
-          this.omegga.writeln(`Bricks.Clear "${args.join(' ')}"`);
-        },
-      },
-      clearallbricks: {
-        desc: 'clear all bricks',
-        fn() {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
-          this.omegga.writeln('Bricks.ClearAll');
-        },
-      },
-
-      status: {
-        desc: 'display server status information. brick count, online players, etc',
-        async fn() {
-          if (!this.omegga.started) {
-            err('Omegga is not running');
-            return;
-          }
-          const msToTime = (ms: number) =>
-            new Date(ms).toISOString().slice(11, 19);
-          try {
-            const status = await this.omegga.getServerStatus();
-
-            log('Server Status');
-            this.log(`
-  ${status.serverName.yellow}
-    Bricks: ${(status.bricks + '').yellow}
-    Components: ${(status.components + '').yellow}
-    Uptime: ${msToTime(status.time).yellow}
-    Players: ${status.players.length === 0 ? 'none'.grey : ''}
-      ${status.players
-        .map(p => `[${msToTime(p.time).grey}] ${p.name.brightYellow}`)
-        .join('\n      ')}
-`);
-          } catch (e) {
-            err('An error occurred while getting server status');
-          }
-        },
-      },
-
-      stop: {
-        desc: 'stop the server and close Omegga',
-        async fn() {
-          log('Stopping server...');
-          await this.omegga.stop();
-          process.exit();
-        },
-      },
-
-      kill: {
-        desc: 'forcefully kill brickadia server process without closing omegga',
-        async fn() {
-          log('Stopping server...');
-          await this.omegga.stop();
-        },
-      },
-
-      save: {
-        desc: 'Save bricks to a specified file',
-        async fn(...args) {
-          const name = args.join(' ');
-          if (!name.length) return err('usage:', '/save <name>'.yellow);
-          log('Saving bricks');
-          this.omegga.saveBricks(name);
-        },
-      },
-
-      load: {
-        desc: 'Load bricks from a specified file',
-        async fn(...args) {
-          const name = args.join(' ');
-          if (!name.length) return err('usage:', '/load <name>'.yellow);
-          log('Loading bricks');
-          this.omegga.loadBricks(name);
-        },
-      },
-
-      start: {
-        desc: 'start the server if it is stopped',
-        fn() {
-          if (
-            !this.omegga ||
-            (this.omegga && (this.omegga.starting || this.omegga.started))
-          ) {
-            err('Omegga is already running');
-            return;
-          }
-          log('Starting server...');
-          this.omegga.start();
-        },
-      },
-
-      reload: {
-        desc: 'reload available plugins',
-        async fn() {
-          if (!this.omegga.pluginLoader) {
-            err('Omegga is not using plugins');
-            return;
-          }
-
-          log('Unloading current plugins');
-          let success = await this.omegga.pluginLoader.unload();
-          if (!success) {
-            err('Could not unload all plugins');
-            return;
-          }
-
-          log('Scanning for new plugins');
-          success = await this.omegga.pluginLoader.scan();
-          if (!success) {
-            err('Could not scan for plugins');
-            return;
-          }
-
-          log('Starting plugins');
-          success = await this.omegga.pluginLoader.reload();
-          if (success) {
-            const plugins = this.omegga.pluginLoader.plugins
-              .filter(p => p.isLoaded())
-              .map(p => p.getName());
-            log('Loaded', (plugins.length + '').yellow, 'plugins:', plugins);
-          } else {
-            err('Could not load all plugins');
-          }
-        },
-      },
-    } as Record<string, Omit<ITermCommand, 'name'>>).forEach(
-      ([cmd, { desc, fn }]) => this.addCommand(cmd, desc, fn)
-    );
-  }
-
-  // add a command
-  addCommand(name: string, desc: string, fn: ITermCommand['fn']) {
-    this.commands[name] = { name, desc, fn: fn.bind(this) };
   }
 
   async handleLine(line: string) {
     if (line.startsWith('/')) {
       const [cmd, ...args] = line.slice(1).split(' ');
-      if (!this.commands[cmd]) {
+      const c = COMMANDS.find(c => c.aliases.includes(cmd));
+      if (!c) {
         err(
           `unrecognized command /${cmd.underline}. Type /help for more info`.red
         );
       } else {
         try {
-          const res = this.commands[cmd].fn.bind(this)(...args);
-          if (res instanceof Promise) {
-            await res;
-          }
+          const res = c.fn.bind(this)(...args);
+          if (res instanceof Promise) await res;
         } catch (e) {
           err('unhandled terminal error', e);
         }
