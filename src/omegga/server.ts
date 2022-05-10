@@ -224,10 +224,12 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         const minigames = await this.listMinigames();
         Logger.logp(`Saving ${minigames.length} minigames...`);
         for (const minigame of minigames) {
-          Logger.log(
-            ` - Saved "${minigame.name}" as omegga_temp_${minigame.index}`
-          );
-          this.saveMinigame(minigame.index, 'omegga_temp_' + minigame.index);
+          const name =
+            'omegga_temp_' +
+            (minigame.index + '').padStart(4, '0') +
+            `_${minigame.owner.id}`;
+          Logger.log(` - Saved "${minigame.name}" as ${name}`);
+          this.saveMinigame(minigame.index, name);
         }
       } catch (err) {
         Logger.errorp('Error getting minigames...', err);
@@ -291,9 +293,14 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         s.startsWith('omegga_temp_')
       );
       if (minigames.length > 0) {
-        Logger.logp('Loading previous minigames...');
+        Logger.logp('Loading previous minigames in a second...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
         for (const minigame of minigames) {
-          this.loadMinigame(minigame);
+          const ownerId = minigame.match(
+            /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/
+          );
+          this.loadMinigame(minigame, ownerId?.[1]);
+
           setTimeout(() => {
             try {
               unlinkSync(join(this.presetPath, 'Minigame', minigame + '.bp'));
