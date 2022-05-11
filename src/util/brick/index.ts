@@ -6,3 +6,4 @@ export * from './getBrickSize';
 export * from './getScaleAxis';
 export * from './setOwnership';
 export * from './rotate';
+export * from './displayName';

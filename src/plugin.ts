@@ -42,6 +42,10 @@ export interface BrickBounds {
 export interface BrickInteraction {
   /** Brick name from catalog (Turkey Body, 4x Cube) */
   brick_name: string;
+  /** Brick asset name */
+  brick_asset: string;
+  /** Brick size */
+  brick_size: [number, number, number];
   /** Player information, id, name, controller, and pawn */
   player: { id: string; name: string; controller: string; pawn: string };
   /** Brick center position */

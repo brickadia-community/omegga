@@ -122,6 +122,7 @@ const brickSizeMap: Record<string, [number, number, number]> = {
   B_2x2_Cone: [10, 10, 12],
   B_2x2_Corner: [10, 10, 6],
   B_2x2_Overhang: [6, 10, 10],
+  B_2x2_Overhang_Panel: [10, 6, 10],
   B_2x2_Round: [10, 10, 6],
   B_2x2_Slipper: [10, 10, 6],
   B_2x2F_Octo: [10, 10, 2],

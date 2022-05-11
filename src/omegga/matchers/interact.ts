@@ -1,6 +1,7 @@
 import { MatchGenerator } from './types';
 import { BrickInteraction } from '@/plugin';
 import Logger from '@/logger';
+import { convertDisplayName } from '@util/brick';
 
 const interactRegExp =
   /^Player "(?<name>[^"]+)" \((?<id>[^,]+), (?<pawn>[^,]+), (?<controller>[^)]+)\) interacted with brick "(?<brick>[^\"]+)" at (?<x>-?\d+) (?<y>-?\d+) (?<z>-?\d+), message: "(?<message>.*)".$/;
@@ -35,6 +36,8 @@ const interact: MatchGenerator<BrickInteraction> = omegga => {
           }
         }
 
+        const convertedBrick = convertDisplayName(match.groups.brick) ?? [];
+
         return {
           player: {
             id: match.groups.id,
@@ -43,6 +46,8 @@ const interact: MatchGenerator<BrickInteraction> = omegga => {
             pawn: match.groups.pawn,
           },
           brick_name: match.groups.brick,
+          brick_asset: convertedBrick[0],
+          brick_size: convertedBrick[1],
           position: [
             Number(match.groups.x),
             Number(match.groups.y),
