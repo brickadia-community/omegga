@@ -356,10 +356,12 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
         log('Unloading', loaded.length, 'plugins');
         for (const plugin of loaded) await plugin.unload();
 
-        log('Scanning for new plugins');
-        if (!(await this.omegga.pluginLoader.scan())) {
-          err('Could not scan for plugins. All plugins are unloaded');
-          return;
+        if (args.length === 0) {
+          log('Scanning for new plugins');
+          if (!(await this.omegga.pluginLoader.scan())) {
+            err('Could not scan for plugins. All plugins are unloaded');
+            return;
+          }
         }
 
         plugins = (
