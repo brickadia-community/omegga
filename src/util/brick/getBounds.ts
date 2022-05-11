@@ -3,6 +3,18 @@ import type { IBrickBounds } from './checkBounds';
 import { getBrickSize } from './getBrickSize';
 import { getScaleAxis } from './getScaleAxis';
 
+export function getAbsoluteSize(
+  brick: Brick,
+  brick_assets: string[]
+): [number, number, number] {
+  const size = getBrickSize(brick, brick_assets);
+  return [
+    size[getScaleAxis(brick, 0)],
+    size[getScaleAxis(brick, 1)],
+    size[getScaleAxis(brick, 2)],
+  ];
+}
+
 // compare bound to see if it is new min or max, and then replace if it is
 function minMaxBound(
   brick: Brick,
