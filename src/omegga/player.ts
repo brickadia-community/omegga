@@ -428,12 +428,20 @@ class Player implements OmeggaPlayer {
       this.#omegga.watchLogChunk<RegExpMatchArray>(
         'GetAll BrickGridPreviewActor Owner',
         ownerRegExp,
-        { first: 'index', timeoutDelay: 500 }
+        {
+          first: 'index',
+          timeoutDelay: 2000,
+          afterMatchDelay: 100
+        }
       ),
       this.#omegga.watchLogChunk<RegExpMatchArray>(
         'GetAll BrickGridPreviewActor TransformParameters',
         transformParamsRegExp,
-        { first: 'index', timeoutDelay: 500 }
+        {
+          first: 'index',
+          timeoutDelay: 2000,
+          afterMatchDelay: 100
+        }
       ),
     ]);
 
@@ -483,22 +491,38 @@ class Player implements OmeggaPlayer {
         this.#omegga.watchLogChunk<RegExpMatchArray>(
           'GetAll BP_Item_PaintTool_C Owner',
           ownerRegExp,
-          { first: 'index', timeoutDelay: 500 }
+          {
+            first: 'index',
+            timeoutDelay: 2000,
+            afterMatchDelay: 100
+          }
         ),
         this.#omegga.watchLogChunk<RegExpMatchArray>(
           'GetAll BP_Item_PaintTool_C SelectedColor',
           colorRegExp,
-          { first: 'index', timeoutDelay: 500 }
+          {
+            first: 'index',
+            timeoutDelay: 2000,
+            afterMatchDelay: 100
+          }
         ),
         this.#omegga.watchLogChunk<RegExpMatchArray>(
           'GetAll BP_Item_PaintTool_C SelectedMaterialId',
           materialRegExp,
-          { first: 'index', timeoutDelay: 500 }
+          {
+            first: 'index',
+            timeoutDelay: 2000,
+            afterMatchDelay: 100
+          }
         ),
         this.#omegga.watchLogChunk<RegExpMatchArray>(
           'GetAll BP_Item_PaintTool_C SelectedMaterialAlpha',
           materialAlphaRegExp,
-          { first: 'index', timeoutDelay: 500 }
+          {
+            first: 'index',
+            timeoutDelay: 2000,
+            afterMatchDelay: 100
+          }
         ),
       ]);
 
@@ -583,22 +607,38 @@ class Player implements OmeggaPlayer {
       this.#omegga.watchLogChunk<RegExpMatchArray>(
         `GetAll BP_PlayerController_C TEMP_BrickTemplate_Server Name=${controller}`,
         brickTemplateRegExp,
-        { first: 'index' }
+        {
+          first: 'index',
+          timeoutDelay: 2000,
+          afterMatchDelay: 100
+        }
       ),
       this.#omegga.watchLogChunk<RegExpMatchArray>(
         'GetAll BrickBuildingTemplate MinBounds',
         minBoundsRegExp,
-        { first: 'index' }
+        {
+          first: 'index',
+          timeoutDelay: 2000,
+          afterMatchDelay: 100
+        }
       ),
       this.#omegga.watchLogChunk<RegExpMatchArray>(
         'GetAll BrickBuildingTemplate MaxBounds',
         maxBoundsRegExp,
-        { first: 'index' }
+        {
+          first: 'index',
+          timeoutDelay: 2000,
+          afterMatchDelay: 100
+        }
       ),
       this.#omegga.watchLogChunk<RegExpMatchArray>(
         'GetAll BrickBuildingTemplate Center',
         centerRegExp,
-        { first: 'index' }
+        {
+          first: 'index',
+          timeoutDelay: 2000,
+          afterMatchDelay: 100
+        }
       ),
     ]);
 
