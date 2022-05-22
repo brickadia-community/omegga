@@ -126,6 +126,7 @@ class LogWrangler implements LogWrangling {
         if (bundle) {
           resolve(watcher.matches);
         } else {
+          Logger.verbose('Watcher', pattern.toString(), 'timed out');
           // reject the promise
           reject('timed out');
         }

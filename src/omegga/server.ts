@@ -242,8 +242,12 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     }
 
     if (config.bricks) {
-      Logger.logp('Saving bricks...');
-      await this.saveBricksAsync('omegga_temp');
+      try {
+        Logger.logp('Saving bricks...');
+        await this.saveBricksAsync('omegga_temp');
+      } catch (err) {
+        Logger.errorp('Error saving bricks', err);
+      }
     }
   }
 
