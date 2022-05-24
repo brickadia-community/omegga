@@ -431,6 +431,9 @@ export default class NodeVmPlugin extends Plugin {
       path.join(__dirname, 'plugin_node_safe/worker.js'),
       {
         stdout: true,
+        env: {
+          VERBOSE: Logger.VERBOSE + '',
+        },
       }
     );
 

@@ -3,6 +3,8 @@
 // this also lets plugins get terminated easier by killing the worker
 // rather than unloading and reloading code
 
+import Logger from '@/logger';
+Logger.VERBOSE = process.env.VERBOSE === 'true';
 import OmeggaPlugin, {
   OmeggaLike,
   PluginConfig,
@@ -14,7 +16,7 @@ import type Omegga from '@omegga/server';
 import { mkdir } from '@util/file';
 import 'colors';
 import EventEmitter from 'events';
-import fs, { stat } from 'fs';
+import fs from 'fs';
 import { cloneDeep } from 'lodash';
 import path from 'path';
 import { NodeVM } from 'vm2';
@@ -98,12 +100,16 @@ const store: PluginStore = {
 // generic brickadia events are forwarded to the proxy omegga
 parent.on('brickadiaEvent', (type, ...args) => {
   if (!vm) return;
+  if (type === 'error') {
+    Logger.errorp(pluginName.brightRed, 'Received error', ...args);
+    return;
+  }
   try {
     omegga.emit(type, ...args);
   } catch (e) {
-    console.error(
-      "Error in save plugin worker's brickadiaEvent:",
-      type,
+    Logger.errorp(
+      pluginName.brightRed,
+      `Error in safe plugin worker's brickadiaEvent (${type}):`,
       e?.stack ?? e.toString()
     );
   }
@@ -193,21 +199,21 @@ async function createVm(
 
       if (stats.hasErrors()) {
         for (const err of stats.toJson().errors) {
-          console.error(err.moduleName, err.file);
-          console.error(err.message);
+          Logger.errorp(err.moduleName, err.file);
+          Logger.errorp(err.message);
         }
       }
 
       if (stats.hasWarnings()) {
         for (const warning of stats.toJson().warnings) {
-          console.warn(warning.moduleName, warning.file);
-          console.warn(warning.message);
+          Logger.warnp(warning.moduleName, warning.file);
+          Logger.warnp(warning.message);
         }
       }
 
       pluginCode = fs.readFileSync(outputPath).toString();
     } catch (err) {
-      console.error(err);
+      Logger.errorp(pluginName.brightRed, err);
       return [false, 'failed compiling building typescript'];
     }
 
@@ -241,7 +247,8 @@ async function createVm(
         }
       }
     } catch (err) {
-      console.error(
+      Logger.errorp(
+        pluginName.brightRed,
         'error copying latest omegga.d.ts to typescript plugin',
         err
       );
@@ -304,7 +311,7 @@ async function createVm(
     PluginClass = pluginOutput?.default ?? pluginOutput;
   } catch (e) {
     emit('error', 'plugin failed to init');
-    console.log(e);
+    Logger.errorp(pluginName.brightRed, e);
     throw 'plugin failed to init: ' + e?.stack ?? e.toString();
   }
 
@@ -355,7 +362,11 @@ parent.on('load', async (resp, pluginPath, options) => {
 
     emit(resp, true);
   } catch (err) {
-    console.error('error creating vm', err?.stack ?? err.toString());
+    Logger.errorp(
+      pluginName.brightRed,
+      'error creating vm',
+      err?.stack ?? err.toString()
+    );
     emit(resp, false);
   }
 });
@@ -383,7 +394,7 @@ parent.on('start', async (resp, config) => {
   } catch (err) {
     emit('error', 'error starting plugin', err?.stack ?? JSON.stringify(err));
     emit(resp, false);
-    console.error(err);
+    Logger.errorp(pluginName.brightRed, 'Error starting plugin', err);
   }
 });
 
