@@ -203,7 +203,6 @@ class Player implements OmeggaPlayer {
     index: number
   ) {
     if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (index < 0) return;
     if (target?.name)
       omegga.writeln(`Server.Players.SetMinigame "${target?.name}" ${index}`);
   }
@@ -431,7 +430,7 @@ class Player implements OmeggaPlayer {
         {
           first: 'index',
           timeoutDelay: 2000,
-          afterMatchDelay: 100
+          afterMatchDelay: 100,
         }
       ),
       this.#omegga.watchLogChunk<RegExpMatchArray>(
@@ -440,7 +439,7 @@ class Player implements OmeggaPlayer {
         {
           first: 'index',
           timeoutDelay: 2000,
-          afterMatchDelay: 100
+          afterMatchDelay: 100,
         }
       ),
     ]);
@@ -494,7 +493,7 @@ class Player implements OmeggaPlayer {
           {
             first: 'index',
             timeoutDelay: 2000,
-            afterMatchDelay: 100
+            afterMatchDelay: 100,
           }
         ),
         this.#omegga.watchLogChunk<RegExpMatchArray>(
@@ -503,7 +502,7 @@ class Player implements OmeggaPlayer {
           {
             first: 'index',
             timeoutDelay: 2000,
-            afterMatchDelay: 100
+            afterMatchDelay: 100,
           }
         ),
         this.#omegga.watchLogChunk<RegExpMatchArray>(
@@ -512,7 +511,7 @@ class Player implements OmeggaPlayer {
           {
             first: 'index',
             timeoutDelay: 2000,
-            afterMatchDelay: 100
+            afterMatchDelay: 100,
           }
         ),
         this.#omegga.watchLogChunk<RegExpMatchArray>(
@@ -521,7 +520,7 @@ class Player implements OmeggaPlayer {
           {
             first: 'index',
             timeoutDelay: 2000,
-            afterMatchDelay: 100
+            afterMatchDelay: 100,
           }
         ),
       ]);
@@ -610,7 +609,7 @@ class Player implements OmeggaPlayer {
         {
           first: 'index',
           timeoutDelay: 2000,
-          afterMatchDelay: 100
+          afterMatchDelay: 100,
         }
       ),
       this.#omegga.watchLogChunk<RegExpMatchArray>(
@@ -619,7 +618,7 @@ class Player implements OmeggaPlayer {
         {
           first: 'index',
           timeoutDelay: 2000,
-          afterMatchDelay: 100
+          afterMatchDelay: 100,
         }
       ),
       this.#omegga.watchLogChunk<RegExpMatchArray>(
@@ -628,7 +627,7 @@ class Player implements OmeggaPlayer {
         {
           first: 'index',
           timeoutDelay: 2000,
-          afterMatchDelay: 100
+          afterMatchDelay: 100,
         }
       ),
       this.#omegga.watchLogChunk<RegExpMatchArray>(
@@ -637,7 +636,7 @@ class Player implements OmeggaPlayer {
         {
           first: 'index',
           timeoutDelay: 2000,
-          afterMatchDelay: 100
+          afterMatchDelay: 100,
         }
       ),
     ]);
