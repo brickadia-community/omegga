@@ -2,6 +2,7 @@
   The wrapper combines the things looking at or waiting for logs with the actual server logs
 */
 
+import Logger from '@/logger';
 import soft from '@/softconfig';
 import BrickadiaServer from '@brickadia/server';
 import { IConfig } from '@config/types';
@@ -41,6 +42,7 @@ class OmeggaWrapper extends EventEmitter {
     this.#server.on('line', this.logWrangler.callback);
     this.#server.on('line', (line: string) => this.emit('line', line));
     this.#server.on('closed', () => this.emit('closed'));
+
     this.addMatcher = this.logWrangler.addMatcher;
     this.addWatcher = this.logWrangler.addWatcher;
     this.watchLogArray = this.logWrangler.watchLogArray;
@@ -63,12 +65,14 @@ class OmeggaWrapper extends EventEmitter {
 
   // event emitter to catch everything
   emit(type: string, ...args: any) {
+    Logger.verbose('Emitting event', type);
     try {
-      (super.emit as any)('*', type, ...args);
+      (super.emit as EventEmitter['emit'])('*', type, ...args);
     } catch (e) {
+      Logger.errorp('Error in emitted event', type, e);
       // error emitting
     }
-    return (super.emit as any)(type, ...args);
+    return (super.emit as EventEmitter['emit'])(type, ...args);
   }
 }
 

@@ -101,7 +101,11 @@ parent.on('brickadiaEvent', (type, ...args) => {
   try {
     omegga.emit(type, ...args);
   } catch (e) {
-    console.log('error in brickadia event', e?.stack ?? e.toString());
+    console.error(
+      "Error in save plugin worker's brickadiaEvent:",
+      type,
+      e?.stack ?? e.toString()
+    );
   }
 });
 
