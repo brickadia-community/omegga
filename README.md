@@ -1,6 +1,6 @@
 # Omegga
 
-[Join the discord](https://discord.gg/UcdwTYhS75) to browse plugins and get support. Read the README first before asking questions!
+Read the README first before asking questions! [Join the discord](https://discord.gg/UcdwTYhS75) to browse plugins and get support.
 
 Omegga wraps brickadia's server console to provide interactivity and utility via plugins.
 
@@ -42,6 +42,7 @@ If any of the above are true, [create a new user](#creating-a-new-user) and cont
 
    If you get an error like "gyp info find Python using Python version 3.8.10 found at /usr/bin/python3" you need to install python3: `sudo apt install python3` and re-run `npm i -g omegga`
    If you get an error like "gyp ERR! stack Error: not found: make" you need to install build-essential: `sudo apt install build-essential` and re-run `npm i -g omegga`
+   If you get an error like "Unable to fetch some archives, maybe run apt-get update" you need to run `sudo apt update && sudo apt upgrade` before running your original command.
 
    If you are having trouble installing with nvm and are running Ubuntu/Debian, run the following commands (installs node, installs omegga) instead or install node&npm from [NodeSource Binary Distributions](https://github.com/nodesource/distributions/blob/master/README.md).
 
