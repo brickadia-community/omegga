@@ -544,7 +544,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   async getEnvironmentData(): Promise<EnvironmentPreset> {
     const saveName =
-      this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
+      this._tempSavePrefix + Date.now() + '_' + this._tempCounter.environment++;
 
     await this.saveEnvironment(saveName);
     const data = this.readEnvironmentData(saveName);
