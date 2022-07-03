@@ -1,8 +1,21 @@
-import EventEmitter from 'events';
+import Logger from '@/logger';
+import {
+  OmeggaCore,
+  OmeggaLike,
+  OmeggaPlayer,
+  PluginInterop,
+  WatcherPattern,
+} from '@/plugin';
+import { EnvironmentPreset } from '@brickadia/presets';
+import {
+  BRBanList,
+  BRPlayerNameCache,
+  BRRoleAssignments,
+  BRRoleSetup,
+} from '@brickadia/types';
 import commandInjector from '@omegga/commandInjector';
 import LogWrangler from '@omegga/logWrangler';
 import Player from '@omegga/player';
-import { Plugin } from '@omegga/plugin';
 import Omegga from '@omegga/server';
 import {
   ILogMinigame,
@@ -10,22 +23,8 @@ import {
   IPlayerPositions,
   IServerStatus,
 } from '@omegga/types';
-import {
-  OmeggaLike,
-  OmeggaCore,
-  OmeggaPlayer,
-  WatcherPattern,
-  PluginInterop,
-} from '@/plugin';
-import {
-  BRRoleSetup,
-  BRRoleAssignments,
-  BRBanList,
-  BRPlayerNameCache,
-} from '@brickadia/types';
-import { WriteSaveObject, ReadSaveObject } from 'brs-js';
-import Logger from '@/logger';
-import { EnvironmentPreset } from '@brickadia/presets';
+import { ReadSaveObject, WriteSaveObject } from 'brs-js';
+import EventEmitter from 'events';
 
 // bootstrap the proxy with initial omegga data
 export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({

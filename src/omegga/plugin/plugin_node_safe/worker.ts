@@ -23,9 +23,12 @@ import { NodeVM } from 'vm2';
 import webpack, { Stats } from 'webpack';
 import { parentPort } from 'worker_threads';
 import { ProxyOmegga } from './proxyOmegga';
+import 'source-map-support/register';
 
 const MAIN_FILE = 'omegga.plugin.js';
 const MAIN_FILE_TS = 'omegga.plugin.ts';
+const TS_BUILD_DIR = '.build';
+const TS_BUILD_FILE = 'plugin.js';
 let vm: NodeVM,
   PluginClass: {
     new (
@@ -123,10 +126,10 @@ async function createVm(
   let pluginCode: string;
 
   if (isTypeScript) {
+    const tsBuildPath = path.join(pluginPath, TS_BUILD_DIR);
+    const sourceFileName = path.join(pluginPath, MAIN_FILE_TS);
+    const outputPath = path.join(tsBuildPath, TS_BUILD_FILE);
     try {
-      const tsBuildPath = path.join(pluginPath, '.build');
-      const sourceFileName = path.join(pluginPath, MAIN_FILE_TS);
-      const outputPath = path.join(tsBuildPath, 'plugin.js');
       mkdir(tsBuildPath);
       mkdir(path.join(tsBuildPath, '.cache'));
 
@@ -135,7 +138,9 @@ async function createVm(
           Object.freeze({
             target: 'node',
             context: __dirname,
-            mode: 'development',
+            mode: fs.existsSync(path.resolve(pluginPath, '.development'))
+              ? 'development'
+              : 'production',
             entry: sourceFileName,
             devtool: 'source-map',
             output: {
@@ -144,7 +149,7 @@ async function createVm(
                 type: 'commonjs',
               },
               path: tsBuildPath,
-              filename: 'plugin.js',
+              filename: TS_BUILD_FILE,
             },
             resolve: {
               extensions: ['.ts', '.js', '.json'],
@@ -154,7 +159,7 @@ async function createVm(
               },
             },
             cache: {
-              type: 'filesystem',
+              type: 'filesystem' as 'filesystem',
               cacheLocation: path.join(tsBuildPath, '.cache'),
               allowCollectingMemory: false,
               idleTimeout: 0,
@@ -291,7 +296,10 @@ async function createVm(
   vm.freeze(omegga, 'Omegga');
   vm.freeze(Player, 'Player');
 
-  const file = path.join(pluginPath, MAIN_FILE);
+  const file = path.join(
+    pluginPath,
+    isTypeScript ? path.join(TS_BUILD_DIR, TS_BUILD_FILE) : MAIN_FILE
+  );
   if (!isTypeScript) {
     try {
       pluginCode = fs.readFileSync(file).toString();

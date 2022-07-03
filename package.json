@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "1.0.25",
+  "version": "1.0.26",
   "description": "Brickadia server installer, manager, wrapper, configurator, and automator",
   "main": "index.js",
   "bin": {
@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@swc/core": "^1.2.173",
+    "@types/source-map-support": "^0.5.4",
     "@types/webpack": "^5.28.0",
     "bcrypt": "^5.0.0",
     "body-parser": "^1.19.0",
