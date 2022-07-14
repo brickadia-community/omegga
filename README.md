@@ -22,6 +22,7 @@ You can run omegga in the [Windows Subsystem for Linux](#wsl) (I recommend Ubunt
 - your terminal prompt should NOT end with #
 - you should NOT be typing `sudo npm i -g omegga`
 - running `echo $EUID` should NOT print "0"
+- if you type `pwd` it should NOT print "/root" (type `cd` to navigate to your user's home dir)
 
 If any of the above are true, [create a new user](#creating-a-new-user) and continue from there.
 
@@ -40,19 +41,43 @@ If any of the above are true, [create a new user](#creating-a-new-user) and cont
    npm i -g omegga
    ```
 
-   If you get an error like "gyp info find Python using Python version 3.8.10 found at /usr/bin/python3" you need to install python3: `sudo apt install python3` and re-run `npm i -g omegga`
-   If you get an error like "gyp ERR! stack Error: not found: make" you need to install build-essential: `sudo apt install build-essential` and re-run `npm i -g omegga`
-   If you get an error like "Unable to fetch some archives, maybe run apt-get update" you need to run `sudo apt update && sudo apt upgrade` before running your original command.
+4. Head over to [Running Omegga](#running) or troubleshoot below.
 
-   If you are having trouble installing with nvm and are running Ubuntu/Debian, run the following commands (installs node, installs omegga) instead or install node&npm from [NodeSource Binary Distributions](https://github.com/nodesource/distributions/blob/master/README.md).
+### Quick Setup Troubleshooting
 
-   ```sh
-   curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-   sudo apt-get install -y nodejs
-   npm i -g omegga
-   ```
 
-Then head over to [Running Omegga](#running)!
+  - If you get "`sh: 28: cd: can't cd to .`", you need to be in `bash` (and probably type `cd` to navigate out of root directory):
+
+    ```sh
+    bash # use bash instead of sh
+    cd # navigate home
+    ```
+
+  - If you get an error like "`gyp info find Python using Python version 3.8.10 found at /usr/bin/python3`" you need to install python3:
+
+    ```sh
+    sudo apt install python3
+    npm i -g omegga
+    ```
+
+  - If you get an error like "`gyp ERR! stack Error: not found: make`" you need to install build-essential:
+    ```sh
+    sudo apt install build-essential
+    npm i -g omegga # re-run omegga install
+    ```
+
+  - If you get an error like "`Unable to fetch some archives, maybe run apt-get update`" you need to run this before running your original command:
+    ```sh
+    sudo apt update && sudo apt upgrade
+    ```
+
+  - If you are having trouble installing with nvm and are running **Ubuntu/Debian**, run the following commands (installs node, installs omegga) instead or install node&npm from [NodeSource Binary Distributions](https://github.com/nodesource/distributions/blob/master/README.md).
+
+    ```sh
+    curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    npm i -g omegga
+    ```
 
 ### Manual Setup (you install stuff)
 
