@@ -31,6 +31,9 @@ import mapChange from './mapChange';
 // interaction event
 import interact from './interact';
 
+// minigame join event
+import minigameJoin from './minigameJoin';
+
 export default [
   join,
   leave,
@@ -42,4 +45,5 @@ export default [
   init,
   mapChange,
   interact,
+  minigameJoin,
 ] as MatchGenerator<any>[];

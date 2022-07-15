@@ -790,6 +790,7 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `event:NAME`         | [&gt;player from click&lt;, ...args]                                                                                             | Runs when an interact component has `event:NAME: arg1,arg2,arg\,3,                                                                                                                   |          |
 | `mapchange`          | \[{map}\]                                                                                                                        | Runs when the map changes                                                                                                                                                            |          |
 | `autorestart`        | [autorestart config]                                                                                                             | Runs server has an autorestart scheduled                                                                                                                                             |          |
+| `minigamejoin`       | {player: {name, id}; minigameName: string}                                                                                       | Runs when a player joins a minigame. Note that minigameName is not unique between minigames. minigameName will be null if player leaves all minigames. This will run before `join`   |          |
 
 ### Folder Structure
 
