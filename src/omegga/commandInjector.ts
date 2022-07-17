@@ -340,10 +340,32 @@ const COMMANDS: InjectedCommands = {
         else return [match.r, match.g, match.b, match.a].map(Number);
       };
 
+      const sortedRulesets = rulesets.sort((a, b) =>
+        b.groups?.ruleset.localeCompare(a.groups?.ruleset)
+      );
+      const globalIndex = rulesets.findIndex(
+        ruleset => ruleset.groups?.name === 'GLOBAL'
+      );
+
+      const indexMap = Object.fromEntries(
+        sortedRulesets.map((ruleset, index) => {
+          if (globalIndex > -1) {
+            if (index > globalIndex) {
+              index = index - 1;
+            } else if (index === globalIndex) {
+              index = -1;
+            }
+          }
+
+          return [ruleset.groups?.ruleset, index];
+        })
+      );
+
       // join the data into a big object
       return rulesets.map(r => ({
         name: r.groups.name,
         ruleset: r.groups.ruleset,
+        index: indexMap[r.groups.ruleset],
 
         // get the players from the team members
         members: ruleMembers

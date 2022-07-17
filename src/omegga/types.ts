@@ -43,6 +43,7 @@ export type IPlayerPositions = {
 export type ILogMinigame = {
   name: string;
   ruleset: string;
+  index: number;
   members: OmeggaPlayer[];
   teams: {
     name: string;
