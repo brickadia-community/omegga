@@ -433,8 +433,9 @@ export interface MockEventEmitter {
   on(
     event: 'interact',
     listener: (interaction: BrickInteraction) => void
-  ): this;
-}
+    ): this;
+  on(event: 'minigamejoin', listener: (info: {player: {name: string, id: string}; minigameName: string}) => void): this;
+  }
 
 export interface OmeggaLike
   extends OmeggaCore,
