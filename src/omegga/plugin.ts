@@ -508,10 +508,11 @@ export class PluginLoader {
 
       // plugin or command argument
     } else if (args.length > 0) {
-      const target = args.join(' ');
+      const target = args.join(' ').toLowerCase();
+
       // argument is a plugin; render description, author, and commands
-      let doc;
-      if (doc = docs[Object.keys(docs).find(key => key.toLowerCase() === target.toLowerCase()) || target]) {
+      if (target in docs) {
+        const doc = docs[target];
         const desc = doc.description || 'no description';
         const color = doc._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa';
         send(
@@ -530,17 +531,18 @@ export class PluginLoader {
         }
 
         // argument is a command
-      } else if (doc = commands[Object.keys(commands).find(key => key.toLowerCase() === target.toLowerCase()) || target]) {
-        const desc = doc.description || 'no description';
-        const example = doc.example || 'no example';
-        const color = doc._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa';
+      } else if (target in commands) {
+        const cmd = commands[target];
+        const desc = cmd.description || 'no description';
+        const example = cmd.example || 'no example';
+        const color = cmd._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa';
         send(
-          `"<b>Command</> <code><color=\\"${color}\\">${doc.name}</></>: ${desc}"`
+          `"<b>Command</> <code><color=\\"${color}\\">${cmd.name}</></>: ${desc}"`
         );
         send(`"<b>Example</>: <code>${example}</>"`);
-        if (doc.args && doc.args.length > 0) {
+        if (cmd.args && cmd.args.length > 0) {
           send('"<b>Arguments</>:"');
-          for (const arg of doc.args) {
+          for (const arg of cmd.args) {
             const desc = arg.description || 'no description';
             send(
               `"- <code>${arg.name}</>${
@@ -586,15 +588,14 @@ export class PluginLoader {
       const name = plugin.getName();
       if (!name) continue;
 
-      doc._plugin = plugin;
-
       // add the documentation into a dictionary
-      this.documentation[name] = doc;
+      this.documentation[name.toLowerCase()] = doc;
+      doc._plugin = plugin;
 
       // add all the commands into a dictionary
       if (doc.commands) {
         for (const cmd of doc.commands) {
-          this.commands[cmd.name] = cmd;
+          this.commands[cmd.name.toLowerCase()] = cmd;
           cmd._plugin = plugin;
         }
       }
