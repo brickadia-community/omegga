@@ -510,12 +510,12 @@ export class PluginLoader {
     } else if (args.length > 0) {
       const target = args.join(' ');
       // argument is a plugin; render description, author, and commands
-      if (docs[target]) {
-        const doc = docs[target];
+      let doc;
+      if (doc = docs[Object.keys(docs).find(key => key.toLowerCase() === target.toLowerCase()) || target]) {
         const desc = doc.description || 'no description';
         const color = doc._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa';
         send(
-          `"<b>Plugin</> <code><color=\\"${color}\\">${target}</></>: ${desc}"`
+          `"<b>Plugin</> <code><color=\\"${color}\\">${doc.name}</></>: ${desc}"`
         );
 
         if (doc.author)
@@ -530,8 +530,7 @@ export class PluginLoader {
         }
 
         // argument is a command
-      } else if (commands[target]) {
-        const doc = commands[target];
+      } else if (doc = commands[Object.keys(commands).find(key => key.toLowerCase() === target.toLowerCase()) || target]) {
         const desc = doc.description || 'no description';
         const example = doc.example || 'no example';
         const color = doc._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa';
