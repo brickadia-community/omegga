@@ -96,7 +96,6 @@ const program = commander
       if (!success) {
         Logger.errorp('Start aborted - could not generate auth tokens');
         process.exit(1);
-        return;
       }
     }
 
@@ -258,7 +257,6 @@ program
     if (!require('hasbin').sync('git')) {
       Logger.errorp('git'.yellow, 'must be installed to install plugins.');
       process.exit(1);
-      return;
     }
 
     if (!config.find('.')) {
@@ -268,7 +266,6 @@ program
         'to setup one.'
       );
       process.exit(1);
-      return;
     }
     const { verbose, force } = program.opts();
     Logger.VERBOSE = verbose;
@@ -289,7 +286,6 @@ program
         'to setup one.'
       );
       process.exit(1);
-      return;
     }
     const { verbose, force } = program.opts();
     Logger.VERBOSE = verbose;
@@ -334,6 +330,60 @@ program
     Logger.VERBOSE = verbose;
 
     pluginUtil.init();
+  });
+
+program
+  .command('list-config <pluginName>')
+  .description('Lists configs for a plugin')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .action(async pluginName => {
+    if (!config.find('.')) {
+      Logger.errorp(
+        'Not an omegga directory, run ',
+        'omegga init'.yellow,
+        'to setup one.'
+      );
+      process.exit(1);
+    }
+    const { verbose } = program.opts();
+    Logger.VERBOSE = verbose;
+    pluginUtil.listConfig(pluginName);
+  });
+
+program
+  .command('get-config <pluginName> <configName>')
+  .description('Gets a config value')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .action(async (pluginName, configName) => {
+    if (!config.find('.')) {
+      Logger.errorp(
+        'Not an omegga directory, run ',
+        'omegga init'.yellow,
+        'to setup one.'
+      );
+      process.exit(1);
+    }
+    const { verbose } = program.opts();
+    Logger.VERBOSE = verbose;
+    pluginUtil.getConfig(pluginName, configName);
+  });
+
+program
+  .command('set-config <pluginName> <configName> <configValue>')
+  .description('Sets a config value')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .action(async (pluginName, configName, configValue) => {
+    if (!config.find('.')) {
+      Logger.errorp(
+        'Not an omegga directory, run ',
+        'omegga init'.yellow,
+        'to setup one.'
+      );
+      process.exit(1);
+    }
+    const { verbose } = program.opts();
+    Logger.VERBOSE = verbose;
+    pluginUtil.setConfig(pluginName, configName, configValue);
   });
 
 program.parseAsync(process.argv);

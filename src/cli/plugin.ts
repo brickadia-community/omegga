@@ -1,6 +1,7 @@
 import Logger from '@/logger';
 import soft from '@/softconfig';
 import * as config from '@config';
+import Omegga from '@omegga/server';
 import { exec as execNonPromise } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -703,4 +704,130 @@ async function init() {
   log('Initialized', type.yellow, 'plugin', `${name}`.cyan, 'successfully!');
 }
 
-export default { install, update, check, init };
+function pluginLoaderFactory() {
+  const workDir = getWorkDir();
+  // None of these values get used, it's just to make typechecking happy.
+  const config = {
+    server: {
+      port: 0,
+      publiclyListed: false,
+      name: '',
+      __LOCAL: false,
+      branch: '',
+    },
+    credentials: { email: '', password: '' },
+  };
+
+  // We don't need anything except the plugin loader.
+  const options = {
+    noauth: true,
+    noplugin: false,
+    noweb: true,
+    debug: false,
+  };
+  const omegga = new Omegga(workDir, config, options);
+  return omegga.pluginLoader;
+}
+
+/** Loads in a plugin and it's documentation. */
+async function loadPlugin(pluginName) {
+  const pluginLoader = pluginLoaderFactory();
+  await pluginLoader.scan(); // Scan for plugins and build documentation.
+  const plugin = pluginLoader.plugins.find(
+    p => p.getName().toLowerCase() === pluginName.toLowerCase()
+  );
+  if (!plugin) {
+    err('Plugin', pluginName.cyan, 'not found');
+    process.exit(1);
+  }
+  return plugin;
+}
+
+async function listConfig(pluginName) {
+  const plugin = await loadPlugin(pluginName);
+  const configDoc = plugin.getDocumentation().config;
+  const config = await plugin.storage.getConfig();
+  for (const key in config) {
+    if (!configDoc[key]) continue; // Skip unknown config keys.
+    const value = config[key];
+    log(key.cyan, '=', value.toString().yellow);
+  }
+  process.exit();
+}
+
+async function getConfig(pluginName, configName: string) {
+  const plugin = await loadPlugin(pluginName);
+  const configDoc = plugin.getDocumentation().config[configName];
+  if (configDoc === undefined) {
+    err('Config', configName.cyan, 'not found');
+    process.exit(1);
+  }
+  const config = await plugin.storage.getConfig();
+  log(config[configName]);
+  process.exit();
+}
+
+async function setConfig(pluginName, configName: string, valueString: string) {
+  const plugin = await loadPlugin(pluginName);
+  const configDoc = plugin.getDocumentation().config[configName];
+  if (configDoc === undefined) {
+    err('Config', configName.cyan, 'not found');
+    process.exit(1);
+  }
+
+  // Parse the value string into a value of the correct type for the config.
+  let parsed;
+  switch (configDoc.type) {
+    case 'boolean':
+      parsed = valueString === 'true';
+      break;
+    case 'number':
+      parsed = Number(valueString);
+      if (isNaN(parsed)) {
+        err('Invalid number value', valueString.yellow);
+        process.exit(1);
+      }
+      break;
+    case 'string':
+      parsed = valueString;
+      break;
+    case 'enum':
+      if (!configDoc.options.includes(valueString)) {
+        err(
+          'Config',
+          configName.cyan,
+          'must be one of',
+          configDoc.options.join(', ').yellow
+        );
+        process.exit(1);
+      }
+      parsed = valueString;
+      break;
+    default:
+      err('set-context does not support config type', configDoc.type.cyan);
+      process.exit(1);
+  }
+
+  const pluginConfig = await plugin.storage.getConfig();
+  pluginConfig[configName] = parsed;
+  await plugin.storage.setConfig(pluginConfig);
+  log(
+    'Set config',
+    configName.cyan,
+    'of plugin',
+    plugin.getName().cyan,
+    'to',
+    parsed.toString().yellow
+  );
+  process.exit();
+}
+
+export default {
+  install,
+  update,
+  check,
+  init,
+  listConfig,
+  getConfig,
+  setConfig,
+};

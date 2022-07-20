@@ -397,7 +397,7 @@ export class PluginLoader {
     return ok;
   }
 
-  // find every loadable plugin
+  /** Scans plugin directory for plugins and builds their documentation. */
   async scan() {
     Logger.verbose('Scanning plugin directory');
     // plugin directory doesn't exist
@@ -422,6 +422,7 @@ export class PluginLoader {
           .filter(dir => fs.existsSync(dir) && fs.lstatSync(dir).isDirectory())
           // every plugin must be loadable through some format
           .map(async dir => {
+            Logger.verbose('Scanning plugin', dir.underline);
             // find a plugin format that can load in this plugin
             const PluginFormat = this.formats.find(f => f.canLoad(dir));
 
@@ -461,6 +462,12 @@ export class PluginLoader {
     )
       // remove plugins without formats
       .filter(p => p);
+
+    Logger.verbose('Finished scanning plugin directory');
+    Logger.verbose(
+      `Found ${this.plugins.length} plugins`,
+      this.plugins.map(p => p.getName())
+    );
 
     this.buildDocumentation();
 
