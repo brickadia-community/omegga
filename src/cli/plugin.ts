@@ -1,7 +1,7 @@
 import Logger from '@/logger';
 import soft from '@/softconfig';
 import * as config from '@config';
-import Omegga from '@omegga/server';
+import { PluginLoader } from '@omegga/plugin';
 import { exec as execNonPromise } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -706,27 +706,7 @@ async function init() {
 
 function pluginLoaderFactory() {
   const workDir = getWorkDir();
-  // None of these values get used, it's just to make typechecking happy.
-  const config = {
-    server: {
-      port: 0,
-      publiclyListed: false,
-      name: '',
-      __LOCAL: false,
-      branch: '',
-    },
-    credentials: { email: '', password: '' },
-  };
-
-  // We don't need anything except the plugin loader.
-  const options = {
-    noauth: true,
-    noplugin: false,
-    noweb: true,
-    debug: false,
-  };
-  const omegga = new Omegga(workDir, config, options);
-  return omegga.pluginLoader;
+  return new PluginLoader(workDir);
 }
 
 /** Loads in a plugin and it's documentation. */

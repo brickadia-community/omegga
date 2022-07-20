@@ -70,13 +70,15 @@ export class Plugin {
   loadedPlugin: OmeggaPlugin;
 
   // initialize a plugin at this path
-  constructor(pluginPath: string, omegga: Omegga) {
+  constructor(pluginPath: string, omegga?: Omegga) {
     this.path = pluginPath;
     this.omegga = omegga;
-    this.shortPath = pluginPath.replace(
-      path.join(omegga.path, soft.PLUGIN_PATH) + '/',
-      ''
-    );
+    if (omegga) {
+      this.shortPath = pluginPath.replace(
+        path.join(omegga.path, soft.PLUGIN_PATH) + '/',
+        ''
+      );
+    }
   }
 
   // assign plugin storage
@@ -288,22 +290,28 @@ export class PluginLoader {
   commands: Record<string, IPluginCommand & { _plugin: Plugin }>;
   documentation: Record<string, IPluginDocumentation & { _plugin: Plugin }>;
 
-  constructor(pluginsPath: string, omegga: Omegga) {
-    this.path = pluginsPath;
+  constructor(workDir: string, omegga?: Omegga) {
+    this.path = path.join(workDir, soft.PLUGIN_PATH);
     this.omegga = omegga;
     this.store = Datastore.create({
-      filename: path.join(omegga.dataPath, soft.PLUGIN_STORE),
+      filename: path.join(workDir, soft.DATA_PATH, soft.PLUGIN_STORE),
       autoload: true,
     });
     this.store.persistence.setAutocompactionInterval(1000 * 60 * 5);
     this.formats = [];
     this.plugins = [];
 
-    // soon to be deprecated !help
-    omegga.on('chatcmd:help', this.showHelp.bind(this));
+    Logger.verbose('Loading plugin formats');
+    // load all the plugin formats in
+    this.loadFormats(path.join(__dirname, 'plugin'));
 
-    // use /plugins to get help
-    omegga.on('cmd:plugins', this.showHelp.bind(this));
+    if (omegga) {
+      // soon to be deprecated !help
+      omegga.on('chatcmd:help', this.showHelp.bind(this));
+
+      // use /plugins to get help
+      omegga.on('cmd:plugins', this.showHelp.bind(this));
+    }
   }
 
   // let the plugin loader scan another kind of plugin in

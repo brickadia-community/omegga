@@ -122,11 +122,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     if (!options.noplugin) {
       Logger.verbose('Creating plugin loader');
       // create the pluginloader
-      this.pluginLoader = new PluginLoader(join(this.path, PLUGIN_PATH), this);
-
-      Logger.verbose('Creating loading plugins');
-      // load all the plugin formats in
-      this.pluginLoader.loadFormats(join(__dirname, 'plugin'));
+      this.pluginLoader = new PluginLoader(this.path, this);
     }
 
     /** @type {Array<Player>}list of online players */
