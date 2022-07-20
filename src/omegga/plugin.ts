@@ -200,7 +200,15 @@ export class PluginStorage {
     return config.value;
   }
 
-  // initialize the plugin store
+  /** Wipes the configs for the plugin. */
+  async wipeConfig() {
+    await this.store.remove(
+      { type: 'config', plugin: this.name },
+      { multi: true }
+    );
+  }
+
+  /** Initializes the configs for the plugin into the database and sets default configs. */
   async init() {
     // get default and configured values
     const defaultConf = this.getDefaultConfig();

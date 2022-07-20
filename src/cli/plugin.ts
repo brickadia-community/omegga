@@ -822,6 +822,49 @@ async function setConfig(pluginName, configName: string, valueString: string) {
   process.exit();
 }
 
+async function resetAllConfigs(pluginName, force) {
+  const plugin = await loadPlugin(pluginName);
+  if (!force) {
+    const { answer } = await prompts([
+      {
+        type: 'confirm',
+        name: 'answer',
+        message: 'Are you sure you want to reset all configs?',
+        initial: false,
+      },
+    ]);
+    if (!answer) {
+      log('Reset aborted.');
+      process.exit(1);
+    }
+  }
+  await plugin.storage.wipeConfig();
+  await plugin.storage.init();
+  log('Reset all configs of plugin', plugin.getName().cyan);
+  process.exit();
+}
+
+async function resetConfig(pluginName, configName: string) {
+  const plugin = await loadPlugin(pluginName);
+  const configDoc = plugin.getDocumentation().config[configName];
+  if (configDoc === undefined) {
+    err('Config', configName.cyan, 'not found');
+    process.exit(1);
+  }
+  const pluginConfig = await plugin.storage.getConfig();
+  pluginConfig[configName] = plugin.storage.getDefaultConfig()[configName];
+  await plugin.storage.setConfig(pluginConfig);
+  log(
+    'Reset config',
+    configName.cyan,
+    'of plugin',
+    plugin.getName().cyan,
+    'to',
+    pluginConfig[configName]
+  );
+  process.exit();
+}
+
 export default {
   install,
   update,
@@ -830,4 +873,6 @@ export default {
   listConfig,
   getConfig,
   setConfig,
+  resetAllConfigs,
+  resetConfig,
 };

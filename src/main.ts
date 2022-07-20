@@ -386,4 +386,28 @@ program
     pluginUtil.setConfig(pluginName, configName, configValue);
   });
 
+program
+  .command('reset-config <pluginName> [configName]')
+  .description('Resets all of configs for a plugin to the default')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .action(async (pluginName, configName) => {
+    if (!config.find('.')) {
+      Logger.errorp(
+        'Not an omegga directory, run ',
+        'omegga init'.yellow,
+        'to setup one.'
+      );
+      process.exit(1);
+    }
+    const { verbose, yes } = program.opts();
+    Logger.VERBOSE = verbose;
+
+    if (configName !== undefined) {
+      pluginUtil.resetConfig(pluginName, configName);
+    } else {
+      pluginUtil.resetAllConfigs(pluginName, yes);
+    }
+  });
+
 program.parseAsync(process.argv);
