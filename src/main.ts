@@ -333,26 +333,12 @@ program
   });
 
 program
-  .command('list-config <pluginName>')
-  .description('Lists configs for a plugin')
-  .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .action(async pluginName => {
-    if (!config.find('.')) {
-      Logger.errorp(
-        'Not an omegga directory, run ',
-        'omegga init'.yellow,
-        'to setup one.'
-      );
-      process.exit(1);
-    }
-    const { verbose } = program.opts();
-    Logger.VERBOSE = verbose;
-    pluginUtil.listConfig(pluginName);
-  });
-
-program
-  .command('get-config <pluginName> <configName>')
-  .description('Gets a config value')
+  .command('get-config <pluginName> [configName]')
+  .description(
+    'Gets a config for a plugin. If ' +
+      'configName'.underline +
+      ' is omitted, returns all config values.'
+  )
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async (pluginName, configName) => {
     if (!config.find('.')) {
@@ -365,12 +351,23 @@ program
     }
     const { verbose } = program.opts();
     Logger.VERBOSE = verbose;
-    pluginUtil.getConfig(pluginName, configName);
+    if (!configName) {
+      pluginUtil.listConfig(pluginName);
+    } else {
+      pluginUtil.getConfig(pluginName, configName);
+    }
   });
 
 program
-  .command('set-config <pluginName> <configName> <configValue>')
-  .description('Sets a config value')
+  .command('set-config <pluginName> [configName] [configValue]')
+  .description(
+    'Sets a config for a plugin. If ' +
+      'configValue'.underline +
+      ' is omitted, the config will be reset. If ' +
+      'configName'.underline +
+      ' is omitted, the entire plugin config will be reset.'
+  )
+  .option('-y, --yes', 'Skip confirmation prompt')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async (pluginName, configName, configValue) => {
     if (!config.find('.')) {
@@ -381,32 +378,14 @@ program
       );
       process.exit(1);
     }
-    const { verbose } = program.opts();
-    Logger.VERBOSE = verbose;
-    pluginUtil.setConfig(pluginName, configName, configValue);
-  });
-
-program
-  .command('reset-config <pluginName> [configName]')
-  .description('Resets all of configs for a plugin to the default')
-  .option('-y, --yes', 'Skip confirmation prompt')
-  .option('-v, --verbose', 'Print extra messages for debugging purposes')
-  .action(async (pluginName, configName) => {
-    if (!config.find('.')) {
-      Logger.errorp(
-        'Not an omegga directory, run ',
-        'omegga init'.yellow,
-        'to setup one.'
-      );
-      process.exit(1);
-    }
     const { verbose, yes } = program.opts();
     Logger.VERBOSE = verbose;
-
-    if (configName !== undefined) {
+    if (!configName) {
+      pluginUtil.resetAllConfigs(pluginName, yes);
+    } else if (!configValue) {
       pluginUtil.resetConfig(pluginName, configName);
     } else {
-      pluginUtil.resetAllConfigs(pluginName, yes);
+      pluginUtil.setConfig(pluginName, configName, configValue);
     }
   });
 
