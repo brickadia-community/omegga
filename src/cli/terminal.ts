@@ -577,6 +577,9 @@ export default class Terminal {
     );
 
     this.rl.on('line', this.handleLine.bind(this));
+    // Gracefully shut down server on Ctrl+C and SIGTERM
+    process.on('SIGINT', () => this.handleLine('/stop'));
+    process.on('SIGTERM', () => this.handleLine('/stop'));
   }
 
   async handleLine(line: string) {
