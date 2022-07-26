@@ -712,14 +712,18 @@ function pluginLoaderFactory() {
 /** Loads in a plugin and it's documentation. */
 async function loadPlugin(pluginName) {
   const pluginLoader = pluginLoaderFactory();
-  await pluginLoader.scan(); // Scan for plugins and build documentation.
-  const plugin = pluginLoader.plugins.find(
-    p => p.getName().toLowerCase() === pluginName.toLowerCase()
-  );
-  if (!plugin) {
-    err('Plugin', pluginName.cyan, 'not found');
+  const foundPluginDirectory = fs
+    .readdirSync(pluginLoader.path)
+    .find(dir => dir.toLowerCase() === pluginName.toLowerCase());
+  if (!foundPluginDirectory) {
+    err(
+      `Plugin ${pluginName} not found! Make sure to use the plugin's directory name.`
+    );
     process.exit(1);
   }
+  const plugin = await pluginLoader.scanPlugin(
+    path.join(pluginLoader.path, foundPluginDirectory)
+  );
   return plugin;
 }
 

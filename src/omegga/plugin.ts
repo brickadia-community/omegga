@@ -413,6 +413,55 @@ export class PluginLoader {
     return ok;
   }
 
+  /** Scans a plugin at the specified directory and create a Plugin object. */
+  async scanPlugin(dir: string): Promise<Plugin> {
+    Logger.verbose('Scanning plugin', dir.underline);
+
+    if (!fs.existsSync(dir)) {
+      Logger.errorp('Plugin directory does not exist', dir.brightRed.underline);
+      return;
+    }
+    if (!fs.statSync(dir).isDirectory()) {
+      Logger.errorp('Plugin must be a directory', dir.brightRed.underline);
+      return;
+    }
+
+    // find a plugin format that can load in this plugin
+    const PluginFormat = this.formats.find(f => f.canLoad(dir));
+
+    // let users know if there's a missing plugin format
+    if (!PluginFormat) {
+      Logger.errorp('Missing plugin format for', dir);
+      return;
+    }
+    try {
+      // create the plugin format
+      const plugin = PluginFormat && new PluginFormat(dir, this.omegga);
+      if (!plugin.getDocumentation()) {
+        Logger.errorp('Missing/invalid plugin documentation for', dir);
+        return;
+      }
+
+      // create its storage
+      const storage = new PluginStorage(this.store, plugin);
+      await storage.init();
+
+      // load the storage in
+      plugin.setStorage(storage);
+
+      // if there is a plugin format, create the plugin instance (but don't load yet)
+      return plugin;
+    } catch (e) {
+      // if a plugin format fails to load, prevent omegga from dying
+      Logger.errorp(
+        'Error loading plugin',
+        dir.brightRed.underline,
+        PluginFormat,
+        e
+      );
+    }
+  }
+
   /** Scans plugin directory for plugins and builds their documentation. */
   async scan() {
     Logger.verbose('Scanning plugin directory');
@@ -434,46 +483,7 @@ export class PluginLoader {
         fs
           .readdirSync(this.path)
           .map(dir => path.join(this.path, dir)) // convert from local paths
-          // every plugin must be in a directory
-          .filter(dir => fs.existsSync(dir) && fs.lstatSync(dir).isDirectory())
-          // every plugin must be loadable through some format
-          .map(async dir => {
-            Logger.verbose('Scanning plugin', dir.underline);
-            // find a plugin format that can load in this plugin
-            const PluginFormat = this.formats.find(f => f.canLoad(dir));
-
-            // let users know if there's a missing plugin format
-            if (!PluginFormat) {
-              Logger.errorp('Missing plugin format for', dir);
-              return;
-            }
-            try {
-              // create the plugin format
-              const plugin = PluginFormat && new PluginFormat(dir, this.omegga);
-              if (!plugin.getDocumentation()) {
-                Logger.errorp('Missing/invalid plugin documentation for', dir);
-                return;
-              }
-
-              // create its storage
-              const storage = new PluginStorage(this.store, plugin);
-              await storage.init();
-
-              // load the storage in
-              plugin.setStorage(storage);
-
-              // if there is a plugin format, create the plugin instance (but don't load yet)
-              return plugin;
-            } catch (e) {
-              // if a plugin format fails to load, prevent omegga from dying
-              Logger.errorp(
-                'Error loading plugin',
-                dir.brightRed.underline,
-                PluginFormat,
-                e
-              );
-            }
-          })
+          .map(async dir => this.scanPlugin(dir))
       )
     )
       // remove plugins without formats
