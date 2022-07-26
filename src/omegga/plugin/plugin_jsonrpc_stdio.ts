@@ -197,7 +197,7 @@ export default class RpcPlugin extends Plugin {
         setTimeout(() => {
           if (!frozen) return;
           Logger.errorp(
-            'I appear to be unresponsive when starting (maybe I forgot to respond to start)',
+            'I appear to be unresponsive when starting (maybe I forgot to respond to init)',
             name.brightRed.underline
           );
           this.kill();
