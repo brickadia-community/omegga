@@ -70,13 +70,15 @@ export class Plugin {
   loadedPlugin: OmeggaPlugin;
 
   // initialize a plugin at this path
-  constructor(pluginPath: string, omegga: Omegga) {
+  constructor(pluginPath: string, omegga?: Omegga) {
     this.path = pluginPath;
     this.omegga = omegga;
-    this.shortPath = pluginPath.replace(
-      path.join(omegga.path, soft.PLUGIN_PATH) + '/',
-      ''
-    );
+    if (omegga) {
+      this.shortPath = pluginPath.replace(
+        path.join(omegga.path, soft.PLUGIN_PATH) + '/',
+        ''
+      );
+    }
   }
 
   // assign plugin storage
@@ -200,7 +202,15 @@ export class PluginStorage {
     return config.value;
   }
 
-  // initialize the plugin store
+  /** Wipes the configs for the plugin. */
+  async wipeConfig() {
+    await this.store.remove(
+      { type: 'config', plugin: this.name },
+      { multi: true }
+    );
+  }
+
+  /** Initializes the configs for the plugin into the database and sets default configs. */
   async init() {
     // get default and configured values
     const defaultConf = this.getDefaultConfig();
@@ -280,22 +290,28 @@ export class PluginLoader {
   commands: Record<string, IPluginCommand & { _plugin: Plugin }>;
   documentation: Record<string, IPluginDocumentation & { _plugin: Plugin }>;
 
-  constructor(pluginsPath: string, omegga: Omegga) {
-    this.path = pluginsPath;
+  constructor(workDir: string, omegga?: Omegga) {
+    this.path = path.join(workDir, soft.PLUGIN_PATH);
     this.omegga = omegga;
     this.store = Datastore.create({
-      filename: path.join(omegga.dataPath, soft.PLUGIN_STORE),
+      filename: path.join(workDir, soft.DATA_PATH, soft.PLUGIN_STORE),
       autoload: true,
     });
     this.store.persistence.setAutocompactionInterval(1000 * 60 * 5);
     this.formats = [];
     this.plugins = [];
 
-    // soon to be deprecated !help
-    omegga.on('chatcmd:help', this.showHelp.bind(this));
+    Logger.verbose('Loading plugin formats');
+    // load all the plugin formats in
+    this.loadFormats(path.join(__dirname, 'plugin'));
 
-    // use /plugins to get help
-    omegga.on('cmd:plugins', this.showHelp.bind(this));
+    if (omegga) {
+      // soon to be deprecated !help
+      omegga.on('chatcmd:help', this.showHelp.bind(this));
+
+      // use /plugins to get help
+      omegga.on('cmd:plugins', this.showHelp.bind(this));
+    }
   }
 
   // let the plugin loader scan another kind of plugin in
@@ -397,7 +413,56 @@ export class PluginLoader {
     return ok;
   }
 
-  // find every loadable plugin
+  /** Scans a plugin at the specified directory and create a Plugin object. */
+  async scanPlugin(dir: string): Promise<Plugin> {
+    Logger.verbose('Scanning plugin', dir.underline);
+
+    if (!fs.existsSync(dir)) {
+      Logger.errorp('Plugin directory does not exist', dir.brightRed.underline);
+      return;
+    }
+    if (!fs.statSync(dir).isDirectory()) {
+      Logger.errorp('Plugin must be a directory', dir.brightRed.underline);
+      return;
+    }
+
+    // find a plugin format that can load in this plugin
+    const PluginFormat = this.formats.find(f => f.canLoad(dir));
+
+    // let users know if there's a missing plugin format
+    if (!PluginFormat) {
+      Logger.errorp('Missing plugin format for', dir);
+      return;
+    }
+    try {
+      // create the plugin format
+      const plugin = PluginFormat && new PluginFormat(dir, this.omegga);
+      if (!plugin.getDocumentation()) {
+        Logger.errorp('Missing/invalid plugin documentation for', dir);
+        return;
+      }
+
+      // create its storage
+      const storage = new PluginStorage(this.store, plugin);
+      await storage.init();
+
+      // load the storage in
+      plugin.setStorage(storage);
+
+      // if there is a plugin format, create the plugin instance (but don't load yet)
+      return plugin;
+    } catch (e) {
+      // if a plugin format fails to load, prevent omegga from dying
+      Logger.errorp(
+        'Error loading plugin',
+        dir.brightRed.underline,
+        PluginFormat,
+        e
+      );
+    }
+  }
+
+  /** Scans plugin directory for plugins and builds their documentation. */
   async scan() {
     Logger.verbose('Scanning plugin directory');
     // plugin directory doesn't exist
@@ -418,49 +483,17 @@ export class PluginLoader {
         fs
           .readdirSync(this.path)
           .map(dir => path.join(this.path, dir)) // convert from local paths
-          // every plugin must be in a directory
-          .filter(dir => fs.existsSync(dir) && fs.lstatSync(dir).isDirectory())
-          // every plugin must be loadable through some format
-          .map(async dir => {
-            // find a plugin format that can load in this plugin
-            const PluginFormat = this.formats.find(f => f.canLoad(dir));
-
-            // let users know if there's a missing plugin format
-            if (!PluginFormat) {
-              Logger.errorp('Missing plugin format for', dir);
-              return;
-            }
-            try {
-              // create the plugin format
-              const plugin = PluginFormat && new PluginFormat(dir, this.omegga);
-              if (!plugin.getDocumentation()) {
-                Logger.errorp('Missing/invalid plugin documentation for', dir);
-                return;
-              }
-
-              // create its storage
-              const storage = new PluginStorage(this.store, plugin);
-              await storage.init();
-
-              // load the storage in
-              plugin.setStorage(storage);
-
-              // if there is a plugin format, create the plugin instance (but don't load yet)
-              return plugin;
-            } catch (e) {
-              // if a plugin format fails to load, prevent omegga from dying
-              Logger.errorp(
-                'Error loading plugin',
-                dir.brightRed.underline,
-                PluginFormat,
-                e
-              );
-            }
-          })
+          .map(async dir => this.scanPlugin(dir))
       )
     )
       // remove plugins without formats
       .filter(p => p);
+
+    Logger.verbose('Finished scanning plugin directory');
+    Logger.verbose(
+      `Found ${this.plugins.length} plugins`,
+      this.plugins.map(p => p.getName())
+    );
 
     this.buildDocumentation();
 
