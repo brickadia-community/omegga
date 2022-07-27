@@ -40,6 +40,10 @@ const program = commander
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async () => {
     const { debug, verbose } = program.opts();
+    if (program.args.length > 0) {
+      program.help();
+      process.exit(1);
+    }
     Logger.VERBOSE = verbose;
 
     // default working directory is the one specified in config
@@ -250,9 +254,9 @@ program
 program
   .command('install <pluginUrl...>')
   .alias('i')
-  .description('Installs a plugin to the current brickadia server')
   .option('-f, --force', 'Forcefully re-install existing plugin') // TODO: implement install --force
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .description('Installs a plugin to the current brickadia server')
   .action(async plugins => {
     if (!require('hasbin').sync('git')) {
       Logger.errorp('git'.yellow, 'must be installed to install plugins.');
@@ -275,9 +279,9 @@ program
 program
   .command('update [pluginNames...]')
   .alias('u')
-  .description('Updates all or selected installed plugins to latest versions')
   .option('-f, --force', 'Forcefully re-upgrade existing plugin') // TODO: implement update --force
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .description('Updates all or selected installed plugins to latest versions')
   .action(async plugins => {
     if (!config.find('.')) {
       Logger.errorp(
@@ -294,8 +298,8 @@ program
 
 program
   .command('check [pluginNames...]')
-  .description('Checks plugins for compatibility issues')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .description('Checks plugins for compatibility issues')
   .action(async plugins => {
     if (!config.find('.')) {
       Logger.errorp(
@@ -312,8 +316,8 @@ program
 
 program
   .command('init-plugin')
-  .description('Initializes a new plugin with the given name and settings')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .description('Initializes a new plugin with the given name and settings')
   .action(async () => {
     const { verbose } = program.opts();
     Logger.VERBOSE = verbose;
@@ -323,7 +327,7 @@ program
 
 program
   .command('plugin-init')
-  .description('Alias for init-plugin')
+  .description('Alias for ' + 'init-plugin'.yellow.underline)
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async () => {
     const { verbose } = program.opts();
@@ -334,12 +338,13 @@ program
 
 program
   .command('get-config <pluginName> [configName]')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .option('-j, --json', 'Print config as json')
   .description(
     'Gets a config for a plugin. If ' +
-      'configName'.underline +
+      'configName'.yellow.underline +
       ' is omitted, returns all config values.'
   )
-  .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async (pluginName, configName) => {
     if (!config.find('.')) {
       Logger.errorp(
@@ -350,25 +355,26 @@ program
       process.exit(1);
     }
     const { verbose } = program.opts();
+    const json = program.args.includes('-j') || program.args.includes('--json');
     Logger.VERBOSE = verbose;
     if (!configName) {
-      pluginUtil.listConfig(pluginName);
+      pluginUtil.listConfig(pluginName, json);
     } else {
-      pluginUtil.getConfig(pluginName, configName);
+      pluginUtil.getConfig(pluginName, configName, json);
     }
   });
 
 program
   .command('set-config <pluginName> [configName] [configValue]')
-  .description(
-    'Sets a config for a plugin. If ' +
-      'configValue'.underline +
-      ' is omitted, the config will be reset. If ' +
-      'configName'.underline +
-      ' is omitted, the entire plugin config will be reset.'
-  )
   .option('-y, --yes', 'Skip confirmation prompt')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .description(
+    'Sets a config for a plugin. If ' +
+      'configValue'.yellow.underline +
+      ' is omitted, the config will be reset. If ' +
+      'configName'.yellow.underline +
+      ' is omitted, the entire plugin config will be reset.'
+  )
   .action(async (pluginName, configName, configValue) => {
     if (!config.find('.')) {
       Logger.errorp(
@@ -378,7 +384,8 @@ program
       );
       process.exit(1);
     }
-    const { verbose, yes } = program.opts();
+    const { verbose } = program.opts();
+    const yes = program.args.includes('-y') || program.args.includes('--yes');
     Logger.VERBOSE = verbose;
     if (!configName) {
       pluginUtil.resetAllConfigs(pluginName, yes);

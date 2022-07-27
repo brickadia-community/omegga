@@ -727,19 +727,29 @@ async function loadPlugin(pluginName) {
   return plugin;
 }
 
-async function listConfig(pluginName) {
+async function listConfig(pluginName: string, json = false) {
   const plugin = await loadPlugin(pluginName);
   const configDoc = plugin.getDocumentation().config;
   const config = await plugin.storage.getConfig();
-  for (const key in config) {
-    if (!configDoc[key]) continue; // Skip unknown config keys.
-    const value = config[key];
-    log(key.cyan, '=', value.toString().yellow);
+  if (json) {
+    console.log(JSON.stringify(config, null, 2));
+  } else {
+    for (const key in config) {
+      if (!configDoc[key]) continue; // Skip unknown config keys.
+      const value = config[key];
+      log(
+        key.cyan,
+        '=',
+        ['string', 'number', 'boolean'].includes(typeof value)
+          ? value.toString().yellow
+          : JSON.stringify(value).yellow
+      );
+    }
   }
   process.exit();
 }
 
-async function getConfig(pluginName, configName: string) {
+async function getConfig(pluginName: string, configName: string, json = false) {
   const plugin = await loadPlugin(pluginName);
   const configDoc = plugin.getDocumentation().config[configName];
   if (configDoc === undefined) {
@@ -747,7 +757,11 @@ async function getConfig(pluginName, configName: string) {
     process.exit(1);
   }
   const config = await plugin.storage.getConfig();
-  log(config[configName]);
+  if (json) {
+    console.log(JSON.stringify(config[configName], null, 2));
+  } else {
+    log(config[configName]);
+  }
   process.exit();
 }
 
