@@ -46,6 +46,13 @@ If any of the above are true, [create a new user](#creating-a-new-user) and cont
 ### Quick Setup Troubleshooting
 
 
+  - If you are on Ubuntu and the output of `which npm` is `/bin/npm`
+    ```sh
+    sudo apt purge nodejs # uninstall old version of nodejs
+    # restart install instructions from this point
+    nvm install 16 # install nodejs via nvm
+    ```
+
   - If you get "`sh: 28: cd: can't cd to .`", you need to be in `bash` (and probably type `cd` to navigate out of root directory):
 
     ```sh
@@ -197,17 +204,26 @@ Note: `BRANCH-server` branches download only server data
 
 Narrow down where the issue might be with the following options:
 
-- If your brickadia is crashing and omegga works, type `/debug` into omegga console or run with `omegga --debug`
-- If your omegga isn't starting, run with `omegga --verbose`
+- If you forgot your server's password:
+  - terminal: `cat data/Saved/Config/LinuxServer/ServerSettings.ini | grep Password`
+- If your brickadia is crashing and omegga works:
+  - omegga console: `/debug`
+  - terminal: `omegga --debug`
+- If your omegga isn't starting
+  - terminal: `omegga --verbose`
 - If a plugin is crashing, message the plugin developer
-- If you are on Ubuntu and the output of `which npm` is `/bin/npm`, run `sudo apt purge nodejs` and restart install instructions from `nvm install 16`.
+  - discord: #plugin-bugs
+- If you are on Ubuntu and the output of `which npm` is `/bin/npm`
+  - terminal: `sudo apt purge nodejs` and restart install instructions from `nvm install 16`.
 - If you're getting an EACCES error when running `npm i -g omegga`:
   1. First, try [this](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally).
   2. If that doesn't work, try this horrible bodge method for WSL:
      1. Set your WSL to WSL 2
      2. `npm i -g omegga`
-     3. Set your WSL back to WSL 1
-- If you're getting a "gyp ERR! stack Error: not found: make" install [build-essential](https://wiki.gnucash.org/wiki/Install_Build_Tools)
+     3. Set your WSL back to WSL 1 (assuming you want wsl1)
+- If you're getting a "`gyp ERR! stack Error: not found: make`"
+  - Install [build-essential](https://wiki.gnucash.org/wiki/Install_Build_Tools)
+
 
 ## Uninstalling
 
@@ -226,50 +242,6 @@ rm ~/.config/Epic
 ```
 
 You will have to delete your omegga data folders manually
-
-# Planned Features
-
-- [ ] web interface (mostly done)
-  - [x] reload plugins
-  - [x] enable/disable plugins live
-  - [x] live plugin reloading/unloading state
-  - [x] browse chat history
-  - [x] manage plugins config
-  - [x] start/stop server
-  - [x] chat with players
-  - [ ] view recent console logs
-  - [x] view server status
-  - [x] multiple users
-  - [ ] roles for each user
-  - [ ] chatcmd history
-  - [x] track players kicked/banned
-  - [ ] automated/scheduled server restarting (when no one is on)
-- [x] terminal interface
-  - [x] reload plugins
-  - [x] chat with players
-  - [x] view recent console logs
-  - [x] view server status
-- [ ] metrics
-  - [ ] bricks over time charts
-  - [x] player online time tracking
-  - [x] chat logs
-  - [ ] chats/hour tracking
-- [x] plugins in other languages via JSON RPC over stdio
-  - [ ] LogWrangler impl for other languages
-  - [x] events sent JSON RPC
-- [ ] sandboxed node plugins (more secure, more stable)
-  - [x] running in own thread (worker)
-  - [x] running in own vm
-  - [x] can `require`
-  - [x] partial omegga spec (events, some features)
-  - [x] full omegga spec
-  - [ ] _good_ access restrictions (ask user for permission)
-- [x] plugin installation by `omegga install gh:user/repo`
-- [x] plugin updates by `omegga update`
-- [ ] server config bundling (making it easier to transfer configs)
-  - [ ] omegga.server.json
-    - [ ] list of installed omegga plugins, versions, and download urls
-    - [ ] list of roles, bans, role assignments
 
 # Plugins
 
