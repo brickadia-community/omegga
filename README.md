@@ -4,13 +4,27 @@ Read the README first before asking questions! [Join the discord](https://discor
 
 Omegga wraps brickadia's server console to provide interactivity and utility via plugins.
 
+Omegga plugins can do things like:
+
+- Add custom chat commands
+- Respond to and send chat messages
+- Load bricks to player's clipboards
+- Load/Clear regions of bricks
+- Damage/heal players
+- Give/remove weapons to players
+- Change the environment
+- Create/delete minigames, and join/leave players from minigames
+- Teleport players, detect player's positions
+- Grant players roles
+- Detect when a brick with an interact component is clicked
+
 ## Screenshots
 
-[<img src="https://i.imgur.com/AqJF2T0.png" width="512"/>](https://i.imgur.com/AqJF2T0.png)
-[<img src="https://i.imgur.com/vGjKoB6.png" width="512"/>](https://i.imgur.com/vGjKoB6.png)
-[<img src="https://i.imgur.com/EhT1GBR.png" width="512"/>](https://i.imgur.com/EhT1GBR.png)
-[<img src="https://i.imgur.com/PLwgVlx.png" width="512"/>](https://i.imgur.com/PLwgVlx.png)
-[<img src="https://i.imgur.com/bCnQ5Pb.png" width="512"/>](https://i.imgur.com/bCnQ5Pb.png)
+[<img src="https://i.imgur.com/AqJF2T0.png" width="256"/>](https://i.imgur.com/AqJF2T0.png)
+[<img src="https://i.imgur.com/vGjKoB6.png" width="256"/>](https://i.imgur.com/vGjKoB6.png)
+[<img src="https://i.imgur.com/EhT1GBR.png" width="256"/>](https://i.imgur.com/EhT1GBR.png)
+[<img src="https://i.imgur.com/PLwgVlx.png" width="256"/>](https://i.imgur.com/PLwgVlx.png)
+[<img src="https://i.imgur.com/bCnQ5Pb.png" width="256"/>](https://i.imgur.com/bCnQ5Pb.png)
 
 ## Install
 
@@ -26,34 +40,44 @@ You can run omegga in the [Windows Subsystem for Linux](#wsl) (I recommend Ubunt
 
 If any of the above are true, [create a new user](#creating-a-new-user) and continue from there.
 
+If you need to run omegga as root, make sure your branch is `main-server` or `unstable-server`, as `main` will not work as root.
+
 ### Quick Setup (automatically download launcher)
 
-1. Install linux if you haven't already ([Windows Install](#wsl))
+1. Install linux if you haven't already ([Windows Install](#wsl) is not that bad)
 
 2. If you type `whoami` and it says "root", [create a new user](#creating-a-new-user) and come back. This step is usually only necessary for people using a VPS.
 
 3. Run these commands (Installs a node installer, installs node, installs omegga):
 
-   ```sh
-   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
-   . ~/.nvm/nvm.sh
-   nvm install 16
-   npm i -g omegga
-   ```
+    ```sh
+    # download nvm
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+
+    # activate nvm
+    . ~/.nvm/nvm.sh
+
+    # install node version 16
+    nvm install 16
+
+    # install omegga
+    npm i -g omegga
+    ```
 
 4. Head over to [Running Omegga](#running) or troubleshoot below.
 
-### Quick Setup Troubleshooting
+### Install Troubleshooting
 
+If you are having issues running omegga, see the [troubleshooting](#troubleshooting) section for a potential fix. This section is for issues with installing.
 
   - If you are on Ubuntu and the output of `which npm` is `/bin/npm`
     ```sh
     sudo apt purge nodejs # uninstall old version of nodejs
     # restart install instructions from this point
-    nvm install 16 # install nodejs via nvm
+    nvm install 16 # install node version 16 via nvm
     ```
 
-  - If you get "`sh: 28: cd: can't cd to .`", you need to be in `bash` (and probably type `cd` to navigate out of root directory):
+  - If you get an error like "`sh: 28: cd: can't cd to .`", you need to be in `bash` (and probably type `cd` to navigate out of root directory):
 
     ```sh
     bash # use bash instead of sh
@@ -69,7 +93,7 @@ If any of the above are true, [create a new user](#creating-a-new-user) and cont
 
   - If you get an error like "`gyp ERR! stack Error: not found: make`" you need to install build-essential:
     ```sh
-    sudo apt install build-essential
+    sudo apt install build-essential # install make
     npm i -g omegga # re-run omegga install
     ```
 
@@ -93,7 +117,7 @@ Omegga depends on:
 - linux
   - [Windows Install](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) (WSL 1 or WSL 2)
     - [Windows Ubuntu](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6)
-- Node v14+ ([ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions))
+- Node v16+ ([ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions), but `nvm` from Quick Setup is better)
 - One of:
   - `tar` (most linuxes come with this, though you can `sudo apt install tar`)
   - [Brickadia linux launcher](https://brickadia.com/download)
@@ -104,21 +128,23 @@ Omegga is installed as a global npm package
 
 Alternatively, you can use a development/local omegga.
 
-    # clone omegga
-    git clone https://github.com/brickadia-community/omegga.git && cd omegga
+```sh
+# clone omegga
+git clone https://github.com/brickadia-community/omegga.git && cd omegga
 
-    # install dependencies
-    npm i
+# install dependencies
+npm i
 
-    # point development omegga to global npm bin
-    npm link
+# point development omegga to global npm bin
+npm link
 
-    # build the web ui, build omegga's typescript, and the plugin omegga.d.ts
-    npm run dist
+# build the web ui, build omegga's typescript, and the plugin omegga.d.ts
+npm run dist
+```
 
 If you accidentally install both from Github and `npm i -g omegga`, you can run `npm unlink omegga` to stop npm from using the git one.
 
-If you have EACCES errors on WSL, see the [troubleshooting](#troubleshooting) section for a potential fix.
+Any errors, see the [troubleshooting](#troubleshooting) section for a potential fix.
 
 ### WSL
 
@@ -156,21 +182,30 @@ useradd -m brickadia
 passwd brickadia
 # allow "sudo apt install ...." to work in this user
 usermod -aG sudo brickadia
-# become this user
-su brickadia
+
+# become this user, navigate to user's home, and run bash
+su brickadia -c "cd && bash"
+
+# if you were root, you would be in /root (root's home) instead of /home/brickadia
+# this fixes some issues when installing omegga on a VPS
 ```
 
 ## Running
 
 It's recommend to create a folder first _before_ starting your server:
 
-    mkdir myServer && cd myServer
+```sh
+# change "myServer" to "brickadia" or "server" or whatever you want
+mkdir myServer && cd myServer
+
+# this will place a folder called "myServer" in your home (cd ~)
+```
 
 To start a server, simply type the following in a linux shell after install:
 
     omegga
 
-Omegga will prompt for credentials as necessary and only stores the auth tokens brickadia generates on login. **Omegga does not store your password**
+Omegga will prompt for credentials as necessary and only stores the auth tokens brickadia generates on login. **Omegga does not store your password**.
 
 ## Updating
 
@@ -182,7 +217,9 @@ Omegga will tell you when it's out of date. You can update with this command:
 
 - CLI config via `omegga config`
 - Omegga config is located in a generated `omegga-config.yml`
-- Plugin config is handled by plugin or inside the web-ui's plugins tab.
+- Plugin config is managed inside the web-ui's plugins tab.
+- Plugin config can also be set with `omegga set-config pluginName configName configValue`
+- Plugin config can be fetched with `omegga get-config pluginName`
 
 Example available `omegga-config.yml` fields
 
@@ -215,7 +252,7 @@ Narrow down where the issue might be with the following options:
   - discord: #plugin-bugs
 - If you are on Ubuntu and the output of `which npm` is `/bin/npm`
   - terminal: `sudo apt purge nodejs` and restart install instructions from `nvm install 16`.
-- If you're getting an EACCES error when running `npm i -g omegga`:
+- If you're getting an `EACCES` error when running `npm i -g omegga`:
   1. First, try [this](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally).
   2. If that doesn't work, try this horrible bodge method for WSL:
      1. Set your WSL to WSL 2
@@ -257,18 +294,37 @@ You can install plugins with the `omegga install https://github.com/user/repo` c
 
 You can install plugins using a shorthand `omegga install gh:user/repo` which will install the plugin located at `https://github.com/user/omegga-repo`
 
+This is the recommended way of installing plugins as it automatically runs a setup script when present.
+
 ### Manual Installation
 
-Usually you can run `git clone https://github.com/user/repo` inside your `plugins` folder (created when you run `omegga` for the first time):
+You can clone a plugin's github repo inside the `plugins` folder (created when you run `omegga` for the first time):
 
 - `cd plugins` to navigate to plugins folder
+- `git clone https://github.com/user/repo` to download the plugin
 - Make sure to read the plugin's README file for after-install instructions
 
 ## Updating Plugins
 
-Plugins can be updated with `omegga update` or `omegga update pluginName anotherPluginName`
+Plugins can be updated with `omegga update`:
+
+```sh
+# update all plugin
+omegga update
+
+# update plugins named "pluginName" and "anotherPluginName"
+omegga update pluginName anotherPluginName
+```
 
 Plugins may also need to be updated based on the project's README file.
+
+## Uninstalling Plugins
+
+Plugins can be installed by deleting the plugin's respective folder:
+
+```sh
+rm -rf plugins/PLUGIN_NAME
+```
 
 ## Creating Plugins
 
