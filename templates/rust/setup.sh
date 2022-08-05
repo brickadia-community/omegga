@@ -6,3 +6,5 @@ if command -v cargo; then
 else
   echo "WARNING: Rust is not installed. This plugin could not be built. It will not work unless it has a bundled binary."
 fi
+
+exit 0

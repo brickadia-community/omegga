@@ -278,7 +278,9 @@ export async function install(plugins: string[], _options: unknown) {
     if (fs.existsSync(postInstallPath)) {
       plgLog(plugin, 'Running post install script...');
       try {
+        verboseLog('Changing permission of', postInstallPath);
         fs.chmodSync(postInstallPath, '0755');
+        verboseLog('Executing bash file');
         let { stdout, stderr } = await exec(postInstallPath, {
           cwd: pluginPath,
           shell: 'bash',
