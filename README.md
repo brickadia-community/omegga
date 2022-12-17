@@ -57,8 +57,8 @@ If you need to run omegga as root, make sure your branch is `main-server` or `un
     # activate nvm
     . ~/.nvm/nvm.sh
 
-    # install node version 16
-    nvm install 16
+    # install node version 18
+    nvm install 18
 
     # install omegga
     npm i -g omegga
