@@ -3,7 +3,7 @@ import { IServerConfig } from '@config/types';
 import type Omegga from '@omegga/server';
 import { explode } from '@util/pattern';
 import { parseBrickadiaTime } from '@util/time';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import chokidar from 'chokidar';
 import EventEmitter from 'events';
 import Datastore from 'nedb-promises';
