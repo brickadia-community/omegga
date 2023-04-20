@@ -6,7 +6,7 @@ import 'colors';
 import commander from 'commander';
 import fs from 'fs';
 import path from 'path';
-import updateNotifier from 'update-notifier';
+import updateNotifier from 'update-notifier-cjs';
 const pkg = require('../package.json');
 import { auth, config as omeggaConfig, pluginUtil, Terminal } from './cli';
 import { IConfig } from './config/types';
