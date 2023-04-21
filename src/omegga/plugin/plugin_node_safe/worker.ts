@@ -24,6 +24,7 @@ import webpack, { Stats } from 'webpack';
 import { parentPort } from 'worker_threads';
 import { ProxyOmegga } from './proxyOmegga';
 import 'source-map-support/register';
+import { ExternalItemFunctionData } from 'webpack';
 
 const MAIN_FILE = 'omegga.plugin.js';
 const MAIN_FILE_TS = 'omegga.plugin.ts';
@@ -151,8 +152,22 @@ async function createVm(
               path: tsBuildPath,
               filename: TS_BUILD_FILE,
             },
+            externals: [
+              function (
+                { request }: ExternalItemFunctionData,
+                callback: (err?: Error, result?: string) => void
+              ) {
+                if (request.match(/\.node$/)) {
+                  return callback(
+                    null,
+                    'commonjs ' + path.resolve(pluginPath, request)
+                  );
+                }
+                callback();
+              },
+            ],
             resolve: {
-              extensions: ['.ts', '.js', '.json'],
+              extensions: ['.ts', '.js', '.json', '.node'],
               alias: {
                 // src is the only hard coded path
                 src: path.resolve(pluginPath, 'src'),
