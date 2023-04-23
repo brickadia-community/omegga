@@ -1,7 +1,7 @@
 import type Terminal from '@cli/terminal';
 
 export default class Logger {
-  static VERBOSE: boolean;
+  static VERBOSE = false;
   static terminal: Terminal;
 
   /**

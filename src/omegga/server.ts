@@ -65,9 +65,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   host?: { id: string; name: string };
   players: OmeggaPlayer[];
 
-  started: boolean;
-  starting: boolean;
-  stopping: boolean;
+  started = false;
+  starting = false;
+  stopping = false;
   currentMap: string;
 
   getServerStatus: () => Promise<IServerStatus>;

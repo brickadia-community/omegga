@@ -44,7 +44,7 @@ const program = commander
       program.help();
       process.exit(1);
     }
-    Logger.VERBOSE = verbose;
+    Logger.VERBOSE = Boolean(verbose);
 
     // default working directory is the one specified in config
     let workDir = config.store.get('defaultOmegga');
@@ -193,7 +193,8 @@ program
       global: globalAuth,
     }) => {
       const { verbose, debug } = program.opts();
-      Logger.VERBOSE = verbose;
+      Logger.VERBOSE = Boolean(verbose);
+
       const workdirPath = path.join(
         config.store.get('defaultOmegga'),
         'data/Saved/Auth'
@@ -272,7 +273,7 @@ program
       process.exit(1);
     }
     const { verbose, force } = program.opts();
-    Logger.VERBOSE = verbose;
+    Logger.VERBOSE = Boolean(verbose);
     pluginUtil.install(plugins, { verbose, force });
   });
 
@@ -292,7 +293,7 @@ program
       process.exit(1);
     }
     const { verbose, force } = program.opts();
-    Logger.VERBOSE = verbose;
+    Logger.VERBOSE = Boolean(verbose);
     pluginUtil.update(plugins, { verbose, force });
   });
 
@@ -310,7 +311,7 @@ program
       process.exit(1);
     }
     const { verbose } = program.opts();
-    Logger.VERBOSE = verbose;
+    Logger.VERBOSE = Boolean(verbose);
     pluginUtil.check(plugins, { verbose });
   });
 
@@ -320,7 +321,7 @@ program
   .description('Initializes a new plugin with the given name and settings')
   .action(async () => {
     const { verbose } = program.opts();
-    Logger.VERBOSE = verbose;
+    Logger.VERBOSE = Boolean(verbose);
 
     pluginUtil.init();
   });
@@ -331,7 +332,7 @@ program
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async () => {
     const { verbose } = program.opts();
-    Logger.VERBOSE = verbose;
+    Logger.VERBOSE = Boolean(verbose);
 
     pluginUtil.init();
   });
@@ -356,7 +357,7 @@ program
     }
     const { verbose } = program.opts();
     const json = program.args.includes('-j') || program.args.includes('--json');
-    Logger.VERBOSE = verbose;
+    Logger.VERBOSE = Boolean(verbose);
     if (!configName) {
       pluginUtil.listConfig(pluginName, json);
     } else {
@@ -386,7 +387,7 @@ program
     }
     const { verbose } = program.opts();
     const yes = program.args.includes('-y') || program.args.includes('--yes');
-    Logger.VERBOSE = verbose;
+    Logger.VERBOSE = Boolean(verbose);
     if (!configName) {
       pluginUtil.resetAllConfigs(pluginName, yes);
     } else if (!configValue) {

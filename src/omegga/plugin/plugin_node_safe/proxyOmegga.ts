@@ -1,4 +1,3 @@
-import Logger from '@/logger';
 import {
   OmeggaCore,
   OmeggaLike,
@@ -33,13 +32,14 @@ export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({
     {
       host: Object.freeze({ ...omegga.host }),
       version: omegga.version,
-      verbose: Logger.VERBOSE,
+      verbose: omegga.verbose,
       savePath: omegga.savePath,
       path: omegga.path,
       configPath: omegga.configPath,
       presetPath: omegga.presetPath,
       starting: omegga.starting,
       started: omegga.started,
+      stopping: omegga.stopping,
       config: omegga.config,
       currentMap: omegga.currentMap,
     },
