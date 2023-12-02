@@ -347,7 +347,7 @@ class Player implements OmeggaPlayer {
   async getPawn(): Promise<string> {
     // given a player controller, match the player's pawn
     const pawnRegExp = new RegExp(
-      `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\\d+)'`
+      `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = (?:BP_FigureV2_C'.+:PersistentLevel\\.)?(?<pawn>BP_FigureV2_C_\\d+|None)'?`
     );
 
     // wait for the pawn watcher to return a pawn
