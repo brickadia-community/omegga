@@ -63,5 +63,12 @@
   },
   "exclude": [
     "./webserver/frontend",
-  ]
+  ],
+  "tsc-alias": {
+    "replacers": {
+      "base-url": {
+        "enabled": false
+      }
+    }
+  }
 }

@@ -72,7 +72,7 @@
     "mini-css-extract-plugin": "^1.0.0",
     "sass": "^1.42.1",
     "sass-loader": "^12.1.0",
-    "ttypescript": "^1.5.13",
+    "tsc-alias": "^1.8.8",
     "typescript": "^4.6.3",
     "typescript-transform-paths": "^3.3.1",
     "url-loader": "^4.1.1",
@@ -96,7 +96,7 @@
     "watch": "npx webpack --watch",
     "dist": "MODE=production npx webpack && npm run build && npm run dts",
     "build:frontend": "npx webpack",
-    "build": "npx ttsc --build \"src/\"",
+    "build": "npx tsc --build \"src/\" && tsc-alias -p \"src/tsconfig.json\"",
     "dts": "npx dts-bundle-generator --inline-declare-global --no-banner --external-inlines brs-js -o templates/safe-ts/omegga.d.ts -- ./src/plugin.ts"
   },
   "author": "Meshiest",
