@@ -344,7 +344,7 @@ class Player implements OmeggaPlayer {
     );
   }
 
-  async getPawn(): Promise<string | undefined> {
+  async getPawn(): Promise<string | null> {
     // given a player controller, match the player's pawn
     const pawnRegExp = new RegExp(
       `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = (?:BP_FigureV2_C'.+:PersistentLevel\\.)?(?<pawn>BP_FigureV2_C_\\d+|None)'?`
@@ -361,12 +361,12 @@ class Player implements OmeggaPlayer {
       { first: 'index', timeoutDelay: 500 }
     );
 
-    if (pawn === 'None') return;
+    if (pawn === 'None') return null;
 
     return pawn;
   }
 
-  async getPosition(): Promise<[number, number, number] | undefined> {
+  async getPosition(): Promise<[number, number, number] | null> {
     // this is here because my text editor had weird syntax highlighting glitches when the other omeggas were replaced with this.#omegga...
     // guess the code is "too new" :egg:
     const omegga = this.#omegga;
@@ -387,7 +387,7 @@ class Player implements OmeggaPlayer {
       { first: 'index', timeoutDelay: 100 }
     );
 
-    if (pawn === 'None') return;
+    if (pawn === 'None') return null;
 
     // given a player's pawn, match the player's position
     const posRegExp = new RegExp(
