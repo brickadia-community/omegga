@@ -361,7 +361,7 @@ class Player implements OmeggaPlayer {
       { first: 'index', timeoutDelay: 500 }
     );
 
-    if(pawn === "None") return;
+    if (pawn === 'None') return;
 
     return pawn;
   }
@@ -381,14 +381,13 @@ class Player implements OmeggaPlayer {
       {
         groups: { pawn },
       },
-    // pawnRegExp
     ] = await omegga.watchLogChunk<RegExpMatchArray>(
       'GetAll BP_PlayerController_C Pawn Name=' + this.controller,
       pawnRegExp,
       { first: 'index', timeoutDelay: 100 }
     );
 
-    if(pawn === "None") return;
+    if (pawn === 'None') return;
 
     // given a player's pawn, match the player's position
     const posRegExp = new RegExp(
