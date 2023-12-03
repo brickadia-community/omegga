@@ -680,9 +680,9 @@ class Player implements OmeggaPlayer {
     const saveData = await this.#omegga.getSaveData({
       center: templateBounds.center,
       extent: [
-        (templateBounds.maxBound[0] - templateBounds.minBound[0]) / 2,
-        (templateBounds.maxBound[1] - templateBounds.minBound[1]) / 2,
-        (templateBounds.maxBound[2] - templateBounds.minBound[2]) / 2,
+        Math.round((templateBounds.maxBound[0] - templateBounds.minBound[0]) / 2),
+        Math.round((templateBounds.maxBound[1] - templateBounds.minBound[1]) / 2),
+        Math.round((templateBounds.maxBound[2] - templateBounds.minBound[2]) / 2),
       ],
     });
 
