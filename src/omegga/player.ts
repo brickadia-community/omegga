@@ -344,10 +344,10 @@ class Player implements OmeggaPlayer {
     );
   }
 
-  async getPawn(): Promise<string> {
+  async getPawn(): Promise<string | null> {
     // given a player controller, match the player's pawn
     const pawnRegExp = new RegExp(
-      `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\\d+)'`
+      `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = (?:BP_FigureV2_C'.+:PersistentLevel\\.)?(?<pawn>BP_FigureV2_C_\\d+|None)'?`
     );
 
     // wait for the pawn watcher to return a pawn
@@ -361,17 +361,19 @@ class Player implements OmeggaPlayer {
       { first: 'index', timeoutDelay: 500 }
     );
 
+    if (pawn === 'None') return null;
+
     return pawn;
   }
 
-  async getPosition(): Promise<[number, number, number]> {
+  async getPosition(): Promise<[number, number, number] | null> {
     // this is here because my text editor had weird syntax highlighting glitches when the other omeggas were replaced with this.#omegga...
     // guess the code is "too new" :egg:
     const omegga = this.#omegga;
 
     // given a player controller, match the player's pawn
     const pawnRegExp = new RegExp(
-      `BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = BP_FigureV2_C'.+?:PersistentLevel.(?<pawn>BP_FigureV2_C_\\d+)'`
+      `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = (?:BP_FigureV2_C'.+:PersistentLevel\\.)?(?<pawn>BP_FigureV2_C_\\d+|None)'?`
     );
 
     // wait for the pawn watcher to return a pawn
@@ -379,14 +381,13 @@ class Player implements OmeggaPlayer {
       {
         groups: { pawn },
       },
-    ] = await omegga.addWatcher(pawnRegExp, {
-      // request the pawn for this player's controller (should only be one)
-      exec: () =>
-        omegga.writeln(
-          `GetAll BP_PlayerController_C Pawn Name=${this.controller}`
-        ),
-      timeoutDelay: 100,
-    });
+    ] = await omegga.watchLogChunk<RegExpMatchArray>(
+      'GetAll BP_PlayerController_C Pawn Name=' + this.controller,
+      pawnRegExp,
+      { first: 'index', timeoutDelay: 100 }
+    );
+
+    if (pawn === 'None') return null;
 
     // given a player's pawn, match the player's position
     const posRegExp = new RegExp(
