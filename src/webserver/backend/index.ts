@@ -152,7 +152,7 @@ export default class Webserver {
     // use the session middleware
     this.io.use((socket, next) => {
       const req = socket.request as express.Request;
-      const res = req.res as express.Response<any, { userId: string }>;
+      const res = (req.res || {}) as express.Response<any, { userId: string }>;
 
       session(req, res, async () => {
         // check if user is authenticated
