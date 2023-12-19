@@ -23,6 +23,7 @@ export async function getSSLKeys(dataPath: string) {
       // make sure the cert is not expired
       if (certData.expires < now) certData = undefined;
     } catch (e) {
+      console.error('1)', e);
       // nothing to do here - probably bad json
     }
   }
@@ -39,6 +40,7 @@ export async function getSSLKeys(dataPath: string) {
       fs.writeFileSync(certsPath, JSON.stringify(certData));
       certData.new = true;
     } catch (e) {
+      console.error('2)', e);
       // probably missing openssl or something
     }
   }

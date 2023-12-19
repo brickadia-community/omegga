@@ -107,9 +107,9 @@ export default class Webserver {
         // warn the user
         log(
           ':>'.yellow,
-          'Running web server with http - install ',
+          'Running web server with http - install',
           'openssl'.yellow.underline,
-          ' for https (more secure)'
+          'for https (more secure)'
         );
       }
 
