@@ -59,12 +59,25 @@ export default class BrickadiaServer extends EventEmitter {
 
   // start the server child process
   start() {
-    const { email, password } = this.config.credentials || {};
-    Logger.verbose(
-      'Starting server',
-      (!email && !password ? 'without' : 'with').yellow,
-      'credentials'
-    );
+    const {
+      email,
+      password,
+      token: confToken,
+    }: { email?: string; password?: string; token?: string } = this.config
+      .credentials || {};
+
+    const token = confToken || process.env.BRICKADIA_TOKEN;
+
+    if (token) {
+      Logger.verbose('Starting server with hosting token');
+    } else {
+      Logger.verbose(
+        'Starting server',
+        (!email && !password ? 'without' : 'with').yellow,
+        'credentials'
+      );
+    }
+
     Logger.verbose(
       'Running',
       (this.config.server.__LOCAL
@@ -85,25 +98,33 @@ export default class BrickadiaServer extends EventEmitter {
       '--',
     ];
 
+    const params = [
+      '--output=L',
+      '--',
+      ...launchArgs,
+      this.config.server.map && `${this.config.server.map}`,
+      '-NotInstalled',
+      '-log',
+      require('../util/wsl') === 1 ? '-OneThread' : null,
+      this.path ? `-UserDir="${this.path}"` : null,
+      token ? `-Token="${token}"` : null, // remove token argument if not provided
+      !token && email ? `-User="${email}"` : null, // remove email argument if not provided or token is provided
+      !token && password ? `-Password="${password}"` : null, // remove password argument if not provided or token is provided
+      `-port="${this.config.server.port}"`,
+      this.config.server.launchArgs,
+    ].filter(Boolean);
+    Logger.verbose(
+      'Params for spawn',
+      params
+        .join(' ')
+        .replace(/-User=".*?"/, '-User="<hidden>"')
+        .replace(/-Password=".*?"/, '-Password="<hidden>"')
+    );
+
     // Either unbuffer or stdbuf must be used because brickadia's output is buffered
     // this means that multiple lines can be bundled together if the output buffer is not full
     // unfortunately without stdbuf or unbuffer, the output would not happen immediately
-    this.#child = spawn(
-      'stdbuf',
-      [
-        '--output=L',
-        '--',
-        ...launchArgs,
-        this.config.server.map && `${this.config.server.map}`,
-        '-NotInstalled',
-        '-log',
-        require('../util/wsl') === 1 ? '-OneThread' : null,
-        this.path ? `-UserDir="${this.path}"` : null,
-        email ? `-User="${email}"` : null, // remove email argument if not provided
-        password ? `-Password="${password}"` : null, // remove password argument if not provided
-        `-port="${this.config.server.port}"`,
-      ].filter(Boolean)
-    ); // remove unused arguments
+    this.#child = spawn('stdbuf', params); // remove unused arguments
 
     Logger.verbose(
       'Spawn process',

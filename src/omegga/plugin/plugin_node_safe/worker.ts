@@ -321,9 +321,9 @@ async function createVm(
     } catch (e) {
       emit(
         'error',
-        'failed to read plugin source: ' + e?.stack ?? e.toString()
+        'failed to read plugin source: ' + (e?.stack ?? e.toString())
       );
-      throw 'failed to read plugin source: ' + e?.stack ?? e.toString();
+      throw 'failed to read plugin source: ' + (e?.stack ?? e.toString());
     }
   }
 
@@ -335,7 +335,7 @@ async function createVm(
   } catch (e) {
     emit('error', 'plugin failed to init');
     Logger.errorp(pluginName.brightRed, e);
-    throw 'plugin failed to init: ' + e?.stack ?? e.toString();
+    throw 'plugin failed to init: ' + (e?.stack ?? e.toString());
   }
 
   if (

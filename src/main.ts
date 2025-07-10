@@ -1,3 +1,4 @@
+import { CONFIG_AUTH_DIR } from './softconfig';
 import soft from '@/softconfig';
 import * as config from '@config';
 import Omegga from '@omegga/server';
@@ -25,7 +26,7 @@ notifier.notify();
 const createDefaultConfig = () => {
   Logger.logp('Created default config file');
   config.write(soft.CONFIG_FILENAMES[0] + '.yml', config.defaultConfig);
-  file.mkdir('data/Saved/Builds');
+  file.mkdir('data/${soft.CONFIG_SAVED_DIR}/Builds');
   file.mkdir('plugins');
   return config.defaultConfig;
 };
@@ -77,7 +78,12 @@ const program = commander
       conf = createDefaultConfig();
     } else {
       Logger.verbose('Reading config file');
-      conf = config.read(configFile);
+      try {
+        conf = config.read(configFile);
+      } catch (error) {
+        Logger.errorp('Error reading config file');
+        Logger.verbose(error);
+      }
     }
 
     // if local install is provided
@@ -86,21 +92,44 @@ const program = commander
       conf.server.__LOCAL = true;
     }
 
+    const hasHostingToken = Boolean(
+      conf?.credentials?.['token'] ?? process.env.BRICKADIA_AUTH_TOKEN
+    );
+
     // check if the auth files don't exist
     if (
-      !auth.exists(path.join(workDir, soft.DATA_PATH, 'Saved/Auth')) &&
-      !auth.exists()
+      !hasHostingToken &&
+      !auth.exists(
+        path.join(
+          workDir,
+          soft.DATA_PATH,
+          conf?.server?.savedDir ?? soft.CONFIG_SAVED_DIR,
+          conf?.server?.authDir ?? soft.CONFIG_AUTH_DIR
+        )
+      )
     ) {
       const success = await auth.prompt({
         debug,
-        email: process.env.BRICKADIA_USER ?? undefined,
-        password: process.env.BRICKADIA_PASS ?? undefined,
-        branch: conf?.server?.branch ?? undefined,
+        email: conf?.credentials?.['email'] ?? process.env.BRICKADIA_USER,
+        password: conf?.credentials?.['password'] ?? process.env.BRICKADIA_PASS,
+        branch: conf?.server?.branch,
+        authDir: conf?.server?.authDir,
+        savedDir: conf?.server?.savedDir,
+        launchArgs: conf?.server?.launchArgs,
       });
       if (!success) {
         Logger.errorp('Start aborted - could not generate auth tokens');
         process.exit(1);
       }
+    } else {
+      if (hasHostingToken)
+        Logger.verbose(
+          'Skipping auth token generation due to host token presence'
+        );
+      else
+        Logger.verbose(
+          'Skipping auth token generation due to existing auth files'
+        );
     }
 
     // build options
@@ -168,7 +197,7 @@ program
       'omegga config list'.yellow.underline +
       ' for current settings and available fields'
   )
-  .action(async (field, value) => {
+  .action((field, value) => {
     if (!field) field = 'list';
     omeggaConfig(field, value, program.opts());
   });
@@ -195,49 +224,77 @@ program
       const { verbose, debug } = program.opts();
       Logger.VERBOSE = Boolean(verbose);
 
+      let branch: string, authDir: string, savedDir: string, launchArgs: string;
+
+      // if there's a config in the current directory, use that one instead
+      if (config.find('.')) workDir = '.';
+
+      // check if configured path exists
+      if (fs.existsSync(workDir) && fs.statSync(workDir).isDirectory) {
+        Logger.verbose('Using working directory', workDir.yellow);
+        // find the config for the working directory
+        const configFile = config.find(workDir);
+        Logger.verbose('Target config file:', configFile?.yellow);
+        try {
+          // read the config and extract the branch
+          const conf = config.read(configFile);
+          Logger.verbose(
+            'Auth config:',
+            conf?.server ?? 'no server config'.grey
+          );
+          branch = conf?.server?.branch;
+          authDir = conf?.server?.authDir;
+          savedDir = conf?.server?.savedDir;
+          launchArgs = conf?.server?.launchArgs;
+        } catch (error) {
+          Logger.errorp('Error reading config file');
+          Logger.verbose(error);
+        }
+      } else {
+        Logger.verbose('Using default working directory', workDir.yellow);
+      }
+
+      savedDir ??= soft.CONFIG_SAVED_DIR;
+
       const workdirPath = path.join(
         config.store.get('defaultOmegga'),
-        'data/Saved/Auth'
+        `data/${savedDir}/Auth`
       );
 
       if (globalAuth || localAuth) {
         if (globalAuth) {
-          Logger.logp('Clearing auth files from', auth.AUTH_PATH.yellow);
-          auth.clean();
+          const globalAuthPath = path.join(
+            soft.CONFIG_HOME,
+            savedDir !== soft.CONFIG_SAVED_DIR ? savedDir : '',
+            authDir ?? soft.CONFIG_AUTH_DIR
+          );
+          Logger.logp('Clearing auth files from', globalAuthPath.yellow);
+          auth.clean(globalAuthPath);
         }
         if (workDir) {
           Logger.logp('Clearing auth files from', workdirPath.yellow);
           await file.rmdir(workdirPath);
         }
         if (localAuth) {
-          const localPath = path.resolve('data/Saved/Auth');
+          const localPath = path.resolve(
+            `data/${savedDir}/`,
+            authDir ?? soft.CONFIG_AUTH_DIR
+          );
           Logger.logp('Clearing auth files from', localPath.yellow);
           await file.rmdir(localPath);
         }
         return;
-      } else {
-        let branch;
-
-        // if there's a config in the current directory, use that one instead
-        if (config.find('.')) workDir = '.';
-
-        // check if configured path exists
-        if (fs.existsSync(workDir) && fs.statSync(workDir).isDirectory) {
-          // find the config for the working directory
-          const configFile = config.find(workDir);
-          try {
-            // read the config and extract the branch
-            const conf = config.read(configFile);
-            branch = conf?.server?.branch;
-          } catch (error) {
-            Logger.errorp('Error reading config file');
-            Logger.verbose(error);
-          }
-        }
-
-        // auth with that branch
-        auth.prompt({ email, password, debug, branch });
       }
+
+      auth.prompt({
+        email,
+        password,
+        debug,
+        branch,
+        authDir,
+        savedDir,
+        launchArgs,
+      });
     }
   );
 

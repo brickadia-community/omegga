@@ -7,10 +7,12 @@ const join: MatchGenerator<Player> = omegga => {
     counter: string;
     UserName?: string;
     UserId?: string;
+    DisplayName?: string;
   }[] = [];
 
   // username + id to get player state and controller
   const joiningPlayers: {
+    displayName: string;
     name: string;
     id: string;
     state?: string;
@@ -21,7 +23,7 @@ const join: MatchGenerator<Player> = omegga => {
   const stateRegExp =
     /BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.PlayerNamePrivate = (?<name>.+)$/;
   const controllerRegExp =
-    /BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.Owner = BP_PlayerController_C'.+?:PersistentLevel.(?<controller>BP_PlayerController_C_\d+)'/;
+    /BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.Owner = .*?BP_PlayerController_C'.+?:PersistentLevel.(?<controller>BP_PlayerController_C_\d+)'/;
 
   return {
     // listen for join events and wait for PlayerController info
@@ -39,12 +41,15 @@ const join: MatchGenerator<Player> = omegga => {
           }
 
           // match on username or user id
-          const match = data.match(/^(?<field>UserName|UserId): (?<value>.+)$/);
+          const match = data.match(
+            /^(?<field>UserName|UserId|DisplayName): (?<value>.+)$/
+          );
 
           // put that value in the join data
           if (match)
-            joinData[match.groups.field as 'UserName' | 'UserId'] =
-              match.groups.value;
+            joinData[
+              match.groups.field as 'UserName' | 'UserId' | 'DisplayName'
+            ] = match.groups.value;
 
           // LogNet lets us know the player successfully joined
         } else if (generator == 'LogNet') {
@@ -58,6 +63,7 @@ const join: MatchGenerator<Player> = omegga => {
 
             // found joined player, now we need to find the BRPlayerState
             joiningPlayers.push({
+              displayName: joinData.DisplayName,
               name: joinData.UserName,
               id: joinData.UserId,
             });
@@ -105,6 +111,7 @@ const join: MatchGenerator<Player> = omegga => {
           return new Player(
             omegga,
             player.name,
+            player.displayName,
             player.id,
             player.controller,
             player.state

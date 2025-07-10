@@ -74,6 +74,9 @@ export interface OmeggaPlayer {
   /** player name */
   name: string;
 
+  /** player display name */
+  displayName: string;
+
   /** player uuid */
   id: string;
 
@@ -96,7 +99,7 @@ export interface OmeggaPlayer {
   /**
    * Get raw player info (to feed into a constructor)
    */
-  raw(): [string, string, string, string];
+  raw(): [string, string, string, string, string];
 
   /**
    * True if the player is the host
@@ -475,6 +478,8 @@ export interface OmeggaLike
   configPath: string;
   /** path to saves */
   savePath: string;
+  /** path to worlds */
+  worldPath: string;
   /** path to presets */
   presetPath: string;
 
@@ -713,6 +718,54 @@ export interface OmeggaCore {
    * @return Path to string
    */
   getSavePath(saveName: string): string;
+
+  /**
+   * Get all worlds in the worlds folder and child folders
+   */
+  getWorlds(): string[];
+
+  /**
+   * Checks if a world exists and returns an absolute path
+   * @param worldName World name
+   * @return Path to string
+   */
+  getWorldPath(worldName: string): string;
+
+  /**
+   * Get a list of revisions for a world
+   * @param worldName World name
+   */
+  getWorldRevisions(
+    worldName: string
+  ): Promise<{ index: number; date: Date; note: string }[]>;
+
+  /**
+   * Load a world by its name
+   * @param worldName World name
+   */
+  loadWorld(worldName: string): void;
+
+  /**
+   * Load a world at a specific revision
+   * @param worldName World name
+   */
+  loadWorldRevision(worldName: string, revision: number): void;
+
+  /**
+   * Save a world as a new name
+   * @param worldName World name
+   */
+  saveWorldAs(worldName: string): void;
+
+  /**
+   * Save the current world
+   */
+  saveWorld(): void;
+
+  /**
+   * Create an empty world with the given name
+   */
+  createEmptyWorld(worldName: string): void;
 
   /**
    * unsafely load save data (wrap in try/catch)

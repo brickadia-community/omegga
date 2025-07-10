@@ -1,12 +1,16 @@
 import { MatchGenerator } from './types';
 
 const auth: MatchGenerator<
-  ['host' | 'invalid' | 'valid', { name: string; id: string } | null]
+  [
+    'host' | 'invalid' | 'valid',
+    { displayName: string; name: string; id: string } | null
+  ]
 > = omegga => {
   // patterns for leave message and host detection
-  const hostRegExp = /^Logged in as (?<name>.+) \((?<id>[0-9a-fA-F-]{36})\)\.$/;
+  const hostRegExp =
+    /^Logged in as (?<displayName>.+) \((?<username>.+) - (?<id>[0-9a-fA-F-]{36})\)\.$/;
   const invalidRegExp =
-    /^(Error: AuthState is Invalid on dedicated server - exiting\.|Changing AuthState from \w+ to Invalid\.)$/;
+    /^(Error: AuthState is Invalid on dedicated server - exiting\.|Error: Authentication failed on dedicated server\. Exiting now\.|Changing AuthState from \w+ to Invalid\.)$/;
   const validRegExp =
     /^Changing AuthState from \w+ to Valid(Online|Offline)\.$/;
 
@@ -18,8 +22,7 @@ const auth: MatchGenerator<
 
       const { generator, data } = logMatch.groups;
       // check if log is an auth log
-      if (generator !== 'LogAuthManager' && generator !== 'LogAuthSubsystem')
-        return;
+      if (generator !== 'LogBRAuthSubsystem') return;
 
       // match against the patterns
       const hostMatch = data.match(hostRegExp);
@@ -28,8 +31,8 @@ const auth: MatchGenerator<
 
       // if the log matches one of the patterns, return the result
       if (hostMatch) {
-        const { name, id } = hostMatch.groups;
-        return ['host', { name, id }];
+        const { displayName, username, id } = hostMatch.groups;
+        return ['host', { displayName, name: username, id }];
       } else if (invalidMatch) {
         return ['invalid', null];
       } else if (validMatch) {

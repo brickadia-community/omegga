@@ -711,9 +711,9 @@ export default class Database extends EventEmitter {
       config = await this.stores.server.insert({
         type: 'autoRestartConfig',
         maxUptime: 48,
-        maxUptimeEnabled: true,
+        maxUptimeEnabled: false,
         emptyUptime: 24,
-        emptyUptimeEnabled: true,
+        emptyUptimeEnabled: false,
         dailyHour: 2,
         dailyHourEnabled: false,
         announcementEnabled: true,

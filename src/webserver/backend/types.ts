@@ -1,5 +1,4 @@
-import { Server as SocketIo } from 'socket.io';
-import { DefaultEventsMap } from 'socket.io/dist/typed-events';
+import { Server as SocketIo, DefaultEventsMap } from 'socket.io';
 
 declare module 'express-session' {
   interface SessionData {

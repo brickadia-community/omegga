@@ -15,6 +15,10 @@ export interface IBrickadiaConfig {
   publiclyListed?: boolean;
   welcomeMessage?: string;
 
+  authDir?: string;
+  savedDir?: string;
+  launchArgs?: string;
+
   __LOCAL?: boolean;
   __LEGACY?: string;
 }
@@ -22,10 +26,12 @@ export interface IBrickadiaConfig {
 export interface IConfig {
   omegga?: IServerConfig;
   server: IBrickadiaConfig;
-  credentials?: {
-    email: string;
-    password: string;
-  };
+  credentials?:
+    | {
+        email: string;
+        password: string;
+      }
+    | { token: string };
 }
 
 export type IConfigFormat = {

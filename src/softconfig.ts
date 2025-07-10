@@ -28,6 +28,7 @@ export const LOCAL_LAUNCHER = path.join(
 
 // path to auth files
 export const CONFIG_AUTH_DIR = 'Auth';
+export const CONFIG_SAVED_DIR = 'Saved';
 // files in Brickadia/Saved/Auth
 export const BRICKADIA_AUTH_FILES = [
   'OfflinePayload.bin',
@@ -74,6 +75,7 @@ export default {
   BRICKADIA_INSTALLS,
   LOCAL_LAUNCHER,
   CONFIG_AUTH_DIR,
+  CONFIG_SAVED_DIR,
   BRICKADIA_AUTH_FILES,
   TEMP_DIR_NAME,
   DATA_PATH,

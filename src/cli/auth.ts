@@ -38,13 +38,19 @@ async function authFromPrompt({
   password,
   debug = false,
   branch,
+  authDir,
+  savedDir,
+  launchArgs,
 }: {
   email?: string | null;
   password?: string | null;
   debug?: boolean;
   branch?: string;
+  authDir?: string;
+  savedDir?: string;
+  launchArgs?: string;
 }) {
-  let files;
+  let files: Record<string, Buffer>;
 
   if (!email || !password) {
     // prompt for user credentials
@@ -56,13 +62,24 @@ async function authFromPrompt({
     }
   }
 
+  if (!email || !password) {
+    console.error('!>'.red, 'Email and password are required');
+    return false;
+  }
+
   // generate auth tokens
   console.log('>>'.green, 'Generating auth tokens...');
   const timeout = setTimeout(() => {
     console.log('>>'.green, 'Probably also installing the game...');
   }, 10000);
   try {
-    files = await genAuthFiles(email, password, { debug, branch });
+    files = await genAuthFiles(email, password, {
+      debug,
+      branch,
+      authDir,
+      savedDir,
+      launchArgs,
+    });
     clearTimeout(timeout);
   } catch (err) {
     clearTimeout(timeout);
@@ -78,8 +95,13 @@ async function authFromPrompt({
   // save the tokens to the config path (will be copied when omegga starts)
   try {
     console.log('>>'.green, 'Storing auth tokens...');
-    file.mkdir(AUTH_PATH);
-    writeAuthFiles(AUTH_PATH, files);
+    const authPath = path.join(
+      soft.CONFIG_HOME,
+      savedDir !== soft.CONFIG_SAVED_DIR ? savedDir : '',
+      authDir ?? soft.CONFIG_AUTH_DIR
+    );
+    file.mkdir(authPath);
+    writeAuthFiles(authPath, files);
   } catch (err) {
     console.error('!>'.red, 'Error writing tokens to config\n', err);
     return false;
@@ -92,13 +114,16 @@ async function authFromPrompt({
 // check if auth files exist
 function authExists(dir?: string) {
   return soft.BRICKADIA_AUTH_FILES.every(f =>
-    fs.existsSync(path.join(dir || AUTH_PATH, f))
+    fs.existsSync(path.join(dir ?? AUTH_PATH, f))
   );
 }
 
 // delete auth files stored in config
-function deleteAuthFiles() {
-  file.rmdir(AUTH_PATH);
+// delete auth files stored in config
+function deleteAuthFiles(dir?: string) {
+  // will not delete files outside of the config home
+  if (dir && !dir.startsWith(soft.CONFIG_HOME)) return;
+  file.rmdir(dir ?? AUTH_PATH);
 }
 
 export const prompt = authFromPrompt;
