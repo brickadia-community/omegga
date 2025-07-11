@@ -12,7 +12,9 @@ const chat: MatchGenerator<{
   const kickRegExp =
     /^(?<name>.+?) was kicked by (?<kicker>.+?) \((?<reason>.+?)\)$/;
 
-  const exists = (name: string) => omegga.players.some(p => p.name === name);
+  const exists = (name: string) =>
+    // TODO: [BRICKADIA] display name used here instead of username...
+    omegga.players.some(p => p.displayName === name);
 
   const sanitizeMsg = (msg: string) =>
     msg

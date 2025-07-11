@@ -486,6 +486,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     return this.players.find(
       p =>
         p.name === target ||
+        // TODO [BRICKADIA] display name used here instead of username...
+        p.displayName === target ||
         p.id === target ||
         p.controller === target ||
         p.state === target

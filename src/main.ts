@@ -1,17 +1,24 @@
-import { CONFIG_AUTH_DIR } from './softconfig';
 import soft from '@/softconfig';
 import * as config from '@config';
 import Omegga from '@omegga/server';
 import * as file from '@util/file';
+import { execSync } from 'child_process';
 import 'colors';
 import commander from 'commander';
 import fs from 'fs';
 import path from 'path';
+import prompts from 'prompts';
 import updateNotifier from 'update-notifier-cjs';
-const pkg = require('../package.json');
 import { auth, config as omeggaConfig, pluginUtil, Terminal } from './cli';
 import { IConfig } from './config/types';
 import Logger from './logger';
+import {
+  STEAM_APP_ID,
+  STEAM_BRICKADIA_PATH,
+  STEAM_INSTALLS_DIR,
+  STEAMCMD_PATH,
+} from './softconfig';
+const pkg = require('../package.json');
 
 const notifier = updateNotifier({
   pkg,
@@ -38,9 +45,13 @@ const program = commander
     '-d, --debug',
     'Print all console logs rather than just chat messages'
   )
+  .option(
+    '-u, --update',
+    'Check for brickadia updates (on steam) and install them if available'
+  )
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async () => {
-    const { debug, verbose } = program.opts();
+    const { debug, verbose, update } = program.opts();
     if (program.args.length > 0) {
       program.help();
       process.exit(1);
@@ -50,9 +61,6 @@ const program = commander
     // default working directory is the one specified in config
     let workDir = config.store.get('defaultOmegga');
     Logger.verbose('Using working directory', workDir?.yellow);
-
-    // check if a local install exists
-    const localInstall = fs.existsSync(soft.LOCAL_LAUNCHER);
 
     // if there's a config in the current directory, use that one instead
     if (config.find('.')) workDir = '.';
@@ -86,6 +94,20 @@ const program = commander
       }
     }
 
+    const isSteam = !conf?.server?.branch;
+    if (isSteam) {
+      await setupSteam(conf, update);
+    } else {
+      Logger.warn(
+        'Brickadia will be launched with',
+        'non-steam launcher'.yellow
+      );
+    }
+
+    // check if a local install exists
+    const localInstall = fs.existsSync(soft.LOCAL_LAUNCHER);
+    const globalToken = auth.getGlobalToken();
+
     // if local install is provided
     if (localInstall) {
       Logger.verbose("Using omegga's brickadia-launcher");
@@ -93,7 +115,9 @@ const program = commander
     }
 
     const hasHostingToken = Boolean(
-      conf?.credentials?.['token'] ?? process.env.BRICKADIA_AUTH_TOKEN
+      conf?.credentials?.token ||
+        process.env.BRICKADIA_AUTH_TOKEN ||
+        globalToken
     );
 
     // check if the auth files don't exist
@@ -112,6 +136,7 @@ const program = commander
         debug,
         email: conf?.credentials?.['email'] ?? process.env.BRICKADIA_USER,
         password: conf?.credentials?.['password'] ?? process.env.BRICKADIA_PASS,
+        isSteam,
         branch: conf?.server?.branch,
         authDir: conf?.server?.authDir,
         savedDir: conf?.server?.savedDir,
@@ -225,6 +250,7 @@ program
       Logger.VERBOSE = Boolean(verbose);
 
       let branch: string, authDir: string, savedDir: string, launchArgs: string;
+      let isSteam: boolean;
 
       // if there's a config in the current directory, use that one instead
       if (config.find('.')) workDir = '.';
@@ -246,6 +272,15 @@ program
           authDir = conf?.server?.authDir;
           savedDir = conf?.server?.savedDir;
           launchArgs = conf?.server?.launchArgs;
+          isSteam = !conf?.server?.branch;
+
+          if (localAuth && conf?.credentials?.token) {
+            Logger.logp(
+              "This server's auth is managed by the token in",
+              configFile.yellow
+            );
+            return;
+          }
         } catch (error) {
           Logger.errorp('Error reading config file');
           Logger.verbose(error);
@@ -284,6 +319,10 @@ program
           await file.rmdir(localPath);
         }
         return;
+      }
+
+      if (!isSteam) {
+        Logger.warn('Authenticating with', 'non-steam launcher'.yellow);
       }
 
       auth.prompt({
@@ -455,3 +494,72 @@ program
   });
 
 program.parseAsync(process.argv);
+
+async function setupSteam(config: config.IConfig, forceUpdate = false) {
+  // Check if steamcmd is installed
+  if (!fs.existsSync(STEAMCMD_PATH)) {
+    // Prompt to install steamcmd
+    const { install } = await prompts({
+      type: 'confirm',
+      name: 'install',
+      message: 'SteamCMD is not installed. Would you like to install it?',
+      initial: true,
+    });
+
+    if (!install) {
+      Logger.errorp('SteamCMD is required for steam support. Exiting...');
+      process.exit(1);
+    }
+
+    Logger.logp('Installing SteamCMD...');
+    try {
+      execSync(path.join(__dirname, '../../tools/install_steamcmd.sh'), {
+        stdio: 'inherit',
+      });
+      if (!fs.existsSync(STEAMCMD_PATH)) {
+        Logger.errorp('Failed to install SteamCMD. Exiting...');
+        process.exit(1);
+      }
+    } catch (err) {
+      Logger.errorp('Error installing SteamCMD:', err);
+      process.exit(1);
+    }
+  }
+
+  const isSteamBeta = Boolean(config?.server?.steambeta);
+  const steamBeta = config?.server?.steambeta || 'main';
+  const steamBetaPassword = config?.server?.steambetaPassword;
+  const binaryPath = path.join(
+    STEAM_INSTALLS_DIR,
+    steamBeta,
+    STEAM_BRICKADIA_PATH
+  );
+
+  if (!forceUpdate && fs.existsSync(binaryPath)) {
+    Logger.verbose(
+      'Steam binary already exists at',
+      binaryPath.yellow,
+      '- skipping download.'
+    );
+    return;
+  }
+
+  const args = [
+    `+force_install_dir ${path.join(STEAM_INSTALLS_DIR, steamBeta)}`,
+    `+login anonymous`,
+    `+app_update ${process.env.STEAM_APP_ID ?? STEAM_APP_ID}`,
+    isSteamBeta ? `-beta ${steamBeta}` : null,
+    isSteamBeta && steamBetaPassword
+      ? `-betapassword ${steamBetaPassword}`
+      : null,
+    '+quit',
+  ].filter(Boolean);
+
+  Logger.logp('Downloading Brickadia', steamBeta.yellow, '...');
+  try {
+    execSync(`${STEAMCMD_PATH} ${args.join(' ')}`, { stdio: 'inherit' });
+  } catch (err) {
+    Logger.errorp('Error downloading Brickadia:', err);
+    process.exit(1);
+  }
+}

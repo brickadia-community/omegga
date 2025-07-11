@@ -25,7 +25,8 @@ const command: MatchGenerator<{
         const { name, command, args } = match.groups;
 
         // no player has this name. probably a bug
-        if (!omegga.players.some(p => p.name === name)) return;
+        // TODO: [BRICKADIA] PLEASE fix this using display names
+        if (!omegga.players.some(p => p.displayName === name)) return;
 
         // return the player and the command
         return { name, command, args: args.split(' ') };

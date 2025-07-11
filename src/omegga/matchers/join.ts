@@ -46,10 +46,11 @@ const join: MatchGenerator<Player> = omegga => {
           );
 
           // put that value in the join data
-          if (match)
+          if (match) {
             joinData[
               match.groups.field as 'UserName' | 'UserId' | 'DisplayName'
             ] = match.groups.value;
+          }
 
           // LogNet lets us know the player successfully joined
         } else if (generator == 'LogNet') {
@@ -57,7 +58,8 @@ const join: MatchGenerator<Player> = omegga => {
           const match = data.match(/^Join succeeded: (.+)$/);
 
           // make sure this joindata corresponds to this player
-          if (match && joinData.UserName === match[1]) {
+          // TODO: [BRICKADIA] display name used here instead of username...
+          if (match && joinData.DisplayName === match[1]) {
             // remove that player from our buffer
             userJoinInfo.splice(userJoinInfo.indexOf(joinData), 1);
 
@@ -83,7 +85,8 @@ const join: MatchGenerator<Player> = omegga => {
           const { name, state } = stateMatch.groups;
 
           // find the joining player that has a matching name
-          const player = joiningPlayers.find(p => p.name === name);
+          // TODO: [BRICKADIA] display name used here instead of username...
+          const player = joiningPlayers.find(p => p.displayName === name);
 
           // check if another player is already using this state or if there's any joining player with this name
           if (!player || omegga.players.some(p => p.state === state)) return;

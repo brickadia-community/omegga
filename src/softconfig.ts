@@ -4,6 +4,7 @@ import path from 'path';
 // home directory for omegga config
 export const PROJECT_NAME = 'omegga';
 export const CONFIG_HOME = path.join(os.homedir(), '.config/' + PROJECT_NAME);
+export const GLOBAL_TOKEN = path.join(CONFIG_HOME, 'global_auth_token');
 
 export const DEFAULT_PORT = 8080;
 
@@ -20,6 +21,13 @@ export const BRICKADIA_INSTALLS = path.join(
   os.homedir(),
   '.local/share/brickadia-launcher/brickadia-installs'
 );
+
+export const STEAM_DIR = path.join(CONFIG_HOME, 'steam');
+export const STEAMCMD_PATH = path.join(STEAM_DIR, 'steamcmd.sh');
+export const STEAM_GAME_DIR = process.env.STEAM_GAME_DIR ?? 'Brickadia';
+export const STEAM_APP_ID = '3017590'; // Brickadia app ID
+export const STEAM_INSTALLS_DIR = path.join(CONFIG_HOME, 'steam_installs');
+export const STEAM_BRICKADIA_PATH = `${STEAM_GAME_DIR}/Binaries/Linux/BrickadiaServer-Linux-Shipping`;
 
 export const LOCAL_LAUNCHER = path.join(
   CONFIG_HOME,
@@ -93,4 +101,9 @@ export default {
   WEB_SESSION_TOKEN,
   METRIC_HEARTBEAT_INTERVAL,
   METRIC_EMPTIES_BEFORE_PAUSE,
+  STEAM_DIR,
+  STEAMCMD_PATH,
+  STEAM_INSTALLS_DIR,
+  STEAM_BRICKADIA_PATH,
+  GLOBAL_TOKEN,
 };

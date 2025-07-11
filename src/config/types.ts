@@ -7,11 +7,18 @@ export interface IServerConfig {
 export interface IBrickadiaConfig {
   port: number;
   map?: string;
+  /** old launcher branch name */
   branch?: string;
+  /** Steam beta name */
+  steambeta?: string;
+  /** Steam beta password */
+  steambetaPassword?: string;
+
   name?: string;
   description?: string;
   password?: string;
   players?: number;
+
   publiclyListed?: boolean;
   welcomeMessage?: string;
 
@@ -26,12 +33,11 @@ export interface IBrickadiaConfig {
 export interface IConfig {
   omegga?: IServerConfig;
   server: IBrickadiaConfig;
-  credentials?:
-    | {
-        email: string;
-        password: string;
-      }
-    | { token: string };
+  credentials?: {
+    email?: string;
+    password?: string;
+    token?: string;
+  };
 }
 
 export type IConfigFormat = {

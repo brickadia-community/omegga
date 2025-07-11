@@ -37,6 +37,7 @@ async function authFromPrompt({
   email,
   password,
   debug = false,
+  isSteam,
   branch,
   authDir,
   savedDir,
@@ -45,6 +46,7 @@ async function authFromPrompt({
   email?: string | null;
   password?: string | null;
   debug?: boolean;
+  isSteam?: boolean;
   branch?: string;
   authDir?: string;
   savedDir?: string;
@@ -52,7 +54,62 @@ async function authFromPrompt({
 }) {
   let files: Record<string, Buffer>;
 
-  if (!email || !password) {
+  if (isSteam || !email || !password) {
+    // Prompt user to pick to select username/password or Auth Token
+    const { authType } = await prompts({
+      type: 'select',
+      name: 'authType',
+      message: 'Select authentication method',
+      choices: [
+        { title: 'Username/Password', value: 'credentials' },
+        { title: 'Hosting Token', value: 'token' },
+      ],
+    });
+
+    if (!authType) {
+      console.error('!>'.red, 'No authentication method selected');
+      return false;
+    }
+
+    if (authType === 'token') {
+      // Prompt for hosting token
+      const { token } = await prompts({
+        type: 'password',
+        name: 'token',
+        message:
+          'Paste your server hosting token (from https://brickadia.com/account)',
+        validate: value => (value ? true : 'Token is required'),
+      });
+
+      if (!token) {
+        console.error('!>'.red, 'Hosting token is required');
+        return false;
+      }
+
+      // Write to global token file
+      try {
+        console.log('>>'.green, 'Storing hosting token...');
+        fs.writeFileSync(soft.GLOBAL_TOKEN, token.trim());
+      } catch (err) {
+        console.error('!>'.red, 'Error writing hosting token to config\n', err);
+        return false;
+      }
+
+      return true;
+    }
+
+    if (isSteam) {
+      console.error(
+        '!>'.red,
+        'Launching with steam requires a hosting token right now.'
+      );
+      return false;
+    }
+
+    // Non-steam password auth is handled below
+  }
+
+  if (!email || !password || !isSteam) {
     // prompt for user credentials
     try {
       [email, password] = await credentialPrompt();
@@ -121,9 +178,20 @@ function authExists(dir?: string) {
 // delete auth files stored in config
 // delete auth files stored in config
 function deleteAuthFiles(dir?: string) {
+  const isConfigHome = dir && dir.startsWith(soft.CONFIG_HOME);
   // will not delete files outside of the config home
-  if (dir && !dir.startsWith(soft.CONFIG_HOME)) return;
+  if (dir && !isConfigHome) return;
   file.rmdir(dir ?? AUTH_PATH);
+
+  // Remove the global auth token
+  if (exists(soft.GLOBAL_TOKEN)) {
+    fs.unlinkSync(soft.GLOBAL_TOKEN);
+  }
+}
+
+export function getGlobalToken() {
+  if (!fs.existsSync(soft.GLOBAL_TOKEN)) return null;
+  return fs.readFileSync(soft.GLOBAL_TOKEN, 'utf-8').trim();
 }
 
 export const prompt = authFromPrompt;
@@ -135,4 +203,5 @@ export default {
   prompt,
   exists,
   clean,
+  getGlobalToken,
 };
