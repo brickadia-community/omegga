@@ -461,9 +461,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   getRoleSetup(): BRRoleSetup {
-    return readWatchedJSON(
-      join(this.configPath, 'RoleSetup.json')
-    ) as BRRoleSetup;
+    // Read RoleSetup2, fallback to old RoleSetup if it doesn't exist
+    return (readWatchedJSON(join(this.configPath, 'RoleSetup2.json')) ??
+      readWatchedJSON(join(this.configPath, 'RoleSetup.json'))) as BRRoleSetup;
   }
 
   getRoleAssignments(): BRRoleAssignments {
