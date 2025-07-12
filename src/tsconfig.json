@@ -54,6 +54,7 @@
     "target": "es2018",
     "typeRoots": [
       "./index.d.ts",
+      "../node_modules/@types",
       "node_modules/@types",
     ],
     // "watch": true

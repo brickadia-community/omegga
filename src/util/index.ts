@@ -102,7 +102,8 @@ const brick = {
 };
 
 // wsl
-const wsl = (): number => require('./wsl');
+import { checkWsl } from './wsl';
+const wsl = (): number => checkWsl();
 
 import brs_, { ReadSaveObject, WriteSaveObject, Uuid } from 'brs-js';
 
