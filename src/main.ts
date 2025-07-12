@@ -98,7 +98,7 @@ const program = commander
     if (isSteam) {
       await setupSteam(conf, update);
     } else {
-      Logger.warn(
+      Logger.warnp(
         'Brickadia will be launched with',
         'non-steam launcher'.yellow
       );
@@ -322,7 +322,7 @@ program
       }
 
       if (!isSteam) {
-        Logger.warn('Authenticating with', 'non-steam launcher'.yellow);
+        Logger.warnp('Authenticating with', 'non-steam launcher'.yellow);
       }
 
       auth.prompt({
