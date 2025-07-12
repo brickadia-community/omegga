@@ -513,7 +513,7 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
 
     Logger.logp('Installing SteamCMD...');
     try {
-      execSync(path.join(__dirname, '../../tools/install_steamcmd.sh'), {
+      execSync(path.join(__dirname, '../tools/install_steamcmd.sh'), {
         stdio: 'inherit',
       });
       if (!fs.existsSync(STEAMCMD_PATH)) {
