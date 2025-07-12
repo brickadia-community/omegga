@@ -873,7 +873,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   createEmptyWorld(
     worldName: string,
-    map: 'Plate' | 'Space' | 'Studio' | 'Slopes' = 'Plate'
+    map: 'Plate' | 'Space' | 'Studio' | 'Peaks' = 'Plate'
   ) {
     if (!worldName) return;
     worldName = worldName.replace(/\.brdb$/i, '');

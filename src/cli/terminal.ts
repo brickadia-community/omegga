@@ -480,7 +480,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             {
               command: '/worlds new',
               desc: 'create a new world',
-              short: '/w new <name> [Plate|Space|Studio|Slopes]',
+              short: '/w new <name> [Plate|Space|Studio|Peaks]',
             },
           ];
           log('Available world commands:');
@@ -643,8 +643,8 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             | 'Plate'
             | 'Space'
             | 'Studio'
-            | 'Slopes';
-          if (!['Plate', 'Space', 'Studio', 'Slopes'].includes(map)) {
+            | 'Peaks';
+          if (!['Plate', 'Space', 'Studio', 'Peaks'].includes(map)) {
             err(`Invalid preset "${map}". Valid map are: Plate, Space, Studio`);
             return;
           }
