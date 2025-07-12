@@ -2,7 +2,7 @@ import soft from '@/softconfig';
 import { genAuthFiles, writeAuthFiles } from '@omegga/auth';
 import * as file from '@util/file';
 import 'colors';
-import fs from 'fs';
+import fs, { existsSync } from 'fs';
 import path from 'path';
 import prompts from 'prompts';
 
@@ -184,7 +184,7 @@ function deleteAuthFiles(dir?: string) {
   file.rmdir(dir ?? AUTH_PATH);
 
   // Remove the global auth token
-  if (exists(soft.GLOBAL_TOKEN)) {
+  if (existsSync(soft.GLOBAL_TOKEN)) {
     fs.unlinkSync(soft.GLOBAL_TOKEN);
   }
 }
