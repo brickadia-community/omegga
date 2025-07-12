@@ -8,6 +8,26 @@ STEAMCMD_PATH=$HOME/.config/omegga/steam
 FILE=$STEAMCMD_PATH/$TAR_FILE
 STEAMCMD=$STEAMCMD_PATH/steamcmd.sh
 
+has_global_steamcmd=$(which steamcmd 2>/dev/null)
+if [[ -f $has_global_steamcmd ]]; then
+  # create a steamcmd.sh that runs the global steamcmd
+  mkdir -p $STEAMCMD_PATH
+  # check if STEAMCMD already exists
+  if [[ -f $STEAMCMD ]]; then
+    echo ">> Steamcmd already exists at $STEAMCMD, skipping global steamcmd setup"
+    exit 0
+  fi
+
+  # use a heredoc
+  cat <<'EOF' > $STEAMCMD
+#!/usr/bin/env bash
+exec steamcmd "$@"
+EOF
+  chmod +x $STEAMCMD
+  echo ">> Using global steamcmd at $has_global_steamcmd"
+  exit 0
+fi
+
 has_tar=$(which tar)
 has_wget=$(which wget)
 has_lib32gcc="yes" # sorry anyone not running arch/debian
