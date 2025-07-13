@@ -62,11 +62,6 @@ if ! [[ $has_tar && $has_wget && $has_lib32gcc == "yes" ]]; then
   exit 1
 fi;
 
-if ! [[ $(which omegga) ]]; then
-  echo ">! how on earth are you running this without omegga" >&2
-  exit 1
-fi;
-
 if [[ -f $STEAMCMD ]]; then
   echo ">> Steamcmd already installed, checking for updates..."
   $STEAMCMD +login anonymous +quit
