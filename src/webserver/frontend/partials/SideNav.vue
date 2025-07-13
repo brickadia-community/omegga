@@ -19,7 +19,6 @@
 <template>
   <div class="main-menu-buttons">
     <br-menu-button
-      :disabled="false"
       route=""
       name="home"
       data-tooltip="Chat with players, view server status. Main Dashboard"
@@ -28,7 +27,6 @@
       Dashboard
     </br-menu-button>
     <br-menu-button
-      :disabled="false"
       route="history"
       data-tooltip="Browse chat history"
     >
@@ -36,7 +34,6 @@
       History
     </br-menu-button>
     <br-menu-button
-      :disabled="false"
       route="plugins"
       data-tooltip="Manage, reload, and configure plugins"
     >
@@ -44,14 +41,13 @@
       Plugins
     </br-menu-button>
     <br-menu-button
-      :disabled="false"
       route="players"
       data-tooltip="Browse player info and play time"
     >
       <ListIcon style="background: #b3006b;"/>
       Players
     </br-menu-button>
-    <br-menu-button
+    <!-- <br-menu-button
       :disabled="true"
       route="metrics"
       data-tooltip="View statistics and metrics for the server"
@@ -74,9 +70,8 @@
     >
       <AdjustmentsAltIcon style="background: #c4bb02;"/>
       Settings
-    </br-menu-button>
+    </br-menu-button> -->
     <br-menu-button
-      :disabled="false"
       route="server"
       data-tooltip="Server management"
     >
@@ -84,7 +79,6 @@
       Server
     </br-menu-button>
     <br-menu-button
-      :disabled="false"
       route="users"
       data-tooltip="Server users"
     >
