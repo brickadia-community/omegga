@@ -237,6 +237,14 @@ server:
 
 Note: `BRANCH-server` branches download only server data
 
+### Environment Variables
+
+Not all of them are listed here but here are a few:
+
+- `BRICKADIA_TOKEN` - Specify hosting token instead of using config
+- `BRICKADIA_DIR` - Override the need to use steamcmd and point to a brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
+- `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default to `~/.config/omegga/steam_installs`)
+
 ## Troubleshooting
 
 Narrow down where the issue might be with the following options:

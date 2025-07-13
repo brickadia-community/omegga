@@ -22,12 +22,19 @@ export const BRICKADIA_INSTALLS = path.join(
   '.local/share/brickadia-launcher/brickadia-installs'
 );
 
+let GAME_DIR = 'Brickadia';
+let INSTALL_DIR = path.join(CONFIG_HOME, 'steam_installs');
+if (process.env.STEAM_GAME_DIR) GAME_DIR = process.env.STEAM_GAME_DIR;
+if (process.env.STEAM_INSTALLS_DIR)
+  INSTALL_DIR = process.env.STEAM_INSTALLS_DIR;
+
+export const OVERRIDE_GAME_DIR = process.env.BRICKADIA_DIR;
 export const STEAM_DIR = path.join(CONFIG_HOME, 'steam');
 export const STEAMCMD_PATH = path.join(STEAM_DIR, 'steamcmd.sh');
-export const STEAM_GAME_DIR = process.env.STEAM_GAME_DIR ?? 'Brickadia';
+export const GAME_DIRNAME = process.env.STEAM_GAME_DIR ?? GAME_DIR;
 export const STEAM_APP_ID = '3017590'; // Brickadia app ID
-export const STEAM_INSTALLS_DIR = path.join(CONFIG_HOME, 'steam_installs');
-export const STEAM_BRICKADIA_PATH = `${STEAM_GAME_DIR}/Binaries/Linux/BrickadiaServer-Linux-Shipping`;
+export const GAME_INSTALL_DIR = INSTALL_DIR;
+export const GAME_BIN_PATH = 'Binaries/Linux/BrickadiaServer-Linux-Shipping';
 
 export const LOCAL_LAUNCHER = path.join(
   CONFIG_HOME,
@@ -103,7 +110,7 @@ export default {
   METRIC_EMPTIES_BEFORE_PAUSE,
   STEAM_DIR,
   STEAMCMD_PATH,
-  STEAM_INSTALLS_DIR,
-  STEAM_BRICKADIA_PATH,
+  STEAM_INSTALLS_DIR: GAME_INSTALL_DIR,
+  STEAM_BRICKADIA_PATH: GAME_BIN_PATH,
   GLOBAL_TOKEN,
 };

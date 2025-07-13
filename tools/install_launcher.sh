@@ -15,11 +15,6 @@ if ! [[ $(which tar) && $(which wget) && $(which xz) ]]; then
   exit 1
 fi;
 
-if ! [[ $(which omegga) ]]; then
-  echo ">! how on earth are you running this without omegga" >&2
-  exit 1
-fi;
-
 if [[ -f $BINARY_PATH ]]; then
   echo ">> Launcher already installed!"
   exit 0

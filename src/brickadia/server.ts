@@ -4,12 +4,18 @@
 */
 
 import Logger from '@/logger';
-import { STEAM_BRICKADIA_PATH, STEAM_INSTALLS_DIR } from '@/softconfig';
+import {
+  GAME_BIN_PATH,
+  GAME_DIRNAME,
+  GAME_INSTALL_DIR,
+  OVERRIDE_GAME_DIR,
+} from '@/softconfig';
 import { getGlobalToken } from '@cli/auth';
 import { IConfig } from '@config/types';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import 'colors';
 import EventEmitter from 'events';
+import { existsSync } from 'fs';
 import path from 'path';
 import { env } from 'process';
 import readline from 'readline';
@@ -83,13 +89,39 @@ export default class BrickadiaServer extends EventEmitter {
 
     const isSteam = !this.config.server.branch;
     const steamBeta = this.config.server.steambeta ?? 'main';
+    const overrideBinary =
+      OVERRIDE_GAME_DIR &&
+      path.join(
+        OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
+        GAME_BIN_PATH
+      );
     const steamBinary = path.join(
-      STEAM_INSTALLS_DIR,
-      steamBeta,
-      STEAM_BRICKADIA_PATH
+      GAME_INSTALL_DIR, // steam install directory
+      steamBeta, // steam beta branch (or main)
+      GAME_DIRNAME, // Brickadia
+      GAME_BIN_PATH // path to binary
     );
 
-    if (!isSteam) {
+    let gameBinary = steamBinary;
+
+    if (overrideBinary) {
+      if (!existsSync(overrideBinary)) {
+        Logger.error(
+          'Override binary',
+          overrideBinary.yellow,
+          'does not exist!'
+        );
+        throw new Error(`Override binary ${overrideBinary} does not exist!`);
+      }
+
+      Logger.verbose(
+        'Using override binary',
+        overrideBinary.yellow,
+        'instead of',
+        steamBinary.yellow
+      );
+      gameBinary = overrideBinary;
+    } else if (!isSteam) {
       Logger.verbose(
         'Running',
         (this.config.server.__LOCAL

@@ -1,4 +1,4 @@
-import soft from '@/softconfig';
+import soft, { GAME_DIRNAME, OVERRIDE_GAME_DIR } from '@/softconfig';
 import * as config from '@config';
 import Omegga from '@omegga/server';
 import * as file from '@util/file';
@@ -14,10 +14,11 @@ import { IConfig } from './config/types';
 import Logger from './logger';
 import {
   STEAM_APP_ID,
-  STEAM_BRICKADIA_PATH,
-  STEAM_INSTALLS_DIR,
+  GAME_BIN_PATH,
+  GAME_INSTALL_DIR,
   STEAMCMD_PATH,
 } from './softconfig';
+import hasbin from 'hasbin';
 const pkg = require('../package.json');
 
 const notifier = updateNotifier({
@@ -496,13 +497,70 @@ program
 program.parseAsync(process.argv);
 
 async function setupSteam(config: config.IConfig, forceUpdate = false) {
+  const overrideBinary =
+    OVERRIDE_GAME_DIR &&
+    path.join(
+      OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
+      GAME_BIN_PATH
+    );
+
+  if (overrideBinary) {
+    if (!fs.existsSync(overrideBinary)) {
+      Logger.error(
+        'Binary',
+        overrideBinary.yellow,
+        'in',
+        'BRICKADIA_DIR'.yellow,
+        'does not exist!'
+      );
+      process.exit(1);
+    }
+
+    Logger.verbose(
+      'Using override binary',
+      overrideBinary.yellow,
+      '- skipping download.'
+    );
+    return;
+  }
+
+  const isSteamBeta = Boolean(config?.server?.steambeta);
+  const steamBeta = config?.server?.steambeta || 'main';
+  const steamBetaPassword = config?.server?.steambetaPassword;
+
+  const binaryPath = path.join(
+    GAME_INSTALL_DIR, // steam install directory
+    steamBeta, // steam beta branch (or main)
+    GAME_DIRNAME, // Brickadia
+    GAME_BIN_PATH // path to binary
+  );
+
+  if (!forceUpdate && fs.existsSync(binaryPath)) {
+    Logger.verbose(
+      'Game binary already exists at',
+      binaryPath.yellow,
+      '- skipping download.'
+    );
+    return;
+  }
+
   // Check if steamcmd is installed
   if (!fs.existsSync(STEAMCMD_PATH)) {
+    // Lookup steamcmd in path
+    const hasSteamcmd = new Promise(resolve =>
+      hasbin('steamcmd', result => {
+        resolve(result);
+      })
+    );
+
     // Prompt to install steamcmd
     const { install } = await prompts({
       type: 'confirm',
       name: 'install',
-      message: 'SteamCMD is not installed. Would you like to install it?',
+      message: hasSteamcmd
+        ? // TODO... just steamcmd directly
+          'SteamCMD is installed. OK to reference it?'
+        : 'SteamCMD is not installed. OK to download it?',
       initial: true,
     });
 
@@ -526,26 +584,8 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
     }
   }
 
-  const isSteamBeta = Boolean(config?.server?.steambeta);
-  const steamBeta = config?.server?.steambeta || 'main';
-  const steamBetaPassword = config?.server?.steambetaPassword;
-  const binaryPath = path.join(
-    STEAM_INSTALLS_DIR,
-    steamBeta,
-    STEAM_BRICKADIA_PATH
-  );
-
-  if (!forceUpdate && fs.existsSync(binaryPath)) {
-    Logger.verbose(
-      'Steam binary already exists at',
-      binaryPath.yellow,
-      '- skipping download.'
-    );
-    return;
-  }
-
   const args = [
-    `+force_install_dir ${path.join(STEAM_INSTALLS_DIR, steamBeta)}`,
+    `+force_install_dir ${path.join(GAME_INSTALL_DIR, steamBeta)}`,
     `+login anonymous`,
     `+app_update ${process.env.STEAM_APP_ID ?? STEAM_APP_ID}`,
     isSteamBeta ? `-beta ${steamBeta}` : null,
