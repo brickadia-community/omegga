@@ -1,0 +1,55 @@
+@use '../../css/theme';
+
+.input {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+
+  &:not(:last-child) {
+    margin-bottom: 0;
+  }
+
+  &.icon {
+    border-radius: 0;
+    padding: 0;
+    width: theme.$br-element-height;
+  }
+
+  &.disabled {
+    pointer-events: none;
+    opacity: 50%;
+    cursor: default;
+  }
+
+  input {
+    height: theme.$br-element-height;
+    font-family: 'Glacial Indifference';
+    padding: 2px 12px;
+    box-sizing: border-box;
+    font-weight: bold;
+    font-size: theme.$br-element-font;
+    background: theme.$br-element-normal;
+    color: theme.$br-inverted-fg;
+    border: none;
+
+    &::placeholder {
+      color: theme.$br-element-bg;
+    }
+
+    &:focus {
+      background: theme.$br-element-overlay;
+      outline: none;
+    }
+  }
+
+  .icon {
+    margin-right: 8px;
+  }
+}
+
+.header > .input input {
+  height: 32px !important;
+}

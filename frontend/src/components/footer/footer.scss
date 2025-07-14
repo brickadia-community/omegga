@@ -1,0 +1,12 @@
+@use '../../css/theme';
+
+.footer {
+  background-color: theme.$br-bg-footer;
+  color: theme.$br-fg-footer;
+  display: flex;
+  font-size: theme.$br-footer-font;
+  font-weight: bold;
+  height: theme.$br-footer-height - 20px;
+  padding: 10px;
+  text-transform: uppercase;
+}

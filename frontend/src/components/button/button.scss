@@ -1,0 +1,76 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  height: theme.$br-element-height;
+  font-size: theme.$br-element-font;
+  border-radius: 16px;
+  box-sizing: border-box;
+  color: theme.$br-button-fg;
+  font-weight: bold;
+  padding: 0 16px;
+  cursor: pointer;
+  user-select: none;
+
+  &.boxy {
+    border-radius: 0;
+    padding: 0 8px;
+  }
+
+  &:not(:last-child) {
+    margin-right: 8px;
+  }
+
+  &:not(.icon) .icon {
+    margin-right: 8px;
+  }
+
+  &.icon {
+    border-radius: 0;
+    padding: 0;
+    width: theme.$br-element-height;
+    min-width: theme.$br-element-height;
+  }
+
+  &.disabled {
+    opacity: 50%;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .button-content {
+    display: flex;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &:not(.disabled):active .button-content {
+    padding-top: 4px;
+  }
+
+  &.warn {
+    @include mixins.br-button(theme.$br-warn-normal, theme.$br-warn-hover, theme.$br-warn-pressed);
+  }
+
+  &.main {
+    @include mixins.br-button(theme.$br-main-normal, theme.$br-main-hover, theme.$br-main-pressed);
+  }
+
+  &.info {
+    @include mixins.br-button(theme.$br-info-normal, theme.$br-info-hover, theme.$br-info-pressed);
+  }
+
+  &.error {
+    @include mixins.br-button(theme.$br-error-normal, theme.$br-error-hover, theme.$br-error-pressed);
+  }
+
+  &.normal {
+    @include mixins.br-button(theme.$br-element-normal, theme.$br-element-hover, theme.$br-element-pressed);
+    color: theme.$br-boring-button-fg;
+  }
+}
