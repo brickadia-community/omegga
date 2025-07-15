@@ -1,11 +1,14 @@
+import { IconArrowRight, IconLockOpen } from '@tabler/icons-react';
 import { StrictMode, useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Background } from '../components/background';
-import { Input } from '../components/input';
-import { Footer } from '../components/footer';
 import { Button } from '../components/button';
-import { IconArrowRight, IconLockOpen } from '@tabler/icons-react';
+import { Footer } from '../components/footer';
+import { Header } from '../components/header';
+import { Input } from '../components/input';
 import { Loader } from '../components/loader';
+import { Modal } from '../components/modal';
+import { PopoutContent } from '../components/popout';
 
 const Auth = () => {
   const [loading, setLoading] = useState(true);
@@ -61,75 +64,73 @@ const Auth = () => {
           <img src="/public/img/turkey.webp" />
         </div>
       </Background>
-      <div className={`modal ${loading ? 'visible' : ''}`}>
-        <div className="modal-content">
-          <div className="header">Brickadia Server Login</div>
-          <div className="popout-content">
-            <p>Welcome to the Omegga Web UI.</p>
-            {firstLoad && (
-              <p>
-                Enter credentials for an Admin user. You can also skip this step
-                if you don't want to use a password.
-              </p>
-            )}
-          </div>
-          <div className="popout-inputs">
+      <Modal visible={!loading}>
+        <Header>Brickadia Server Login</Header>
+        <PopoutContent>
+          <p>Welcome to the Omegga Web UI.</p>
+          {firstLoad && (
+            <p>
+              Enter credentials for an Admin user. You can also skip this step
+              if you don't want to use a password.
+            </p>
+          )}
+        </PopoutContent>
+        <div className="popout-inputs">
+          <Input
+            placeholder="username"
+            type="text"
+            value={username}
+            onChange={setUsername}
+          />
+          <Input
+            placeholder="password"
+            type="password"
+            value={password}
+            onChange={setPassword}
+          />
+          {firstLoad && (
             <Input
-              placeholder="username"
-              type="text"
-              value={username}
-              onChange={setUsername}
-            />
-            <Input
-              placeholder="password"
+              placeholder="confirm password"
               type="password"
-              value={password}
-              onChange={setPassword}
+              value={confirm}
+              onChange={setConfirm}
             />
-            {firstLoad && (
-              <Input
-                placeholder="confirm password"
-                type="password"
-                value={confirm}
-                onChange={setConfirm}
-              />
-            )}
-          </div>
-          <Footer>
-            {firstLoad && (
-              <Button
-                main
-                disabled={!authOk || confirm !== password}
-                onClick={() => tryAuth(username, password)}
-              >
-                <IconArrowRight /> Create
-              </Button>
-            )}
-            {!firstLoad && (
-              <Button
-                main
-                disabled={!authOk}
-                onClick={() => tryAuth(username, password)}
-              >
-                <IconArrowRight /> Login
-              </Button>
-            )}
-            <div style={{ flex: 1 }} />
-            {firstLoad && (
-              <Button
-                warn
-                disabled={!authBlank || confirm !== password}
-                onClick={() => tryAuth('', '')}
-              >
-                <IconLockOpen /> Skip
-              </Button>
-            )}
-          </Footer>
-          <Loader active={loading} blur size="huge">
-            <b>AUTHORIZING</b>
-          </Loader>
+          )}
         </div>
-      </div>
+        <Footer>
+          {firstLoad && (
+            <Button
+              main
+              disabled={!authOk || confirm !== password}
+              onClick={() => tryAuth(username, password)}
+            >
+              <IconArrowRight /> Create
+            </Button>
+          )}
+          {!firstLoad && (
+            <Button
+              main
+              disabled={!authOk}
+              onClick={() => tryAuth(username, password)}
+            >
+              <IconArrowRight /> Login
+            </Button>
+          )}
+          <div style={{ flex: 1 }} />
+          {firstLoad && (
+            <Button
+              warn
+              disabled={!authBlank || confirm !== password}
+              onClick={() => tryAuth('', '')}
+            >
+              <IconLockOpen /> Skip
+            </Button>
+          )}
+        </Footer>
+        <Loader active={loading} blur size="huge">
+          <b>AUTHORIZING</b>
+        </Loader>
+      </Modal>
     </div>
   );
 };

@@ -1,8 +1,8 @@
 import { useStore } from '@nanostores/react';
 import type React from 'react';
-import { $version } from '../../versionStore';
+import { $version } from '../../stores/version';
 
-export const Background: React.FC<React.PropsWithChildren> = ({ children }) => {
+export const Background = ({ children }: React.PropsWithChildren) => {
   const version = useStore($version);
   return (
     <div className="background">

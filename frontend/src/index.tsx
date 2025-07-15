@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Route, Router } from 'wouter';
 import { useBrowserLocation } from 'wouter/use-browser-location';
+import { NotFound } from './views/NotFound';
+import { ServerView } from './views/server';
 
 const App = () => {
   return (
@@ -14,8 +16,8 @@ const App = () => {
         <Route path="/:id" component={() => <>TODO: player details</>} />
       </Route>
       <Route path="/users" component={() => <>TODO: users</>} />
-      <Route path="/server" component={() => <>TODO: server</>} />
-      <Route path="*" component={() => <>Not Found!</>} />
+      <Route path="/server" component={ServerView} />
+      <Route path="*" component={NotFound} />
     </Router>
   );
 };

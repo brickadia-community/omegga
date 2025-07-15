@@ -1,6 +1,6 @@
-import type { FocusEventHandler } from 'react';
+import type { HTMLAttributes } from 'react';
 
-export function Input<T extends 'text' | 'number' | 'password' = 'text'>({
+export function Input<T extends 'text' | 'number' | 'password'>({
   placeholder,
   tooltip,
   disabled,
@@ -9,16 +9,15 @@ export function Input<T extends 'text' | 'number' | 'password' = 'text'>({
   onBlur,
   onFocus,
   onChange,
+  ...props
 }: {
   placeholder?: string;
   tooltip?: string;
   disabled?: boolean;
   type?: T;
   value: T extends 'number' ? number : string;
-  onBlur?: FocusEventHandler<HTMLInputElement>;
-  onFocus?: FocusEventHandler<HTMLInputElement>;
   onChange?: (v: T extends 'number' ? number : string) => void;
-}) {
+} & Omit<HTMLAttributes<HTMLInputElement>, 'onChange'>) {
   return (
     <div
       className={`input ${disabled ? 'disabled' : ''}`}
@@ -30,14 +29,13 @@ export function Input<T extends 'text' | 'number' | 'password' = 'text'>({
         placeholder={placeholder}
         disabled={disabled}
         value={value}
-        onBlur={onBlur}
-        onFocus={onFocus}
         onChange={e => {
           const newValue =
             type === 'number' ? Number(e.target.value) : e.target.value;
           if (onChange)
             onChange(newValue as T extends 'number' ? number : string);
         }}
+        {...props}
       />
     </div>
   );

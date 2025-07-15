@@ -1,0 +1,63 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.toggle {
+  display: flex;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  height: theme.$br-element-height;
+  width: theme.$br-element-height + 8;
+  background: theme.$br-element-normal;
+
+  &:not(:last-child) {
+    margin-bottom: 0;
+  }
+
+  &.icon {
+    border-radius: 0;
+    padding: 0;
+    width: theme.$br-element-height;
+  }
+
+  &.disabled {
+    pointer-events: none;
+    opacity: 50%;
+    cursor: default;
+  }
+
+  .toggle-slider {
+    @include mixins.center;
+    width: theme.$br-element-height;
+    height: theme.$br-element-height;
+
+    &:focus {
+      background: theme.$br-element-overlay;
+      outline: none;
+    }
+
+    &:not(.on) {
+      @include mixins.br-button(theme.$br-error-normal, theme.$br-error-hover, theme.$br-error-pressed);
+
+      .symbol {
+        background-color: transparent;
+        width: 10px;
+        height: 10px;
+        border: 4px solid white;
+        border-radius: 50%;
+      }
+    }
+
+    &.on {
+      margin-left: 8px;
+      @include mixins.br-button(theme.$br-main-normal, theme.$br-main-hover, theme.$br-main-pressed);
+
+      .symbol {
+        width: 4px;
+        height: 16px;
+        background-color: white;
+        border-radius: 2px;
+      }
+    }
+  }
+}

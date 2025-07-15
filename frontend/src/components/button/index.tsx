@@ -1,30 +1,30 @@
 import type React from 'react';
-import type { MouseEventHandler } from 'react';
+import type { HTMLAttributes, MouseEventHandler } from 'react';
 
-export const Button: React.FC<
-  React.PropsWithChildren<{
-    warn?: boolean;
-    main?: boolean;
-    error?: boolean;
-    info?: boolean;
-    normal?: boolean;
-    disabled?: boolean;
-    icon?: boolean;
-    boxy?: boolean;
-    onClick?: MouseEventHandler;
-  }>
-> = ({
+export const Button = ({
   children,
   warn,
   main,
   error,
   info,
   normal,
-  disabled,
+  disabled = false,
   icon,
   boxy,
   onClick,
-}) => (
+  ...props
+}: React.PropsWithChildren<{
+  warn?: boolean;
+  main?: boolean;
+  error?: boolean;
+  info?: boolean;
+  normal?: boolean;
+  disabled?: boolean;
+  icon?: boolean;
+  boxy?: boolean;
+  onClick?: MouseEventHandler;
+}> &
+  HTMLAttributes<HTMLDivElement>) => (
   <div
     className={[
       'button',
@@ -40,6 +40,7 @@ export const Button: React.FC<
       .filter(Boolean)
       .join(' ')}
     onClick={onClick}
+    {...props}
   >
     <div className="button-content">{children}</div>
   </div>

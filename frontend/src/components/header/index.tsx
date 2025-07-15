@@ -1,5 +1,11 @@
+import type { HTMLAttributes } from 'react';
 import type React from 'react';
 
-export const Header = ({ children }: React.PropsWithChildren) => (
-  <div className="header">{children}</div>
+export const Header = ({
+  children,
+  ...props
+}: React.PropsWithChildren & HTMLAttributes<HTMLDivElement>) => (
+  <div className="header" {...props}>
+    {children}
+  </div>
 );

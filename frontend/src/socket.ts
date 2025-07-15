@@ -3,31 +3,19 @@ import {
   JSONRPCServer,
   JSONRPCServerAndClient,
 } from 'json-rpc-2.0';
-import { atom } from 'nanostores';
 import io from 'socket.io-client';
-import { $version } from './versionStore';
-
-export type OmeggaSocketData = {
-  roles: { type: 'role'; name: string }[];
-  version: string;
-  canLogOut: boolean;
-  now: number;
-  userless: boolean;
-  user: {
-    username: string;
-    isOwner: boolean;
-    roles: string[];
-  };
-};
+import { $rpcConnected, $rpcDisconnected } from './stores/connected';
+import { $liveness } from './stores/liveness';
+import {
+  $omeggaData,
+  $roles,
+  $showLogout,
+  $user,
+  type OmeggaSocketData,
+} from './stores/user';
+import { $version } from './stores/version';
 
 export const socket = io();
-
-export const $rpcConnected = atom(false);
-export const $rpcDisconnected = atom(false);
-export const $showLogout = atom(false);
-export const $user = atom<OmeggaSocketData['user'] | null>(null);
-export const $roles = atom<OmeggaSocketData['roles']>([]);
-export const $omeggaData = atom<OmeggaSocketData | null>(null);
 
 socket.on('connect', () => {
   console.info('[socket] Connected');
@@ -49,6 +37,20 @@ socket.on('data', (data: OmeggaSocketData) => {
 socket.on('rpc', (payload: unknown) => {
   rpc.receiveAndSend(payload);
 });
+socket.on(
+  'status',
+  ({
+    started,
+    starting,
+    stopping,
+  }: {
+    started: boolean;
+    starting: boolean;
+    stopping: boolean;
+  }) => {
+    $liveness.set({ started, starting, stopping, loading: false });
+  }
+);
 
 export const rpcServer = new JSONRPCServer();
 export const rpcClient = new JSONRPCClient(async data => {

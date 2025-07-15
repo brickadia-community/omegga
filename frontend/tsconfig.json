@@ -19,11 +19,11 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "types": [
-      "./src/index.d.ts"
+      "./src/index.d.ts",
+      "../src/webserver/backend/types.d.ts"
     ]
   },
   "include": [

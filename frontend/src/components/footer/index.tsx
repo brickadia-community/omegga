@@ -1,3 +1,3 @@
-export const Footer: React.FC<React.PropsWithChildren> = ({ children }) => (
+export const Footer = ({ children }: React.PropsWithChildren) => (
   <div className="footer">{children}</div>
 );

@@ -1,3 +1,3 @@
-export const PopoutContent: React.FC<React.PropsWithChildren> = ({
-  children,
-}) => <div className="popout-content">{children}</div>;
+export const PopoutContent = ({ children }: React.PropsWithChildren) => (
+  <div className="popout-content">{children}</div>
+);

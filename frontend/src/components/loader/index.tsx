@@ -9,22 +9,20 @@ const sizes = {
   massive: '120',
 };
 
-export const Loader: React.FC<
-  React.PropsWithChildren<{
-    active?: boolean;
-    inline?: boolean;
-    blur?: boolean;
-    size?: 'small' | 'normal' | 'huge' | 'massive';
-    onClick?: MouseEventHandler;
-  }>
-> = ({
+export const Loader = ({
   children,
   onClick,
   blur,
   active = true,
   inline = false,
   size = 'normal',
-}) => {
+}: React.PropsWithChildren<{
+  active?: boolean;
+  inline?: boolean;
+  blur?: boolean;
+  size?: 'small' | 'normal' | 'huge' | 'massive';
+  onClick?: MouseEventHandler;
+}>) => {
   return (
     <div
       className={`loader ${active ? 'active' : ''} ${inline ? 'inline' : ''}`}
