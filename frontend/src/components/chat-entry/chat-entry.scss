@@ -1,0 +1,42 @@
+@use '../../css/theme';
+
+.log-entry {
+  text-decoration: none;
+  font-family: 'Roboto';
+
+  .log-row {
+    display: flex;
+    align-items: center;
+
+    .user,
+    .time-link {
+      text-decoration: none;
+    }
+
+    .time-link {
+      display: flex;
+      align-items: center;
+
+      .icon {
+        opacity: 0;
+        color: white;
+      }
+    }
+
+    .message {
+      flex: 1;
+    }
+  }
+
+  &:hover .log-row {
+    background: rgba(255, 255, 255, 0.2);
+
+    .icon {
+      opacity: 1;
+    }
+  }
+
+  &.focused .log-row {
+    background: theme.$br-main-normal;
+  }
+}
