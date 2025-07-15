@@ -1,3 +1,26 @@
+import { rpcNotify, rpcReq } from '../../socket';
+import {
+  restartServer,
+  startServer,
+  stopServer,
+  useServerLiveness,
+} from '../../stores/liveness';
+import {
+  Button,
+  Dimmer,
+  Footer,
+  Header,
+  Input,
+  Modal,
+  NavHeader,
+  Page,
+  PageContent,
+  PopoutContent,
+  SideNav,
+  Toggle,
+} from '@components';
+import { SavedSpan, SavedStatus, useSaved } from '@hooks';
+import type { IStoreAutoRestartConfig } from '@omegga/webserver/backend/types';
 import {
   IconCheck,
   IconPlayerPlay,
@@ -6,26 +29,6 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
-import type { IStoreAutoRestartConfig } from '../../../../src/webserver/backend/types';
-import { Button } from '../../components/button';
-import { Dimmer } from '../../components/dimmer';
-import { Footer } from '../../components/footer';
-import { Header } from '../../components/header';
-import { Input } from '../../components/input';
-import { Modal } from '../../components/modal';
-import { NavHeader } from '../../components/navbar';
-import { Page, PageContent } from '../../components/page';
-import { PopoutContent } from '../../components/popout';
-import { SideNav } from '../../components/sidenav';
-import { Toggle } from '../../components/toggle';
-import { SavedSpan, SavedStatus, useSaved } from '../../hooks/useSaved';
-import { rpcNotify, rpcReq } from '../../socket';
-import {
-  restartServer,
-  startServer,
-  stopServer,
-  useServerLiveness,
-} from '../../stores/liveness';
 
 export const ServerView = () => {
   const {

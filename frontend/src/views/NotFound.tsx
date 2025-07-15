@@ -1,6 +1,4 @@
-import { NavHeader } from '../components/navbar';
-import { Page, PageContent } from '../components/page';
-import { SideNav } from '../components/sidenav';
+import { NavHeader, Page, PageContent, SideNav } from '@components';
 
 export const NotFound = () => (
   <Page>
