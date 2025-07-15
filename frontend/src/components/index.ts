@@ -1,4 +1,3 @@
-export { SideNav } from './sidenav';
 export { Background } from './background';
 export { Button } from './button';
 export { Dimmer } from './dimmer';
@@ -9,5 +8,9 @@ export { Loader } from './loader';
 export { Modal } from './modal';
 export { NavBar, NavHeader } from './navbar';
 export { Page, PageContent } from './page';
+export { PlayerDropdown } from './player-dropdown';
 export { PopoutContent } from './popout';
+export { RoleDropdown } from './role-dropdown';
+export { Scroll } from './scroll';
+export { SideNav } from './sidenav';
 export { Toggle } from './toggle';
