@@ -1,4 +1,5 @@
 import soft, { GAME_DIRNAME, OVERRIDE_GAME_DIR } from '@/softconfig';
+import { installLauncher } from '@cli/installer';
 import * as config from '@config';
 import Omegga from '@omegga/server';
 import * as file from '@util/file';
@@ -6,6 +7,7 @@ import { execSync } from 'child_process';
 import 'colors';
 import commander from 'commander';
 import fs from 'fs';
+import hasbin from 'hasbin';
 import path from 'path';
 import prompts from 'prompts';
 import updateNotifier from 'update-notifier-cjs';
@@ -13,13 +15,11 @@ import { auth, config as omeggaConfig, pluginUtil, Terminal } from './cli';
 import { IConfig } from './config/types';
 import Logger from './logger';
 import {
-  STEAM_APP_ID,
   GAME_BIN_PATH,
   GAME_INSTALL_DIR,
+  STEAM_APP_ID,
   STEAMCMD_PATH,
 } from './softconfig';
-import hasbin from 'hasbin';
-import { installLauncher } from '@cli/installer';
 const pkg = require('../package.json');
 
 const notifier = updateNotifier({
@@ -387,7 +387,7 @@ program
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .description('Installs a plugin to the current brickadia server')
   .action(async plugins => {
-    if (!require('hasbin').sync('git')) {
+    if (!hasbin.sync('git')) {
       Logger.errorp('git'.yellow, 'must be installed to install plugins.');
       process.exit(1);
     }
@@ -551,11 +551,7 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
   // Check if steamcmd is installed
   if (!fs.existsSync(STEAMCMD_PATH)) {
     // Lookup steamcmd in path
-    const hasSteamcmd = new Promise(resolve =>
-      hasbin('steamcmd', result => {
-        resolve(result);
-      })
-    );
+    const hasSteamcmd = hasbin.sync('steamcmd');
 
     // Prompt to install steamcmd
     const { install } = await prompts({

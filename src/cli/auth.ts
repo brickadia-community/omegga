@@ -61,8 +61,8 @@ async function authFromPrompt({
       name: 'authType',
       message: 'Select authentication method',
       choices: [
-        { title: 'Username/Password', value: 'credentials' },
         { title: 'Hosting Token', value: 'token' },
+        { title: 'Username/Password', value: 'credentials' },
       ],
     });
 
