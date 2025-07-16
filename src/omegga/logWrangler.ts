@@ -105,17 +105,18 @@ class LogWrangler implements LogWrangling {
         matches: [],
       } as Partial<IWatcher<T>>;
 
-      (watcher.resolve = (...args) => {
+      watcher.resolve = (...args) => {
         clearTimeout(watcher.timeout);
         resolve(args);
-      }),
-        // remove helper
-        (watcher.remove = () => {
-          const index = this.#watchers.indexOf(watcher as IWatcher<T>);
-          if (index > -1) {
-            this.#watchers.splice(index, 1);
-          }
-        });
+      };
+
+      // remove helper
+      watcher.remove = () => {
+        const index = this.#watchers.indexOf(watcher as IWatcher<T>);
+        if (index > -1) {
+          this.#watchers.splice(index, 1);
+        }
+      };
 
       // what the watcher dones when it completes
       watcher.done = () => {
