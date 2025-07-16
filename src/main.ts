@@ -19,6 +19,7 @@ import {
   STEAMCMD_PATH,
 } from './softconfig';
 import hasbin from 'hasbin';
+import { installLauncher } from '@cli/installer';
 const pkg = require('../package.json');
 
 const notifier = updateNotifier({
@@ -127,17 +128,18 @@ const program = commander
         'Brickadia will be launched with',
         'non-steam launcher'.yellow
       );
+
+      // Check if the local launcher is installed
+      if (fs.existsSync(soft.LOCAL_LAUNCHER)) {
+        Logger.verbose("Using omegga's brickadia-launcher");
+        conf.server.__LOCAL = true;
+      } else {
+        Logger.verbose("Installing launcher as it's missing");
+        await installLauncher();
+      }
     }
 
-    // check if a local install exists
-    const localInstall = fs.existsSync(soft.LOCAL_LAUNCHER);
     const globalToken = auth.getGlobalToken();
-
-    // if local install is provided
-    if (localInstall && !overrideBinary) {
-      Logger.verbose("Using omegga's brickadia-launcher");
-      conf.server.__LOCAL = true;
-    }
 
     const hasHostingToken = Boolean(
       conf?.credentials?.token || process.env.BRICKADIA_TOKEN || globalToken

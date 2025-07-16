@@ -790,7 +790,9 @@ export default class Terminal {
     omegga.on('unauthorized', () => {
       err('Server failed authentication check');
       info('You can clear auth tokens with', 'omegga auth -gl'.green);
-      info('This will require you to sign-in again');
+      info(
+        'This will require you to paste a new hosting token or sign-in again'
+      );
       process.exit();
     });
     omegga.on('error', e => err('Server caught unhandled exception:\n' + e));
