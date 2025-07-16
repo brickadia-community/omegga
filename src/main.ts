@@ -145,9 +145,21 @@ const program = commander
       conf?.credentials?.token || process.env.BRICKADIA_TOKEN || globalToken
     );
 
-    // check if the auth files don't exist
-    if (
-      !hasHostingToken &&
+    // Skip auth when the hosting token is present
+    if (hasHostingToken) {
+      Logger.verbose(
+        'Skipping auth token generation due to host token presence'
+      );
+      if (conf?.credentials?.token)
+        Logger.verbose('Found token in config file');
+      else if (process.env.BRICKADIA_TOKEN)
+        Logger.verbose('Found token in', 'BRICKADIA_TOKEN'.yellow);
+      else if (globalToken)
+        Logger.verbose('Found token in omegga global config');
+      else Logger.verbose('unreachable - no token found');
+
+      // check if the auth files don't exist
+    } else if (
       !auth.exists(
         path.join(
           workDir,
@@ -172,14 +184,9 @@ const program = commander
         process.exit(1);
       }
     } else {
-      if (hasHostingToken)
-        Logger.verbose(
-          'Skipping auth token generation due to host token presence'
-        );
-      else
-        Logger.verbose(
-          'Skipping auth token generation due to existing auth files'
-        );
+      Logger.verbose(
+        'Skipping auth token generation due to existing auth files'
+      );
     }
 
     // build options
