@@ -52,13 +52,13 @@ If you need to run omegga as root, make sure your branch is `main-server` or `un
 
     ```sh
     # download nvm
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 
     # activate nvm
     . ~/.nvm/nvm.sh
 
-    # install node version 20
-    nvm install 20
+    # install node version 24
+    nvm install 24
 
     # install omegga
     npm i -g omegga
@@ -74,7 +74,7 @@ If you are having issues running omegga, see the [troubleshooting](#troubleshoot
     ```sh
     sudo apt purge nodejs # uninstall old version of nodejs
     # restart install instructions from this point
-    nvm install 20 # install node version 20 via nvm
+    nvm install 24 # install node version 24 via nvm
     ```
 
   - If you get an error like "`sh: 28: cd: can't cd to .`", you need to be in `bash` (and probably type `cd` to navigate out of root directory):
@@ -105,7 +105,7 @@ If you are having issues running omegga, see the [troubleshooting](#troubleshoot
   - If you are having trouble installing with nvm and are running **Ubuntu/Debian**, run the following commands (installs node, installs omegga) instead or install node&npm from [NodeSource Binary Distributions](https://github.com/nodesource/distributions/blob/master/README.md).
 
     ```sh
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
     sudo apt-get install -y nodejs
     npm i -g omegga
     ```
@@ -117,7 +117,7 @@ Omegga depends on:
 - linux
   - [Windows Install](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) (WSL 1 or WSL 2)
     - [Windows Ubuntu](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6)
-- Node v20+ ([ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions), but `nvm` from Quick Setup is better)
+- Node v23+ ([ubuntu/deb](https://github.com/nodesource/distributions/blob/master/README.md#installation-instructions), but `nvm` from Quick Setup is better)
 - One of:
   - `tar` (most linuxes come with this, though you can `sudo apt install tar`)
   - [Brickadia linux launcher](https://brickadia.com/download)
@@ -259,7 +259,7 @@ Narrow down where the issue might be with the following options:
 - If a plugin is crashing, message the plugin developer
   - discord: #plugin-bugs
 - If you are on Ubuntu and the output of `which npm` is `/bin/npm`
-  - terminal: `sudo apt purge nodejs` and restart install instructions from `nvm install 20`.
+  - terminal: `sudo apt purge nodejs` and restart install instructions from `nvm install 24`.
 - If you're getting an `EACCES` error when running `npm i -g omegga`:
   1. First, try [this](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally).
   2. If that doesn't work, try this horrible bodge method for WSL:
