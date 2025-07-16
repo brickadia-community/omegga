@@ -421,14 +421,18 @@ class Player implements OmeggaPlayer {
   }> {
     const { controller } = this;
 
-    const ownerRegExp =
-      /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.Owner = .*?BP_PlayerController_C'(.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)'$/;
-    const transformParamsRegExp =
-      /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.TransformParameters = \(TargetGrid=("(?<targetGrid>.+)"|None),Position=\(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\),Orientation=(?<orientation>.+)\)$/;
+    const previewClass = 'BP_ToolPreviewActor_C';
+
+    const ownerRegExp = new RegExp(
+      `^(?<index>\\d+)\\) ${previewClass} (.+):PersistentLevel\\.(?<actor>${previewClass}_\\d+)\.Owner = .*?BP_PlayerController_C'(.+):PersistentLevel\\.(?<controller>BP_PlayerController_C_\\d+)'$`
+    );
+    const transformParamsRegExp = new RegExp(
+      `^(?<index>\\d+)\\) ${previewClass} (.+):PersistentLevel\\.(?<actor>${previewClass}_\\d+)\\.TransformParameters = \\(TargetGrid=("(?<targetGrid>.+)"|None),Location=\\(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\\),Orientation=(?<orientation>.+)\\)$`
+    );
 
     const [owners, transformParams] = await Promise.all([
       this.#omegga.watchLogChunk<RegExpMatchArray>(
-        'GetAll BrickGridPreviewActor Owner',
+        `GetAll ${previewClass} Owner`,
         ownerRegExp,
         {
           first: 'index',
@@ -437,7 +441,7 @@ class Player implements OmeggaPlayer {
         }
       ),
       this.#omegga.watchLogChunk<RegExpMatchArray>(
-        'GetAll BrickGridPreviewActor TransformParameters',
+        `GetAll ${previewClass} TransformParameters`,
         transformParamsRegExp,
         {
           first: 'index',
