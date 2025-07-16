@@ -2,6 +2,63 @@
 @use './theme';
 @use './mixins';
 
+:root {
+  --br-bg-primary: theme.$br-bg-primary;
+  --br-bg-primary-alt: theme.$br-bg-primary-alt;
+  --br-bg-secondary: theme.$br-bg-secondary;
+  --br-bg-secondary-alt: theme.$br-bg-secondary-alt;
+  --br-bg-footer: theme.$br-bg-footer;
+  --br-bg-header: theme.$br-bg-header;
+  --br-fg-footer: theme.$br-fg-footer;
+  --br-fg-header: theme.$br-fg-header;
+
+  --br-header-font: theme.$br-header-font;
+  --br-header-height: theme.$br-header-height;
+  --br-footer-font: theme.$br-footer-font;
+  --br-footer-height: theme.$br-footer-height;
+
+  --br-boring-button-fg: theme.$br-boring-button-fg;
+  --br-button-fg: theme.$br-button-fg;
+  --br-inverted-fg: theme.$br-inverted-fg;
+
+  --br-main-normal: theme.$br-main-normal;
+  --br-main-hover: theme.$br-main-hover;
+  --br-main-pressed: theme.$br-main-pressed;
+  --br-main-disabled: theme.$br-main-disabled;
+
+  --br-info-normal: theme.$br-info-normal;
+  --br-info-hover: theme.$br-info-hover;
+  --br-info-pressed: theme.$br-info-pressed;
+  --br-info-disabled: theme.$br-info-disabled;
+
+  --br-error-normal: theme.$br-error-normal;
+  --br-error-hover: theme.$br-error-hover;
+  --br-error-pressed: theme.$br-error-pressed;
+  --br-error-disabled: theme.$br-error-disabled;
+
+  --br-warn-normal: theme.$br-warn-normal;
+  --br-warn-hover: theme.$br-warn-hover;
+  --br-warn-pressed: theme.$br-warn-pressed;
+  --br-warn-disabled: theme.$br-warn-disabled;
+
+  --br-button-normal: theme.$br-button-normal;
+  --br-button-hover: theme.$br-button-hover;
+  --br-button-pressed: theme.$br-button-pressed;
+  --br-button-disabled: theme.$br-button-disabled;
+
+  --br-element-normal: theme.$br-element-normal;
+  --br-element-fg: theme.$br-element-fg;
+  --br-element-pressed: theme.$br-element-pressed;
+  --br-element-overlay: theme.$br-element-overlay;
+  --br-element-hover: theme.$br-element-hover;
+  --br-element-bg: theme.$br-element-bg;
+  --br-element-popout-bg: theme.$br-element-popout-bg;
+  --br-element-header-bg: theme.$br-element-header-bg;
+  --br-element-footer-bg: theme.$br-element-footer-bg;
+  --br-element-height: theme.$br-element-height;
+  --br-element-font: theme.$br-element-font;
+}
+
 html, body {
   margin: 0;
   padding: 0;

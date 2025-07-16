@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, type HTMLAttributes } from 'react';
 
 export const InfiniteScroll = ({
   loading,
@@ -7,6 +7,7 @@ export const InfiniteScroll = ({
   onBottom,
   onTop,
   children,
+  ...props
 }: {
   loading: boolean;
   offset?: number;
@@ -14,7 +15,7 @@ export const InfiniteScroll = ({
   onBottom: () => void;
   onTop: () => void;
   children: React.ReactNode;
-}) => {
+} & HTMLAttributes<HTMLDivElement>) => {
   const [scrollPosition, setScrollPosition] = useState(0);
   const [lastDirection, setLastDirection] = useState('');
   const targetRef = useRef<HTMLDivElement>(null);
@@ -65,7 +66,7 @@ export const InfiniteScroll = ({
   }, [loading, lastDirection, onTopScrollsToBottom, offset]);
 
   return (
-    <div ref={targetRef} onScroll={handleElementScroll}>
+    <div ref={targetRef} onScroll={handleElementScroll} {...props}>
       {children}
     </div>
   );

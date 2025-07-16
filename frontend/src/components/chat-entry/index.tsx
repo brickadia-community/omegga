@@ -2,7 +2,7 @@ import { IconLink } from '@tabler/icons-react';
 import { ChatTime } from '../chat-time';
 import { Link, useRoute } from 'wouter';
 
-export const ChatEntry = ({ log }: { log: any; routeParams: any }) => {
+export const ChatEntry = ({ log }: { log: any }) => {
   const [_match, params] = useRoute('/history/:time?');
   const isFocused = params?.time === log.created;
 

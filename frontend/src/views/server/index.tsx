@@ -1,10 +1,3 @@
-import { rpcNotify, rpcReq } from '../../socket';
-import {
-  restartServer,
-  startServer,
-  stopServer,
-  useServerLiveness,
-} from '../../stores/liveness';
 import {
   Button,
   Dimmer,
@@ -13,7 +6,6 @@ import {
   Input,
   Modal,
   NavHeader,
-  Page,
   PageContent,
   PopoutContent,
   SideNav,
@@ -29,6 +21,13 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
+import { rpcNotify, rpcReq } from '../../socket';
+import {
+  restartServer,
+  startServer,
+  stopServer,
+  useServerLiveness,
+} from '../../stores/liveness';
 
 export const ServerView = () => {
   const {
@@ -94,7 +93,7 @@ export const ServerView = () => {
   };
 
   return (
-    <Page>
+    <>
       <NavHeader title="Server" />
       <PageContent>
         <SideNav />
@@ -298,6 +297,6 @@ export const ServerView = () => {
           </Dimmer>
         </div>
       </PageContent>
-    </Page>
+    </>
   );
 };
