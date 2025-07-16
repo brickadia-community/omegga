@@ -34,6 +34,7 @@ export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({
       version: omegga.version,
       verbose: omegga.verbose,
       savePath: omegga.savePath,
+      worldPath: omegga.worldPath,
       path: omegga.path,
       configPath: omegga.configPath,
       presetPath: omegga.presetPath,
@@ -64,6 +65,14 @@ const STEAL_PROTOTYPES: Record<keyof Required<OmeggaCore>, true> = {
   saveBricksAsync: true,
   getSavePath: true,
   getSaves: true,
+  getWorldPath: true,
+  getWorlds: true,
+  getWorldRevisions: true,
+  loadWorld: true,
+  loadWorldRevision: true,
+  saveWorldAs: true,
+  saveWorld: true,
+  createEmptyWorld: true,
   writeSaveData: true,
   readSaveData: true,
   loadSaveData: true,
@@ -114,6 +123,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
 
   configPath: string;
   savePath: string;
+  worldPath: string;
   presetPath: string;
 
   logWrangler: LogWrangler;
@@ -155,7 +165,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     // create players from raw constructor data
     this.on(
       'plugin:players:raw',
-      (players: [string, string, string, string][]) =>
+      (players: [string, string, string, string, string][]) =>
         (this.players = players.map(p => new Player(this as OmeggaLike, ...p)))
     );
 
@@ -331,10 +341,36 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   getSaves(): string[] {
     throw badBorrow('getSaves');
   }
+  getWorlds(): string[] {
+    throw badBorrow('getWorlds');
+  }
   getSavePath(saveName: string): string {
     throw badBorrow('getSavePath');
   }
-  writeSaveData(saveName: string, saveData: WriteSaveObject): void {
+  getWorldPath(worldName: string): string {
+    throw badBorrow('getWorldPath');
+  }
+  getWorldRevisions(
+    worldName: string
+  ): Promise<{ index: number; date: Date; note: string }[]> {
+    throw badBorrow('getWorldRevisions');
+  }
+  loadWorld(worldName: string) {
+    throw badBorrow('loadWorld');
+  }
+  loadWorldRevision(worldName: string, revision: number) {
+    throw badBorrow('loadWorldRevision');
+  }
+  saveWorldAs(worldName: string) {
+    throw badBorrow('saveWorldAs');
+  }
+  saveWorld() {
+    throw badBorrow('saveWorld');
+  }
+  createEmptyWorld(worldName: string): Promise<void> {
+    throw badBorrow('createEmptyWorld');
+  }
+  writeSaveData(saveName: string, saveData: WriteSaveObject) {
     throw badBorrow('writeSaveData');
   }
   readSaveData(saveName: string, nobricks?: boolean): ReadSaveObject {

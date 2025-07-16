@@ -42,8 +42,8 @@
       }
     ],
     "skipLibCheck": true,
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "nodenext",
+    "moduleResolution": "NodeNext",
     // "noImplicitAny": true,
     "esModuleInterop": true,
     // "strict": true,
@@ -51,12 +51,10 @@
     "outDir": "../dist",
     "sourceMap": true,
     "declaration": true,
-    "target": "es2017",
-    "types": [
-      "node"
-    ],
+    "target": "es2018",
     "typeRoots": [
       "./index.d.ts",
+      "../node_modules/@types",
       "node_modules/@types",
     ],
     // "watch": true

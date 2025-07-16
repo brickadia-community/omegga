@@ -342,7 +342,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
 
       // combine player roles with server roles
       const playerRoles = Player.getRoles(omegga, id) || [];
-      const { roles: serverRoles } = omegga.getRoleSetup();
+      const { roles: serverRoles = [] } = omegga.getRoleSetup() ?? {};
 
       // Get banner name and duration from list of bans
       for (const b of entry.banHistory) {
@@ -692,7 +692,9 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     // get a list of roles
     // TODO: add permission check
     rpc.addMethod('roles.list', () => {
-      return _.sortBy(omegga.getRoleSetup().roles, p => p.name.toLowerCase());
+      return _.sortBy(omegga.getRoleSetup()?.roles ?? [], p =>
+        p.name.toLowerCase()
+      );
     });
 
     // get a paginated list of users

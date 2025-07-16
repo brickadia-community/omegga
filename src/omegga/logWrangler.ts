@@ -105,17 +105,18 @@ class LogWrangler implements LogWrangling {
         matches: [],
       } as Partial<IWatcher<T>>;
 
-      (watcher.resolve = (...args) => {
+      watcher.resolve = (...args) => {
         clearTimeout(watcher.timeout);
         resolve(args);
-      }),
-        // remove helper
-        (watcher.remove = () => {
-          const index = this.#watchers.indexOf(watcher as IWatcher<T>);
-          if (index > -1) {
-            this.#watchers.splice(index, 1);
-          }
-        });
+      };
+
+      // remove helper
+      watcher.remove = () => {
+        const index = this.#watchers.indexOf(watcher as IWatcher<T>);
+        if (index > -1) {
+          this.#watchers.splice(index, 1);
+        }
+      };
 
       // what the watcher dones when it completes
       watcher.done = () => {
@@ -159,7 +160,7 @@ class LogWrangler implements LogWrangling {
       last?: IWatcher<T>['last'];
       afterMatchDelay?: number;
       timeoutDelay?: number;
-    }
+    } = {}
   ): Promise<IWatcher<T>['matches']> {
     // we're focused on the counter part of this, the rest will be passed to the pattern matcher
     const logLineRegExp =
@@ -222,7 +223,14 @@ class LogWrangler implements LogWrangling {
         }
 
         // prematurely terminate the match if another log is found
-        if (counter !== currentCounter) return '[OMEGGA_WATCHER_DONE]';
+        if (counter !== currentCounter) {
+          // long running commands
+          if (Number(counter) - 1 + '' === currentCounter) {
+            currentCounter = counter;
+          } else {
+            return '[OMEGGA_WATCHER_DONE]';
+          }
+        }
 
         // add the match to the bundle
         return match;

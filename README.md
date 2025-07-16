@@ -237,6 +237,14 @@ server:
 
 Note: `BRANCH-server` branches download only server data
 
+### Environment Variables
+
+Not all of them are listed here but here are a few:
+
+- `BRICKADIA_TOKEN` - Specify hosting token instead of using config
+- `BRICKADIA_DIR` - Override the need to use steamcmd and point to a brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
+- `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default to `~/.config/omegga/steam_installs`)
+
 ## Troubleshooting
 
 Narrow down where the issue might be with the following options:
@@ -802,7 +810,7 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `init`               | config object                                                                                                                    | Returns a start result, called on plugin start                                                                                                                                       | &#9745;  |
 | `stop`               | _none_                                                                                                                           | Returns _something_, called on plugin stop                                                                                                                                           | &#9745;  |
 | `bootstrap`          | [{ omegga info (`host`, `version`, etc) }]                                                                                       | Run when plugin is started for base data                                                                                                                                             |          |
-| `plugin:players:raw` | [[... [player `name`, `id`, `controller`, `state`]]]                                                                             | Lists players on the server                                                                                                                                                          |          |
+| `plugin:players:raw` | [[... [player `username`, `displayName`, `id`, `controller`, `state`]]]                                                                             | Lists players on the server                                                                                                                                                          |          |
 | `plugin:emit`        | [event, from, ...args]                                                                                                           | Fired when another plugin sends an event                                                                                                                                             |          |
 | `line`               | [brickadiaLog string]                                                                                                            | A brickadia console log                                                                                                                                                              |          |
 | `start`              | [{map}]                                                                                                                          | On brickadia server start                                                                                                                                                            |          |

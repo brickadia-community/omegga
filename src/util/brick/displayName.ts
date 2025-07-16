@@ -5,7 +5,7 @@ type NameConversion = [string, [number, number, number]];
 function genericBrick(
   name: string,
   asset?: string
-): typeof displayNameMap[number] {
+): (typeof displayNameMap)[number] {
   if (!asset) asset = 'B_' + name.replace(/\s/g, '_');
   return [name, [asset, brickSizeMap[asset] ?? [0, 0, 0]]];
 }

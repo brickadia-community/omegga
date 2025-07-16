@@ -5,8 +5,8 @@ import {
   BRICKADIA_AUTH_FILES,
   CONFIG_AUTH_DIR,
   CONFIG_HOME,
+  CONFIG_SAVED_DIR,
   DATA_PATH,
-  PLUGIN_PATH,
 } from '@/softconfig';
 import { EnvironmentPreset } from '@brickadia/presets';
 import {
@@ -56,6 +56,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   verbose: boolean;
   savePath: string;
+  worldPath: string;
   presetPath: string;
   configPath: string;
   options: IOmeggaOptions;
@@ -84,6 +85,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     Logger.verbose('Running omegga', `v${pkg.version}`.green);
     Logger.verbose('Versions', process.versions);
+    Logger.verbose('Config', cfg);
 
     // inject commands
     Logger.verbose('Setting up command injector');
@@ -91,14 +93,16 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     // launch options (disabling webserver)
     this.options = options;
+    const savedDir = cfg.server.savedDir ?? CONFIG_SAVED_DIR;
 
     // path to save files
-    this.savePath = join(this.path, DATA_PATH, 'Saved/Builds');
+    this.savePath = join(this.path, DATA_PATH, savedDir, 'Builds');
+    this.worldPath = join(this.path, DATA_PATH, savedDir, 'Worlds');
 
-    this.presetPath = join(this.path, DATA_PATH, 'Saved/Presets');
+    this.presetPath = join(this.path, DATA_PATH, savedDir, 'Presets');
 
     // path to config files
-    this.configPath = join(this.path, DATA_PATH, 'Saved/Server');
+    this.configPath = join(this.path, DATA_PATH, savedDir, 'Server');
 
     // create dir folders
     Logger.verbose('Creating directories');
@@ -403,8 +407,13 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
    * this should never be called by a plugin
    */
   copyAuthFiles() {
-    const authPath = join(this.path, DATA_PATH, 'Saved/Auth');
-    const homeAuthPath = join(CONFIG_HOME, CONFIG_AUTH_DIR);
+    const authDir = this.config.server.authDir ?? CONFIG_AUTH_DIR;
+    const savedDir = this.config.server.savedDir ?? CONFIG_SAVED_DIR;
+    const authPath = join(this.path, DATA_PATH, savedDir, authDir);
+    const homeAuthPath = join(
+      CONFIG_HOME,
+      (savedDir !== CONFIG_SAVED_DIR ? savedDir : '') + authDir
+    );
 
     copyFiles(homeAuthPath, authPath, BRICKADIA_AUTH_FILES);
   }
@@ -452,9 +461,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   getRoleSetup(): BRRoleSetup {
-    return readWatchedJSON(
-      join(this.configPath, 'RoleSetup.json')
-    ) as BRRoleSetup;
+    // Read RoleSetup2, fallback to old RoleSetup if it doesn't exist
+    return (readWatchedJSON(join(this.configPath, 'RoleSetup2.json')) ??
+      readWatchedJSON(join(this.configPath, 'RoleSetup.json'))) as BRRoleSetup;
   }
 
   getRoleAssignments(): BRRoleAssignments {
@@ -487,10 +496,14 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     name = name.toLowerCase();
     const exploded = pattern.explode(name);
     return (
-      this.players.find(p => p.name === name) || // find by exact match
-      this.players.find(p => p.name.indexOf(name) > -1) || // find by rough match
-      this.players.find(p => p.name.match(exploded))
-    ); // find by exploded regex match (ck finds cake, tbp finds TheBlackParrot)
+      this.players.find(p => p.name === name || p.displayName === name) || // find by exact match
+      this.players.find(
+        p => p.name.indexOf(name) > -1 || p.displayName.indexOf(name) > -1
+      ) || // find by rough match
+      this.players.find(
+        p => p.name.match(exploded) || p.displayName.match(exploded)
+      ) // find by exploded regex match (ck finds cake, tbp finds TheBlackParrot)
+    );
   }
 
   getHostId(): string {
@@ -759,12 +772,110 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     return existsSync(this.savePath) ? sync(this.savePath + '/**/*.brs') : [];
   }
 
+  getWorlds(): string[] {
+    return existsSync(this.worldPath)
+      ? sync(this.worldPath + '/**/*.brdb')
+      : [];
+  }
+
   getSavePath(saveName: string) {
     const file = join(
       this.savePath,
       saveName.endsWith('.brs') ? saveName : saveName + '.brs'
     );
     return existsSync(file) ? file : undefined;
+  }
+
+  getWorldPath(worldName: string) {
+    const file = join(
+      this.worldPath,
+      worldName.endsWith('.brdb') ? worldName : worldName + '.brdb'
+    );
+    return existsSync(file) ? file : undefined;
+  }
+
+  async getWorldRevisions(worldName: string) {
+    worldName = worldName.replace(/\.brdb$/i, '');
+
+    if (!worldName || !this.getWorldPath(worldName)) {
+      throw new Error(`World "${worldName}" does not exist`);
+    }
+
+    /*
+      LogBRBundleManager: There are 2 revisions
+      LogBRBundleManager: Revision 1 - 2001.02.03-04.05.06: Initial Revision
+      LogBRBundleManager: Revision 2 - 2001.02.03-04.05.06: Manual Save
+    */
+    let numRevisions = 0;
+    const revisionsRaw = await this.watchLogChunk<RegExpMatchArray>(
+      `BR.World.ListRevisions "${worldName}"`,
+      /^LogBRBundleManager: (There are (?<numRevisions>\d+) revisions|Revision (?<revision>\d+) - (?<date>[\d.-]+): (?<note>.+))$/,
+      {
+        last: match => Number(match.groups.reverse) === numRevisions,
+        first: match => {
+          if (match.groups?.numRevisions !== undefined) {
+            numRevisions = Number(match.groups.numRevisions);
+            return true;
+          }
+          return false;
+        },
+      }
+    );
+
+    if (!revisionsRaw) return [];
+    return revisionsRaw
+      .map(match => {
+        if (match.groups?.numRevisions !== undefined) {
+          return null;
+        }
+
+        const revision = match.groups.revision
+          ? Number(match.groups.revision)
+          : 0;
+        // parse date from YYYY.MM.DD-HH.MM.SS to YYYY-MM-DDTHH:MM:SSZ
+        const dateStr = match.groups.date.replace(
+          /(\d{4})\.(\d{2})\.(\d{2})-(\d{2})\.(\d{2})\.(\d{2})/,
+          '$1-$2-$3T$4:$5:$6Z'
+        );
+        const date = new Date(dateStr);
+        const note = match.groups.note || '';
+        return { index: revision, date, note };
+      })
+      .filter(Boolean);
+  }
+
+  loadWorld(worldName: string) {
+    worldName = worldName.replace(/\.brdb$/i, '');
+    if (!worldName || !this.getWorldPath(worldName)) return;
+    this.writeln(`BR.World.Load "${worldName}"`);
+  }
+
+  loadWorldRevision(worldName: string, revision: number) {
+    worldName = worldName.replace(/\.brdb$/i, '');
+    if (!worldName || !this.getWorldPath(worldName)) return;
+    if (typeof revision !== 'number' || revision < 1) {
+      throw new Error(`Invalid revision number: ${revision}`);
+    }
+    this.writeln(`BR.World.LoadRevision "${worldName}" ${revision}`);
+  }
+
+  saveWorldAs(worldName: string) {
+    if (!worldName) return;
+    worldName = worldName.replace(/\.brdb$/i, '');
+    this.writeln(`BR.World.SaveAs "${worldName}"`);
+  }
+
+  saveWorld() {
+    this.writeln(`BR.World.Save 0`);
+  }
+
+  createEmptyWorld(
+    worldName: string,
+    map: 'Plate' | 'Space' | 'Studio' | 'Peaks' = 'Plate'
+  ) {
+    if (!worldName) return;
+    worldName = worldName.replace(/\.brdb$/i, '');
+    this.writeln(`BR.World.CreateEmpty "${worldName}" ${map}`);
   }
 
   writeSaveData(saveName: string, saveData: WriteSaveObject) {

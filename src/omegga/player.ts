@@ -41,6 +41,7 @@ const DEFAULT_PERMS: Record<string, string[]> = {
 class Player implements OmeggaPlayer {
   #omegga: OmeggaLike;
   name: string;
+  displayName: string;
   id: string;
   controller: string;
   state: string;
@@ -260,19 +261,22 @@ class Player implements OmeggaPlayer {
    * @constructor
    * @param omegga Omegga Instance
    * @param name Player Name
+   * @param displayName Player Display Name
    * @param id Player Id
    * @param controller Player Controller
    * @param state Player State
    */
   constructor(
     omegga: OmeggaLike,
-    name: string,
+    username: string,
+    displayName: string,
     id: string,
     controller: string,
     state: string
   ) {
     this.#omegga = omegga;
-    this.name = name;
+    this.name = username;
+    this.displayName = displayName;
     this.id = id;
     this.controller = controller;
     this.state = state;
@@ -286,14 +290,15 @@ class Player implements OmeggaPlayer {
     return new Player(
       this.#omegga,
       this.name,
+      this.displayName,
       this.id,
       this.controller,
       this.state
     );
   }
 
-  raw(): [string, string, string, string] {
-    return [this.name, this.id, this.controller, this.state];
+  raw(): [string, string, string, string, string] {
+    return [this.name, this.displayName, this.id, this.controller, this.state];
   }
 
   isHost(): boolean {
@@ -347,19 +352,16 @@ class Player implements OmeggaPlayer {
   async getPawn(): Promise<string | null> {
     // given a player controller, match the player's pawn
     const pawnRegExp = new RegExp(
-      `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = (?:BP_FigureV2_C'.+:PersistentLevel\\.)?(?<pawn>BP_FigureV2_C_\\d+|None)'?`
+      `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = .*?(?:BP_FigureV2_C'.+:PersistentLevel\\.)?(?<pawn>BP_FigureV2_C_\\d+|None)'?`
     );
 
     // wait for the pawn watcher to return a pawn
-    const [
-      {
-        groups: { pawn },
-      },
-    ] = await this.#omegga.watchLogChunk<RegExpMatchArray>(
-      'GetAll BP_PlayerController_C Pawn Name=' + this.controller,
-      pawnRegExp,
-      { first: 'index', timeoutDelay: 500 }
-    );
+    const [{ groups: { pawn = null } = {} } = {}] =
+      await this.#omegga.watchLogChunk<RegExpMatchArray>(
+        'GetAll BP_PlayerController_C Pawn Name=' + this.controller,
+        pawnRegExp,
+        { first: 'index', timeoutDelay: 500 }
+      );
 
     if (pawn === 'None') return null;
 
@@ -373,7 +375,7 @@ class Player implements OmeggaPlayer {
 
     // given a player controller, match the player's pawn
     const pawnRegExp = new RegExp(
-      `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = (?:BP_FigureV2_C'.+:PersistentLevel\\.)?(?<pawn>BP_FigureV2_C_\\d+|None)'?`
+      `^(?<index>\\d+)\\) BP_PlayerController_C .+?PersistentLevel\\.${this.controller}\\.Pawn = .*?(?:BP_FigureV2_C'.+:PersistentLevel\\.)?(?<pawn>BP_FigureV2_C_\\d+|None)'?`
     );
 
     // wait for the pawn watcher to return a pawn
@@ -420,7 +422,7 @@ class Player implements OmeggaPlayer {
     const { controller } = this;
 
     const ownerRegExp =
-      /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.Owner = BP_PlayerController_C'(.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)'$/;
+      /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.Owner = .*?BP_PlayerController_C'(.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)'$/;
     const transformParamsRegExp =
       /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.TransformParameters = \(TargetGrid=("(?<targetGrid>.+)"|None),Position=\(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\),Orientation=(?<orientation>.+)\)$/;
 
@@ -477,82 +479,42 @@ class Player implements OmeggaPlayer {
   }> {
     const { controller } = this;
 
-    const ownerRegExp =
-      /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.Owner = BP_PlayerController_C'(.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)'$/;
-    const colorRegExp =
-      /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.SelectedColor = \(B=(?<b>.+),G=(?<g>.+),R=(?<r>.+),A=(?<a>.+)\)$/;
-    const materialRegExp =
-      /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.SelectedMaterialId = (?<materialIndex>\d+)$/;
-    const materialAlphaRegExp =
-      /^(?<index>\d+)\) BP_Item_PaintTool_C (.+):PersistentLevel\.(?<actor>BP_Item_PaintTool_C_\d+)\.SelectedMaterialAlpha = (?<materialAlpha>\d+)$/;
-
-    const [owners, colorMatch, materialMatch, materialAlphaMatch] =
-      await Promise.all([
-        this.#omegga.watchLogChunk<RegExpMatchArray>(
-          'GetAll BP_Item_PaintTool_C Owner',
-          ownerRegExp,
-          {
-            first: 'index',
-            timeoutDelay: 2000,
-            afterMatchDelay: 100,
-          }
-        ),
-        this.#omegga.watchLogChunk<RegExpMatchArray>(
-          'GetAll BP_Item_PaintTool_C SelectedColor',
-          colorRegExp,
-          {
-            first: 'index',
-            timeoutDelay: 2000,
-            afterMatchDelay: 100,
-          }
-        ),
-        this.#omegga.watchLogChunk<RegExpMatchArray>(
-          'GetAll BP_Item_PaintTool_C SelectedMaterialId',
-          materialRegExp,
-          {
-            first: 'index',
-            timeoutDelay: 2000,
-            afterMatchDelay: 100,
-          }
-        ),
-        this.#omegga.watchLogChunk<RegExpMatchArray>(
-          'GetAll BP_Item_PaintTool_C SelectedMaterialAlpha',
-          materialAlphaRegExp,
-          {
-            first: 'index',
-            timeoutDelay: 2000,
-            afterMatchDelay: 100,
-          }
-        ),
-      ]);
-
-    // get BrickGridPreviewActor by controller
-    const owner = owners.find(owner => owner.groups.controller === controller);
-
-    if (!owner) return;
-
-    const actor = owner.groups.actor;
-    // get transform parameters for the found actor
-    const color = colorMatch.find(color => color.groups.actor === actor);
-    const material = materialMatch.find(
-      material => material.groups.actor === actor
-    );
-    const materialAlpha = materialAlphaMatch.find(
-      materialAlpha => materialAlpha.groups.actor === actor
-    );
-
-    if (!color || !material || !materialAlpha) return;
-
-    const colorRaw = [+color.groups.r, +color.groups.g, +color.groups.b];
-    return {
-      materialIndex: material.groups.materialIndex,
-      materialAlpha: materialAlpha.groups.materialAlpha,
-      material:
-        brickUtils.BRICK_CONSTANTS.DEFAULT_MATERIALS[
-          Number(material.groups.materialIndex)
-        ],
-      color: colorRaw,
-    };
+    const match = await this.#omegga
+      .addWatcher<{
+        materialIndex: string;
+        materialAlpha: string;
+        material: string;
+        color: number[];
+      }>(
+        line => {
+          // [date][counter]0) BP_PlayerState_C /Game/Maps/Plate/Plate.Plate:PersistentLevel.BP_PlayerState_C_2147482378.ColorSelectionState = (SelectedColor=(B=6,G=73,R=246,A=255),MaterialIndex=3,MaterialAlpha=5)
+          const match = line.match(
+            /^\[[^\]]+\]\[[^\]]+\]0\) BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.ColorSelectionState = \(SelectedColor=\(B=(?<b>\d+),G=(?<g>\d+),R=(?<r>\d+),A=(?<a>\d+)\),MaterialIndex=(?<materialIndex>\d+),MaterialAlpha=(?<materialAlpha>\d+)\)$/
+          );
+          if (!match) return;
+          if (match.groups.state !== this.state) return;
+          const colorRaw = [+match.groups.r, +match.groups.g, +match.groups.b];
+          return {
+            materialIndex: match.groups.materialIndex,
+            materialAlpha: match.groups.materialAlpha,
+            material:
+              brickUtils.BRICK_CONSTANTS.DEFAULT_MATERIALS[
+                Number(match.groups.materialIndex)
+              ],
+            color: colorRaw,
+          };
+        },
+        {
+          timeoutDelay: 1000,
+          exec: () =>
+            this.#omegga.writeln(
+              `GetAll BRPlayerState ColorSelectionState Owner=${controller}`
+            ),
+        }
+      )
+      .catch(() => null);
+    if (!match?.[0]) return;
+    return match[0];
   }
 
   async isCrouched(pawn?: string): Promise<boolean> {
@@ -592,6 +554,9 @@ class Player implements OmeggaPlayer {
   }
 
   async getTemplateBounds() {
+    // Not working in closed beta
+    if (this.#omegga.version > 11371) return;
+
     const { controller } = this;
 
     const brickTemplateRegExp =
@@ -681,9 +646,15 @@ class Player implements OmeggaPlayer {
     const saveData = await this.#omegga.getSaveData({
       center: templateBounds.center,
       extent: [
-        Math.round((templateBounds.maxBound[0] - templateBounds.minBound[0]) / 2),
-        Math.round((templateBounds.maxBound[1] - templateBounds.minBound[1]) / 2),
-        Math.round((templateBounds.maxBound[2] - templateBounds.minBound[2]) / 2),
+        Math.round(
+          (templateBounds.maxBound[0] - templateBounds.minBound[0]) / 2
+        ),
+        Math.round(
+          (templateBounds.maxBound[1] - templateBounds.minBound[1]) / 2
+        ),
+        Math.round(
+          (templateBounds.maxBound[2] - templateBounds.minBound[2]) / 2
+        ),
       ],
     });
 

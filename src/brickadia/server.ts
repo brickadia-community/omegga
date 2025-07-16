@@ -4,11 +4,20 @@
 */
 
 import Logger from '@/logger';
+import {
+  GAME_BIN_PATH,
+  GAME_DIRNAME,
+  GAME_INSTALL_DIR,
+  OVERRIDE_GAME_DIR,
+} from '@/softconfig';
+import { getGlobalToken } from '@cli/auth';
 import { IConfig } from '@config/types';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import 'colors';
 import EventEmitter from 'events';
+import { existsSync } from 'fs';
 import path from 'path';
+import { env } from 'process';
 import readline from 'readline';
 import stripAnsi from 'strip-ansi';
 
@@ -59,51 +68,113 @@ export default class BrickadiaServer extends EventEmitter {
 
   // start the server child process
   start() {
-    const { email, password } = this.config.credentials || {};
-    Logger.verbose(
-      'Starting server',
-      (!email && !password ? 'without' : 'with').yellow,
-      'credentials'
+    const {
+      email,
+      password,
+      token: confToken,
+    }: { email?: string; password?: string; token?: string } = this.config
+      .credentials || {};
+
+    const token = confToken || process.env.BRICKADIA_TOKEN || getGlobalToken();
+
+    if (token) {
+      Logger.verbose('Starting server with hosting token');
+    } else {
+      Logger.verbose(
+        'Starting server',
+        (!email && !password ? 'without' : 'with').yellow,
+        'credentials'
+      );
+    }
+
+    const isSteam = !this.config.server.branch;
+    const steamBeta = this.config.server.steambeta ?? 'main';
+    const overrideBinary =
+      OVERRIDE_GAME_DIR &&
+      path.join(
+        OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
+        GAME_BIN_PATH
+      );
+    const steamBinary = path.join(
+      GAME_INSTALL_DIR, // steam install directory
+      steamBeta, // steam beta branch (or main)
+      GAME_DIRNAME, // Brickadia
+      GAME_BIN_PATH // path to binary
     );
-    Logger.verbose(
-      'Running',
-      (this.config.server.__LOCAL
-        ? path.join(__dirname, '../../tools/brickadia.sh')
-        : 'brickadia launcher'
-      ).yellow
-    );
-    if (typeof this.config.server.branch === 'string')
-      Logger.verbose('Using branch', this.config.server.branch.yellow);
+
+    let gameBinary = steamBinary;
+
+    if (overrideBinary) {
+      if (!existsSync(overrideBinary)) {
+        Logger.error(
+          'Override binary',
+          overrideBinary.yellow,
+          'does not exist!'
+        );
+        throw new Error(`Override binary ${overrideBinary} does not exist!`);
+      }
+
+      Logger.verbose(
+        'Using override binary',
+        overrideBinary.yellow,
+        'instead of',
+        steamBinary.yellow
+      );
+      gameBinary = overrideBinary;
+    } else if (!isSteam) {
+      Logger.verbose(
+        'Running',
+        (this.config.server.__LOCAL
+          ? path.join(__dirname, '../../tools/brickadia.sh')
+          : 'brickadia launcher'
+        ).yellow
+      );
+      if (typeof this.config.server.branch === 'string')
+        Logger.verbose('Using branch', this.config.server.branch.yellow);
+    } else {
+      Logger.verbose('Using steam binary', steamBeta.yellow);
+    }
 
     // handle local launcher support
-    const launchArgs = [
-      this.config.server.__LOCAL
-        ? path.join(__dirname, '../../tools/brickadia.sh')
-        : 'brickadia',
-      this.config.server.branch && `--branch=${this.config.server.branch}`,
-      '--server',
+    const launchArgs = isSteam
+      ? [steamBinary]
+      : [
+          this.config.server.__LOCAL
+            ? path.join(__dirname, '../../tools/brickadia.sh')
+            : 'brickadia',
+          this.config.server.branch && `--branch=${this.config.server.branch}`,
+          '--server',
+          '--',
+        ];
+
+    const params = [
+      '--output=L',
       '--',
-    ];
+      ...launchArgs,
+      this.config.server.map && `${this.config.server.map}`,
+      '-NotInstalled',
+      '-log',
+      require('../util/wsl') === 1 ? '-OneThread' : null,
+      this.path ? `-UserDir="${this.path}"` : null,
+      token ? `-Token="${token}"` : null, // remove token argument if not provided
+      !token && email ? `-User="${email}"` : null, // remove email argument if not provided or token is provided
+      !token && password ? `-Password="${password}"` : null, // remove password argument if not provided or token is provided
+      `-port="${this.config.server.port}"`,
+      this.config.server.launchArgs,
+    ].filter(Boolean); // remove unused arguments
+    Logger.verbose(
+      'Params for spawn',
+      params
+        .join(' ')
+        .replace(/-User=".*?"/, '-User="<hidden>"')
+        .replace(/-Password=".*?"/, '-Password="<hidden>"')
+        .replace(/-Token=".*?"/, '-Token="<hidden>"')
+    );
 
     // Either unbuffer or stdbuf must be used because brickadia's output is buffered
     // this means that multiple lines can be bundled together if the output buffer is not full
     // unfortunately without stdbuf or unbuffer, the output would not happen immediately
-    this.#child = spawn(
-      'stdbuf',
-      [
-        '--output=L',
-        '--',
-        ...launchArgs,
-        this.config.server.map && `${this.config.server.map}`,
-        '-NotInstalled',
-        '-log',
-        require('../util/wsl') === 1 ? '-OneThread' : null,
-        this.path ? `-UserDir="${this.path}"` : null,
-        email ? `-User="${email}"` : null, // remove email argument if not provided
-        password ? `-Password="${password}"` : null, // remove password argument if not provided
-        `-port="${this.config.server.port}"`,
-      ].filter(Boolean)
-    ); // remove unused arguments
+    this.#child = spawn('stdbuf', params);
 
     Logger.verbose(
       'Spawn process',

@@ -1,16 +1,25 @@
-import soft from '@/softconfig';
+import soft, { GAME_DIRNAME, OVERRIDE_GAME_DIR } from '@/softconfig';
 import * as config from '@config';
 import Omegga from '@omegga/server';
 import * as file from '@util/file';
+import { execSync } from 'child_process';
 import 'colors';
 import commander from 'commander';
 import fs from 'fs';
 import path from 'path';
+import prompts from 'prompts';
 import updateNotifier from 'update-notifier-cjs';
-const pkg = require('../package.json');
 import { auth, config as omeggaConfig, pluginUtil, Terminal } from './cli';
 import { IConfig } from './config/types';
 import Logger from './logger';
+import {
+  STEAM_APP_ID,
+  GAME_BIN_PATH,
+  GAME_INSTALL_DIR,
+  STEAMCMD_PATH,
+} from './softconfig';
+import hasbin from 'hasbin';
+const pkg = require('../package.json');
 
 const notifier = updateNotifier({
   pkg,
@@ -25,7 +34,7 @@ notifier.notify();
 const createDefaultConfig = () => {
   Logger.logp('Created default config file');
   config.write(soft.CONFIG_FILENAMES[0] + '.yml', config.defaultConfig);
-  file.mkdir('data/Saved/Builds');
+  file.mkdir('data/${soft.CONFIG_SAVED_DIR}/Builds');
   file.mkdir('plugins');
   return config.defaultConfig;
 };
@@ -37,9 +46,13 @@ const program = commander
     '-d, --debug',
     'Print all console logs rather than just chat messages'
   )
+  .option(
+    '-u, --update',
+    'Check for brickadia updates (on steam) and install them if available'
+  )
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async () => {
-    const { debug, verbose } = program.opts();
+    const { debug, verbose, update } = program.opts();
     if (program.args.length > 0) {
       program.help();
       process.exit(1);
@@ -49,9 +62,6 @@ const program = commander
     // default working directory is the one specified in config
     let workDir = config.store.get('defaultOmegga');
     Logger.verbose('Using working directory', workDir?.yellow);
-
-    // check if a local install exists
-    const localInstall = fs.existsSync(soft.LOCAL_LAUNCHER);
 
     // if there's a config in the current directory, use that one instead
     if (config.find('.')) workDir = '.';
@@ -77,8 +87,27 @@ const program = commander
       conf = createDefaultConfig();
     } else {
       Logger.verbose('Reading config file');
-      conf = config.read(configFile);
+      try {
+        conf = config.read(configFile);
+      } catch (error) {
+        Logger.errorp('Error reading config file');
+        Logger.verbose(error);
+      }
     }
+
+    const isSteam = !conf?.server?.branch;
+    if (isSteam) {
+      await setupSteam(conf, update);
+    } else {
+      Logger.warnp(
+        'Brickadia will be launched with',
+        'non-steam launcher'.yellow
+      );
+    }
+
+    // check if a local install exists
+    const localInstall = fs.existsSync(soft.LOCAL_LAUNCHER);
+    const globalToken = auth.getGlobalToken();
 
     // if local install is provided
     if (localInstall) {
@@ -86,21 +115,47 @@ const program = commander
       conf.server.__LOCAL = true;
     }
 
+    const hasHostingToken = Boolean(
+      conf?.credentials?.token ||
+        process.env.BRICKADIA_AUTH_TOKEN ||
+        globalToken
+    );
+
     // check if the auth files don't exist
     if (
-      !auth.exists(path.join(workDir, soft.DATA_PATH, 'Saved/Auth')) &&
-      !auth.exists()
+      !hasHostingToken &&
+      !auth.exists(
+        path.join(
+          workDir,
+          soft.DATA_PATH,
+          conf?.server?.savedDir ?? soft.CONFIG_SAVED_DIR,
+          conf?.server?.authDir ?? soft.CONFIG_AUTH_DIR
+        )
+      )
     ) {
       const success = await auth.prompt({
         debug,
-        email: process.env.BRICKADIA_USER ?? undefined,
-        password: process.env.BRICKADIA_PASS ?? undefined,
-        branch: conf?.server?.branch ?? undefined,
+        email: conf?.credentials?.['email'] ?? process.env.BRICKADIA_USER,
+        password: conf?.credentials?.['password'] ?? process.env.BRICKADIA_PASS,
+        isSteam,
+        branch: conf?.server?.branch,
+        authDir: conf?.server?.authDir,
+        savedDir: conf?.server?.savedDir,
+        launchArgs: conf?.server?.launchArgs,
       });
       if (!success) {
         Logger.errorp('Start aborted - could not generate auth tokens');
         process.exit(1);
       }
+    } else {
+      if (hasHostingToken)
+        Logger.verbose(
+          'Skipping auth token generation due to host token presence'
+        );
+      else
+        Logger.verbose(
+          'Skipping auth token generation due to existing auth files'
+        );
     }
 
     // build options
@@ -168,7 +223,7 @@ program
       'omegga config list'.yellow.underline +
       ' for current settings and available fields'
   )
-  .action(async (field, value) => {
+  .action((field, value) => {
     if (!field) field = 'list';
     omeggaConfig(field, value, program.opts());
   });
@@ -195,49 +250,91 @@ program
       const { verbose, debug } = program.opts();
       Logger.VERBOSE = Boolean(verbose);
 
+      let branch: string, authDir: string, savedDir: string, launchArgs: string;
+      let isSteam: boolean;
+
+      // if there's a config in the current directory, use that one instead
+      if (config.find('.')) workDir = '.';
+
+      // check if configured path exists
+      if (fs.existsSync(workDir) && fs.statSync(workDir).isDirectory) {
+        Logger.verbose('Using working directory', workDir.yellow);
+        // find the config for the working directory
+        const configFile = config.find(workDir);
+        Logger.verbose('Target config file:', configFile?.yellow);
+        try {
+          // read the config and extract the branch
+          const conf = config.read(configFile);
+          Logger.verbose(
+            'Auth config:',
+            conf?.server ?? 'no server config'.grey
+          );
+          branch = conf?.server?.branch;
+          authDir = conf?.server?.authDir;
+          savedDir = conf?.server?.savedDir;
+          launchArgs = conf?.server?.launchArgs;
+          isSteam = !conf?.server?.branch;
+
+          if (localAuth && conf?.credentials?.token) {
+            Logger.logp(
+              "This server's auth is managed by the token in",
+              configFile.yellow
+            );
+            return;
+          }
+        } catch (error) {
+          Logger.errorp('Error reading config file');
+          Logger.verbose(error);
+        }
+      } else {
+        Logger.verbose('Using default working directory', workDir.yellow);
+      }
+
+      savedDir ??= soft.CONFIG_SAVED_DIR;
+
       const workdirPath = path.join(
         config.store.get('defaultOmegga'),
-        'data/Saved/Auth'
+        `data/${savedDir}/Auth`
       );
 
       if (globalAuth || localAuth) {
         if (globalAuth) {
-          Logger.logp('Clearing auth files from', auth.AUTH_PATH.yellow);
-          auth.clean();
+          const globalAuthPath = path.join(
+            soft.CONFIG_HOME,
+            savedDir !== soft.CONFIG_SAVED_DIR ? savedDir : '',
+            authDir ?? soft.CONFIG_AUTH_DIR
+          );
+          Logger.logp('Clearing auth files from', globalAuthPath.yellow);
+          auth.clean(globalAuthPath);
         }
         if (workDir) {
           Logger.logp('Clearing auth files from', workdirPath.yellow);
           await file.rmdir(workdirPath);
         }
         if (localAuth) {
-          const localPath = path.resolve('data/Saved/Auth');
+          const localPath = path.resolve(
+            `data/${savedDir}/`,
+            authDir ?? soft.CONFIG_AUTH_DIR
+          );
           Logger.logp('Clearing auth files from', localPath.yellow);
           await file.rmdir(localPath);
         }
         return;
-      } else {
-        let branch;
-
-        // if there's a config in the current directory, use that one instead
-        if (config.find('.')) workDir = '.';
-
-        // check if configured path exists
-        if (fs.existsSync(workDir) && fs.statSync(workDir).isDirectory) {
-          // find the config for the working directory
-          const configFile = config.find(workDir);
-          try {
-            // read the config and extract the branch
-            const conf = config.read(configFile);
-            branch = conf?.server?.branch;
-          } catch (error) {
-            Logger.errorp('Error reading config file');
-            Logger.verbose(error);
-          }
-        }
-
-        // auth with that branch
-        auth.prompt({ email, password, debug, branch });
       }
+
+      if (!isSteam) {
+        Logger.warnp('Authenticating with', 'non-steam launcher'.yellow);
+      }
+
+      auth.prompt({
+        email,
+        password,
+        debug,
+        branch,
+        authDir,
+        savedDir,
+        launchArgs,
+      });
     }
   );
 
@@ -398,3 +495,111 @@ program
   });
 
 program.parseAsync(process.argv);
+
+async function setupSteam(config: config.IConfig, forceUpdate = false) {
+  const overrideBinary =
+    OVERRIDE_GAME_DIR &&
+    path.join(
+      OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
+      GAME_BIN_PATH
+    );
+
+  if (overrideBinary) {
+    if (!fs.existsSync(overrideBinary)) {
+      Logger.error(
+        'Binary',
+        overrideBinary.yellow,
+        'in',
+        'BRICKADIA_DIR'.yellow,
+        'does not exist!'
+      );
+      process.exit(1);
+    }
+
+    Logger.verbose(
+      'Using override binary',
+      overrideBinary.yellow,
+      '- skipping download.'
+    );
+    return;
+  }
+
+  const isSteamBeta = Boolean(config?.server?.steambeta);
+  const steamBeta = config?.server?.steambeta || 'main';
+  const steamBetaPassword = config?.server?.steambetaPassword;
+
+  const binaryPath = path.join(
+    GAME_INSTALL_DIR, // steam install directory
+    steamBeta, // steam beta branch (or main)
+    GAME_DIRNAME, // Brickadia
+    GAME_BIN_PATH // path to binary
+  );
+
+  if (!forceUpdate && fs.existsSync(binaryPath)) {
+    Logger.verbose(
+      'Game binary already exists at',
+      binaryPath.yellow,
+      '- skipping download.'
+    );
+    return;
+  }
+
+  // Check if steamcmd is installed
+  if (!fs.existsSync(STEAMCMD_PATH)) {
+    // Lookup steamcmd in path
+    const hasSteamcmd = new Promise(resolve =>
+      hasbin('steamcmd', result => {
+        resolve(result);
+      })
+    );
+
+    // Prompt to install steamcmd
+    const { install } = await prompts({
+      type: 'confirm',
+      name: 'install',
+      message: hasSteamcmd
+        ? // TODO... just steamcmd directly
+          'SteamCMD is installed. OK to reference it?'
+        : 'SteamCMD is not installed. OK to download it?',
+      initial: true,
+    });
+
+    if (!install) {
+      Logger.errorp('SteamCMD is required for steam support. Exiting...');
+      process.exit(1);
+    }
+
+    Logger.logp('Installing SteamCMD...');
+    try {
+      execSync(path.join(__dirname, '../tools/install_steamcmd.sh'), {
+        stdio: 'inherit',
+      });
+      if (!fs.existsSync(STEAMCMD_PATH)) {
+        Logger.errorp('Failed to install SteamCMD. Exiting...');
+        process.exit(1);
+      }
+    } catch (err) {
+      Logger.errorp('Error installing SteamCMD:', err);
+      process.exit(1);
+    }
+  }
+
+  const args = [
+    `+force_install_dir ${path.join(GAME_INSTALL_DIR, steamBeta)}`,
+    `+login anonymous`,
+    `+app_update ${process.env.STEAM_APP_ID ?? STEAM_APP_ID}`,
+    isSteamBeta ? `-beta ${steamBeta}` : null,
+    isSteamBeta && steamBetaPassword
+      ? `-betapassword ${steamBetaPassword}`
+      : null,
+    '+quit',
+  ].filter(Boolean);
+
+  Logger.logp('Downloading Brickadia', steamBeta.yellow, '...');
+  try {
+    execSync(`${STEAMCMD_PATH} ${args.join(' ')}`, { stdio: 'inherit' });
+  } catch (err) {
+    Logger.errorp('Error downloading Brickadia:', err);
+    process.exit(1);
+  }
+}

@@ -1,3 +1,4 @@
+import { OmeggaPlayer } from '@/plugin';
 import Omegga from '@omegga/server';
 import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
@@ -449,6 +450,210 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
       }
     },
   },
+  {
+    aliases: ['world', 'worlds', 'w'],
+    desc: 'Manage worlds on the server',
+    descLines: () => ['Type /worlds load a world'],
+    async fn(subcommand: string, ...args: string[]) {
+      switch (subcommand) {
+        default:
+          const commands = [
+            {
+              command: '/worlds load <world> [rev]',
+              desc: 'load a world',
+              short: '/w load <world> [rev]',
+            },
+            {
+              command: '/worlds saveas <world>',
+              desc: 'save the current world as a new world',
+              short: '/w sa <world>',
+            },
+            {
+              command: '/worlds save',
+              desc: 'save the current world',
+              short: '/w s',
+            },
+            {
+              command: '/worlds revisions <world>',
+              desc: 'list revisions of a world',
+              short: '/w r <world>',
+            },
+            {
+              command: '/worlds new',
+              desc: 'create a new world',
+              short: '/w new <name> [Plate|Space|Studio|Peaks]',
+            },
+          ];
+          log('Available world commands:');
+          for (const { command, desc, short } of commands) {
+            this.log('  ', command.yellow, '-', desc, `(${short.yellow})`);
+          }
+          return;
+
+        case 'list':
+        case 'ls':
+          // list worlds
+          const worlds = await this.omegga.getWorlds();
+          if (worlds.length === 0) {
+            log(
+              'No worlds found. Create one with',
+              '/worlds saveas <world>'.yellow
+            );
+          } else {
+            log('Available worlds:');
+            const prefix = this.omegga.worldPath + '/';
+            for (const world of worlds) {
+              this.log(
+                '  ',
+                world.replace(prefix, '').replace(/\.brdb$/, '').yellow
+              );
+            }
+          }
+          return;
+        case 'load':
+        case 'l':
+          if (!this.omegga.started) {
+            err('The server is not running');
+            return;
+          }
+
+          // load a world
+          if (args.length === 0) {
+            err('Please specify a world to load');
+            return;
+          }
+          const worldName = args[0].replace(/\.brdb$/, '');
+          if (!this.omegga.getWorldPath(worldName)) {
+            err(`World "${worldName}" does not exist`);
+            return;
+          }
+          let revision: number | undefined;
+          if (args.length > 1) {
+            revision = parseInt(args[1], 10);
+            if (isNaN(revision) || revision < 1) {
+              err(`Invalid revision number: ${args[1]}`);
+              return;
+            }
+          }
+          if (revision) {
+            log(`Loading world ${worldName.yellow} at revision ${revision}...`);
+            this.omegga.loadWorldRevision(worldName, revision);
+          } else {
+            log(`Loading world ${worldName.yellow}...`);
+            this.omegga.loadWorld(worldName);
+          }
+          return;
+        case 'saveas':
+        case 'sa':
+          if (!this.omegga.started) {
+            err('The server is not running');
+            return;
+          }
+
+          // save the current world as a new world
+          if (args.length === 0) {
+            err('Please specify a world to save as');
+            return;
+          }
+          const saveWorldName = args[0].replace(/\.brdb$/, '');
+          if (this.omegga.getWorldPath(saveWorldName)) {
+            err(`World "${saveWorldName}" already exists`);
+            return;
+          }
+          log(`Saving current world as ${saveWorldName.yellow}...`);
+          this.omegga.saveWorldAs(saveWorldName);
+          return;
+
+        case 'save':
+        case 's':
+          if (!this.omegga.started) {
+            err('The server is not running');
+            return;
+          }
+
+          // save the current world
+          log('Saving current world...');
+          this.omegga.saveWorld();
+          return;
+
+        case 'revisions':
+        case 'r':
+          if (!this.omegga.started) {
+            err('The server is not running');
+            return;
+          }
+
+          // list revisions of a world
+          if (args.length === 0) {
+            err('Please specify a world to list revisions for');
+            return;
+          }
+          const revisionsWorldName = args[0].replace(/\.brdb$/, '');
+          if (!this.omegga.getWorldPath(revisionsWorldName)) {
+            err(`World "${revisionsWorldName}" does not exist`);
+            return;
+          }
+          log(`Listing revisions for world ${revisionsWorldName.yellow}...`);
+          try {
+            const revisions = await this.omegga.getWorldRevisions(
+              revisionsWorldName
+            );
+            if (revisions.length === 0) {
+              log('No revisions found for world', revisionsWorldName.yellow);
+            } else {
+              log('Revisions for world', revisionsWorldName.yellow + ':');
+              for (const rev of revisions) {
+                this.log(
+                  '  ',
+                  `Revision ${rev.index.toString().yellow} - ${
+                    rev.date
+                      .toISOString()
+                      .replace('T', ' ')
+                      .replace('.000Z', '').blue
+                  }`,
+                  `(${rev.note})`.grey
+                );
+              }
+            }
+          } catch (e) {
+            err(
+              'An error occurred while getting world revisions:',
+              e.toString()
+            );
+          }
+          return;
+
+        case 'new':
+        case 'n':
+          if (!this.omegga.started) {
+            err('The server is not running');
+            return;
+          }
+
+          // create a new world
+          if (args.length === 0) {
+            err('Please specify a name for the new world');
+            return;
+          }
+          const newWorldName = args[0].replace(/\.brdb$/, '');
+          if (this.omegga.getWorldPath(newWorldName)) {
+            err(`World "${newWorldName}" already exists`);
+            return;
+          }
+          const map = (args[1] ? args[1] : 'Plate') as
+            | 'Plate'
+            | 'Space'
+            | 'Studio'
+            | 'Peaks';
+          if (!['Plate', 'Space', 'Studio', 'Peaks'].includes(map)) {
+            err(`Invalid preset "${map}". Valid map are: Plate, Space, Studio`);
+            return;
+          }
+          log(`Creating new world ${newWorldName.yellow}...`);
+          this.omegga.createEmptyWorld(newWorldName, map);
+      }
+    },
+  },
 ];
 
 // the terminal wraps omegga and displays console output and handles console input
@@ -489,7 +694,7 @@ export default class Terminal {
           info('  rm -rf ~/.local/share/brickadia-launcher'.grey);
         }
         if (l.startsWith('DOWNLOADING')) {
-          // TOOD: if someone is proactive enough in the future, you could turn these steps into a legitimate progress bar
+          // TODO: if someone is proactive enough in the future, you could turn these steps into a legitimate progress bar
           /* Here's some launcher log lines that might be helpful
             Grabbing manifest and checking game files...
             DOWNLOADING MANIFEST | Hold on...
@@ -515,14 +720,31 @@ export default class Terminal {
           launcherDone = true;
         }
       }
+
+      // [2025.07.07-20.45.40:310][845]LogBRWorldManager: World successfully loaded.
+      if (
+        l.match(
+          /^\[[^\]]+\]\[[^\]]+\]LogBRWorldManager: World successfully loaded\.$/
+        )
+      ) {
+        info('World successfully loaded.');
+      }
     });
 
     // print debug events regardless of debug status
     omegga.on('debug', l => this.log('?>'.magenta, l));
 
     // print chat events as players join/leave the server
-    omegga.on('join', p => this.log(`${p.name.underline} joined.`.brightBlue));
-    omegga.on('leave', p => this.log(`${p.name.underline} left.`.brightBlue));
+    omegga.on('join', (p: OmeggaPlayer) =>
+      this.log(
+        `${p.name.underline} (${p.displayName.underline}) joined.`.brightBlue
+      )
+    );
+    omegga.on('leave', (p: OmeggaPlayer) =>
+      this.log(
+        `${p.name.underline} (${p.displayName.underline}) left.`.brightBlue
+      )
+    );
     omegga.on('chat', (name, message) =>
       this.log(`${name.brightYellow.underline}: ${message}`)
     );

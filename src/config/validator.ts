@@ -16,8 +16,11 @@ const validate = (obj: Partial<IConfig>) => {
   if (typeof obj.server.port !== 'number')
     return { valid: false, errors: ['server.port must be a number'] };
 
-  if (obj.server.branch && typeof obj.server.branch !== 'string')
-    return { valid: false, errors: ['server.branch must be a string'] };
+  const strings = ['branch', 'authDir', 'savedDir', 'launchArgs'];
+  for (const s of strings) {
+    if (obj.server[s] && typeof obj.server[s] !== 'string')
+      return { valid: false, errors: [`server.${s} must be a string`] };
+  }
 
   if (obj.omegga) {
     if (typeof obj.omegga !== 'object')

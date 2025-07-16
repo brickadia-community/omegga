@@ -97,6 +97,7 @@ const DEFAULT_MATERIALS = [
   'BMC_Ghost_Fail',
   'BMC_Plastic',
   'BMC_Glass',
+  'BMC_TranslucentPlastic',
   'BMC_Glow',
   'BMC_Metallic',
   'BMC_Hologram',

@@ -52,7 +52,6 @@ export const defaultConfig: IConfig = {
       ? Number(process.env.BRICKADIA_PORT)
       : 7777,
     map: 'Plate',
-    branch: 'main-server',
   },
 };
 

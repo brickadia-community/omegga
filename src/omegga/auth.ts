@@ -27,12 +27,22 @@ async function removeTempDir() {
 }
 
 // read the auth files into a buffer
-function readAuthFiles() {
+function readAuthFiles(savedDir: string, authDir: string) {
   const files: Record<string, Buffer> = {};
-  for (const f of soft.BRICKADIA_AUTH_FILES) {
-    files[f] = fs.readFileSync(
-      path.join(soft.TEMP_DIR_NAME, soft.DATA_PATH, 'Saved/Auth', f)
-    );
+  const prefix = path.join(
+    soft.TEMP_DIR_NAME,
+    soft.DATA_PATH,
+    savedDir,
+    authDir
+  );
+  for (const file of soft.BRICKADIA_AUTH_FILES) {
+    const filepath = path.join(prefix, file);
+    if (!fs.existsSync(filepath)) {
+      Logger.warn('Auth file', file, 'not found...');
+      continue;
+    }
+    Logger.verbose('Reading auth file', file, 'from', filepath);
+    files[file] = fs.readFileSync(filepath);
   }
   return files;
 }
@@ -40,6 +50,11 @@ function readAuthFiles() {
 // write auth files object to a server path
 export function writeAuthFiles(dstDir: string, files: Record<string, Buffer>) {
   for (const f in files) {
+    if (!files[f]) {
+      Logger.warn('Auth file', f, 'is empty, skipping write...');
+      continue;
+    }
+    Logger.verbose('Writing auth file', f, 'to', dstDir);
     fs.writeFileSync(path.join(dstDir, f), files[f]);
   }
 }
@@ -48,7 +63,19 @@ export function writeAuthFiles(dstDir: string, files: Record<string, Buffer>) {
 export async function genAuthFiles(
   email: string,
   password: string,
-  { debug = false, branch }: { debug?: boolean; branch?: string }
+  {
+    debug = false,
+    authDir = soft.CONFIG_AUTH_DIR,
+    savedDir = soft.CONFIG_SAVED_DIR,
+    branch,
+    launchArgs,
+  }: {
+    debug?: boolean;
+    branch?: string;
+    authDir?: string;
+    savedDir?: string;
+    launchArgs?: string;
+  }
 ) {
   Logger.verbose('Generating auth files');
 
@@ -69,6 +96,8 @@ export async function genAuthFiles(
       name: 'omegga auth init',
       __LOCAL: fs.existsSync(soft.LOCAL_LAUNCHER),
       branch,
+      authDir,
+      launchArgs,
     },
     credentials: { email, password },
   };
@@ -85,7 +114,7 @@ export async function genAuthFiles(
   const omegga = new Omegga(soft.TEMP_DIR_NAME, config, options);
 
   // create the unlisted server config
-  writeConfig(soft.TEMP_DIR_NAME, config);
+  writeConfig(path.join(soft.TEMP_DIR_NAME, soft.DATA_PATH), config);
 
   omegga.start();
 
@@ -128,7 +157,7 @@ export async function genAuthFiles(
   });
 
   // read the auth files on success
-  const files = success ? readAuthFiles() : null;
+  const files = success ? readAuthFiles(savedDir, authDir) : null;
 
   // remove temp dir
   removeTempDir();
