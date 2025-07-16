@@ -1,6 +1,7 @@
 import { IconLink } from '@tabler/icons-react';
-import { ChatTime } from '../chat-time';
+import Linkify from 'linkify-react';
 import { Link, useRoute } from 'wouter';
+import { ChatTime } from '../chat-time';
 
 export const ChatEntry = ({ log }: { log: any }) => {
   const [_match, params] = useRoute('/history/:time?');
@@ -32,7 +33,8 @@ export const ChatEntry = ({ log }: { log: any }) => {
                 {log.user.name}
               </Link>
             )}
-            {log.user.web ? ']' : ''}: <span>{log.message}</span>
+            {log.user.web ? ']' : ''}:{' '}
+            <Linkify as="span">{log.message}</Linkify>
           </div>
         )}
         {log.action === 'leave' && (

@@ -20,6 +20,14 @@ export interface IPlayer {
   name?: string;
 }
 
+export interface IChatUser {
+  id: string;
+  name: string;
+  web?: boolean;
+  color: string;
+  isFirst?: boolean;
+}
+
 export interface IStoreVersion {
   type: 'storeVersion';
   version: number;
@@ -50,7 +58,7 @@ export interface IStoreChat {
   created: number;
   instanceId: string;
   action: 'msg' | 'server' | 'leave' | 'join';
-  user: Partial<IPlayer>;
+  user: Partial<IChatUser>;
   message?: string;
 }
 

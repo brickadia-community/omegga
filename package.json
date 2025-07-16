@@ -75,6 +75,8 @@
     "dts-bundle-generator": "^9.5.1",
     "file-loader": "^6.1.0",
     "jsdoc-to-markdown": "^7.0.1",
+    "linkify-react": "^4.3.1",
+    "linkifyjs": "^4.3.1",
     "mini-css-extract-plugin": "^1.0.0",
     "nanostores": "^1.0.1",
     "sass": "^1.89.2",

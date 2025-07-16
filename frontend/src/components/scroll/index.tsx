@@ -1,11 +1,11 @@
 import type { HTMLAttributes } from 'react';
-import type React from 'react';
 
 export const Scroll = ({
   children,
+  className,
   ...props
-}: React.PropsWithChildren & HTMLAttributes<HTMLDivElement>) => (
-  <div className="scroll-container" {...props}>
+}: HTMLAttributes<HTMLDivElement>) => (
+  <div className={`scroll-container ${className ?? ''}`} {...props}>
     <div className="scroll-scroller">{children}</div>
   </div>
 );

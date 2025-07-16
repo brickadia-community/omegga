@@ -1,0 +1,25 @@
+.chat-widget {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  position: relative;
+  align-items: stretch;
+  max-width: 100%;
+
+  .messages {
+    flex: 1;
+    position: relative;
+    font-family: 'Roboto';
+
+    .messages-child {
+      display: flex;
+      flex-direction: column;
+      margin: 8px;
+    }
+  }
+
+  .input {
+    flex: 1;
+    width: calc(100% - 24px - 20px);
+  }
+}
