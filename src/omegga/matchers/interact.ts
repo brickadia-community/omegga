@@ -41,7 +41,6 @@ const interact: MatchGenerator<BrickInteraction> = omegga => {
         return {
           player: {
             id: match.groups.id,
-            // TODO [BRICKADIA] display name used here instead of username...
             name: match.groups.name,
             controller: match.groups.controller,
             pawn: match.groups.pawn,

@@ -1,3 +1,4 @@
+import { OmeggaPlayer } from '@/plugin';
 import Omegga from '@omegga/server';
 import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
@@ -734,8 +735,16 @@ export default class Terminal {
     omegga.on('debug', l => this.log('?>'.magenta, l));
 
     // print chat events as players join/leave the server
-    omegga.on('join', p => this.log(`${p.name.underline} joined.`.brightBlue));
-    omegga.on('leave', p => this.log(`${p.name.underline} left.`.brightBlue));
+    omegga.on('join', (p: OmeggaPlayer) =>
+      this.log(
+        `${p.name.underline} (${p.displayName.underline}) joined.`.brightBlue
+      )
+    );
+    omegga.on('leave', (p: OmeggaPlayer) =>
+      this.log(
+        `${p.name.underline} (${p.displayName.underline}) left.`.brightBlue
+      )
+    );
     omegga.on('chat', (name, message) =>
       this.log(`${name.brightYellow.underline}: ${message}`)
     );
