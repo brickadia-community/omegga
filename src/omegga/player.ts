@@ -479,91 +479,42 @@ class Player implements OmeggaPlayer {
   }> {
     const { controller } = this;
 
-    const ownerRegExp =
-      /^(?<index>\d+)\) Tool_Painter_C (.+):PersistentLevel\.(?<actor>Tool_Painter_C_\d+)\.Owner = .*?BP_PlayerController_C'(.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)'$/;
-
-    // TODO: these props are not accessible after the alpha
-    // const colorRegExp =
-    //   /^(?<index>\d+)\) Tool_Painter_C (.+):PersistentLevel\.(?<actor>Tool_Painter_C_\d+)\.SelectedColor = \(B=(?<b>.+),G=(?<g>.+),R=(?<r>.+),A=(?<a>.+)\)$/;
-    // const materialRegExp =
-    //   /^(?<index>\d+)\) Tool_Painter_C (.+):PersistentLevel\.(?<actor>Tool_Painter_C_\d+)\.SelectedMaterialId = (?<materialIndex>\d+)$/;
-    // const materialAlphaRegExp =
-    //   /^(?<index>\d+)\) Tool_Painter_C (.+):PersistentLevel\.(?<actor>Tool_Painter_C_\d+)\.SelectedMaterialAlpha = (?<materialAlpha>\d+)$/;
-
-    const [owners /* colorMatch, materialMatch, materialAlphaMatch */] =
-      await Promise.all([
-        this.#omegga.watchLogChunk<RegExpMatchArray>(
-          'GetAll Tool_Painter_C Owner',
-          ownerRegExp,
-          {
-            first: 'index',
-            timeoutDelay: 2000,
-            afterMatchDelay: 100,
-          }
-        ),
-        // this.#omegga.watchLogChunk<RegExpMatchArray>(
-        //   'GetAll Tool_Painter_C SelectedColor',
-        //   colorRegExp,
-        //   {
-        //     first: 'index',
-        //     timeoutDelay: 2000,
-        //     afterMatchDelay: 100,
-        //   }
-        // ),
-        // this.#omegga.watchLogChunk<RegExpMatchArray>(
-        //   'GetAll Tool_Painter_C SelectedMaterialId',
-        //   materialRegExp,
-        //   {
-        //     first: 'index',
-        //     timeoutDelay: 2000,
-        //     afterMatchDelay: 100,
-        //   }
-        // ),
-        // this.#omegga.watchLogChunk<RegExpMatchArray>(
-        //   'GetAll Tool_Painter_C SelectedMaterialAlpha',
-        //   materialAlphaRegExp,
-        //   {
-        //     first: 'index',
-        //     timeoutDelay: 2000,
-        //     afterMatchDelay: 100,
-        //   }
-        // ),
-      ]);
-
-    // get BrickGridPreviewActor by controller
-    const owner = owners.find(owner => owner.groups.controller === controller);
-
-    if (!owner) return;
-
-    return {
-      materialIndex: '3',
-      materialAlpha: '5',
-      material: brickUtils.BRICK_CONSTANTS.DEFAULT_MATERIALS[3],
-      color: [255, 255, 255],
-    };
-
-    // const actor = owner.groups.actor;
-    // // get transform parameters for the found actor
-    // const color = colorMatch.find(color => color.groups.actor === actor);
-    // const material = materialMatch.find(
-    //   material => material.groups.actor === actor
-    // );
-    // const materialAlpha = materialAlphaMatch.find(
-    //   materialAlpha => materialAlpha.groups.actor === actor
-    // );
-
-    // if (!color || !material || !materialAlpha) return;
-
-    // const colorRaw = [+color.groups.r, +color.groups.g, +color.groups.b];
-    // return {
-    //   materialIndex: material.groups.materialIndex,
-    //   materialAlpha: materialAlpha.groups.materialAlpha,
-    //   material:
-    //     brickUtils.BRICK_CONSTANTS.DEFAULT_MATERIALS[
-    //       Number(material.groups.materialIndex)
-    //     ],
-    //   color: colorRaw,
-    // };
+    const match = await this.#omegga
+      .addWatcher<{
+        materialIndex: string;
+        materialAlpha: string;
+        material: string;
+        color: number[];
+      }>(
+        line => {
+          // [date][counter]0) BP_PlayerState_C /Game/Maps/Plate/Plate.Plate:PersistentLevel.BP_PlayerState_C_2147482378.ColorSelectionState = (SelectedColor=(B=6,G=73,R=246,A=255),MaterialIndex=3,MaterialAlpha=5)
+          const match = line.match(
+            /^\[[^\]]+\]\[[^\]]+\]0\) BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.ColorSelectionState = \(SelectedColor=\(B=(?<b>\d+),G=(?<g>\d+),R=(?<r>\d+),A=(?<a>\d+)\),MaterialIndex=(?<materialIndex>\d+),MaterialAlpha=(?<materialAlpha>\d+)\)$/
+          );
+          if (!match) return;
+          if (match.groups.state !== this.state) return;
+          const colorRaw = [+match.groups.r, +match.groups.g, +match.groups.b];
+          return {
+            materialIndex: match.groups.materialIndex,
+            materialAlpha: match.groups.materialAlpha,
+            material:
+              brickUtils.BRICK_CONSTANTS.DEFAULT_MATERIALS[
+                Number(match.groups.materialIndex)
+              ],
+            color: colorRaw,
+          };
+        },
+        {
+          timeoutDelay: 1000,
+          exec: () =>
+            this.#omegga.writeln(
+              `GetAll BRPlayerState ColorSelectionState Owner=${controller}`
+            ),
+        }
+      )
+      .catch(() => null);
+    if (!match?.[0]) return;
+    return match[0];
   }
 
   async isCrouched(pawn?: string): Promise<boolean> {
