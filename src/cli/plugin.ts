@@ -50,7 +50,7 @@ interface ITransformer {
 }
 
 const PLUGIN_TYPES = ['safe', 'safe-ts', 'unsafe', 'rust', 'rpc'];
-type PluginType = typeof PLUGIN_TYPES[number];
+type PluginType = (typeof PLUGIN_TYPES)[number];
 
 // plugin url transformers
 const transformers: ITransformer[] = [

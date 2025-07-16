@@ -284,7 +284,7 @@ export class PluginLoader {
   path: string;
   omegga: Omegga;
   store: Datastore;
-  formats: typeof Plugin[];
+  formats: (typeof Plugin)[];
   plugins: Plugin[];
 
   commands: Record<string, IPluginCommand & { _plugin: Plugin }>;
