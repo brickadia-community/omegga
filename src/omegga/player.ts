@@ -421,14 +421,18 @@ class Player implements OmeggaPlayer {
   }> {
     const { controller } = this;
 
-    const ownerRegExp =
-      /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.Owner = .*?BP_PlayerController_C'(.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)'$/;
-    const transformParamsRegExp =
-      /^(?<index>\d+)\) BrickGridPreviewActor (.+):PersistentLevel\.(?<actor>BrickGridPreviewActor_\d+)\.TransformParameters = \(TargetGrid=("(?<targetGrid>.+)"|None),Position=\(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\),Orientation=(?<orientation>.+)\)$/;
+    const previewClass = 'BP_ToolPreviewActor_C';
+
+    const ownerRegExp = new RegExp(
+      `^(?<index>\\d+)\\) ${previewClass} (.+):PersistentLevel\\.(?<actor>${previewClass}_\\d+)\.Owner = .*?BP_PlayerController_C'(.+):PersistentLevel\\.(?<controller>BP_PlayerController_C_\\d+)'$`
+    );
+    const transformParamsRegExp = new RegExp(
+      `^(?<index>\\d+)\\) ${previewClass} (.+):PersistentLevel\\.(?<actor>${previewClass}_\\d+)\\.TransformParameters = \\(TargetGrid=("(?<targetGrid>.+)"|None),Location=\\(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\\),Orientation=(?<orientation>.+)\\)$`
+    );
 
     const [owners, transformParams] = await Promise.all([
       this.#omegga.watchLogChunk<RegExpMatchArray>(
-        'GetAll BrickGridPreviewActor Owner',
+        `GetAll ${previewClass} Owner`,
         ownerRegExp,
         {
           first: 'index',
@@ -437,7 +441,7 @@ class Player implements OmeggaPlayer {
         }
       ),
       this.#omegga.watchLogChunk<RegExpMatchArray>(
-        'GetAll BrickGridPreviewActor TransformParameters',
+        `GetAll ${previewClass} TransformParameters`,
         transformParamsRegExp,
         {
           first: 'index',
@@ -554,13 +558,12 @@ class Player implements OmeggaPlayer {
   }
 
   async getTemplateBounds() {
-    // Not working in closed beta
-    if (this.#omegga.version > 11371) return;
-
     const { controller } = this;
 
     const brickTemplateRegExp =
-      /^(?<index>\d+)\) BP_PlayerController_C (.+):PersistentLevel\.(?<controller>BP_PlayerController_C_\d+)\.TEMP_BrickTemplate_Server = BrickBuildingTemplate'(.+)Transient.(?<templateName>BrickBuildingTemplate_\d+)'$/;
+      /^(?<index>\d+)\) Tool_Selector_C (.+):PersistentLevel\.(?<tool>Tool_Selector_C_\d+)\.CurrentTemplate = (.+)Brickadia.BrickBuildingTemplate'(.+)Transient.(?<templateName>BrickBuildingTemplate_\d+)'$/
+    const brickTemplateOwnerRegExp =
+      /^(?<index>\d+)\) Tool_Selector_C (.+):PersistentLevel\.(?<tool>Tool_Selector_C_\d+)\.Owner = (.+)(?<controller>BP_PlayerController_C_\d+)'$/;
     const minBoundsRegExp =
       /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.MinBounds = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
     const maxBoundsRegExp =
@@ -568,10 +571,19 @@ class Player implements OmeggaPlayer {
     const centerRegExp =
       /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.Center = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
 
-    const [template, minBounds, maxBounds, centers] = await Promise.all([
+    const [templates, owners, minBounds, maxBounds, centers] = await Promise.all([
       this.#omegga.watchLogChunk<RegExpMatchArray>(
-        `GetAll BP_PlayerController_C TEMP_BrickTemplate_Server Name=${controller}`,
+        'GetAll Tool_Selector_C CurrentTemplate',
         brickTemplateRegExp,
+        {
+          first: 'index',
+          timeoutDelay: 2000,
+          afterMatchDelay: 100,
+        }
+      ),
+      this.#omegga.watchLogChunk<RegExpMatchArray>(
+        'GetAll Tool_Selector_C Owner',
+        brickTemplateOwnerRegExp,
         {
           first: 'index',
           timeoutDelay: 2000,
@@ -608,15 +620,35 @@ class Player implements OmeggaPlayer {
     ]);
 
     if (
-      !template.length ||
+      !templates.length ||
+      !owners.length ||
       !minBounds.length ||
       !maxBounds.length ||
       !centers.length
     )
       return;
 
-    // get template name
-    const templateName = template[0].groups.templateName;
+
+    // get selector for this controller, we need to handle if there are multiple selectors for the same controller
+    const selectors = owners.filter(selectors => selectors.groups.controller === controller)
+      .map(selectors => selectors.groups.tool)
+      .sort();
+    const selector = selectors[0]; // grab the most recently created
+
+    if (!selector) {
+      return;
+    }
+
+    // template for this selector, we need to handle if there are multiple templates for the same selector and grab the most recent one
+    const brickTemplates = templates.filter(template => template.groups.tool === selector)
+      .map(template => template.groups.templateName)
+      .sort();
+    const templateName = brickTemplates[0]; // grab the most recently created
+
+
+    if (!templateName) {
+      return;
+    }
 
     // find all values with matching template name
     const minBound = minBounds.find(
