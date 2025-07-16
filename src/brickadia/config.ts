@@ -10,8 +10,11 @@ const SERVER_SETTINGS = '/ServerSettings.ini';
 
 // Function that writes config
 export function write(serverPath: string, config: IConfig) {
-  const configPath = path.join(serverPath, config.server.savedDir ?? CONFIG_SAVED_DIR,
-    CONFIG_PATH);
+  const configPath = path.join(
+    serverPath,
+    config.server.savedDir ?? CONFIG_SAVED_DIR,
+    CONFIG_PATH
+  );
   const settingsPath = path.join(configPath, SERVER_SETTINGS);
 
   file.mkdir(configPath);

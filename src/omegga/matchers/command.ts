@@ -7,7 +7,7 @@ const command: MatchGenerator<{
 }> = omegga => {
   // pattern to get PlayerController from a leave message
   const commandRegExp =
-    /^Player (?<name>.+?) is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
+    /^Player \"(?<name>.+?)\" is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
 
   return {
     // listen for commands messages
@@ -25,8 +25,7 @@ const command: MatchGenerator<{
         const { name, command, args } = match.groups;
 
         // no player has this name. probably a bug
-        // TODO: [BRICKADIA] PLEASE fix this using display names
-        if (!omegga.players.some(p => p.displayName === name)) return;
+        if (!omegga.players.some(p => p.name === name)) return;
 
         // return the player and the command
         return { name, command, args: args.split(' ') };

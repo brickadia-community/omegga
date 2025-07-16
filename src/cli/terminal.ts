@@ -1,3 +1,4 @@
+import { OmeggaPlayer } from '@/plugin';
 import Omegga from '@omegga/server';
 import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
@@ -734,13 +735,22 @@ export default class Terminal {
     omegga.on('debug', l => this.log('?>'.magenta, l));
 
     // print chat events as players join/leave the server
-    omegga.on('join', p => this.log(`${p.name.underline} joined.`.brightBlue));
-    omegga.on('leave', p => this.log(`${p.name.underline} left.`.brightBlue));
+    omegga.on('join', (p: OmeggaPlayer) =>
+      this.log(
+        `${p.name.underline} (${p.displayName.underline}) joined.`.brightBlue
+      )
+    );
+    omegga.on('leave', (p: OmeggaPlayer) =>
+      this.log(
+        `${p.name.underline} (${p.displayName.underline}) left.`.brightBlue
+      )
+    );
     omegga.on('chat', (name, message) =>
       this.log(`${name.brightYellow.underline}: ${message}`)
     );
     omegga.on('start', () => {
-      const wsl = require('../util/wsl');
+      const { checkWsl } = require('../util/wsl');
+      const wsl = checkWsl();
       log(
         `Server has started${
           wsl === 1 ? ' in single thread mode due to WSL1' : ''
@@ -781,7 +791,9 @@ export default class Terminal {
     omegga.on('unauthorized', () => {
       err('Server failed authentication check');
       info('You can clear auth tokens with', 'omegga auth -gl'.green);
-      info('This will require you to sign-in again');
+      info(
+        'This will require you to paste a new hosting token or sign-in again'
+      );
       process.exit();
     });
     omegga.on('error', e => err('Server caught unhandled exception:\n' + e));

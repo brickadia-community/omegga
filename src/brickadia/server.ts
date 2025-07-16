@@ -121,7 +121,9 @@ export default class BrickadiaServer extends EventEmitter {
         steamBinary.yellow
       );
       gameBinary = overrideBinary;
-    } else if (!isSteam) {
+    } else if (isSteam) {
+      Logger.verbose('Using steam binary', steamBeta.yellow);
+    } else {
       Logger.verbose(
         'Running',
         (this.config.server.__LOCAL
@@ -131,13 +133,11 @@ export default class BrickadiaServer extends EventEmitter {
       );
       if (typeof this.config.server.branch === 'string')
         Logger.verbose('Using branch', this.config.server.branch.yellow);
-    } else {
-      Logger.verbose('Using steam binary', steamBeta.yellow);
     }
 
     // handle local launcher support
     const launchArgs = isSteam
-      ? [steamBinary]
+      ? [gameBinary]
       : [
           this.config.server.__LOCAL
             ? path.join(__dirname, '../../tools/brickadia.sh')

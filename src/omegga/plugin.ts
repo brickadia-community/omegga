@@ -284,7 +284,7 @@ export class PluginLoader {
   path: string;
   omegga: Omegga;
   store: Datastore;
-  formats: typeof Plugin[];
+  formats: (typeof Plugin)[];
   plugins: Plugin[];
 
   commands: Record<string, IPluginCommand & { _plugin: Plugin }>;
@@ -506,8 +506,8 @@ export class PluginLoader {
     const send = (msg: string) => this.omegga.whisper(player, msg);
 
     // available commands and documentation from the plugin system
-    const commands = this.commands;
-    const docs = this.documentation;
+    const commands = this.commands ?? {};
+    const docs = this.documentation ?? {};
 
     const splitHelper = (objs: string[]) => {
       const lines = [];

@@ -1,4 +1,5 @@
 import soft, { GAME_DIRNAME, OVERRIDE_GAME_DIR } from '@/softconfig';
+import { installLauncher } from '@cli/installer';
 import * as config from '@config';
 import Omegga from '@omegga/server';
 import * as file from '@util/file';
@@ -6,6 +7,7 @@ import { execSync } from 'child_process';
 import 'colors';
 import commander from 'commander';
 import fs from 'fs';
+import hasbin from 'hasbin';
 import path from 'path';
 import prompts from 'prompts';
 import updateNotifier from 'update-notifier-cjs';
@@ -13,12 +15,11 @@ import { auth, config as omeggaConfig, pluginUtil, Terminal } from './cli';
 import { IConfig } from './config/types';
 import Logger from './logger';
 import {
-  STEAM_APP_ID,
   GAME_BIN_PATH,
   GAME_INSTALL_DIR,
+  STEAM_APP_ID,
   STEAMCMD_PATH,
 } from './softconfig';
-import hasbin from 'hasbin';
 const pkg = require('../package.json');
 
 const notifier = updateNotifier({
@@ -95,35 +96,70 @@ const program = commander
       }
     }
 
+    const overrideBinary =
+      OVERRIDE_GAME_DIR &&
+      path.join(
+        OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
+        GAME_BIN_PATH
+      );
+
     const isSteam = !conf?.server?.branch;
-    if (isSteam) {
+    if (overrideBinary) {
+      if (!fs.existsSync(overrideBinary)) {
+        Logger.error(
+          'Binary',
+          overrideBinary.yellow,
+          'in',
+          'BRICKADIA_DIR'.yellow,
+          'does not exist!'
+        );
+        process.exit(1);
+      }
+
+      Logger.verbose(
+        'Using override binary',
+        overrideBinary.yellow,
+        '- skipping download.'
+      );
+    } else if (isSteam) {
       await setupSteam(conf, update);
     } else {
       Logger.warnp(
         'Brickadia will be launched with',
         'non-steam launcher'.yellow
       );
+
+      // Check if the local launcher is installed
+      if (fs.existsSync(soft.LOCAL_LAUNCHER)) {
+        Logger.verbose("Using omegga's brickadia-launcher");
+        conf.server.__LOCAL = true;
+      } else {
+        Logger.verbose("Installing launcher as it's missing");
+        await installLauncher();
+      }
     }
 
-    // check if a local install exists
-    const localInstall = fs.existsSync(soft.LOCAL_LAUNCHER);
     const globalToken = auth.getGlobalToken();
 
-    // if local install is provided
-    if (localInstall) {
-      Logger.verbose("Using omegga's brickadia-launcher");
-      conf.server.__LOCAL = true;
-    }
-
     const hasHostingToken = Boolean(
-      conf?.credentials?.token ||
-        process.env.BRICKADIA_AUTH_TOKEN ||
-        globalToken
+      conf?.credentials?.token || process.env.BRICKADIA_TOKEN || globalToken
     );
 
-    // check if the auth files don't exist
-    if (
-      !hasHostingToken &&
+    // Skip auth when the hosting token is present
+    if (hasHostingToken) {
+      Logger.verbose(
+        'Skipping auth token generation due to host token presence'
+      );
+      if (conf?.credentials?.token)
+        Logger.verbose('Found token in config file');
+      else if (process.env.BRICKADIA_TOKEN)
+        Logger.verbose('Found token in', 'BRICKADIA_TOKEN'.yellow);
+      else if (globalToken)
+        Logger.verbose('Found token in omegga global config');
+      else Logger.verbose('unreachable - no token found');
+
+      // check if the auth files don't exist
+    } else if (
       !auth.exists(
         path.join(
           workDir,
@@ -148,14 +184,9 @@ const program = commander
         process.exit(1);
       }
     } else {
-      if (hasHostingToken)
-        Logger.verbose(
-          'Skipping auth token generation due to host token presence'
-        );
-      else
-        Logger.verbose(
-          'Skipping auth token generation due to existing auth files'
-        );
+      Logger.verbose(
+        'Skipping auth token generation due to existing auth files'
+      );
     }
 
     // build options
@@ -356,7 +387,7 @@ program
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .description('Installs a plugin to the current brickadia server')
   .action(async plugins => {
-    if (!require('hasbin').sync('git')) {
+    if (!hasbin.sync('git')) {
       Logger.errorp('git'.yellow, 'must be installed to install plugins.');
       process.exit(1);
     }
@@ -497,33 +528,6 @@ program
 program.parseAsync(process.argv);
 
 async function setupSteam(config: config.IConfig, forceUpdate = false) {
-  const overrideBinary =
-    OVERRIDE_GAME_DIR &&
-    path.join(
-      OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
-      GAME_BIN_PATH
-    );
-
-  if (overrideBinary) {
-    if (!fs.existsSync(overrideBinary)) {
-      Logger.error(
-        'Binary',
-        overrideBinary.yellow,
-        'in',
-        'BRICKADIA_DIR'.yellow,
-        'does not exist!'
-      );
-      process.exit(1);
-    }
-
-    Logger.verbose(
-      'Using override binary',
-      overrideBinary.yellow,
-      '- skipping download.'
-    );
-    return;
-  }
-
   const isSteamBeta = Boolean(config?.server?.steambeta);
   const steamBeta = config?.server?.steambeta || 'main';
   const steamBetaPassword = config?.server?.steambetaPassword;
@@ -547,11 +551,7 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
   // Check if steamcmd is installed
   if (!fs.existsSync(STEAMCMD_PATH)) {
     // Lookup steamcmd in path
-    const hasSteamcmd = new Promise(resolve =>
-      hasbin('steamcmd', result => {
-        resolve(result);
-      })
-    );
+    const hasSteamcmd = hasbin.sync('steamcmd');
 
     // Prompt to install steamcmd
     const { install } = await prompts({

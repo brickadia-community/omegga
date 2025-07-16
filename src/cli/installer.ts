@@ -1,11 +1,8 @@
 // DEPRECATED
+import Logger from '@/logger';
 import { spawn } from 'child_process';
-import 'colors';
 import path from 'path';
 import readline from 'readline';
-
-const err = (...args: any[]) => console.error('!>'.red, ...args);
-const log = (...args: any[]) => console.log('>>'.green, ...args);
 
 const INSTALLER_PATH = path.join(__dirname, '../../tools/install_launcher.sh');
 
@@ -41,11 +38,11 @@ function runInstaller() {
   });
 }
 
-async function installLauncher() {
+export async function installLauncher() {
   const ok = await prompt();
 
   if (!ok) {
-    err(
+    Logger.errorp(
       'Omegga could not be started - missing dependencies. Visit ' +
         'https://www.brickadia.com'.yellow.underline +
         ' to download the launcher.'
@@ -53,12 +50,9 @@ async function installLauncher() {
     process.exit(1);
   }
 
-  log('Running launcher installer...');
+  Logger.logp('Running launcher installer...');
   const res = await runInstaller();
   if (res === 0) {
-    log('Success!');
-    require('@/main');
+    Logger.logp('Success!');
   }
 }
-
-installLauncher();

@@ -52,9 +52,9 @@ fi
 if ! [[ $has_tar && $has_wget && $has_lib32gcc == "yes" ]]; then
   wget_dep="wget "
   tar_dep="tar "
-  if [[ $has_tar ]] then tar_dep=""; fi
-  if [[ $has_wget ]] then wget_dep=""; fi
-  if [[ $has_lib32gcc == "yes" ]] then lib32gcc_dep=""; fi
+  if [[ $has_tar ]]; then tar_dep=""; fi
+  if [[ $has_wget ]]; then wget_dep=""; fi
+  if [[ $has_lib32gcc == "yes" ]]; then lib32gcc_dep=""; fi
 
   echo ">! Missing dependencies, please run:" >&2
   echo "  sudo $pkg_manager $wget_dep$tar_dep_$lib32gcc_dep" >&2
