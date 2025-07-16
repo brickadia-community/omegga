@@ -749,7 +749,8 @@ export default class Terminal {
       this.log(`${name.brightYellow.underline}: ${message}`)
     );
     omegga.on('start', () => {
-      const wsl = require('../util/wsl');
+      const { checkWsl } = require('../util/wsl');
+      const wsl = checkWsl();
       log(
         `Server has started${
           wsl === 1 ? ' in single thread mode due to WSL1' : ''
