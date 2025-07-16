@@ -21,7 +21,7 @@ const join: MatchGenerator<Player> = omegga => {
 
   // patterns to match PlayerState and PlayerController objects in GetAll commands
   const stateRegExp =
-    /BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.PlayerNamePrivate = (?<name>.+)$/;
+    /BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.UserName = (?<name>.+)$/;
   const controllerRegExp =
     /BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.Owner = .*?BP_PlayerController_C'.+?:PersistentLevel.(?<controller>BP_PlayerController_C_\d+)'/;
 
@@ -70,8 +70,10 @@ const join: MatchGenerator<Player> = omegga => {
               id: joinData.UserId,
             });
 
-            // get the state of all players (including the one that is joining)
-            omegga.writeln('GetAll BRPlayerState PlayerNamePrivate');
+            // get the state of the joining player
+            omegga.writeln(
+              `GetAll BRPlayerState UserName UserName=${joinData.UserName}`
+            );
           }
         }
 
@@ -85,8 +87,7 @@ const join: MatchGenerator<Player> = omegga => {
           const { name, state } = stateMatch.groups;
 
           // find the joining player that has a matching name
-          // TODO: [BRICKADIA] display name used here instead of username...
-          const player = joiningPlayers.find(p => p.displayName === name);
+          const player = joiningPlayers.find(p => p.name === name);
 
           // check if another player is already using this state or if there's any joining player with this name
           if (!player || omegga.players.some(p => p.state === state)) return;
