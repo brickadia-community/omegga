@@ -506,8 +506,8 @@ export class PluginLoader {
     const send = (msg: string) => this.omegga.whisper(player, msg);
 
     // available commands and documentation from the plugin system
-    const commands = this.commands;
-    const docs = this.documentation;
+    const commands = this.commands ?? {};
+    const docs = this.documentation ?? {};
 
     const splitHelper = (objs: string[]) => {
       const lines = [];
