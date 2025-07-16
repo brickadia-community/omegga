@@ -95,8 +95,32 @@ const program = commander
       }
     }
 
+    const overrideBinary =
+      OVERRIDE_GAME_DIR &&
+      path.join(
+        OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
+        GAME_BIN_PATH
+      );
+
     const isSteam = !conf?.server?.branch;
-    if (isSteam) {
+    if (overrideBinary) {
+      if (!fs.existsSync(overrideBinary)) {
+        Logger.error(
+          'Binary',
+          overrideBinary.yellow,
+          'in',
+          'BRICKADIA_DIR'.yellow,
+          'does not exist!'
+        );
+        process.exit(1);
+      }
+
+      Logger.verbose(
+        'Using override binary',
+        overrideBinary.yellow,
+        '- skipping download.'
+      );
+    } else if (isSteam) {
       await setupSteam(conf, update);
     } else {
       Logger.warnp(
@@ -110,15 +134,13 @@ const program = commander
     const globalToken = auth.getGlobalToken();
 
     // if local install is provided
-    if (localInstall) {
+    if (localInstall && !overrideBinary) {
       Logger.verbose("Using omegga's brickadia-launcher");
       conf.server.__LOCAL = true;
     }
 
     const hasHostingToken = Boolean(
-      conf?.credentials?.token ||
-        process.env.BRICKADIA_AUTH_TOKEN ||
-        globalToken
+      conf?.credentials?.token || process.env.BRICKADIA_TOKEN || globalToken
     );
 
     // check if the auth files don't exist
@@ -497,33 +519,6 @@ program
 program.parseAsync(process.argv);
 
 async function setupSteam(config: config.IConfig, forceUpdate = false) {
-  const overrideBinary =
-    OVERRIDE_GAME_DIR &&
-    path.join(
-      OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
-      GAME_BIN_PATH
-    );
-
-  if (overrideBinary) {
-    if (!fs.existsSync(overrideBinary)) {
-      Logger.error(
-        'Binary',
-        overrideBinary.yellow,
-        'in',
-        'BRICKADIA_DIR'.yellow,
-        'does not exist!'
-      );
-      process.exit(1);
-    }
-
-    Logger.verbose(
-      'Using override binary',
-      overrideBinary.yellow,
-      '- skipping download.'
-    );
-    return;
-  }
-
   const isSteamBeta = Boolean(config?.server?.steambeta);
   const steamBeta = config?.server?.steambeta || 'main';
   const steamBetaPassword = config?.server?.steambetaPassword;
