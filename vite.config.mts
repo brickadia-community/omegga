@@ -44,11 +44,13 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       input: {
-        auth: resolve(__dirname, 'frontend/react.auth.html'),
-        app: resolve(__dirname, 'frontend/react.app.html'),
+        auth: resolve(__dirname, 'frontend/auth.html'),
+        app: resolve(__dirname, 'frontend/app.html'),
       },
+      external: ['@omegga'],
     },
-    outDir: resolve(__dirname, 'frontend/public'),
+    emptyOutDir: true,
+    outDir: resolve(__dirname, 'public'),
     copyPublicDir: false,
     chunkSizeWarningLimit: 8000,
   },

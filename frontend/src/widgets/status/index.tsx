@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
 import { ioEmit, rpcReq, socket } from '../../socket';
 
-export const Chat = () => {
+export const StatusWidget = () => {
   const [status, setStatus] = useState<IServerStatus | null>(null);
 
   useEffect(() => {

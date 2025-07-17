@@ -11,7 +11,7 @@ type ChatEntry = IStoreChat & {
   updatedAt?: Date;
 };
 
-export const Chat = () => {
+export const ChatWidget = () => {
   const [chats, setChats] = useState<ChatEntry[]>([]);
   const [message, setMessage] = useState('');
   const ref = useRef<HTMLDivElement | null>(null);

@@ -17,14 +17,9 @@ import setupMetrics from './metrics';
 import { IStoreUser, OmeggaSocketIo } from './types';
 import * as util from './util';
 
-// path to frontend directory
-const FRONTEND_PATH = path.join(__dirname, '../../../frontend');
-
-// path to assets folder
-const ASSET_PATH = path.join(FRONTEND_PATH, 'assets');
-
-// path to webpacked data
+// path to vite-built data
 const PUBLIC_PATH = path.join(__dirname, '../../../public');
+const ASSETS_PATH = path.join(__dirname, '../../../public/assets');
 
 const log = (...args: any[]) => Logger.log(...args);
 const error = (...args: any[]) => Logger.error(...args);
@@ -173,8 +168,7 @@ export default class Webserver {
     });
 
     // provide assets in the /public path
-    this.app.use('/public', express.static(PUBLIC_PATH));
-    this.app.use('/public', express.static(ASSET_PATH));
+    this.app.use('/assets', express.static(ASSETS_PATH));
     this.app.use(bodyParser.json());
 
     this.rooms = ['chat', 'status', 'plugins', 'server'];
@@ -191,9 +185,9 @@ export default class Webserver {
       const isAuth = user && !user.isBanned;
 
       if (isAuth) {
-        res.sendFile(path.join(FRONTEND_PATH, 'app.html'));
+        res.sendFile(path.join(PUBLIC_PATH, 'app.html'));
       } else {
-        res.sendFile(path.join(FRONTEND_PATH, 'auth.html'));
+        res.sendFile(path.join(PUBLIC_PATH, 'auth.html'));
       }
     });
   }

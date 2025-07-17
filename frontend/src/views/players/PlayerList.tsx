@@ -8,6 +8,7 @@ import {
   PageContent,
   Scroll,
   SideNav,
+  SortIcons,
   Toggle,
 } from '@components';
 import { type GetPlayersRes } from '@omegga/webserver/backend/api';
@@ -20,33 +21,14 @@ import {
   IconFilter,
   IconMapPin,
   IconRotate,
-  IconSortAscending,
-  IconSortDescending,
 } from '@tabler/icons-react';
-import { duration, heartbeatAgo } from '@utils';
-import { debounce } from 'lodash';
-import { useMemo, useRef, useState } from 'react';
+import { debounce, duration, heartbeatAgo } from '@utils';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
 import { rpcReq } from '../../socket';
 import { PlayerInspector } from './PlayerInspector';
 
-const SortIcons = ({
-  name,
-  sort,
-  direction,
-}: {
-  name: string;
-  sort: string;
-  direction: number;
-}) =>
-  name === sort && (
-    <>
-      {direction === 1 && <IconSortAscending />}
-      {direction === -1 && <IconSortDescending />}
-    </>
-  );
-
-export const PlayersView = () => {
+export const PlayerList = () => {
   const [pages, setPages] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -105,6 +87,10 @@ export const PlayersView = () => {
   };
   const getPlayersRef = useRef<() => Promise<void>>(getPlayers);
   getPlayersRef.current = getPlayers;
+
+  useEffect(() => {
+    getPlayers();
+  }, []);
 
   const doSearch = useMemo(
     () =>

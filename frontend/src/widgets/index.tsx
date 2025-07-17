@@ -1,1 +1,2 @@
-export { Chat } from './chat';
+export { ChatWidget } from './chat';
+export { StatusWidget } from './status';

@@ -76,6 +76,12 @@ export type GetPluginRes = {
   isEnabled: boolean;
 };
 
+export type GetUsersRes = {
+  pages: number;
+  total: number;
+  users: (IStoreUser & IUserAgo)[];
+};
+
 export default function (server: Webserver, io: OmeggaSocketIo) {
   const { database, omegga } = server;
 
@@ -754,14 +760,16 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           direction?: string;
         }
       ]) => {
-        const resp: {
-          pages: number;
-          total: number;
-          users: (IStoreUser & IUserAgo)[];
-        } = await database.getUsers({ page, search, sort, direction });
+        const resp: GetUsersRes = await database.getUsers({
+          page,
+          search,
+          sort,
+          direction,
+        });
         const now = Date.now();
-        resp.users = resp.users.map(user => ({
+        resp.users = resp.users.map(({ hash: _, ...user }) => ({
           ...user,
+          hash: '',
           seenAgo: user.lastOnline ? now - user.lastOnline : Infinity,
           createdAgo: now - user.created,
         }));
