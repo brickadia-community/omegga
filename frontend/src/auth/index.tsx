@@ -9,6 +9,7 @@ import { Input } from '../components/input';
 import { Loader } from '../components/loader';
 import { Modal } from '../components/modal';
 import { PopoutContent } from '../components/popout';
+import turkeyImage from '../../assets/img/turkey.webp';
 
 const Auth = () => {
   const [loading, setLoading] = useState(true);
@@ -54,14 +55,14 @@ const Auth = () => {
 
   const turkeyStyle = useMemo(
     () => ({ top: `${Math.random() * 50 + 25}%` }),
-    []
+    [],
   );
 
   return (
     <div>
       <Background>
         <div className="turkey" style={turkeyStyle}>
-          <img src="/public/img/turkey.webp" />
+          <img src={turkeyImage} />
         </div>
       </Background>
       <Modal visible={!loading}>

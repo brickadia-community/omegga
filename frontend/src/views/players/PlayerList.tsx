@@ -146,7 +146,7 @@ export const PlayerList = () => {
         <SideNav />
         <div className="generic-container players-container">
           <div className="player-table-container">
-            <NavBar>
+            <NavBar attached>
               <Input
                 type="text"
                 placeholder="Search Players..."
@@ -327,7 +327,7 @@ export const PlayerList = () => {
                 className="player-inspector-container"
                 v-if="!$route.params.id"
               >
-                <NavBar>SELECT A PLAYER</NavBar>
+                <NavBar attached>SELECT A PLAYER</NavBar>
                 <div className="player-inspector" />
               </div>
             </Route>

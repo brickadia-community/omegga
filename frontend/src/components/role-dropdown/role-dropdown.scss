@@ -29,6 +29,7 @@
     overflow-y: auto;
     z-index: 10;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    border-radius: theme.$br-radius-sm;
 
     .green {
       background-color: theme.$br-main-normal;
@@ -73,6 +74,7 @@
     display: flex;
     border: none;
     align-items: center;
+    border-radius: theme.$br-radius-sm;
 
     .value {
       flex: 1;

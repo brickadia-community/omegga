@@ -9,4 +9,9 @@
   height: theme.$br-footer-height - 20px;
   padding: 10px;
   text-transform: uppercase;
+
+  &.attached {
+    border-bottom-left-radius: theme.$br-radius-md;
+    border-bottom-right-radius: theme.$br-radius-md;
+  }
 }

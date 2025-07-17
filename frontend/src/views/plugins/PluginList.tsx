@@ -54,7 +54,7 @@ export const PluginList = () => {
     () =>
       plugins.find(plugin => plugin.name === params?.id)?.name ??
       'SELECT A PLUGIN',
-    [plugins, params?.id]
+    [plugins, params?.id],
   );
 
   const getPlugins = async () => {
@@ -76,12 +76,12 @@ export const PluginList = () => {
   useEffect(() => {
     const handlePluginUpdate = ([shortPath, info]: [
       shortPath: string,
-      info: PluginInfo
+      info: PluginInfo,
     ]) => {
       const plugin = pluginStateFromInfo(info);
       // Update an individual plugin
       setPlugins(prev =>
-        prev.map(p => (p.path === shortPath ? { ...p, ...plugin } : p))
+        prev.map(p => (p.path === shortPath ? { ...p, ...plugin } : p)),
       );
     };
     socket.on('plugin', handlePluginUpdate);
@@ -145,7 +145,7 @@ export const PluginList = () => {
                         />
                         {plugin.name}
                       </Link>
-                    )
+                    ),
                 )}
               </Scroll>
               <Loader active={loading} size="huge">
@@ -154,7 +154,7 @@ export const PluginList = () => {
             </div>
           </div>
           <div className="plugin-inspector-container">
-            <NavBar>{selectedPluginName}</NavBar>
+            <NavBar attached>{selectedPluginName}</NavBar>
             <div className="plugin-inspector">
               <PluginInspector />
             </div>

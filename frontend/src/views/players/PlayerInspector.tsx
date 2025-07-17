@@ -132,7 +132,7 @@ export const PlayerInspector = () => {
 
   return (
     <div className="player-inspector-container">
-      <NavBar>
+      <NavBar attached>
         {player?.name || 'SELECT A PLAYER'}
         <span style={{ flex: 1 }} />
         {player && (

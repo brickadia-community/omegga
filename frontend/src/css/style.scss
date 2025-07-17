@@ -17,6 +17,10 @@
   --br-footer-font: theme.$br-footer-font;
   --br-footer-height: theme.$br-footer-height;
 
+  --br-radius-sm: theme.$br-radius-sm;
+  --br-radius-md: theme.$br-radius-md;
+  --br-radius-lg: theme.$br-radius-lg;
+
   --br-boring-button-fg: theme.$br-boring-button-fg;
   --br-button-fg: theme.$br-button-fg;
   --br-inverted-fg: theme.$br-inverted-fg;
@@ -126,7 +130,10 @@ body {
 .log-entry {
   & {
     font-size: 24px;
-    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
+    text-shadow:
+      -1px -1px 0 #000,
+      1px -1px 0 #000,
+      -1px 1px 0 #000,
       1px 1px 0 #000;
     word-break: break-all;
   }

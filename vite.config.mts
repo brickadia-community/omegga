@@ -40,6 +40,7 @@ export default defineConfig({
       '@hooks': resolve(__dirname, 'frontend/src/hooks'),
     },
   },
+  assetsInclude: ['**/*.webp'],
   build: {
     sourcemap: true,
     rollupOptions: {

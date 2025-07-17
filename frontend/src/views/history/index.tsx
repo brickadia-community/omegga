@@ -114,7 +114,7 @@ export const HistoryView = () => {
   const getChats = useCallback(
     async (
       { before, after }: { before?: number; after?: number },
-      dir?: 'top' | 'bottom'
+      dir?: 'top' | 'bottom',
     ) => {
       setLoading(true);
       const chatData: HistoryRes = await rpcReq('chat.history', {
@@ -135,7 +135,7 @@ export const HistoryView = () => {
       setLoading(false);
       return chatData;
     },
-    []
+    [],
   );
 
   const scroll = () =>
@@ -310,13 +310,13 @@ export const HistoryView = () => {
                 </Button>
               </div>
               <div className="calendar-days">
-                <div className="header days">S</div>
-                <div className="header days">M</div>
-                <div className="header days">T</div>
-                <div className="header days">W</div>
-                <div className="header days">T</div>
-                <div className="header days">F</div>
-                <div className="header days">S</div>
+                <div className="week-header days">S</div>
+                <div className="week-header days">M</div>
+                <div className="week-header days">T</div>
+                <div className="week-header days">W</div>
+                <div className="week-header days">T</div>
+                <div className="week-header days">F</div>
+                <div className="week-header days">S</div>
                 {Array.from({ length: startDay }).map((_, i) => (
                   <div key={`empty-${i}`} />
                 ))}
@@ -326,18 +326,21 @@ export const HistoryView = () => {
                   <div
                     key={d}
                     className={`days ${
-                      nowMonth === month && nowYear === year && d === nowDay
+                      nowMonth === month && nowYear === year && d + 1 === nowDay
                         ? 'today'
                         : ''
                     } ${
-                      !(nowMonth === month && nowYear === year && d > nowDay) &&
-                      calendar[year]?.[month]?.[d]
+                      !(
+                        nowMonth === month &&
+                        nowYear === year &&
+                        d + 1 > nowDay
+                      ) && calendar[year]?.[month]?.[d]
                         ? 'available'
                         : ''
                     }`}
-                    onClick={() => focusDay(year, month, d)}
+                    onClick={() => focusDay(year, month, d + 1)}
                   >
-                    {d}
+                    {d + 1}
                   </div>
                 ))}
               </div>

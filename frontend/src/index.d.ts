@@ -1,4 +1,4 @@
-declare module '*.scss' {
-  const content: { [className: string]: string };
+declare module '*.webp' {
+  const content: string;
   export default content;
 }

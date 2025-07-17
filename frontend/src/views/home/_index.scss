@@ -31,6 +31,9 @@
 .react-grid-item {
   display: flex;
   flex-direction: column;
+
+  overflow: hidden;
+  border-radius: theme.$br-radius-md;
 }
 
 .react-draggable-dragging .drag-handle {

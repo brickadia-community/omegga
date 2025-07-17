@@ -34,6 +34,7 @@
     background: theme.$br-element-normal;
     color: theme.$br-inverted-fg;
     border: none;
+    border-radius: theme.$br-radius-sm;
 
     &::placeholder {
       color: theme.$br-element-bg;

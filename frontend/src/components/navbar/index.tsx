@@ -1,12 +1,18 @@
 import { useStore } from '@nanostores/react';
-import type { PropsWithChildren } from 'react';
+import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { Button } from '../button';
 import { logout } from '../../utils';
 import { IconLogout } from '@tabler/icons-react';
 import { $showLogout, $user } from '../../stores/user';
 
-export const NavBar = ({ children }: React.PropsWithChildren) => (
-  <div className="navbar">{children}</div>
+export const NavBar = ({
+  children,
+  attached,
+  className,
+}: HTMLAttributes<HTMLDivElement> & { attached?: boolean }) => (
+  <div className={`navbar ${attached ? 'attached' : ''} ${className ?? ''}`}>
+    {children}
+  </div>
 );
 
 export const NavHeader = ({

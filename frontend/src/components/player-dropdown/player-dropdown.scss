@@ -39,6 +39,7 @@
       overflow-y: auto;
       z-index: 10;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+      border-radius: theme.$br-radius-sm;
 
       .green {
         background-color: theme.$br-main-normal;
@@ -54,6 +55,10 @@
         }
       }
     }
+  }
+
+  .selected {
+    border-radius: theme.$br-radius-sm;
   }
 
   .option,

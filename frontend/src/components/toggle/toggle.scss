@@ -9,6 +9,7 @@
   height: theme.$br-element-height;
   width: theme.$br-element-height + 8;
   background: theme.$br-element-normal;
+  border-radius: theme.$br-radius-sm;
 
   &:not(:last-child) {
     margin-bottom: 0;
@@ -30,6 +31,7 @@
     @include mixins.center;
     width: theme.$br-element-height;
     height: theme.$br-element-height;
+    border-radius: theme.$br-radius-sm;
 
     &:focus {
       background: theme.$br-element-overlay;

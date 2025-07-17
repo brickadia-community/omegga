@@ -108,4 +108,6 @@
   background-color: theme.$br-element-popout-bg;
   flex: 1;
   position: relative;
+  border-radius: theme.$br-radius-md;
+  overflow: hidden;
 }

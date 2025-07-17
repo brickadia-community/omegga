@@ -19,4 +19,10 @@
   background-color: theme.$br-bg-footer;
   font-weight: bold;
   padding: 10px;
+  border-radius: theme.$br-radius-md;
+
+  &.attached {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 }

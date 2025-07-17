@@ -30,6 +30,7 @@
 
   &:hover .log-row {
     background: rgba(255, 255, 255, 0.2);
+    border-radius: theme.$br-radius-sm;
 
     .tabler-icon {
       opacity: 1;
@@ -37,6 +38,7 @@
   }
 
   &.focused .log-row {
+    border-radius: theme.$br-radius-sm;
     background: theme.$br-main-normal;
   }
 }

@@ -219,7 +219,7 @@ export const UserList = () => {
         <SideNav />
         <div className="generic-container players-container">
           <div className="player-table-container">
-            <NavBar>
+            <NavBar attached>
               <Input
                 type="text"
                 placeholder="Search Users..."

@@ -33,6 +33,7 @@ $icon-height: $btn-height - 16px;
   margin: 8px 0;
   text-decoration: none;
   width: 350px;
+  border-radius: theme.$br-radius-md;
 
   &:visited {
     color: theme.$br-button-fg;
@@ -54,6 +55,7 @@ $icon-height: $btn-height - 16px;
     align-items: center;
     justify-content: center;
     margin-right: 24px;
+    border-radius: theme.$br-radius-sm;
   }
 
   &:hover {

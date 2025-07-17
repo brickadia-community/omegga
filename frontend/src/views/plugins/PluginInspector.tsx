@@ -100,7 +100,7 @@ export const PluginInspector = () => {
     // subscribe to plugin updates
     const handlePluginUpdate = ([shortPath, info]: [
       shortPath: string,
-      info: PluginInfo
+      info: PluginInfo,
     ]) => {
       if (shortPath !== plugin?.path) return;
       setPlugin(prev => ({ ...prev!, ...info }));
@@ -133,7 +133,7 @@ export const PluginInspector = () => {
           }
         }
       }, 500),
-    [params?.id]
+    [params?.id],
   );
 
   const updateConfig = (key: string, value: any) => {
@@ -155,33 +155,33 @@ export const PluginInspector = () => {
                 <b data-tooltip="Plugin name">Name:</b> {plugin.name}
               </div>
               <div className="stat">
-                <b data-tooltip="Plugin creator">Author:</b>
+                <b data-tooltip="Plugin creator">Author:</b>{' '}
                 {plugin.documentation?.author ?? 'unknown'}
               </div>
               <div className="stat">
-                <b>Description:</b>
+                <b>Description:</b>{' '}
                 {plugin.documentation?.description ?? 'none'}
               </div>
               <div className="stat">
-                <b data-tooltip="The folder this plugin runs in">Folder:</b>
+                <b data-tooltip="The folder this plugin runs in">Folder:</b>{' '}
                 {plugin.path}
               </div>
               <div className="stat">
-                <b data-tooltip="The type of plugin this is">Format:</b>
+                <b data-tooltip="The type of plugin this is">Format:</b>{' '}
                 {plugin.format}
               </div>
               <div className="stat">
                 <b data-tooltip="Number of objects in the plugin's storage">
                   Stored Objects:
-                </b>
+                </b>{' '}
                 {plugin.objCount}
               </div>
               <div className="stat">
-                <b data-tooltip="Plugin can be started">Enabled:</b>
+                <b data-tooltip="Plugin can be started">Enabled:</b>{' '}
                 {plugin.isEnabled ? 'Yes' : 'No'}
               </div>
               <div className="stat">
-                <b data-tooltip="Plugin is running">Loaded:</b>
+                <b data-tooltip="Plugin is running">Loaded:</b>{' '}
                 {plugin.isLoaded ? 'Yes' : 'No'}
               </div>
             </div>
@@ -199,7 +199,7 @@ export const PluginInspector = () => {
               )}
               {Object.entries(
                 (plugin.documentation.config ??
-                  {}) as IPluginDocumentation['config']
+                  {}) as IPluginDocumentation['config'],
               ).map(([c, conf]) => (
                 <div className="option-item config" key={c}>
                   <div className="option-input">
@@ -305,13 +305,13 @@ export const PluginInspector = () => {
                       ))}
                     </div>
                   </div>
-                )
+                ),
               )}
             </div>
           </Scroll>
         )}
       </div>
-      <Footer>
+      <Footer attached>
         {plugin?.isEnabled && !plugin.isLoaded && (
           <Button
             main

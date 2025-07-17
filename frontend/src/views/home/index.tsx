@@ -180,7 +180,7 @@ export const HomeView = () => {
                 const Component =
                   WIDGET_LIST[item.i as keyof typeof WIDGET_LIST]!.component;
                 return (
-                  <div key={item.i}>
+                  <div key={item.i} className="grid-item">
                     <Header className="drag-handle">
                       <span style={{ flex: 1 }}>{item.i}</span>
                       <Button
