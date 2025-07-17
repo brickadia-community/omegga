@@ -11,7 +11,7 @@ import {
   SortIcons,
   Toggle,
 } from '@components';
-import { type GetPlayersRes } from '@omegga/webserver/backend/api';
+import type { GetPlayersRes } from '@omegga/webserver/backend/api';
 import {
   IconArrowBarToLeft,
   IconArrowBarToRight,
@@ -23,7 +23,7 @@ import {
   IconRotate,
 } from '@tabler/icons-react';
 import { debounce, duration, heartbeatAgo } from '@utils';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
 import { rpcReq } from '../../socket';
 import { PlayerInspector } from './PlayerInspector';
@@ -66,8 +66,7 @@ export const PlayerList = () => {
     doSearch();
   };
 
-  const getPlayers = async () => {
-    if (loading) return;
+  const getPlayers = useCallback(async () => {
     setLoading(true);
     const { page, search, sort, direction, filterBanned } = query.current;
     const { players, total, pages }: GetPlayersRes = await rpcReq(
@@ -78,15 +77,13 @@ export const PlayerList = () => {
         sort,
         direction,
         filter: filterBanned ? 'banned' : '',
-      }
+      },
     );
     setPages(pages);
     setTotal(total);
     setPlayers(players);
     setLoading(false);
-  };
-  const getPlayersRef = useRef<() => Promise<void>>(getPlayers);
-  getPlayersRef.current = getPlayers;
+  }, []);
 
   useEffect(() => {
     getPlayers();
@@ -96,15 +93,15 @@ export const PlayerList = () => {
     () =>
       debounce(() => {
         query.current.page = 0;
-        getPlayersRef.current?.();
+        getPlayers();
       }, 500),
-    []
+    [],
   );
 
   // update table sort direction
   const setSort = (s: string) => {
     // flip direction if it's the same column
-    if (s == 'sort') {
+    if (s == sort) {
       setDirection(d => d * -1);
     } else {
       // otherwise, use the new column
@@ -292,8 +289,12 @@ export const PlayerList = () => {
                   <IconArrowLeft />
                 </Button>
                 <div className="current-page">
-                  Page {page + 1} of {pages}, Showing
-                  {players.length} of {total}
+                  <div>
+                    Page {page + 1} of {pages}
+                  </div>
+                  <div>
+                    Showing {players.length} of {total}
+                  </div>
                 </div>
                 <Button
                   icon
@@ -320,7 +321,7 @@ export const PlayerList = () => {
             </div>
           </div>
           <Switch>
-            <Route path="/:id" component={PlayerInspector} />
+            <Route path="/players/:id" component={PlayerInspector} />
             <Route>
               <div
                 className="player-inspector-container"

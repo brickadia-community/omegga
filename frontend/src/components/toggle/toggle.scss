@@ -37,7 +37,11 @@
     }
 
     &:not(.on) {
-      @include mixins.br-button(theme.$br-error-normal, theme.$br-error-hover, theme.$br-error-pressed);
+      @include mixins.br-button(
+        theme.$br-error-normal,
+        theme.$br-error-hover,
+        theme.$br-error-pressed
+      );
 
       .symbol {
         background-color: transparent;
@@ -50,7 +54,11 @@
 
     &.on {
       margin-left: 8px;
-      @include mixins.br-button(theme.$br-main-normal, theme.$br-main-hover, theme.$br-main-pressed);
+      @include mixins.br-button(
+        theme.$br-main-normal,
+        theme.$br-main-hover,
+        theme.$br-main-pressed
+      );
 
       .symbol {
         width: 4px;

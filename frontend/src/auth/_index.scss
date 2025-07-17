@@ -30,7 +30,6 @@ body {
   .modal-content {
     position: relative;
   }
-
 }
 
 @keyframes fadeIn {
@@ -50,7 +49,8 @@ body {
   position: absolute;
   left: -20vw;
   top: 30%;
-  animation: turkeyBob 5s infinite ease-in-out, turkeyMove 20s infinite alternate linear;
+  animation: turkeyBob 5s infinite ease-in-out,
+    turkeyMove 20s infinite alternate linear;
 }
 
 .turkey img {
@@ -58,18 +58,38 @@ body {
 }
 
 @keyframes turkeyBob {
-  0% { transform: translateY(0); }
-  33% { transform: translateY(-20px); }
-  67% { transform: translateY(20px); }
-  100% { transform: translateY(0); }
+  0% {
+    transform: translateY(0);
+  }
+  33% {
+    transform: translateY(-20px);
+  }
+  67% {
+    transform: translateY(20px);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }
 @keyframes turkeyRotate {
-  0% { transform: rotate(0); }
-  33% { transform: rotate(-20deg); }
-  67% { transform: rotate(20deg); }
-  100% { transform: rotate(0); }
+  0% {
+    transform: rotate(0);
+  }
+  33% {
+    transform: rotate(-20deg);
+  }
+  67% {
+    transform: rotate(20deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
 }
 @keyframes turkeyMove {
-  0% { left: -30vw; }
-  100% { left: calc(100% + 30vw); }
+  0% {
+    left: -30vw;
+  }
+  100% {
+    left: calc(100% + 30vw);
+  }
 }

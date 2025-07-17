@@ -44,6 +44,11 @@
 
 @mixin br-button($normal, $hover, $active) {
   background-color: $normal;
-  &:hover { background-color: $hover; }
-  &:active, &.disabled {background-color: $active; }
+  &:hover {
+    background-color: $hover;
+  }
+  &:active,
+  &.disabled {
+    background-color: $active;
+  }
 }

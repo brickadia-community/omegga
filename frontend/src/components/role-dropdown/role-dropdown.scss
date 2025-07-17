@@ -44,7 +44,8 @@
       }
     }
   }
-  .option, .selected {
+  .option,
+  .selected {
     font-family: 'Glacial Indifference';
     background: theme.$br-element-normal;
     color: theme.$br-inverted-fg;

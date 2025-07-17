@@ -82,7 +82,6 @@ export const UserList = () => {
   };
 
   const getUsers = async () => {
-    if (loading) return;
     setLoading(true);
     const { page, search, sort, direction } = query.current;
     const { users, total, pages }: GetUsersRes = await rpcReq('users.list', {
@@ -113,13 +112,13 @@ export const UserList = () => {
         query.current.page = 0;
         getUsersRef.current?.();
       }, 500),
-    []
+    [],
   );
 
   // update table sort direction
   const setSort = (s: string) => {
     // flip direction if it's the same column
-    if (s == 'sort') {
+    if (s == sort) {
       setDirection(d => d * -1);
     } else {
       // otherwise, use the new column
@@ -137,7 +136,7 @@ export const UserList = () => {
     return user ?? null;
   }, [params?.id, userLookup, users]);
 
-  const selectedUserName = selectedUser?.username ?? 'SELECT A USER';
+  const _selectedUserName = selectedUser?.username ?? 'SELECT A USER';
 
   const toggleAddUser = () => {
     setShowCreateUser(!showCreateUser);
@@ -293,8 +292,9 @@ export const UserList = () => {
                         key={u.username}
                       >
                         <td>
-                          {u.username ?? 'Admin'}
-                          {(u.username ?? 'Admin') === myUser?.username && (
+                          {u.username || 'Admin'}
+                          {(u.username || 'Admin') ===
+                            (myUser?.username || 'Admin') && (
                             <span style={{ fontSize: 12 }}>(You)</span>
                           )}
                         </td>
@@ -337,8 +337,12 @@ export const UserList = () => {
                   <IconArrowLeft />
                 </Button>
                 <div className="current-page">
-                  Page {page + 1} of {pages}, Showing
-                  {users.length} of {total}
+                  <div>
+                    Page {page + 1} of {pages}
+                  </div>
+                  <div>
+                    Showing {users.length} of {total}
+                  </div>
                 </div>
                 <Button
                   icon
@@ -360,14 +364,14 @@ export const UserList = () => {
                 </Button>
               </Footer>
               <Loader active={loading} size="huge">
-                Loading ue
+                Loading Users
               </Loader>
             </div>
           </div>
-          <div className="player-inspector-container">
+          {/* <div className="player-inspector-container">
             <NavBar>{selectedUserName}</NavBar>
             <div className="player-inspector"></div>
-          </div>
+          </div> */}
           <Dimmer visible={showCredentials || showCreateUser}>
             <Loader active={modalLoading} size="huge">
               Submitting

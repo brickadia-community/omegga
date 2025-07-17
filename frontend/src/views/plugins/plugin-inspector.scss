@@ -27,7 +27,11 @@
 }
 
 .option-item {
-  @include mixins.alternate(background-color, theme.$br-bg-secondary, theme.$br-bg-secondary-alt);
+  @include mixins.alternate(
+    background-color,
+    theme.$br-bg-secondary,
+    theme.$br-bg-secondary-alt
+  );
   font-size: 20px;
   color: theme.$br-boring-button-fg;
   min-height: 50px;

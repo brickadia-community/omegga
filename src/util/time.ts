@@ -43,12 +43,12 @@ export const debounce:
   | (<T extends (...args: any) => any>(
       func: T,
       wait: number | undefined,
-      options?: DebounceSettingsLeading
+      options?: DebounceSettingsLeading,
     ) => DebouncedFuncLeading<T>)
   | (<T extends (...args: any) => any>(
       func: T,
       wait?: number,
-      options?: DebounceSettings
+      options?: DebounceSettings,
     ) => DebouncedFunc<T>) = _debounce;
 
 const UNIT_CONVERSION: Record<string, number> = {
@@ -86,6 +86,6 @@ export function parseDuration(str: string) {
 export function parseBrickadiaTime(str: string) {
   const [date, time] = str.split('-');
   return new Date(
-    date.replace(/\./g, '-') + 'T' + time.replace(/\./g, ':')
+    date.replace(/\./g, '-') + 'T' + time.replace(/\./g, ':') + 'Z',
   ).getTime();
 }

@@ -1,5 +1,5 @@
 import { IconCaretDown } from '@tabler/icons-react';
-import { useEffect as useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export const Dropdown = ({
   disabled = false,
@@ -16,10 +16,11 @@ export const Dropdown = ({
   const selfRef = useRef<HTMLDivElement>(null);
 
   // Hide the dropdown when clicking outside of it
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!open) return;
     function handler(e: MouseEvent) {
-      if (e.target && selfRef.current?.contains(e.target as Node)) {
+      if (e.target && !selfRef.current?.contains(e.target as Node)) {
+        console.log('[debug] close');
         setOpen(false);
       }
     }
@@ -33,7 +34,7 @@ export const Dropdown = ({
         <div className="options">
           {options.map(o => (
             <div
-              className={`options ${value === o ? 'green' : ''}`}
+              className={`option ${value === o ? 'green' : ''}`}
               key={o}
               onClick={() => {
                 setOpen(false);
@@ -45,7 +46,12 @@ export const Dropdown = ({
           ))}
         </div>
       )}
-      <div className="selected" onClick={() => !disabled && setOpen(!open)}>
+      <div
+        className="selected"
+        onClick={() => {
+          !disabled && setOpen(o => !o);
+        }}
+      >
         <div className="value">{value}</div>
         <IconCaretDown />
       </div>

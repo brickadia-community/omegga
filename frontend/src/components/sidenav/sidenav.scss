@@ -45,7 +45,8 @@ $icon-height: $btn-height - 16px;
     justify-content: center;
   }
 
-  .ti, .icon {
+  .ti,
+  .tabler-icon {
     display: flex;
     width: $icon-height;
     height: $icon-height;
@@ -55,9 +56,15 @@ $icon-height: $btn-height - 16px;
     margin-right: 24px;
   }
 
-  &:hover { background-color: theme.$br-element-hover; }
-  &:active {background-color: theme.$br-bg-footer; }
-  &.active {background-color: theme.$br-button-normal; }
+  &:hover {
+    background-color: theme.$br-element-hover;
+  }
+  &:active {
+    background-color: theme.$br-bg-footer;
+  }
+  &.active {
+    background-color: theme.$br-button-normal;
+  }
   &.disabled {
     opacity: 50%;
     cursor: default;

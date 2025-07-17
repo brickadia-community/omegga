@@ -1,4 +1,4 @@
-import { Button, Input, Scroll } from '@components';
+import { Button, Footer, Input, Scroll } from '@components';
 import type { IStoreChat } from '@omegga/webserver/backend/types';
 import { IconSend } from '@tabler/icons-react';
 import Linkify from 'linkify-react';
@@ -93,20 +93,22 @@ export const ChatWidget = () => {
         </div>
       </Scroll>
       <form onSubmit={sendMessage}>
-        <Input
-          type="text"
-          placeholder="Message"
-          value={message}
-          onChange={v => setMessage(v)}
-        />
-        <Button
-          normal
-          icon
-          style={{ marginLeft: '10px' }}
-          onClick={sendMessage}
-        >
-          <IconSend />
-        </Button>
+        <Footer>
+          <Input
+            type="text"
+            placeholder="Message"
+            value={message}
+            onChange={v => setMessage(v)}
+          />
+          <Button
+            normal
+            icon
+            style={{ marginLeft: '10px' }}
+            onClick={sendMessage}
+          >
+            <IconSend />
+          </Button>
+        </Footer>
       </form>
     </div>
   );

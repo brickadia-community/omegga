@@ -1,5 +1,5 @@
 import { IconArrowRight, IconLockOpen } from '@tabler/icons-react';
-import { StrictMode, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Background } from '../components/background';
 import { Button } from '../components/button';
@@ -135,8 +135,4 @@ const Auth = () => {
   );
 };
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <Auth />
-  </StrictMode>
-);
+createRoot(document.getElementById('root')!).render(<Auth />);

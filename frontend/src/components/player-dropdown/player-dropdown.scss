@@ -1,6 +1,5 @@
 @use '../../css/theme';
 
-
 .br-player-list {
   display: flex;
   flex-direction: column;
@@ -57,7 +56,8 @@
     }
   }
 
-  .option, .selected {
+  .option,
+  .selected {
     font-family: 'Glacial Indifference';
     background: theme.$br-element-normal;
     color: theme.$br-inverted-fg;

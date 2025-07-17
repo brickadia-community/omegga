@@ -1,7 +1,7 @@
 import type { BRRoleSetupEntry } from '@omegga/brickadia/types';
 import { IconCaretDown } from '@tabler/icons-react';
 import type React from 'react';
-import { useLayoutEffect, useRef, useState, type HTMLAttributes } from 'react';
+import { useEffect, useRef, useState, type HTMLAttributes } from 'react';
 import { rpcReq } from '../../socket';
 import { Loader } from '../loader';
 
@@ -22,7 +22,6 @@ export const RoleDropdown = ({
   const ref = useRef<HTMLDivElement>(null);
 
   async function fetchRoles() {
-    if (loading) return;
     setLoading(true);
     setOptions([]);
     const roles: BRRoleSetupEntry[] = await rpcReq('roles.list');
@@ -31,11 +30,11 @@ export const RoleDropdown = ({
   }
 
   // Hide the dropdown when clicking outside of it
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!open) return;
 
     function handler(e: MouseEvent) {
-      if (e.target && ref.current?.contains(e.target as Node)) {
+      if (e.target && !ref.current?.contains(e.target as Node)) {
         setOpen(false);
       }
     }
@@ -59,7 +58,10 @@ export const RoleDropdown = ({
           {options.map(o => (
             <div
               key={o}
-              onClick={() => onChange(o)}
+              onClick={() => {
+                onChange(o);
+                setOpen(false);
+              }}
               className={`option ${value === o ? 'green' : ''}`}
             >
               {o}
@@ -69,8 +71,7 @@ export const RoleDropdown = ({
       )}
       <div
         className="selected"
-        onClick={e => {
-          e.preventDefault();
+        onClick={() => {
           setOpen(o => !o);
           if (!open) fetchRoles();
         }}

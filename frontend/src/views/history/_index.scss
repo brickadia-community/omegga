@@ -8,6 +8,7 @@
 
 .chat-history {
   @include mixins.column-container;
+  font-family: 'Roboto';
 }
 
 @media screen and (max-width: 600px) {

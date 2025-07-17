@@ -2,10 +2,11 @@ import { IconLink } from '@tabler/icons-react';
 import Linkify from 'linkify-react';
 import { Link, useRoute } from 'wouter';
 import { ChatTime } from '../chat-time';
+import type { HistoryRes } from '@omegga/webserver/backend/api';
 
-export const ChatEntry = ({ log }: { log: any }) => {
+export const ChatEntry = ({ log }: { log: HistoryRes[number] }) => {
   const [_match, params] = useRoute('/history/:time?');
-  const isFocused = params?.time === log.created;
+  const isFocused = params?.time === log.created + '';
 
   return (
     <div className={`log-entry ${isFocused ? 'focused' : ''}`}>

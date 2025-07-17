@@ -6,7 +6,8 @@
   align-items: stretch;
 }
 
-.plugins-list-container, .plugin-inspector-container {
+.plugins-list-container,
+.plugin-inspector-container {
   @include mixins.column-container;
 }
 
@@ -38,24 +39,37 @@
     font-weight: bold;
     text-decoration: none;
 
-    &:hover, .router-link-active { background-color: theme.$br-element-hover; }
-    &:active, &.disabled { background-color: theme.$br-element-pressed; }
+    &:hover,
+    .router-link-active {
+      background-color: theme.$br-element-hover;
+    }
+    &:active,
+    &.disabled {
+      background-color: theme.$br-element-pressed;
+    }
 
-    .icon {
+    .tabler-icon {
       @include mixins.center;
       height: 32px;
       width: 32px;
       margin-left: 8px;
       margin-right: 8px;
 
-      &.running { background-color: theme.$br-main-normal; }
-      &.bugged { background-color: theme.$br-warn-normal; }
-      &.broken { background-color: theme.$br-error-normal; }
-      &.disabled { background-color: theme.$br-bg-primary; }
+      &.running {
+        background-color: theme.$br-main-normal;
+      }
+      &.bugged {
+        background-color: theme.$br-warn-normal;
+      }
+      &.broken {
+        background-color: theme.$br-error-normal;
+      }
+      &.disabled {
+        background-color: theme.$br-bg-primary;
+      }
     }
   }
 }
-
 
 .plugin-inspector {
   @include mixins.column;

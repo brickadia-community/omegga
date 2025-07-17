@@ -81,6 +81,7 @@ export const PlayerInspector = () => {
       console.error('Failed to ban player:', err);
     }
     setModal(null);
+    getPlayer();
     setActionLoading(false);
   };
   const kick = async () => {
@@ -92,6 +93,7 @@ export const PlayerInspector = () => {
       console.error('Failed to kick player:', err);
     }
     setModal(null);
+    getPlayer();
     setActionLoading(false);
   };
   const unban = async () => {
@@ -102,6 +104,7 @@ export const PlayerInspector = () => {
     } catch (err) {
       console.error('Failed to unban player:', err);
     }
+    getPlayer();
     setActionLoading(false);
   };
   const clearBricks = async () => {
@@ -120,7 +123,10 @@ export const PlayerInspector = () => {
     if (banUnit === 'Permanent') return 'Never';
     return isoTime(
       Date.now() +
-        UNIT_SCALARS[banUnit as keyof typeof UNIT_SCALARS] * banDuration
+        UNIT_SCALARS[banUnit as keyof typeof UNIT_SCALARS] *
+          60 *
+          1000 *
+          banDuration,
     );
   }, [banUnit, banDuration]);
 
@@ -199,7 +205,7 @@ export const PlayerInspector = () => {
       </NavBar>
       <div className="player-inspector">
         <div className="player-view">
-          <Loader active={loading || !player} size="huge">
+          <Loader active={loading} size="huge">
             Loading Player
           </Loader>
           <div className="player-info">
@@ -207,7 +213,7 @@ export const PlayerInspector = () => {
               <Scroll>
                 <div className="stats">
                   <div className="stat">
-                    <b>Profile:</b>
+                    <b>Profile:</b>{' '}
                     <a
                       href={'https://brickadia.com/users/' + player.id}
                       target="_blank"
@@ -219,12 +225,12 @@ export const PlayerInspector = () => {
                     <b>Host:</b> {player.isHost ? 'Yes' : 'No'}
                   </div>
                   <div className="stat">
-                    <b>Banned:</b>
+                    <b>Banned:</b>{' '}
                     {player.currentBan && player.currentBan.duration <= 0 ? (
                       <span>Permanent</span>
                     ) : player.currentBan ? (
                       <span>
-                        {duration(player.currentBan.remainingTime)} of
+                        {duration(player.currentBan.remainingTime)} of{' '}
                         {duration(player.currentBan.duration)} remaining
                       </span>
                     ) : (
@@ -234,17 +240,17 @@ export const PlayerInspector = () => {
                   <div className="stat">
                     <b data-tooltip="Number of status heartbeats this player has been part of">
                       Time Played:
-                    </b>
+                    </b>{' '}
                     {heartbeatAgo(player.heartbeats)}
                   </div>
                   <div className="stat">
-                    <b data-tooltip="Date player was last seen">Last Seen:</b>
+                    <b data-tooltip="Date player was last seen">Last Seen:</b>{' '}
                     <span data-tooltip={new Date(player.lastSeen)}>
                       {duration(player.seenAgo)} ago
                     </span>
                   </div>
                   <div className="stat">
-                    <b data-tooltip="Date player was first seen">First Seen:</b>
+                    <b data-tooltip="Date player was first seen">First Seen:</b>{' '}
                     <span data-tooltip={new Date(player.created)}>
                       {duration(player.createdAgo)} ago
                     </span>
@@ -252,13 +258,13 @@ export const PlayerInspector = () => {
                   <div className="stat">
                     <b data-tooltip="Number of times this player has visited the server (new visits are registered if the player joins 3 hours after last seen)">
                       Visits:
-                    </b>
+                    </b>{' '}
                     {player.sessions}
                   </div>
                   <div className="stat">
                     <b data-tooltip="Number of server instances this player has joined">
                       Server Visits:
-                    </b>
+                    </b>{' '}
                     {player.instances}
                   </div>
                   <div className="stat">
@@ -424,8 +430,8 @@ export const PlayerInspector = () => {
             {modal === 'ban'
               ? 'Ban Player'
               : modal === 'kick'
-              ? 'Kick Player'
-              : 'Clear Bricks'}
+                ? 'Kick Player'
+                : 'Clear Bricks'}
           </Header>
           {(modal === 'kick' || modal === 'ban') && (
             <div className={`popout-inputs ${modal}`}>
@@ -463,7 +469,7 @@ export const PlayerInspector = () => {
           {modal === 'clear' && (
             <PopoutContent>
               <p style={{ padding: 20 }}>
-                Are you sure you want to clear
+                Are you sure you want to clear{' '}
                 <span style={{ color: 'white' }}>{player?.name ?? '??'}</span>'s
                 bricks?
               </p>

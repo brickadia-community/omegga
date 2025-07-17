@@ -49,7 +49,7 @@ socket.on(
     stopping: boolean;
   }) => {
     $liveness.set({ started, starting, stopping, loading: false });
-  }
+  },
 );
 
 export const rpcServer = new JSONRPCServer();
@@ -58,9 +58,8 @@ export const rpcClient = new JSONRPCClient(async data => {
 });
 export const rpc = new JSONRPCServerAndClient(rpcServer, rpcClient);
 
-export const rpcReq = (type: string, ...args: any[]) =>
-  rpc.request(type, ...args);
+export const rpcReq = (type: string, ...args: any[]) => rpc.request(type, args);
 export const rpcNotify = (type: string, ...args: any[]) =>
-  rpc.notify(type, ...args);
+  rpc.notify(type, args);
 export const ioEmit = (type: string, ...args: any[]) =>
   socket.emit(type, ...args);

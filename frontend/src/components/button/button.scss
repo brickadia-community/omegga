@@ -25,7 +25,7 @@
     margin-right: 8px;
   }
 
-  &:not(.icon) .icon {
+  &:not(.icon) .tabler-icon {
     margin-right: 8px;
   }
 
@@ -54,23 +54,43 @@
   }
 
   &.warn {
-    @include mixins.br-button(theme.$br-warn-normal, theme.$br-warn-hover, theme.$br-warn-pressed);
+    @include mixins.br-button(
+      theme.$br-warn-normal,
+      theme.$br-warn-hover,
+      theme.$br-warn-pressed
+    );
   }
 
   &.main {
-    @include mixins.br-button(theme.$br-main-normal, theme.$br-main-hover, theme.$br-main-pressed);
+    @include mixins.br-button(
+      theme.$br-main-normal,
+      theme.$br-main-hover,
+      theme.$br-main-pressed
+    );
   }
 
   &.info {
-    @include mixins.br-button(theme.$br-info-normal, theme.$br-info-hover, theme.$br-info-pressed);
+    @include mixins.br-button(
+      theme.$br-info-normal,
+      theme.$br-info-hover,
+      theme.$br-info-pressed
+    );
   }
 
   &.error {
-    @include mixins.br-button(theme.$br-error-normal, theme.$br-error-hover, theme.$br-error-pressed);
+    @include mixins.br-button(
+      theme.$br-error-normal,
+      theme.$br-error-hover,
+      theme.$br-error-pressed
+    );
   }
 
   &.normal {
-    @include mixins.br-button(theme.$br-element-normal, theme.$br-element-hover, theme.$br-element-pressed);
+    @include mixins.br-button(
+      theme.$br-element-normal,
+      theme.$br-element-hover,
+      theme.$br-element-pressed
+    );
     color: theme.$br-boring-button-fg;
   }
 }

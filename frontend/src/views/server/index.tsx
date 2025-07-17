@@ -53,7 +53,7 @@ export const ServerView = () => {
           },
         });
       }),
-    []
+    [],
   );
 
   const [config, setConfig] = useState<IStoreAutoRestartConfig | null>(null);
@@ -103,10 +103,10 @@ export const ServerView = () => {
             {starting
               ? 'starting'
               : stopping
-              ? 'stopping'
-              : started
-              ? 'started'
-              : 'stopped'}
+                ? 'stopping'
+                : started
+                  ? 'started'
+                  : 'stopped'}
           </Header>
           <div className="buttons">
             <Button
@@ -123,7 +123,7 @@ export const ServerView = () => {
             <Button
               error
               data-tooltip="Stop the server"
-              disabled={starting || stopping || statusLoading || started}
+              disabled={starting || stopping || statusLoading || !started}
               onClick={() =>
                 prompt('stop the server').then(ok => ok && stopServer())
               }
@@ -134,7 +134,7 @@ export const ServerView = () => {
             <Button
               warn
               data-tooltip="Stop the server if it's running, then start the server. Saves minigames/environment/bricks if enabled below."
-              disabled={starting || stopping || statusLoading || started}
+              disabled={starting || stopping || statusLoading}
               onClick={() =>
                 prompt('restart the server').then(ok => ok && restartServer())
               }

@@ -2,7 +2,8 @@
 @import 'theme';
 @import 'mixins';
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
 }
@@ -68,7 +69,8 @@ body {
 .log-entry {
   & {
     font-size: 24px;
-    text-shadow:  -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
+      1px 1px 0 #000;
     word-break: break-all;
   }
 
@@ -76,7 +78,8 @@ body {
     font-weight: bold;
   }
 
-  .join-message, .join-message .user {
+  .join-message,
+  .join-message .user {
     color: #3477e3 !important;
   }
 
@@ -101,20 +104,27 @@ table.br-table {
     white-space: nowrap;
   }
 
-  th, td {
+  th,
+  td {
     padding: 0 10px;
   }
 
-  tr td:first-child, tr th:first-child {
+  tr td:first-child,
+  tr th:first-child {
     padding-left: 20px;
   }
 
-  tr td:last-child, tr th:last-child {
+  tr td:last-child,
+  tr th:last-child {
     padding-right: 20px;
   }
 
   tbody tr {
-    @include alternate(background-color, $br-bg-secondary, $br-bg-secondary-alt);
+    @include alternate(
+      background-color,
+      $br-bg-secondary,
+      $br-bg-secondary-alt
+    );
     td {
       font-size: 20px;
       color: $br-boring-button-fg;
@@ -125,7 +135,8 @@ table.br-table {
   }
 }
 
-a, :visited {
+a,
+:visited {
   color: #0ff;
 }
 
@@ -144,14 +155,16 @@ a, :visited {
       background-color: $br-bg-primary-alt;
     }
 
-    label, .inputs {
+    label,
+    .inputs {
       display: flex;
       align-items: center;
     }
 
     .inputs {
       flex: 1;
-      .toggle, .br-input {
+      .toggle,
+      .br-input {
         margin-right: 8px;
       }
     }

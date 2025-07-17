@@ -8,7 +8,7 @@ import {
   IconPlus,
   IconX,
 } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import GridLayout, { type Layout } from 'react-grid-layout';
 import { ChatWidget, StatusWidget } from '../../widgets';
 
@@ -28,6 +28,9 @@ const DEFAULT_LAYOUT = [
   { x: 0, y: 0, w: 2, h: 2, i: 'chat' },
   { x: 2, y: 0, w: 2, h: 2, i: 'status' },
 ] satisfies Layout[];
+
+const GRID_DATA = { minW: 2, maxW: 10, minH: 2, maxH: 10 };
+const GRID_MARGIN = [8, 8] as [number, number];
 
 export const HomeView = () => {
   const [layout, setLayout] = useState<Layout[]>(() => {
@@ -66,8 +69,11 @@ export const HomeView = () => {
     ]);
   };
 
-  const [showWidgets, setShowWidgets] = useState(true);
+  const [showWidgets, setShowWidgets] = useState(false);
   const hasWidget = Object.fromEntries(layout.map(w => [w.i, true]));
+  const onLayoutChange = useCallback((newLayout: Layout[]) => {
+    setLayout(newLayout);
+  }, []);
 
   return (
     <>
@@ -122,27 +128,25 @@ export const HomeView = () => {
           <GridLayout
             layout={layout}
             cols={5}
-            rowHeight={100}
-            isDraggable
-            isResizable
-            verticalCompact={false}
-            margin={[8, 8]}
-            useCSSTransforms
-            onLayoutChange={newLayout => setLayout(newLayout)}
+            // rowHeight={100}
+            // isBounded={true}
+            margin={GRID_MARGIN}
+            onLayoutChange={onLayoutChange}
             draggableHandle=".drag-handle"
             draggableCancel=".no-drag"
-            resizeHandle={() => (
-              <IconChevronDownRight className="resize-handle" />
-            )}
+            resizeHandles={['se']}
+            resizeHandle={
+              <IconChevronDownRight
+                style={{ cursor: 'se-resize' }}
+                className="resize-handle"
+              />
+            }
           >
             {layout.map(item => {
               const Component =
                 WIDGET_LIST[item.i as keyof typeof WIDGET_LIST]!.component;
               return (
-                <div
-                  key={item.i}
-                  data-grid={{ minW: 2, maxW: 10, minH: 2, maxH: 10 }}
-                >
+                <div key={item.i} data-grid={{ ...item, ...GRID_DATA }}>
                   <Header className="drag-handle">
                     <span style={{ flex: 1 }}>{item.i}</span>
                     <Button
@@ -155,9 +159,7 @@ export const HomeView = () => {
                       <IconX />
                     </Button>
                   </Header>
-                  <div className="drag-contents">
-                    <Component />
-                  </div>
+                  <Component />
                 </div>
               );
             })}

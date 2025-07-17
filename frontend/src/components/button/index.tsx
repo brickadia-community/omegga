@@ -12,6 +12,7 @@ export const Button = ({
   icon,
   boxy,
   onClick,
+  className,
   ...props
 }: React.PropsWithChildren<{
   warn?: boolean;
@@ -28,6 +29,7 @@ export const Button = ({
   <div
     className={[
       'button',
+      className ?? '',
       warn && 'warn',
       main && 'main',
       error && 'error',

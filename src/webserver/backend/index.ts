@@ -183,7 +183,6 @@ export default class Webserver {
     this.app.use(async (req, res) => {
       const user = await this.database.findUserById(req.session.userId);
       const isAuth = user && !user.isBanned;
-
       if (isAuth) {
         res.sendFile(path.join(PUBLIC_PATH, 'app.html'));
       } else {

@@ -1,5 +1,5 @@
-@use "../../css/theme";
-@use "../../css/mixins";
+@use '../../css/theme';
+@use '../../css/mixins';
 
 .players-container {
   display: flex;
@@ -92,7 +92,9 @@
     align-items: center;
 
     .current-page {
-      @include mixins.center;
+      display: flex;
+      flex-direction: column;
+      text-align: center;
       font-size: 16px;
       flex: 1;
       font-weight: bold;

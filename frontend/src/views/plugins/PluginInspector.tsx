@@ -39,7 +39,7 @@ export const PluginInspector = () => {
   const [_location, params] = useRoute('/plugins/:id');
   const [plugin, setPlugin] = useState<GetPluginRes | null>(null);
   const [config, setConfig] = useState<GetPluginRes['config']>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(plugin?.path));
   const [waiting, setWaiting] = useState(false);
   const [showSave, setShowSave] = useState<Record<string, boolean>>({});
 
@@ -84,21 +84,6 @@ export const PluginInspector = () => {
     setWaiting(false);
   };
 
-  // subscribe to plugin updates
-  useEffect(() => {
-    const handlePluginUpdate = ([shortPath, info]: [
-      shortPath: string,
-      info: PluginInfo
-    ]) => {
-      if (shortPath !== plugin?.path) return;
-      setPlugin(prev => ({ ...prev!, ...info }));
-    };
-    socket.on('plugin', handlePluginUpdate);
-    return () => {
-      socket.off('plugin', handlePluginUpdate);
-    };
-  }, []);
-
   const configRef = useRef(config);
   configRef.current = config;
   const pluginRef = useRef(plugin);
@@ -112,6 +97,18 @@ export const PluginInspector = () => {
     setPlugin(null);
     setConfig({});
     getPlugin();
+    // subscribe to plugin updates
+    const handlePluginUpdate = ([shortPath, info]: [
+      shortPath: string,
+      info: PluginInfo
+    ]) => {
+      if (shortPath !== plugin?.path) return;
+      setPlugin(prev => ({ ...prev!, ...info }));
+    };
+    socket.on('plugin', handlePluginUpdate);
+    return () => {
+      socket.off('plugin', handlePluginUpdate);
+    };
   }, [params?.id]);
 
   const saveConfig = useMemo(
@@ -147,7 +144,7 @@ export const PluginInspector = () => {
 
   return (
     <div className="plugin-view">
-      <Loader active={loading || !plugin} size="huge">
+      <Loader active={loading} size="huge">
         Loading Plugin
       </Loader>
       <div className="plugin-info">
@@ -349,7 +346,7 @@ export const PluginInspector = () => {
             Unload
           </Button>
         )}
-        {!plugin?.isEnabled && (
+        {plugin && !plugin?.isEnabled && (
           <Button
             main
             data-tooltip="Allow the plugin to be started"

@@ -2,7 +2,7 @@ import { IconMinus } from '@tabler/icons-react';
 import { debounce } from '@utils';
 import type React from 'react';
 import {
-  useLayoutEffect,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -34,11 +34,11 @@ export const PlayerDropdown = ({
   const ref = useRef<HTMLDivElement>(null);
 
   // Hide the dropdown when clicking outside of it
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!open) return;
 
     function handler(e: MouseEvent) {
-      if (e.target && ref.current?.contains(e.target as Node)) {
+      if (e.target && !ref.current?.contains(e.target as Node)) {
         setOpen(false);
       }
     }
@@ -54,11 +54,12 @@ export const PlayerDropdown = ({
 
   function addItem({ id, name }: { id: string; name: string }) {
     onChange([...value, { id, name }]);
+    setOpen(false);
+    setSearch('');
   }
 
   const searchRef = useRef(search);
   searchRef.current = search;
-  setLoading(true);
   const doSearch = useMemo(
     () =>
       debounce(async () => {
@@ -81,7 +82,7 @@ export const PlayerDropdown = ({
         setOptions(players);
         setLoading(false);
       }, 500),
-    []
+    [],
   );
 
   return (

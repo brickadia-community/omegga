@@ -18,6 +18,7 @@ import {
   IPlayer,
   IStoreAutoRestartConfig,
   IStoreBanHistory,
+  IStoreChat,
   IStoreKickHistory,
   IStoreUser,
   IUserAgo,
@@ -26,6 +27,7 @@ import {
   OmeggaSocketIo,
 } from './types';
 import { IPluginDocumentation } from '@/plugin';
+import Database from './database';
 const pkg = require('../../../package.json');
 
 export type GetPlayersRes = {
@@ -81,6 +83,8 @@ export type GetUsersRes = {
   total: number;
   users: (IStoreUser & IUserAgo)[];
 };
+
+export type HistoryRes = Awaited<ReturnType<Database['getChats']>>;
 
 export default function (server: Webserver, io: OmeggaSocketIo) {
   const { database, omegga } = server;
@@ -236,7 +240,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     // TODO: add permission check
     rpc.addMethod(
       'chat.history',
-      ([{ after, before }]: [{ after?: number; before?: number }]) => {
+      ([{ after, before }]: [{ after?: number; before?: number }] = [{}]) => {
         return database.getChats({ after, before });
       }
     );

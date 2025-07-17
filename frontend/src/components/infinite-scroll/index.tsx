@@ -7,6 +7,7 @@ export const InfiniteScroll = ({
   onBottom,
   onTop,
   children,
+  className,
   ...props
 }: {
   loading: boolean;
@@ -66,7 +67,12 @@ export const InfiniteScroll = ({
   }, [loading, lastDirection, onTopScrollsToBottom, offset]);
 
   return (
-    <div ref={targetRef} onScroll={handleElementScroll} {...props}>
+    <div
+      ref={targetRef}
+      onScroll={handleElementScroll}
+      className={className}
+      {...props}
+    >
       {children}
     </div>
   );

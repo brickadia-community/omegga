@@ -17,7 +17,7 @@
       display: flex;
       align-items: center;
 
-      .icon {
+      .tabler-icon {
         opacity: 0;
         color: white;
       }
@@ -31,7 +31,7 @@
   &:hover .log-row {
     background: rgba(255, 255, 255, 0.2);
 
-    .icon {
+    .tabler-icon {
       opacity: 1;
     }
   }

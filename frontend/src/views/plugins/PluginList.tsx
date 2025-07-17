@@ -91,7 +91,7 @@ export const PluginList = () => {
       socket.off('plugin', handlePluginUpdate);
       ioEmit('unsubscribe', 'plugins');
     };
-  });
+  }, []);
 
   return (
     <>

@@ -21,6 +21,7 @@ import React, {
 } from 'react';
 import { rpcReq } from '../../socket';
 import { useRoute } from 'wouter';
+import type { HistoryRes } from '@omegga/webserver/backend/api';
 
 const MONTHS = [
   'January',
@@ -52,7 +53,7 @@ export const HistoryView = () => {
   const [calendar, setCalendar] = useState<
     Record<number, Record<number, Record<number, boolean>>>
   >({});
-  const [chats, setChats] = useState<any[]>([]);
+  const [_historyKey, setHistoryKey] = useState(0);
 
   const nowYear = useMemo(() => new Date().getFullYear(), []);
   const [year, setYear] = useState(nowYear);
@@ -65,7 +66,12 @@ export const HistoryView = () => {
   const [absMax, setAbsMax] = useState<number | null>(null);
   const minRef = useRef<number | null>(null);
   const maxRef = useRef<number | null>(null);
-  const chatsRef = useRef<any[]>([]);
+  const chatsRef = useRef<
+    (HistoryRes[number] & {
+      date: number;
+      newDay?: string;
+    })[]
+  >([]);
 
   const getCalendar = useCallback(async () => {
     setLoading(true);
@@ -102,6 +108,7 @@ export const HistoryView = () => {
 
     minRef.current = min;
     maxRef.current = max;
+    setHistoryKey(prev => prev + 1);
   }, []);
 
   const getChats = useCallback(
@@ -110,15 +117,18 @@ export const HistoryView = () => {
       dir?: 'top' | 'bottom'
     ) => {
       setLoading(true);
-      const chatData = await rpcReq('chat.history', { before, after });
-      handleChats(chats);
+      const chatData: HistoryRes = await rpcReq('chat.history', {
+        before,
+        after,
+      });
+      handleChats(chatData);
 
       // remove chats that our off screen
       if (dir === 'bottom' && chatsRef.current.length > 200) {
         chatsRef.current.splice(0, chatsRef.current.length - 200);
       }
       if (dir === 'top' && chatsRef.current.length > 200) {
-        chatsRef.current.splice(0, chatsRef.current.length - 200);
+        chatsRef.current.splice(200, chatsRef.current.length - 200);
       }
 
       setFirstLoad(false);
@@ -147,6 +157,7 @@ export const HistoryView = () => {
 
       // ensures time is not nan
       if (time && !Number.isNaN(time.getTime())) {
+        chatsRef.current = [];
         await getChats({ before: time.getTime() - 1 });
         await getChats({ after: time.getTime() - 1 });
         requestAnimationFrame(() => {
@@ -154,6 +165,7 @@ export const HistoryView = () => {
           el?.scrollIntoView({ block: 'center' });
         });
       } else {
+        chatsRef.current = [];
         await getChats({ before: Date.now() });
         scroll();
       }
@@ -161,8 +173,8 @@ export const HistoryView = () => {
   }, [paramTime]);
 
   const focusDay = async (year: number, month: number, day: number) => {
-    if (loading) return;
-    setChats([]);
+    chatsRef.current = [];
+    setHistoryKey(prev => prev + 1);
     const time = new Date(year, month, day).getTime();
     await getChats({ after: time });
   };
@@ -344,9 +356,9 @@ export const HistoryView = () => {
                 onBottom={nextPage}
                 onTopScrollsToBottom={false}
                 offset={500}
-                className="scroller-scroll"
+                className="scroll-scroller"
               >
-                {chats.map(chat => (
+                {chatsRef.current.map(chat => (
                   <React.Fragment key={chat._id}>
                     {chat.newDay && (
                       <div className="chat-new-day">{chat.newDay}</div>
