@@ -29,9 +29,9 @@ import {
 } from '@tabler/icons-react';
 import { debounce, duration, logout } from '@utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { $omeggaData, $user } from '../../stores/user';
 import { useLocation, useRoute } from 'wouter';
 import { rpcReq } from '../../socket';
+import { $omeggaData, $user } from '../../stores/user';
 
 export const UserList = () => {
   const userless = useStore($omeggaData)?.userless;
@@ -51,9 +51,9 @@ export const UserList = () => {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
 
-  const [userLookup, setUserLookup] = useState<
-    Record<string, GetUsersRes['users'][number]>
-  >({});
+  // const [userLookup, setUserLookup] = useState<
+  //   Record<string, GetUsersRes['users'][number]>
+  // >({});
 
   const [_location, navigate] = useLocation();
   const [_match, params] = useRoute('/users/:id?');
@@ -93,10 +93,10 @@ export const UserList = () => {
     setPages(pages);
     setTotal(total);
     setUsers(users);
-    setUserLookup(prev => ({
-      ...prev,
-      ...Object.fromEntries(users.map(u => [u.username, u])),
-    }));
+    // setUserLookup(prev => ({
+    //   ...prev,
+    //   ...Object.fromEntries(users.map(u => [u.username, u])),
+    // }));
     setLoading(false);
   };
   const getUsersRef = useRef<() => Promise<void>>(getUsers);
@@ -129,14 +129,12 @@ export const UserList = () => {
     getUsers();
   };
 
-  const selectedUser = useMemo(() => {
-    if (!params?.id) return null;
-    const user =
-      userLookup[params.id] ?? users.find(u => u.username === params.id);
-    return user ?? null;
-  }, [params?.id, userLookup, users]);
-
-  const _selectedUserName = selectedUser?.username ?? 'SELECT A USER';
+  // const selectedUser = useMemo(() => {
+  //   if (!params?.id) return null;
+  //   const user =
+  //     userLookup[params.id] ?? users.find(u => u.username === params.id);
+  //   return user ?? null;
+  // }, [params?.id, userLookup, users]);
 
   const toggleAddUser = () => {
     setShowCreateUser(!showCreateUser);
@@ -210,7 +208,7 @@ export const UserList = () => {
             </>
           )}
         </Button>
-        {!userless && selectedUser?.isOwner && (
+        {!userless && myUser?.isOwner && (
           <Button normal onClick={toggleAddUser} data-tooltip="Add a new user">
             <IconUserPlus />
             Add User

@@ -8,7 +8,7 @@ import {
   IconPlus,
   IconX,
 } from '@tabler/icons-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import GridLayout, { type Layout } from 'react-grid-layout';
 import { ChatWidget, StatusWidget } from '../../widgets';
 
@@ -29,18 +29,24 @@ const DEFAULT_LAYOUT = [
   { x: 2, y: 0, w: 2, h: 2, i: 'status' },
 ] satisfies Layout[];
 
-const GRID_DATA = { minW: 2, maxW: 10, minH: 2, maxH: 10 };
+const GRID_DATA = {
+  minW: 2,
+  maxW: 10,
+  minH: 2,
+  maxH: 10,
+};
 const GRID_MARGIN = [8, 8] as [number, number];
 
 export const HomeView = () => {
   const [layout, setLayout] = useState<Layout[]>(() => {
     if (localStorage.omeggaDashLayout2) {
       try {
-        return JSON.parse(localStorage.omeggaDashLayout2);
+        const parsed = JSON.parse(localStorage.omeggaDashLayout2);
+        return parsed;
       } catch (err) {
         console.error(
           'Invalid layout in localStorage, using default layout',
-          err
+          err,
         );
         return DEFAULT_LAYOUT;
       }
@@ -74,6 +80,28 @@ export const HomeView = () => {
   const onLayoutChange = useCallback((newLayout: Layout[]) => {
     setLayout(newLayout);
   }, []);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState<number | null>(null);
+  useEffect(() => {
+    if (containerRef.current) {
+      setWidth(containerRef.current.clientWidth);
+    }
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        if (entry.target === containerRef.current) {
+          setWidth(entry.contentRect.width);
+        }
+      }
+    });
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [containerRef.current]);
 
   return (
     <>
@@ -124,46 +152,55 @@ export const HomeView = () => {
       </NavHeader>
       <PageContent>
         <SideNav />
-        <div className="grid-container">
-          <GridLayout
-            layout={layout}
-            cols={5}
-            // rowHeight={100}
-            // isBounded={true}
-            margin={GRID_MARGIN}
-            onLayoutChange={onLayoutChange}
-            draggableHandle=".drag-handle"
-            draggableCancel=".no-drag"
-            resizeHandles={['se']}
-            resizeHandle={
-              <IconChevronDownRight
-                style={{ cursor: 'se-resize' }}
-                className="resize-handle"
-              />
-            }
-          >
-            {layout.map(item => {
-              const Component =
-                WIDGET_LIST[item.i as keyof typeof WIDGET_LIST]!.component;
-              return (
-                <div key={item.i} data-grid={{ ...item, ...GRID_DATA }}>
-                  <Header className="drag-handle">
-                    <span style={{ flex: 1 }}>{item.i}</span>
-                    <Button
-                      icon
-                      error
-                      className="no-drag"
-                      data-tooltip="Close widget"
-                      onClick={() => removeWidget(item.i)}
-                    >
-                      <IconX />
-                    </Button>
-                  </Header>
-                  <Component />
-                </div>
-              );
-            })}
-          </GridLayout>
+        <div className="grid-container" ref={containerRef}>
+          {width !== null && (
+            <GridLayout
+              layout={layout.map(l => ({ ...l, ...GRID_DATA }))}
+              width={width}
+              cols={10}
+              autoSize
+              useCSSTransforms={true}
+              rowHeight={100}
+              isBounded={true}
+              isResizable={true}
+              isDraggable={true}
+              margin={GRID_MARGIN}
+              onLayoutChange={onLayoutChange}
+              draggableHandle=".drag-handle"
+              draggableCancel=".no-drag"
+              resizeHandles={['se']}
+              resizeHandle={
+                <IconChevronDownRight
+                  style={{ cursor: 'se-resize' }}
+                  className="resize-handle"
+                />
+              }
+            >
+              {layout.map(item => {
+                const Component =
+                  WIDGET_LIST[item.i as keyof typeof WIDGET_LIST]!.component;
+                return (
+                  <div key={item.i}>
+                    <Header className="drag-handle">
+                      <span style={{ flex: 1 }}>{item.i}</span>
+                      <Button
+                        icon
+                        error
+                        className="no-drag"
+                        data-tooltip="Close widget"
+                        onClick={() => removeWidget(item.i)}
+                      >
+                        <IconX />
+                      </Button>
+                    </Header>
+                    <div className="drag-contents">
+                      <Component />
+                    </div>
+                  </div>
+                );
+              })}
+            </GridLayout>
+          )}
         </div>
       </PageContent>
     </>

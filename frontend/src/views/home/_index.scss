@@ -50,7 +50,8 @@
 }
 
 .react-grid-item.react-grid-placeholder {
-  background-color: theme.$br-button-normal !important;
+  background-color: rgba(theme.$br-button-normal, 0.2) !important;
+  z-index: -1;
 }
 
 .drag-contents {
