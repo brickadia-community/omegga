@@ -1,0 +1,16 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.status-widget {
+  @include mixins.column-stretch;
+  flex: 1;
+  position: relative;
+  max-width: 100%;
+  background-color: theme.$br-bg-secondary;
+
+  .players {
+    .players-child {
+      @include mixins.column;
+    }
+  }
+}

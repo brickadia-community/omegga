@@ -1,5 +1,5 @@
 import { IconMinus } from '@tabler/icons-react';
-import debounce from 'lodash/debounce';
+import { debounce } from '@utils';
 import type React from 'react';
 import {
   useLayoutEffect,
@@ -8,8 +8,8 @@ import {
   useState,
   type HTMLAttributes,
 } from 'react';
-import { rpcReq } from '../../socket';
 import { Link } from 'wouter';
+import { rpcReq } from '../../socket';
 import { Button } from '../button';
 import { Input } from '../input';
 import { Loader } from '../loader';

@@ -79,6 +79,7 @@
     "linkifyjs": "^4.3.1",
     "mini-css-extract-plugin": "^1.0.0",
     "nanostores": "^1.0.1",
+    "react-grid-layout": "^1.5.2",
     "sass": "^1.89.2",
     "sass-loader": "^12.1.0",
     "ts-patch": "^3.3.0",

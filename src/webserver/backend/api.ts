@@ -27,6 +27,33 @@ import {
 } from './types';
 const pkg = require('../../../package.json');
 
+export type GetPlayersRes = {
+  pages: number;
+  total: number;
+  players: (IUserHistory & IUserAgo & { ban?: IFrontendBanEntry })[];
+};
+
+export type GetPlayerRes = Omit<IUserHistory, 'nameHistory'> & {
+  banHistory: (IStoreBanHistory & {
+    duration?: number;
+    bannerName?: string;
+  })[];
+  kickHistory: (IStoreKickHistory & {
+    kickerName?: string;
+  })[];
+  notes: IUserNote[];
+  nameHistory: {
+    name: string;
+    date: number;
+    ago?: number;
+  }[];
+} & IUserAgo & {
+    isHost: boolean;
+    isOnline: boolean;
+    currentBan: IFrontendBanEntry | null;
+    roles: { name: string; color: string }[];
+  };
+
 export default function (server: Webserver, io: OmeggaSocketIo) {
   const { database, omegga } = server;
 
@@ -273,11 +300,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           );
         }
 
-        const resp: {
-          pages: number;
-          total: number;
-          players: (IUserHistory & IUserAgo & { ban?: IFrontendBanEntry })[];
-        } = await database.getPlayers({
+        const resp: GetPlayersRes = await database.getPlayers({
           page,
           search,
           sort,
@@ -420,7 +443,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
             color: color,
           };
         }),
-      };
+      } satisfies GetPlayerRes;
     });
 
     rpc.addMethod(

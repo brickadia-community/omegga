@@ -1,0 +1,86 @@
+@use "../../css/theme";
+@use "../../css/mixins";
+
+.player-inspector-container {
+  .popout-inputs {
+    &.ban > .input {
+      margin-bottom: 0 !important;
+    }
+    .ban-duration .input {
+      margin-right: 0 !important;
+    }
+  }
+
+  .popout-content {
+    padding: 8px !important;
+    padding-top: 0 !important;
+  }
+
+  .widgets-container {
+    margin-right: 0 !important;
+    .widgets-list {
+      width: calc(100% - 9px);
+
+      .button {
+        justify-content: flex-start;
+        width: 100%;
+        margin-right: 0;
+        box-sizing: border-box;
+
+        .button-content {
+          text-align: left;
+        }
+      }
+    }
+  }
+}
+
+.player-view,
+.player-info {
+  @include mixins.column-container;
+
+  .scroll-scroller {
+    background-color: theme.$br-bg-primary;
+  }
+}
+
+.player-info {
+  position: relative;
+
+  .section-header {
+    @include mixins.center;
+    color: white;
+    height: 32px;
+    font-size: 24px;
+    text-shadow: none;
+    font-weight: bold;
+    text-align: center;
+    background-color: theme.$br-bg-header;
+    top: 0;
+    position: sticky;
+    text-transform: uppercase;
+  }
+
+  table {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  table td.reason {
+    word-break: break-all;
+    white-space: pre-wrap;
+    overflow: visible;
+    max-width: 300px;
+  }
+}
+
+.player-inspector {
+  @include mixins.column;
+  background-color: theme.$br-element-popout-bg;
+  flex: 1;
+  position: relative;
+
+  .navbar {
+    overflow: visible;
+  }
+}

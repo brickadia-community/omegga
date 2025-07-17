@@ -1,0 +1,109 @@
+@use "../../css/theme";
+@use "../../css/mixins";
+
+.players-container {
+  display: flex;
+  align-items: stretch;
+}
+
+.player-table-container,
+.player-inspector-container {
+  @include mixins.column-container;
+}
+
+.player-table-container {
+  margin-right: 16px;
+
+  .input {
+    max-width: 300px;
+    margin-right: 8px;
+    flex: 1;
+    width: 100%;
+  }
+}
+
+.players-list {
+  @include mixins.column-container;
+  flex: 1;
+  background-color: theme.$br-element-popout-bg;
+
+  .br-table {
+    width: 100%;
+    flex: 1;
+
+    thead th {
+      &:hover {
+        background-color: theme.$br-element-hover;
+      }
+
+      &:active {
+        background-color: theme.$br-element-pressed;
+      }
+
+      span {
+        @include mixins.row;
+        align-items: center;
+        position: relative;
+        cursor: pointer;
+        user-select: none;
+
+        padding-left: 20px;
+
+        &.icon-cell {
+          padding-right: 0;
+        }
+
+        .label,
+        .icon {
+          padding: 0;
+        }
+
+        .icon:not(.label) {
+          color: theme.$br-boring-button-fg;
+          position: absolute;
+          left: 16px;
+          transform: translate(-100%);
+        }
+      }
+    }
+
+    tbody tr {
+      cursor: pointer;
+      user-select: none;
+
+      .ban {
+        color: theme.$br-error-normal;
+        vertical-align: center;
+      }
+
+      &:hover td,
+      &.active td {
+        background-color: theme.$br-element-hover;
+      }
+
+      &:active td {
+        background-color: theme.$br-element-pressed;
+      }
+    }
+  }
+
+  .pagination-footer {
+    @include mixins.row;
+    align-items: center;
+
+    .current-page {
+      @include mixins.center;
+      font-size: 16px;
+      flex: 1;
+      font-weight: bold;
+      color: white;
+    }
+  }
+}
+
+.player-inspector {
+  @include mixins.column;
+  background-color: theme.$br-element-popout-bg;
+  flex: 1;
+  position: relative;
+}
