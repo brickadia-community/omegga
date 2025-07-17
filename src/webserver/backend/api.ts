@@ -25,6 +25,7 @@ import {
   IUserNote,
   OmeggaSocketIo,
 } from './types';
+import { IPluginDocumentation } from '@/plugin';
 const pkg = require('../../../package.json');
 
 export type GetPlayersRes = {
@@ -53,6 +54,27 @@ export type GetPlayerRes = Omit<IUserHistory, 'nameHistory'> & {
     currentBan: IFrontendBanEntry | null;
     roles: { name: string; color: string }[];
   };
+
+export type GetPluginsRes = {
+  name: string;
+  documentation: IPluginDocumentation;
+  path: string;
+  isLoaded: boolean;
+  isEnabled: boolean;
+}[];
+
+export type GetPluginRes = {
+  name: string;
+  format: string;
+  info: Record<string, unknown>;
+  documentation: IPluginDocumentation;
+  config: Record<string, unknown>;
+  defaultConfig: Record<string, unknown>;
+  objCount: number;
+  path: string;
+  isLoaded: boolean;
+  isEnabled: boolean;
+};
 
 export default function (server: Webserver, io: OmeggaSocketIo) {
   const { database, omegga } = server;
@@ -231,7 +253,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           isEnabled: p.isEnabled(),
         })),
         p => p.name.toLowerCase()
-      );
+      ) satisfies GetPluginsRes;
     });
 
     // get information on a specific plugin
@@ -260,7 +282,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         path: plugin.shortPath,
         isLoaded: plugin.isLoaded(),
         isEnabled: plugin.isEnabled(),
-      };
+      } satisfies GetPluginRes;
     });
 
     // get a paginated list of players

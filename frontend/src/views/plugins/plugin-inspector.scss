@@ -1,0 +1,109 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.plugin-view,
+.plugin-info {
+  @include mixins.column-container;
+
+  .scroll-scroller {
+    background-color: theme.$br-bg-primary;
+  }
+}
+
+.plugin-info {
+  .section-header {
+    @include mixins.center;
+    color: white;
+    height: 32px;
+    font-size: 24px;
+    text-shadow: none;
+    font-weight: bold;
+    text-align: center;
+    background-color: theme.$br-bg-header;
+    top: 0;
+    position: sticky;
+    text-transform: uppercase;
+  }
+}
+
+.option-item {
+  @include mixins.alternate(background-color, theme.$br-bg-secondary, theme.$br-bg-secondary-alt);
+  font-size: 20px;
+  color: theme.$br-boring-button-fg;
+  min-height: 50px;
+  overflow: visible;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+
+  &.config {
+    min-height: 80px;
+  }
+
+  .option-name,
+  .option-input {
+    margin-left: 8px;
+    margin-right: 8px;
+  }
+
+  .option-name {
+    font-size: 24px;
+    font-weight: bold;
+    cursor: default;
+  }
+
+  .option-input {
+    @include mixins.column;
+    width: 100%;
+
+    .option-label {
+      font-weight: bold;
+      margin-bottom: 4px;
+
+      .saved-note {
+        color: theme.$br-info-normal;
+        display: inline-flex;
+        align-items: center;
+        font-weight: normal;
+        font-size: 12px;
+        opacity: 0;
+        transition: 0.2s ease;
+
+        &.show {
+          opacity: 1;
+        }
+      }
+    }
+
+    .option-value {
+      @include mixins.row;
+      justify-content: space-between;
+
+      .reset-button {
+        color: white;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .option-args {
+    display: flex;
+    flex-flow: row wrap;
+
+    .option-arg {
+      @include mixins.center;
+      background-color: theme.$br-button-normal;
+      height: 16px;
+      margin: 4px;
+      font-size: 16px;
+      padding: 4px 8px;
+      border-radius: 16px;
+      cursor: default;
+      color: white;
+
+      &.required {
+        background-color: theme.$br-main-pressed;
+      }
+    }
+  }
+}

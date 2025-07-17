@@ -45,7 +45,7 @@ export class Plugin {
   }
 
   // returns the kind of plugin this is
-  static getFormat() {
+  static getFormat(): string {
     throw 'undefined plugin format';
   }
 
@@ -148,7 +148,7 @@ export class Plugin {
   }
 
   // extra info for this kind of plugin
-  getInfo() {
+  getInfo(): Record<string, unknown> {
     return {};
   }
 }

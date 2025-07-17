@@ -1,8 +1,8 @@
 import react from '@vitejs/plugin-react-swc';
 import { resolve } from 'path';
-import { defineConfig } from 'vite';
-import sass from 'vite-plugin-sass';
+import { defineConfig, type PluginOption } from 'vite';
 import { vitePluginNativeImportMaps } from 'vite-plugin-native-import-maps';
+import sass from 'vite-plugin-sass';
 
 // TODO: this might be useful for letting plugins import omegga components
 // import dts from 'vite-plugin-dts';
@@ -30,7 +30,7 @@ export default defineConfig({
       ],
       sharedOutDir: 'shared',
       log: true,
-    }),
+    }) as PluginOption,
   ],
   publicDir: 'public',
   resolve: {
@@ -41,6 +41,7 @@ export default defineConfig({
     },
   },
   build: {
+    sourcemap: true,
     rollupOptions: {
       input: {
         auth: resolve(__dirname, 'frontend/react.auth.html'),
@@ -49,5 +50,6 @@ export default defineConfig({
     },
     outDir: resolve(__dirname, 'frontend/public'),
     copyPublicDir: false,
+    chunkSizeWarningLimit: 8000,
   },
 });

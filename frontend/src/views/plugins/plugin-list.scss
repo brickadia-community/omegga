@@ -1,0 +1,65 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.plugins-container {
+  display: flex;
+  align-items: stretch;
+}
+
+.plugins-list-container, .plugin-inspector-container {
+  @include mixins.column-container;
+}
+
+.plugins-list-container {
+  margin-right: 16px;
+
+  .input {
+    max-width: 300px;
+    margin-right: 8px;
+    flex: 1;
+    width: 100%;
+  }
+}
+
+.plugins-list {
+  @include mixins.column-container;
+  margin-top: 8px;
+
+  .plugin-item {
+    background-color: theme.$br-button-normal;
+    margin-bottom: 8px;
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    height: 48px;
+    font-size: 20px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+
+    &:hover, .router-link-active { background-color: theme.$br-element-hover; }
+    &:active, &.disabled { background-color: theme.$br-element-pressed; }
+
+    .icon {
+      @include mixins.center;
+      height: 32px;
+      width: 32px;
+      margin-left: 8px;
+      margin-right: 8px;
+
+      &.running { background-color: theme.$br-main-normal; }
+      &.bugged { background-color: theme.$br-warn-normal; }
+      &.broken { background-color: theme.$br-error-normal; }
+      &.disabled { background-color: theme.$br-bg-primary; }
+    }
+  }
+}
+
+
+.plugin-inspector {
+  @include mixins.column;
+  background-color: theme.$br-element-popout-bg;
+  flex: 1;
+  position: relative;
+}

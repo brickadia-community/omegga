@@ -1,12 +1,12 @@
-import { StrictMode } from 'react';
+import { Page } from '@components';
 import { createRoot } from 'react-dom/client';
 import { Route, Router } from 'wouter';
 import { useBrowserLocation } from 'wouter/use-browser-location';
-import { NotFound } from './views/NotFound';
-import { ServerView } from './views/server';
 import { HistoryView } from './views/history';
-import { Page } from '@components';
+import { NotFound } from './views/NotFound';
 import { PlayerInspector } from './views/players/PlayerInspector';
+import { PluginList } from './views/plugins';
+import { ServerView } from './views/server';
 
 const App = () => {
   return (
@@ -15,7 +15,8 @@ const App = () => {
         <Route path="/" component={() => <>Welcome to Omegga!</>} />
         <Route path="/history" component={HistoryView} />
         <Route path="/history/:time?" component={HistoryView} />
-        <Route path="/plugins" component={() => <>TODO: plugins</>} />
+        <Route path="/plugins" component={PluginList} />
+        <Route path="/plugins/:id?" component={PluginList} />
         <Route path="/players" component={PlayerInspector} />
         <Route path="/players/:id?" component={PlayerInspector} />
         <Route path="/users" component={() => <>TODO: users</>} />
@@ -26,8 +27,4 @@ const App = () => {
   );
 };
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+createRoot(document.getElementById('root')!).render(<App />);

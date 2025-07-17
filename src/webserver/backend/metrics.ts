@@ -228,9 +228,15 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
   });
 
   // tell web users plugin status
-  omegga.on('plugin:status', (shortPath, info) => {
-    io.to('plugins').emit('plugin', shortPath, info);
-  });
+  omegga.on(
+    'plugin:status',
+    (
+      shortPath: string,
+      info: { name: string; isLoaded: boolean; isEnabled: boolean }
+    ) => {
+      io.to('plugins').emit('plugin', shortPath, info);
+    }
+  );
 
   // server status events
   omegga.on('start', () =>
