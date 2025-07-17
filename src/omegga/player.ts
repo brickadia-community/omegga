@@ -561,7 +561,7 @@ class Player implements OmeggaPlayer {
     const { controller } = this;
 
     const brickTemplateRegExp =
-      /^(?<index>\d+)\) Tool_Selector_C (.+):PersistentLevel\.(?<tool>Tool_Selector_C_\d+)\.CurrentTemplate = (.+)Brickadia.BrickBuildingTemplate'(.+)Transient.(?<templateName>BrickBuildingTemplate_\d+)'$/
+      /^(?<index>\d+)\) Tool_Selector_C (.+):PersistentLevel\.(?<tool>Tool_Selector_C_\d+)\.CurrentTemplate = (.+)Brickadia.BrickBuildingTemplate'(.+)Transient.(?<templateName>BrickBuildingTemplate_\d+)'$/;
     const brickTemplateOwnerRegExp =
       /^(?<index>\d+)\) Tool_Selector_C (.+):PersistentLevel\.(?<tool>Tool_Selector_C_\d+)\.Owner = (.+)(?<controller>BP_PlayerController_C_\d+)'$/;
     const minBoundsRegExp =
@@ -571,53 +571,54 @@ class Player implements OmeggaPlayer {
     const centerRegExp =
       /^(?<index>\d+)\) BrickBuildingTemplate (.+)Transient\.(?<templateName>BrickBuildingTemplate_\d+)\.Center = \(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\)$/;
 
-    const [templates, owners, minBounds, maxBounds, centers] = await Promise.all([
-      this.#omegga.watchLogChunk<RegExpMatchArray>(
-        'GetAll Tool_Selector_C CurrentTemplate',
-        brickTemplateRegExp,
-        {
-          first: 'index',
-          timeoutDelay: 2000,
-          afterMatchDelay: 100,
-        }
-      ),
-      this.#omegga.watchLogChunk<RegExpMatchArray>(
-        'GetAll Tool_Selector_C Owner',
-        brickTemplateOwnerRegExp,
-        {
-          first: 'index',
-          timeoutDelay: 2000,
-          afterMatchDelay: 100,
-        }
-      ),
-      this.#omegga.watchLogChunk<RegExpMatchArray>(
-        'GetAll BrickBuildingTemplate MinBounds',
-        minBoundsRegExp,
-        {
-          first: 'index',
-          timeoutDelay: 2000,
-          afterMatchDelay: 100,
-        }
-      ),
-      this.#omegga.watchLogChunk<RegExpMatchArray>(
-        'GetAll BrickBuildingTemplate MaxBounds',
-        maxBoundsRegExp,
-        {
-          first: 'index',
-          timeoutDelay: 2000,
-          afterMatchDelay: 100,
-        }
-      ),
-      this.#omegga.watchLogChunk<RegExpMatchArray>(
-        'GetAll BrickBuildingTemplate Center',
-        centerRegExp,
-        {
-          first: 'index',
-          timeoutDelay: 2000,
-          afterMatchDelay: 100,
-        }
-      ),
-    ]);
+    const [templates, owners, minBounds, maxBounds, centers] =
+      await Promise.all([
+        this.#omegga.watchLogChunk<RegExpMatchArray>(
+          'GetAll Tool_Selector_C CurrentTemplate',
+          brickTemplateRegExp,
+          {
+            first: 'index',
+            timeoutDelay: 2000,
+            afterMatchDelay: 100,
+          }
+        ),
+        this.#omegga.watchLogChunk<RegExpMatchArray>(
+          'GetAll Tool_Selector_C Owner',
+          brickTemplateOwnerRegExp,
+          {
+            first: 'index',
+            timeoutDelay: 2000,
+            afterMatchDelay: 100,
+          }
+        ),
+        this.#omegga.watchLogChunk<RegExpMatchArray>(
+          'GetAll BrickBuildingTemplate MinBounds',
+          minBoundsRegExp,
+          {
+            first: 'index',
+            timeoutDelay: 2000,
+            afterMatchDelay: 100,
+          }
+        ),
+        this.#omegga.watchLogChunk<RegExpMatchArray>(
+          'GetAll BrickBuildingTemplate MaxBounds',
+          maxBoundsRegExp,
+          {
+            first: 'index',
+            timeoutDelay: 2000,
+            afterMatchDelay: 100,
+          }
+        ),
+        this.#omegga.watchLogChunk<RegExpMatchArray>(
+          'GetAll BrickBuildingTemplate Center',
+          centerRegExp,
+          {
+            first: 'index',
+            timeoutDelay: 2000,
+            afterMatchDelay: 100,
+          }
+        ),
+      ]);
 
     if (
       !templates.length ||
@@ -628,9 +629,9 @@ class Player implements OmeggaPlayer {
     )
       return;
 
-
     // get selector for this controller, we need to handle if there are multiple selectors for the same controller
-    const selectors = owners.filter(selectors => selectors.groups.controller === controller)
+    const selectors = owners
+      .filter(selectors => selectors.groups.controller === controller)
       .map(selectors => selectors.groups.tool)
       .sort();
     const selector = selectors[0]; // grab the most recently created
@@ -640,11 +641,11 @@ class Player implements OmeggaPlayer {
     }
 
     // template for this selector, we need to handle if there are multiple templates for the same selector and grab the most recent one
-    const brickTemplates = templates.filter(template => template.groups.tool === selector)
+    const brickTemplates = templates
+      .filter(template => template.groups.tool === selector)
       .map(template => template.groups.templateName)
       .sort();
     const templateName = brickTemplates[0]; // grab the most recently created
-
 
     if (!templateName) {
       return;
