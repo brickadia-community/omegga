@@ -92,9 +92,13 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       Logger.logp('Stopping server for auto-update...');
       await omegga.stop();
       Logger.logp('Downloading update...');
-      steamcmdDownloadGame({
-        steambeta: omegga.config.server?.steambeta,
-      });
+      try {
+        steamcmdDownloadGame({
+          steambeta: omegga.config.server?.steambeta,
+        });
+      } catch (e) {
+        error('An error occurred while downloading the update:', e);
+      }
       Logger.logp('Starting server after update...');
       await omegga.start();
     } else {

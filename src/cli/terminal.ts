@@ -181,11 +181,10 @@ const COMMANDS: TerminalCommand[] = [
           steambeta: this.omegga.config.server?.steambeta,
           steambetaPassword: this.omegga.config.server?.steambetaPassword,
         });
+        log('Server updated successfully.');
       } catch (e) {
         err('An error occurred while updating the server:', e);
-        return;
       }
-      log('Server updated successfully.');
       if (wasStarted) {
         log('Starting server...');
         await this.omegga.start();

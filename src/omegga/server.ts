@@ -287,7 +287,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
           } catch (err) {
             Logger.error('Error removing omegga_temp_players.json', err);
           }
-        }, 10000);
+        }, 180000);
       }
     } catch (err) {
       Logger.error('Error restoring previous server state', err);
@@ -340,6 +340,14 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     }
     Logger.verbose('Stopping server');
     super.stop();
+
+    const res = await Promise.race([
+      new Promise(resolve => this.once('exit', () => resolve('exit'))),
+      // Timeout after 10 seconds
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000)),
+    ]);
+
+    Logger.verbose('Stop result:', res);
     if (this.stopping) this.emit('server:stopped');
     this.stopping = false;
     this.started = false;
