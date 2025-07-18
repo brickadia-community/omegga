@@ -3,7 +3,7 @@
 /data/
 /plugins/
 /src/
-/frontend/src/
+/frontend/
 .omegga-config.yml
 .omegga.yml
 .prettierrc
