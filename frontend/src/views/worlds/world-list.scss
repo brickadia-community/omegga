@@ -1,0 +1,97 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.worlds.widgets-container .widgets-list {
+  .button {
+    border-radius: 0;
+    margin-right: 0;
+  }
+  .button:first-child {
+    border-top-left-radius: theme.$br-radius-md;
+    border-top-right-radius: theme.$br-radius-md;
+  }
+  .button:last-child {
+    border-bottom-left-radius: theme.$br-radius-md;
+    border-bottom-right-radius: theme.$br-radius-md;
+  }
+}
+.worlds-container {
+  display: flex;
+  align-items: stretch;
+}
+
+.worlds-list-container,
+.world-inspector-container {
+  @include mixins.column-container;
+}
+
+.worlds-list-container {
+  margin-right: 16px;
+
+  .input {
+    max-width: 300px;
+    margin-right: 8px;
+    flex: 1;
+    width: 100%;
+  }
+}
+
+.worlds-list {
+  @include mixins.column-container;
+  margin-top: 8px;
+
+  .world-item {
+    background-color: theme.$br-button-normal;
+    margin-bottom: 8px;
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    height: 48px;
+    font-size: 20px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    text-decoration: none;
+    border-radius: theme.$br-radius-md;
+
+    &:hover,
+    .router-link-active {
+      background-color: theme.$br-element-hover;
+    }
+    &:active,
+    &.disabled {
+      background-color: theme.$br-element-pressed;
+    }
+
+    .tabler-icon {
+      @include mixins.center;
+      height: 32px;
+      width: 32px;
+      margin-left: 8px;
+      margin-right: 8px;
+      border-radius: theme.$br-radius-sm;
+
+      &.running {
+        background-color: theme.$br-main-normal;
+      }
+      &.bugged {
+        background-color: theme.$br-warn-normal;
+      }
+      &.broken {
+        background-color: theme.$br-error-normal;
+      }
+      &.disabled {
+        background-color: theme.$br-bg-primary;
+      }
+    }
+  }
+}
+
+.world-inspector {
+  @include mixins.column;
+  background-color: theme.$br-element-popout-bg;
+  flex: 1;
+  position: relative;
+  border-bottom-left-radius: theme.$br-radius-md;
+  border-bottom-right-radius: theme.$br-radius-md;
+}

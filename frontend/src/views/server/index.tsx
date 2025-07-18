@@ -1,22 +1,17 @@
 import {
   Button,
-  Dimmer,
-  Footer,
-  Header,
   Input,
-  Modal,
   NavBar,
   NavHeader,
   PageContent,
-  PopoutContent,
   SideNav,
   Toggle,
+  useConfirm,
 } from '@components';
 import { SavedSpan, SavedStatus, useSaved } from '@hooks';
 import { useStore } from '@nanostores/react';
 import type { IStoreAutoRestartConfig } from '@omegga/webserver/backend/types';
 import {
-  IconCheck,
   IconCloudDownload,
   IconCloudSearch,
   IconDeviceFloppy,
@@ -24,7 +19,6 @@ import {
   IconPlayerPlay,
   IconPlayerStop,
   IconRefresh,
-  IconX,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
 import { rpcNotify, rpcReq } from '../../socket';
@@ -44,25 +38,7 @@ export const ServerView = () => {
     starting,
     loading: statusLoading,
   } = useServerLiveness();
-  const [confirm, setConfim] = useState({
-    show: false,
-    message: '',
-    resolve: (_val: boolean) => {},
-  });
-  const prompt = useCallback(
-    (message: string) =>
-      new Promise(resolve => {
-        setConfim({
-          message,
-          show: true,
-          resolve(val) {
-            resolve(val);
-            setConfim({ show: false, message: '', resolve: () => {} });
-          },
-        });
-      }),
-    [],
-  );
+  const confirm = useConfirm();
 
   const [config, setConfig] = useState<IStoreAutoRestartConfig | null>(null);
   const omeggaData = useStore($omeggaData);
@@ -133,7 +109,29 @@ export const ServerView = () => {
 
   return (
     <>
-      <NavHeader title="Server" />
+      <NavHeader title="Server">
+        {omeggaData?.isSteam && canUpdateCheck !== null && (
+          <Button
+            main={Boolean(hasUpdate)}
+            normal={!hasUpdate}
+            data-tooltip="Check for updates"
+            disabled={checkingForUpdate}
+            onClick={checkForUpdate}
+          >
+            {hasUpdate === true ? (
+              <>
+                <IconDownload />
+                Update Available
+              </>
+            ) : (
+              <>
+                <IconCloudSearch />
+                Check for Update
+              </>
+            )}
+          </Button>
+        )}
+      </NavHeader>
       <PageContent>
         <SideNav />
         <div className="generic-container server-container">
@@ -146,28 +144,6 @@ export const ServerView = () => {
                 : started
                   ? 'started'
                   : 'stopped'}
-            <span style={{ flex: 1 }} />
-            {omeggaData?.isSteam && canUpdateCheck !== null && (
-              <Button
-                main={Boolean(hasUpdate)}
-                normal={!hasUpdate}
-                data-tooltip="Check for updates"
-                disabled={checkingForUpdate}
-                onClick={checkForUpdate}
-              >
-                {hasUpdate === true ? (
-                  <>
-                    <IconDownload />
-                    Update Available
-                  </>
-                ) : (
-                  <>
-                    <IconCloudSearch />
-                    Check for Update
-                  </>
-                )}
-              </Button>
-            )}
           </NavBar>
           <div className="buttons">
             <Button
@@ -175,7 +151,9 @@ export const ServerView = () => {
               data-tooltip="Start the server"
               disabled={starting || stopping || statusLoading || started}
               onClick={() =>
-                prompt('start the server').then(ok => ok && startServer())
+                confirm
+                  .prompt('start the server')
+                  .then(ok => ok && startServer())
               }
             >
               <IconPlayerPlay />
@@ -186,7 +164,7 @@ export const ServerView = () => {
               data-tooltip="Stop the server"
               disabled={starting || stopping || statusLoading || !started}
               onClick={() =>
-                prompt('stop the server').then(ok => ok && stopServer())
+                confirm.prompt('stop the server').then(ok => ok && stopServer())
               }
             >
               <IconPlayerStop />
@@ -197,7 +175,9 @@ export const ServerView = () => {
               data-tooltip="Reloads the server's world. Saves minigames/environment/bricks if 'Save World' is enabled below."
               disabled={starting || stopping || statusLoading}
               onClick={() =>
-                prompt('restart the server').then(ok => ok && restartServer())
+                confirm
+                  .prompt('restart the server')
+                  .then(ok => ok && restartServer())
               }
             >
               <IconRefresh />
@@ -221,7 +201,9 @@ export const ServerView = () => {
                 }
                 disabled={starting || stopping || statusLoading}
                 onClick={() =>
-                  prompt('update the server').then(ok => ok && updateServer())
+                  confirm
+                    .prompt('update the server')
+                    .then(ok => ok && updateServer())
                 }
               >
                 <IconCloudDownload />
@@ -359,25 +341,7 @@ export const ServerView = () => {
               </div>
             </div>
           )}
-          <Dimmer visible={confirm.show}>
-            <Modal visible>
-              <Header> Confirmation </Header>
-              <PopoutContent>
-                <p>Are you sure you want to {confirm.message}?</p>
-              </PopoutContent>
-              <Footer>
-                <Button main onClick={() => confirm.resolve(true)}>
-                  <IconCheck />
-                  Yes
-                </Button>
-                <div style={{ flex: 1 }} />
-                <Button normal onClick={() => confirm.resolve(false)}>
-                  <IconX />
-                  No
-                </Button>
-              </Footer>
-            </Modal>
-          </Dimmer>
+          {confirm.children}
         </div>
       </PageContent>
     </>

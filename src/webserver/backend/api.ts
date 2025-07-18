@@ -107,7 +107,7 @@ export type HistoryRes = Awaited<ReturnType<Database['getChats']>>;
 
 export type WorldRevisionsRes = {
   index: number;
-  date: Date;
+  date: number;
   note: string;
 }[];
 
@@ -1047,9 +1047,9 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     // list a world's revisions (while the server is running)
     rpc.addMethod('world.revisions', async ([world]: [string]) => {
       try {
-        return (await omegga.getWorldRevisions(
-          world,
-        )) satisfies WorldRevisionsRes;
+        return (await omegga.getWorldRevisions(world))?.map(
+          ({ date, ...r }) => ({ ...r, date: date.getTime() }),
+        ) satisfies WorldRevisionsRes;
       } catch (_err) {
         return null;
       }
@@ -1070,11 +1070,20 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       'world.load',
       async ([world, revision]: [string, number?]) => {
         try {
+          let res = false;
           if (revision) {
-            return await omegga.loadWorldRevision(world, revision);
+            log('Loading world revision', revision, 'of', world.yellow);
+            res = await omegga.loadWorldRevision(world, revision);
           } else {
-            return await omegga.loadWorld(world);
+            log('Loading world', world.yellow);
+            res = await omegga.loadWorld(world);
           }
+          if (res) {
+            log('World loaded successfully');
+          } else {
+            log('World load failed');
+          }
+          return res;
         } catch (err) {
           error('Error while loading world', err);
           return false;
@@ -1085,12 +1094,44 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     /// set or clear the default world
     rpc.addMethod('world.use', async ([world]: [string?]) => {
       try {
-        return omegga.setActiveWorld(world || null);
+        const ok = omegga.setActiveWorld(world || null);
+        if (ok) {
+          log('Set default world to', (world || 'none').yellow);
+        }
+        return ok;
       } catch (err) {
         error('Error while using world', err);
         return false;
       }
     });
+
+    // create a new world
+    rpc.addMethod(
+      'world.create',
+      async ([name, level]: [
+        string,
+        ('Plate' | 'Space' | 'Studio' | 'Peaks')?,
+      ]) => {
+        try {
+          log(
+            'Creating new world',
+            name.yellow,
+            'with level',
+            level?.yellow || 'Plate',
+          );
+          const res = await omegga.createEmptyWorld(name, level);
+          if (res) {
+            log('World created successfully');
+          } else {
+            log('World creation failed');
+          }
+          return res;
+        } catch (err) {
+          error('Error while creating world', err);
+          return false;
+        }
+      },
+    );
 
     // save a world or save as a world
     rpc.addMethod('world.save', async ([name]: [string?]) => {

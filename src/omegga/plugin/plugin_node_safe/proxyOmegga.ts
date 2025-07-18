@@ -367,7 +367,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   saveWorld(): Promise<boolean> {
     throw badBorrow('saveWorld');
   }
-  createEmptyWorld(worldName: string): Promise<void> {
+  createEmptyWorld(worldName: string): Promise<boolean> {
     throw badBorrow('createEmptyWorld');
   }
   writeSaveData(saveName: string, saveData: WriteSaveObject) {

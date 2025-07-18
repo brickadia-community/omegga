@@ -763,7 +763,7 @@ export interface OmeggaCore {
   /**
    * Create an empty world with the given name
    */
-  createEmptyWorld(worldName: string): void;
+  createEmptyWorld(worldName: string): Promise<boolean>;
 
   /**
    * unsafely load save data (wrap in try/catch)

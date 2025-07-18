@@ -1,14 +1,14 @@
 import Logger from '@/logger';
-import { AutoRestartConfig, IServerStatus, OmeggaLike } from '@/plugin';
+import { AutoRestartConfig, IServerStatus } from '@/plugin';
 import soft from '@/softconfig';
-import type Webserver from './index';
-import { OmeggaSocketIo, IStoreAutoRestartConfig } from './types';
 import {
   clearLastSteamUpdateCheck,
   getLastSteamUpdateCheck,
   hasSteamUpdate,
   steamcmdDownloadGame,
 } from '@/updater/steam';
+import type Webserver from './index';
+import { IStoreAutoRestartConfig, OmeggaSocketIo } from './types';
 
 const error = (...args: any[]) => Logger.error(...args);
 let lastRestart = 0;
@@ -309,6 +309,11 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     io
       .to('server')
       .emit('status', { started: false, starting: true, stopping: false }),
+  );
+  omegga.on('mapchange', () =>
+    io
+      .to('server')
+      .emit('status', { started: true, starting: false, stopping: false }),
   );
   omegga.on('server:stopped', () =>
     io

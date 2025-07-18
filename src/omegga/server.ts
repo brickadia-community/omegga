@@ -902,13 +902,35 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     }
   }
 
-  createEmptyWorld(
+  async createEmptyWorld(
     worldName: string,
     map: 'Plate' | 'Space' | 'Studio' | 'Peaks' = 'Plate',
-  ) {
+  ): Promise<boolean> {
     if (!worldName) return;
     worldName = worldName.replace(/\.brdb$/i, '');
-    this.writeln(`BR.World.CreateEmpty "${worldName}" ${map}`);
+
+    try {
+      const match = await this.addWatcher<{ res: boolean }>(
+        (_line, match) => {
+          if (match?.groups?.generator !== 'LogBRWorldManager') return;
+
+          const ok = match.groups.data.match(/^World files saved after /);
+          const err = match.groups.data.match(
+            /^Error: (Invalid preset|World already exists|Failed to create new world)?/,
+          );
+          return ok ? { res: true } : err ? { res: false } : undefined;
+        },
+        {
+          exec: () => {
+            this.writeln(`BR.World.CreateEmpty "${worldName}" ${map}`);
+          },
+          timeoutDelay: 2000,
+        },
+      );
+      return match?.[0]?.['res'] ?? false;
+    } catch (err) {
+      return false;
+    }
   }
 
   writeSaveData(saveName: string, saveData: WriteSaveObject) {
