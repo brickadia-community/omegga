@@ -4,6 +4,7 @@ import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
 import readline from 'readline';
 import { install } from './plugin';
+import { steamcmdDownloadGame } from '@/updater';
 
 declare global {
   interface String {
@@ -151,6 +152,38 @@ const COMMANDS: TerminalCommand[] = [
     async fn() {
       log('Restarting server...');
       await this.omegga.restartServer();
+    },
+  },
+  {
+    aliases: ['update'],
+    desc: 'try to update the server and restart if started (without announcement or saving',
+    async fn() {
+      if (this.omegga.stopping || this.omegga.starting) {
+        err(
+          'The server is currently starting or stopping. Please wait a moment',
+        );
+        return;
+      }
+      const wasStarted = this.omegga.started;
+      if (wasStarted) {
+        log('Stopping server before updating...');
+        await this.omegga.stop();
+      }
+      log('Updating server...');
+      try {
+        steamcmdDownloadGame({
+          steambeta: this.omegga.config.server?.steambeta,
+          steambetaPassword: this.omegga.config.server?.steambetaPassword,
+        });
+      } catch (e) {
+        err('An error occurred while updating the server:', e);
+        return;
+      }
+      log('Server updated successfully.');
+      if (wasStarted) {
+        log('Starting server...');
+        await this.omegga.start();
+      }
     },
   },
   {

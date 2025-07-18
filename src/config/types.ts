@@ -42,6 +42,8 @@ export interface IConfig {
     password?: string;
     token?: string;
   };
+  /** Internal use - this is a steam install */
+  __STEAM?: boolean;
 }
 
 export type IConfigFormat = {

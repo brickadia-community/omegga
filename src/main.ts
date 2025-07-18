@@ -20,6 +20,11 @@ import {
   STEAM_APP_ID,
   STEAMCMD_PATH,
 } from './softconfig';
+import {
+  hasSteamUpdate,
+  steamcmdDownloadGame,
+  steamcmdDownloadSelf,
+} from './updater';
 const pkg = require('../package.json');
 
 const notifier = updateNotifier({
@@ -122,6 +127,7 @@ const program = commander
         '- skipping download.',
       );
     } else if (isSteam) {
+      conf.__STEAM = true;
       await setupSteam(conf, update);
     } else {
       Logger.warnp(
@@ -217,10 +223,26 @@ const program = commander
 
     if (notifier.update) {
       Logger.logp(
-        `Update is available (${('v' + notifier.update.latest).yellow})! Run`,
+        `Omegga update is available (${('v' + notifier.update.latest).yellow})! Run`,
         'npm i -g omegga'.yellow,
         'to update!',
       );
+    }
+
+    if (conf.__STEAM && !update && !conf.server?.steambetaPassword) {
+      hasSteamUpdate(conf.server?.steambeta).then(hasUpdate => {
+        if (hasUpdate) {
+          Logger.logp('A server update is available!'.brightBlue);
+          Logger.log(
+            '  Restart with',
+            'omegga --update'.yellow,
+            'to update every start.',
+          );
+          Logger.log('  Run', '/update'.yellow, 'to update', 'now'.green + '!');
+        } else {
+          Logger.verbose('No server updates available.');
+        }
+      });
     }
 
     Logger.logp(
@@ -528,13 +550,12 @@ program
 program.parseAsync(process.argv);
 
 async function setupSteam(config: config.IConfig, forceUpdate = false) {
-  const isSteamBeta = Boolean(config?.server?.steambeta);
-  const steamBeta = config?.server?.steambeta || 'main';
-  const steamBetaPassword = config?.server?.steambetaPassword;
+  const steambeta = config?.server?.steambeta;
+  const steambetaPassword = config?.server?.steambetaPassword;
 
   const binaryPath = path.join(
     GAME_INSTALL_DIR, // steam install directory
-    steamBeta, // steam beta branch (or main)
+    steambeta ?? 'main', // steam beta branch (or main)
     GAME_DIRNAME, // Brickadia
     GAME_BIN_PATH, // path to binary
   );
@@ -569,35 +590,22 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
       process.exit(1);
     }
 
-    Logger.logp('Installing SteamCMD...');
+    Logger.logp('Downloading SteamCMD...');
     try {
-      execSync(path.join(__dirname, '../tools/install_steamcmd.sh'), {
-        stdio: 'inherit',
-      });
+      steamcmdDownloadSelf();
       if (!fs.existsSync(STEAMCMD_PATH)) {
-        Logger.errorp('Failed to install SteamCMD. Exiting...');
+        Logger.errorp('Failed to download SteamCMD. Exiting...');
         process.exit(1);
       }
     } catch (err) {
-      Logger.errorp('Error installing SteamCMD:', err);
+      Logger.errorp('Error Downloading SteamCMD:', err);
       process.exit(1);
     }
   }
 
-  const args = [
-    `+force_install_dir ${path.join(GAME_INSTALL_DIR, steamBeta)}`,
-    `+login anonymous`,
-    `+app_update ${process.env.STEAM_APP_ID ?? STEAM_APP_ID}`,
-    isSteamBeta ? `-beta ${steamBeta}` : null,
-    isSteamBeta && steamBetaPassword
-      ? `-betapassword ${steamBetaPassword}`
-      : null,
-    '+quit',
-  ].filter(Boolean);
-
-  Logger.logp('Downloading Brickadia', steamBeta.yellow, '...');
+  Logger.logp('Downloading Brickadia', (steambeta ?? 'main').yellow, '...');
   try {
-    execSync(`${STEAMCMD_PATH} ${args.join(' ')}`, { stdio: 'inherit' });
+    steamcmdDownloadGame({ steambeta, steambetaPassword });
   } catch (err) {
     Logger.errorp('Error downloading Brickadia:', err);
     process.exit(1);
