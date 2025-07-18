@@ -42,7 +42,7 @@ const join: MatchGenerator<Player> = omegga => {
 
           // match on username or user id
           const match = data.match(
-            /^(?<field>UserName|UserId|DisplayName): (?<value>.+)$/
+            /^(?<field>UserName|UserId|DisplayName): (?<value>.+)$/,
           );
 
           // put that value in the join data
@@ -72,7 +72,7 @@ const join: MatchGenerator<Player> = omegga => {
 
             // get the state of the joining player
             omegga.writeln(
-              `GetAll BRPlayerState UserName UserName=${joinData.UserName}`
+              `GetAll BRPlayerState UserName UserName=${joinData.UserName}`,
             );
           }
         }
@@ -118,7 +118,7 @@ const join: MatchGenerator<Player> = omegga => {
             player.displayName,
             player.id,
             player.controller,
-            player.state
+            player.state,
           );
         }
       }
@@ -129,7 +129,7 @@ const join: MatchGenerator<Player> = omegga => {
       omegga.players.push(player);
       omegga.emit(
         'plugin:players:raw',
-        omegga.players.map(p => p.raw())
+        omegga.players.map(p => p.raw()),
       );
     },
   };

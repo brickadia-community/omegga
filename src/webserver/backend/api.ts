@@ -18,6 +18,7 @@ import {
   IPlayer,
   IStoreAutoRestartConfig,
   IStoreBanHistory,
+  IStoreChat,
   IStoreKickHistory,
   IStoreUser,
   IUserAgo,
@@ -25,7 +26,65 @@ import {
   IUserNote,
   OmeggaSocketIo,
 } from './types';
+import { IPluginDocumentation } from '@/plugin';
+import Database from './database';
 const pkg = require('../../../package.json');
+
+export type GetPlayersRes = {
+  pages: number;
+  total: number;
+  players: (IUserHistory & IUserAgo & { ban?: IFrontendBanEntry })[];
+};
+
+export type GetPlayerRes = Omit<IUserHistory, 'nameHistory'> & {
+  banHistory: (IStoreBanHistory & {
+    duration?: number;
+    bannerName?: string;
+  })[];
+  kickHistory: (IStoreKickHistory & {
+    kickerName?: string;
+  })[];
+  notes: IUserNote[];
+  nameHistory: {
+    name: string;
+    date: number;
+    ago?: number;
+  }[];
+} & IUserAgo & {
+    isHost: boolean;
+    isOnline: boolean;
+    currentBan: IFrontendBanEntry | null;
+    roles: { name: string; color: string }[];
+  };
+
+export type GetPluginsRes = {
+  name: string;
+  documentation: IPluginDocumentation;
+  path: string;
+  isLoaded: boolean;
+  isEnabled: boolean;
+}[];
+
+export type GetPluginRes = {
+  name: string;
+  format: string;
+  info: Record<string, unknown>;
+  documentation: IPluginDocumentation;
+  config: Record<string, unknown>;
+  defaultConfig: Record<string, unknown>;
+  objCount: number;
+  path: string;
+  isLoaded: boolean;
+  isEnabled: boolean;
+};
+
+export type GetUsersRes = {
+  pages: number;
+  total: number;
+  users: (IStoreUser & IUserAgo)[];
+};
+
+export type HistoryRes = Awaited<ReturnType<Database['getChats']>>;
 
 export default function (server: Webserver, io: OmeggaSocketIo) {
   const { database, omegga } = server;
@@ -36,7 +95,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
 
   // check if this is the first user in the database
   openApi.get('/first', async (req, res) =>
-    res.json(await database.isFirstUser())
+    res.json(await database.isFirstUser()),
   );
 
   // login / create admin user route
@@ -62,7 +121,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     if (isFirst) {
       user = await database.createAdminUser(
         username,
-        username === '' ? '' : password
+        username === '' ? '' : password,
       );
     } else {
       user = await database.authUser(username, password);
@@ -155,14 +214,14 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       // create database entry, send to web ui
       io.to('chat').emit(
         'chat',
-        await database.addChatLog('msg', user, message)
+        await database.addChatLog('msg', user, message),
       );
 
       // broadcast to chat
       server.omegga.broadcast(
         `"[<b><color=\\"ff00ff\\">${user.name}</></>]: ${parseLinks(
-          sanitize(message)
-        )}"`
+          sanitize(message),
+        )}"`,
       );
 
       // broadcast to terminal
@@ -181,9 +240,9 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     // TODO: add permission check
     rpc.addMethod(
       'chat.history',
-      ([{ after, before }]: [{ after?: number; before?: number }]) => {
+      ([{ after, before }]: [{ after?: number; before?: number }] = [{}]) => {
         return database.getChats({ after, before });
-      }
+      },
     );
 
     // see what days chat messages were sent
@@ -203,15 +262,15 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           isLoaded: p.isLoaded(),
           isEnabled: p.isEnabled(),
         })),
-        p => p.name.toLowerCase()
-      );
+        p => p.name.toLowerCase(),
+      ) satisfies GetPluginsRes;
     });
 
     // get information on a specific plugin
     // TODO: add permission check
     rpc.addMethod('plugin.get', async ([shortPath]: [string]) => {
       const plugin = omegga.pluginLoader.plugins.find(
-        p => p.shortPath === shortPath
+        p => p.shortPath === shortPath,
       );
       if (!plugin) return null;
 
@@ -233,7 +292,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         path: plugin.shortPath,
         isLoaded: plugin.isLoaded(),
         isEnabled: plugin.isEnabled(),
-      };
+      } satisfies GetPluginRes;
     });
 
     // get a paginated list of players
@@ -255,7 +314,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           sort?: string;
           direction?: string;
           filter?: string;
-        }
+        },
       ]) => {
         const banList = (omegga.getBanList() || { banList: {} }).banList;
 
@@ -269,15 +328,11 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           limitId = Object.keys(banList).filter(
             b =>
               banList[b].expires <= banList[b].created ||
-              parseBrickadiaTime(banList[b].expires) > Date.now()
+              parseBrickadiaTime(banList[b].expires) > Date.now(),
           );
         }
 
-        const resp: {
-          pages: number;
-          total: number;
-          players: (IUserHistory & IUserAgo & { ban?: IFrontendBanEntry })[];
-        } = await database.getPlayers({
+        const resp: GetPlayersRes = await database.getPlayers({
           page,
           search,
           sort,
@@ -307,7 +362,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
               bannerName: _.get(
                 omegga.getNameCache(),
                 ['savedPlayerNames', foundBan.bannerId],
-                ''
+                '',
               ),
             };
 
@@ -318,7 +373,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           }
         }
         return resp;
-      }
+      },
     );
 
     // get a specific player's info
@@ -351,7 +406,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         b.bannerName = _.get(
           omegga.getNameCache(),
           ['savedPlayerNames', b.bannerId],
-          ''
+          '',
         );
       }
 
@@ -361,7 +416,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         b.kickerName = _.get(
           omegga.getNameCache(),
           ['savedPlayerNames', b.kickerId],
-          ''
+          '',
         );
       }
 
@@ -383,7 +438,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           bannerName: _.get(
             omegga.getNameCache(),
             ['savedPlayerNames', foundBan.bannerId],
-            ''
+            '',
           ),
         };
 
@@ -411,7 +466,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
 
           // find the role (if it exists) and get the color
           const role = serverRoles.find(
-            sr => sr.name.toLowerCase() === r.toLowerCase()
+            sr => sr.name.toLowerCase() === r.toLowerCase(),
           );
           if (role && role.bHasColor) color = rgbToHex(role.color);
 
@@ -420,7 +475,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
             color: color,
           };
         }),
-      };
+      } satisfies GetPlayerRes;
     });
 
     rpc.addMethod(
@@ -428,7 +483,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       async ([id, duration = -1, reason = 'No Reason']: [
         id: string,
         duration: number,
-        reason: string
+        reason: string,
       ]) => {
         // validate inputs
         if (typeof duration !== 'number') return false;
@@ -438,7 +493,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         log(
           'Banning player',
           omegga.getNameCache()?.savedPlayerNames?.[id].yellow ??
-            'with id ' + id.yellow
+            'with id ' + id.yellow,
         );
         // ban the user
         omegga.writeln(`Chat.Command /Ban "${id}" ${duration} "${reason}"`);
@@ -465,19 +520,19 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
                   database.stores.players.update(
                     entry,
                     { $set: entry },
-                    { upsert: true }
+                    { upsert: true },
                   );
 
                   resolve(true);
                 }
-              })
+              }),
             );
           }),
           new Promise(resolve => setTimeout(() => resolve(false), 5000)),
         ]);
         database.off('update.bans', listener);
         return ok;
-      }
+      },
     );
 
     rpc.addMethod(
@@ -516,7 +571,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
                 await database.stores.players.update(
                   entry,
                   { $set: entry },
-                  { upsert: true }
+                  { upsert: true },
                 );
               }
             });
@@ -525,7 +580,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         ]);
 
         return ok;
-      }
+      },
     );
 
     rpc.addMethod('player.unban', async ([id]: [id: string]) => {
@@ -534,13 +589,12 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
 
       // check if user is banned
       const banList = (omegga.getBanList() || { banList: {} }).banList;
-      if (!banList[id] || parseBrickadiaTime(banList[id].expires) < Date.now())
-        return false;
+      if (!banList[id]) return false;
 
       log(
         'Unbanning player',
         omegga.getNameCache()?.savedPlayerNames?.[id].yellow ??
-          'with id ' + id.yellow
+          'with id ' + id.yellow,
       );
 
       // unban the user
@@ -559,7 +613,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
                 parseBrickadiaTime(banList[id].expires) < Date.now()
               )
                 resolve(true);
-            })
+            }),
           );
         }),
         new Promise(resolve => setTimeout(() => resolve(false), 5000)),
@@ -575,7 +629,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       log(
         'Clearing bricks for player',
         omegga.getNameCache()?.savedPlayerNames?.[id]?.yellow ??
-          'with id ' + id.yellow
+          'with id ' + id.yellow,
       );
 
       // unban the user
@@ -589,14 +643,14 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       'plugin.config',
       async ([shortPath, config]: [string, Record<string, unknown>]) => {
         const plugin = omegga.pluginLoader.plugins.find(
-          p => p.shortPath === shortPath
+          p => p.shortPath === shortPath,
         );
         if (!plugin) return null;
 
         await plugin.storage.setConfig(config);
         // TODO: validate configs
         return true;
-      }
+      },
     );
 
     // reload all plugins (and scan for new ones)
@@ -639,7 +693,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     // TODO: add permission check
     rpc.addMethod('plugin.unload', async ([shortPath]: [string]) => {
       const plugin = omegga.pluginLoader.plugins.find(
-        p => p.shortPath === shortPath
+        p => p.shortPath === shortPath,
       );
       if (!plugin) return false;
       if (!plugin.isLoaded()) return false;
@@ -651,7 +705,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     // TODO: add permission check
     rpc.addMethod('plugin.load', async ([shortPath]: [string]) => {
       const plugin = omegga.pluginLoader.plugins.find(
-        p => p.shortPath === shortPath
+        p => p.shortPath === shortPath,
       );
       if (!plugin) return false;
       if (plugin.isLoaded() || !plugin.isEnabled()) return false;
@@ -666,7 +720,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       ([shortPath, enabled]: [string, boolean]) => {
         if (typeof enabled !== 'boolean') return;
         const plugin = omegga.pluginLoader.plugins.find(
-          p => p.shortPath === shortPath
+          p => p.shortPath === shortPath,
         );
         if (!plugin) return false;
         try {
@@ -674,7 +728,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           log(
             enabled ? 'Enabled'.green : 'Disabled'.red,
             'plugin',
-            plugin.getName().yellow
+            plugin.getName().yellow,
           );
           return true;
         } catch (e) {
@@ -682,18 +736,18 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
             'Error',
             enabled ? 'enabling'.green : 'disabling'.red,
             'plugin',
-            plugin.getName().yellow
+            plugin.getName().yellow,
           );
           return false;
         }
-      }
+      },
     );
 
     // get a list of roles
     // TODO: add permission check
     rpc.addMethod('roles.list', () => {
       return _.sortBy(omegga.getRoleSetup()?.roles ?? [], p =>
-        p.name.toLowerCase()
+        p.name.toLowerCase(),
       );
     });
 
@@ -707,21 +761,23 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           search?: string;
           sort?: string;
           direction?: string;
-        }
+        },
       ]) => {
-        const resp: {
-          pages: number;
-          total: number;
-          users: (IStoreUser & IUserAgo)[];
-        } = await database.getUsers({ page, search, sort, direction });
+        const resp: GetUsersRes = await database.getUsers({
+          page,
+          search,
+          sort,
+          direction,
+        });
         const now = Date.now();
-        resp.users = resp.users.map(user => ({
+        resp.users = resp.users.map(({ hash: _, ...user }) => ({
           ...user,
+          hash: '',
           seenAgo: user.lastOnline ? now - user.lastOnline : Infinity,
           createdAgo: now - user.created,
         }));
         return resp;
-      }
+      },
     );
 
     // create a new user (host only at the moment)
@@ -751,7 +807,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
               {
                 username,
                 hash: await database.hash(password),
-              }
+              },
             );
           } catch (e) {
             error('error setting owner password', e);
@@ -777,7 +833,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         log(`created new user "${username.yellow}"`);
 
         return '';
-      }
+      },
     );
 
     // change a user's password
@@ -810,7 +866,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         log(`changed password for "${username.yellow}"`);
 
         return '';
-      }
+      },
     );
 
     rpc.addMethod('server.autorestart.get', async () => {
@@ -843,14 +899,14 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           typeof config !== 'object' ||
           !Object.entries(autorestartConfigFields).every(
             ([k, v]) =>
-              k in config && typeof config[k] === v && !Number.isNaN(v)
+              k in config && typeof config[k] === v && !Number.isNaN(v),
           ) ||
           config.type !== 'autoRestartConfig'
         )
           return false;
         await database.setAutoRestartConfig(config);
         return true;
-      }
+      },
     );
 
     // send server status at request
@@ -905,7 +961,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       database.addChatLog('server', {}, 'Restarting in 5 seconds...');
       Logger.logp('Restarting in 5 seconds...');
       omegga.broadcast(
-        `<size="20">Server restart in <b><color="ffffbb">${5} seconds</></></>`
+        `<size="20">Server restart in <b><color="ffffbb">${5} seconds</></></>`,
       );
       await new Promise(resolve => setTimeout(resolve, 5000));
       omegga.changeMap(omegga.currentMap);

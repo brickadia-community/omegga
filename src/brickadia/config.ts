@@ -13,7 +13,7 @@ export function write(serverPath: string, config: IConfig) {
   const configPath = path.join(
     serverPath,
     config.server.savedDir ?? CONFIG_SAVED_DIR,
-    CONFIG_PATH
+    CONFIG_PATH,
   );
   const settingsPath = path.join(configPath, SERVER_SETTINGS);
 
@@ -37,7 +37,7 @@ bPubliclyListed=${
     }
 WelcomeMessage="${config.server.welcomeMessage || ''}"
 bGlobalRulesetSelfDamage=True
-bGlobalRulesetPhysicsDamage=False`
+bGlobalRulesetPhysicsDamage=False`,
   );
 }
 

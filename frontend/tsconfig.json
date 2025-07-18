@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true,
+    "types": [
+      "./src/index.d.ts",
+      "../src/webserver/backend/types.d.ts"
+    ],
+    "paths": {
+      "@components": [
+        "./src/components"
+      ],
+      "@utils": [
+        "./src/utils"
+      ],
+      "@hooks": [
+        "./src/hooks"
+      ],
+      "@omegga/*": [
+        "../src/*"
+      ],
+    },
+    "baseUrl": "."
+  },
+  "include": [
+    "src"
+  ]
+}

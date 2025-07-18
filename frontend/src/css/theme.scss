@@ -1,0 +1,68 @@
+/* Background & Panel */
+$br-bg-primary: #1b2f4a;
+$br-bg-primary-alt: #182b44;
+$br-bg-secondary: #131d30;
+$br-bg-secondary-alt: #111a2b;
+$br-bg-footer: #091021;
+$br-bg-header: $br-bg-footer;
+$br-fg-footer: #ffffff;
+$br-fg-header: $br-fg-footer;
+
+$br-header-font: 24px;
+$br-header-height: 50px;
+$br-footer-font: 24px;
+$br-footer-height: 50px;
+
+$br-radius-sm: 8px;
+$br-radius-md: 12px;
+$br-radius-lg: 16px;
+
+/* Text & Icon */
+$br-boring-button-fg: #a7bbce;
+$br-button-fg: #ffffff;
+$br-inverted-fg: #1a2848;
+
+/* Buttons & Colored Elements */
+
+/* Main */
+$br-main-normal: #5da93d;
+$br-main-hover: #8dc377;
+$br-main-pressed: #41772b;
+$br-main-disabled: $br-main-pressed;
+
+/* Info */
+$br-info-normal: #009bee;
+$br-info-hover: #4cb9f3;
+$br-info-pressed: #007da7;
+$br-info-disabled: $br-info-pressed;
+
+/* Error */
+$br-error-normal: #e02d2d;
+$br-error-hover: #e96c6c;
+$br-error-pressed: #9d2020;
+$br-error-disabled: $br-error-pressed;
+
+/* Warning */
+$br-warn-normal: #ffa10b;
+$br-warn-hover: #ffbd54;
+$br-warn-pressed: #b37108;
+$br-warn-disabled: $br-warn-pressed;
+
+/* Button */
+$br-button-normal: #455a7e;
+$br-button-hover: #5e7190;
+$br-button-pressed: #263f61;
+$br-button-disabled: $br-button-pressed;
+
+/* Element */
+$br-element-normal: #455a7e;
+$br-element-fg: #5e7190;
+$br-element-pressed: #263f61;
+$br-element-overlay: $br-element-fg;
+$br-element-hover: $br-element-fg;
+$br-element-bg: #224c7b;
+$br-element-popout-bg: #263f61;
+$br-element-header-bg: #162841;
+$br-element-footer-bg: $br-element-header-bg;
+$br-element-height: 32px;
+$br-element-font: 24px;

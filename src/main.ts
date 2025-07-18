@@ -45,11 +45,11 @@ const program = commander
   .version(pkg.version)
   .option(
     '-d, --debug',
-    'Print all console logs rather than just chat messages'
+    'Print all console logs rather than just chat messages',
   )
   .option(
     '-u, --update',
-    'Check for brickadia updates (on steam) and install them if available'
+    'Check for brickadia updates (on steam) and install them if available',
   )
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async () => {
@@ -100,7 +100,7 @@ const program = commander
       OVERRIDE_GAME_DIR &&
       path.join(
         OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
-        GAME_BIN_PATH
+        GAME_BIN_PATH,
       );
 
     const isSteam = !conf?.server?.branch;
@@ -111,7 +111,7 @@ const program = commander
           overrideBinary.yellow,
           'in',
           'BRICKADIA_DIR'.yellow,
-          'does not exist!'
+          'does not exist!',
         );
         process.exit(1);
       }
@@ -119,14 +119,14 @@ const program = commander
       Logger.verbose(
         'Using override binary',
         overrideBinary.yellow,
-        '- skipping download.'
+        '- skipping download.',
       );
     } else if (isSteam) {
       await setupSteam(conf, update);
     } else {
       Logger.warnp(
         'Brickadia will be launched with',
-        'non-steam launcher'.yellow
+        'non-steam launcher'.yellow,
       );
 
       // Check if the local launcher is installed
@@ -142,13 +142,13 @@ const program = commander
     const globalToken = auth.getGlobalToken();
 
     const hasHostingToken = Boolean(
-      conf?.credentials?.token || process.env.BRICKADIA_TOKEN || globalToken
+      conf?.credentials?.token || process.env.BRICKADIA_TOKEN || globalToken,
     );
 
     // Skip auth when the hosting token is present
     if (hasHostingToken) {
       Logger.verbose(
-        'Skipping auth token generation due to host token presence'
+        'Skipping auth token generation due to host token presence',
       );
       if (conf?.credentials?.token)
         Logger.verbose('Found token in config file');
@@ -165,8 +165,8 @@ const program = commander
           workDir,
           soft.DATA_PATH,
           conf?.server?.savedDir ?? soft.CONFIG_SAVED_DIR,
-          conf?.server?.authDir ?? soft.CONFIG_AUTH_DIR
-        )
+          conf?.server?.authDir ?? soft.CONFIG_AUTH_DIR,
+        ),
       )
     ) {
       const success = await auth.prompt({
@@ -185,7 +185,7 @@ const program = commander
       }
     } else {
       Logger.verbose(
-        'Skipping auth token generation due to existing auth files'
+        'Skipping auth token generation due to existing auth files',
       );
     }
 
@@ -208,7 +208,7 @@ const program = commander
     if (verbose) {
       server.on(
         '*',
-        (ev: string) => ev !== 'line' && Logger.verbose('EVENT'.green, ev)
+        (ev: string) => ev !== 'line' && Logger.verbose('EVENT'.green, ev),
       );
     }
 
@@ -219,14 +219,14 @@ const program = commander
       Logger.logp(
         `Update is available (${('v' + notifier.update.latest).yellow})! Run`,
         'npm i -g omegga'.yellow,
-        'to update!'
+        'to update!',
       );
     }
 
     Logger.logp(
       `Launching brickadia server on port ${
         ('' + (conf.server.port || 7777)).green
-      }...`
+      }...`,
     );
 
     // start the server
@@ -252,7 +252,7 @@ program
     "Configure Omegga's default behavior.\n" +
       'Type ' +
       'omegga config list'.yellow.underline +
-      ' for current settings and available fields'
+      ' for current settings and available fields',
   )
   .action((field, value) => {
     if (!field) field = 'list';
@@ -268,7 +268,7 @@ program
   .option('-p, --pass <password>', 'User password (must provide email)')
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .description(
-    'Generates server auth tokens from brickadia account email+password'
+    'Generates server auth tokens from brickadia account email+password',
   )
   .action(
     async ({
@@ -298,7 +298,7 @@ program
           const conf = config.read(configFile);
           Logger.verbose(
             'Auth config:',
-            conf?.server ?? 'no server config'.grey
+            conf?.server ?? 'no server config'.grey,
           );
           branch = conf?.server?.branch;
           authDir = conf?.server?.authDir;
@@ -309,7 +309,7 @@ program
           if (localAuth && conf?.credentials?.token) {
             Logger.logp(
               "This server's auth is managed by the token in",
-              configFile.yellow
+              configFile.yellow,
             );
             return;
           }
@@ -325,7 +325,7 @@ program
 
       const workdirPath = path.join(
         config.store.get('defaultOmegga'),
-        `data/${savedDir}/Auth`
+        `data/${savedDir}/Auth`,
       );
 
       if (globalAuth || localAuth) {
@@ -333,7 +333,7 @@ program
           const globalAuthPath = path.join(
             soft.CONFIG_HOME,
             savedDir !== soft.CONFIG_SAVED_DIR ? savedDir : '',
-            authDir ?? soft.CONFIG_AUTH_DIR
+            authDir ?? soft.CONFIG_AUTH_DIR,
           );
           Logger.logp('Clearing auth files from', globalAuthPath.yellow);
           auth.clean(globalAuthPath);
@@ -345,7 +345,7 @@ program
         if (localAuth) {
           const localPath = path.resolve(
             `data/${savedDir}/`,
-            authDir ?? soft.CONFIG_AUTH_DIR
+            authDir ?? soft.CONFIG_AUTH_DIR,
           );
           Logger.logp('Clearing auth files from', localPath.yellow);
           await file.rmdir(localPath);
@@ -366,14 +366,14 @@ program
         savedDir,
         launchArgs,
       });
-    }
+    },
   );
 
 program
   .command('info')
   .alias('n')
   .description(
-    'Shows server name, description, port, install info, and installed plugins'
+    'Shows server name, description, port, install info, and installed plugins',
   )
   .action(async () => {
     Logger.errorp('not implemented yet');
@@ -396,7 +396,7 @@ program
       Logger.errorp(
         'Not an omegga directory, run ',
         'omegga init'.yellow,
-        'to setup one.'
+        'to setup one.',
       );
       process.exit(1);
     }
@@ -416,7 +416,7 @@ program
       Logger.errorp(
         'Not an omegga directory, run ',
         'omegga init'.yellow,
-        'to setup one.'
+        'to setup one.',
       );
       process.exit(1);
     }
@@ -434,7 +434,7 @@ program
       Logger.errorp(
         'Not an omegga directory, run ',
         'omegga init'.yellow,
-        'to setup one.'
+        'to setup one.',
       );
       process.exit(1);
     }
@@ -472,14 +472,14 @@ program
   .description(
     'Gets a config for a plugin. If ' +
       'configName'.yellow.underline +
-      ' is omitted, returns all config values.'
+      ' is omitted, returns all config values.',
   )
   .action(async (pluginName, configName) => {
     if (!config.find('.')) {
       Logger.errorp(
         'Not an omegga directory, run ',
         'omegga init'.yellow,
-        'to setup one.'
+        'to setup one.',
       );
       process.exit(1);
     }
@@ -502,14 +502,14 @@ program
       'configValue'.yellow.underline +
       ' is omitted, the config will be reset. If ' +
       'configName'.yellow.underline +
-      ' is omitted, the entire plugin config will be reset.'
+      ' is omitted, the entire plugin config will be reset.',
   )
   .action(async (pluginName, configName, configValue) => {
     if (!config.find('.')) {
       Logger.errorp(
         'Not an omegga directory, run ',
         'omegga init'.yellow,
-        'to setup one.'
+        'to setup one.',
       );
       process.exit(1);
     }
@@ -536,14 +536,14 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
     GAME_INSTALL_DIR, // steam install directory
     steamBeta, // steam beta branch (or main)
     GAME_DIRNAME, // Brickadia
-    GAME_BIN_PATH // path to binary
+    GAME_BIN_PATH, // path to binary
   );
 
   if (!forceUpdate && fs.existsSync(binaryPath)) {
     Logger.verbose(
       'Game binary already exists at',
       binaryPath.yellow,
-      '- skipping download.'
+      '- skipping download.',
     );
     return;
   }

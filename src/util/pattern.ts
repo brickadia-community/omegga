@@ -6,5 +6,5 @@ export const explode = (str: string) =>
       .map(c => c.charCodeAt(0))
       .map(c => '\\x' + (c < 16 ? '0' : '') + c.toString(16))
       .join('.*'),
-    'i'
+    'i',
   );

@@ -15,7 +15,7 @@ export const store = new Configstore(
   },
   {
     globalConfigPath: true,
-  }
+  },
 );
 
 // find all format_EXT.js files in the formats path
@@ -35,7 +35,7 @@ const formats: IConfigFormat[] = fs
       format.reader &&
       typeof format.reader === 'function' &&
       format.writer &&
-      typeof format.writer === 'function'
+      typeof format.writer === 'function',
   );
 
 // create read/write funcs for the provided formats

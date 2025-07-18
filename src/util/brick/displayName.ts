@@ -4,7 +4,7 @@ type NameConversion = [string, [number, number, number]];
 
 function genericBrick(
   name: string,
-  asset?: string
+  asset?: string,
 ): (typeof displayNameMap)[number] {
   if (!asset) asset = 'B_' + name.replace(/\s/g, '_');
   return [name, [asset, brickSizeMap[asset] ?? [0, 0, 0]]];
@@ -25,7 +25,7 @@ const microMap: Record<string, string> = {
 
 export const displayNameMap: [
   string | RegExp,
-  NameConversion | ((name: string, ...rest: string[]) => NameConversion)
+  NameConversion | ((name: string, ...rest: string[]) => NameConversion),
 ][] = [
   // Games
   genericBrick('Checkpoint', 'B_CheckPoint'),

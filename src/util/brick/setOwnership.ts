@@ -8,7 +8,7 @@ import { ReadSaveObject } from 'brs-js';
  */
 export function setOwnership(
   player: { id: string; name: string },
-  saveData: ReadSaveObject
+  saveData: ReadSaveObject,
 ) {
   if ('brick_owners' in saveData)
     saveData.brick_owners = [

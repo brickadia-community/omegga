@@ -1,0 +1,39 @@
+@use '../../css/theme';
+
+.server-container {
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+
+  .navbar {
+    margin-top: 8px;
+    text-transform: uppercase;
+
+    .saved-note {
+      color: theme.$br-info-normal;
+      display: inline-flex;
+      align-items: center;
+      font-weight: normal;
+      font-size: 12px;
+      margin-left: 8px;
+      opacity: 0;
+      transition: 0.2s ease;
+
+      &.show {
+        opacity: 1;
+      }
+    }
+  }
+
+  .inputs-list {
+    border-bottom-left-radius: theme.$br-radius-md;
+    border-bottom-right-radius: theme.$br-radius-md;
+    overflow: hidden;
+  }
+}
+
+.buttons {
+  flex-direction: row;
+  display: flex;
+  margin-top: 8px;
+}

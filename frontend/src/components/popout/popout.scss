@@ -1,0 +1,19 @@
+@use '../../css/theme';
+
+.popout-content {
+  background-color: theme.$br-bg-primary;
+  color: theme.$br-boring-button-fg;
+  font-weight: bold;
+  font-size: theme.$br-element-font;
+  padding: 20px;
+}
+
+.popout-content > p {
+  margin: 20px 0;
+}
+.popout-content > p:first-child {
+  margin-top: 0;
+}
+.popout-content > p:last-child {
+  margin-bottom: 0;
+}

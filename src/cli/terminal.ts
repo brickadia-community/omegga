@@ -34,7 +34,7 @@ function gameCommand(
   desc: string,
   usage: string,
   command: string,
-  quoteArgs?: boolean
+  quoteArgs?: boolean,
 ): TerminalCommand {
   return {
     aliases,
@@ -51,7 +51,7 @@ function gameCommand(
       this.omegga.writeln(
         `${command} ${quoteArgs ? '"' : ''}${args.join(' ')}${
           quoteArgs ? '"' : ''
-        }`
+        }`,
       );
       this.rl.prompt(true);
     },
@@ -64,38 +64,38 @@ const COMMANDS: TerminalCommand[] = [
     ['kick'],
     'kick a player',
     '<name|id> [reason]',
-    'Chat.Command /Kick'
+    'Chat.Command /Kick',
   ),
   gameCommand(
     ['ban', 'banish'],
     'ban a player',
     '<name|id> [time] [reason]',
-    'Ban'
+    'Ban',
   ),
   gameCommand(
     ['unban', 'pardon'],
     'unban a player',
     '<name|id>',
-    'Chat.Command /Unban'
+    'Chat.Command /Unban',
   ),
   gameCommand(
     ['grantrole', 'giverole'],
     'grant a role to a player',
     '<role> <name|id>',
-    'Chat.Command /GrantRole'
+    'Chat.Command /GrantRole',
   ),
   gameCommand(
     ['revokerole', 'takerole'],
     'revoke a role from a player',
     '<role> <name|id>',
-    'Chat.Command /RevokeRole'
+    'Chat.Command /RevokeRole',
   ),
   gameCommand(
     ['clearbricks'],
     "clear a player's bricks",
     '<name|id>',
     'Bricks.Clear',
-    true
+    true,
   ),
   gameCommand(['clearallbricks'], 'clear all bricks', '', 'Bricks.ClearAll'),
 
@@ -107,26 +107,26 @@ const COMMANDS: TerminalCommand[] = [
       const maxLen = Math.max(...COMMANDS.map(c => c.aliases[0].length));
       log('Omegga Help Text:\n');
       log(
-        '  Console input not starting with / will be sent in chat from a "SERVER" user'
+        '  Console input not starting with / will be sent in chat from a "SERVER" user',
       );
       log(
-        '  Console input starting with / will be treated as one of the following commands\n'
+        '  Console input starting with / will be treated as one of the following commands\n',
       );
       log(
         '-- Available Omegga commands (type',
         '/command'.yellow.underline,
-        'to run)'
+        'to run)',
       );
 
       for (const command of COMMANDS.sort((a, b) =>
-        a.aliases[0].localeCompare(b.aliases[0])
+        a.aliases[0].localeCompare(b.aliases[0]),
       )) {
         const name = command.aliases[0];
         this.log(
           '  ',
           ('/' + name).yellow.underline,
           '-'.padStart(maxLen - name.length + 1),
-          command.desc
+          command.desc,
         );
         if (command.descLines)
           for (const descLine of command.descLines())
@@ -187,7 +187,7 @@ const COMMANDS: TerminalCommand[] = [
       this.options.debug = !this.options.debug;
       log(
         'Brickadia logs now',
-        this.options.debug ? 'visible'.green : 'hidden'.red
+        this.options.debug ? 'visible'.green : 'hidden'.red,
       );
     },
   },
@@ -226,7 +226,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
     desc: 'shorthand for /plugins reload',
     async fn() {
       await COMMANDS.find(c => c.aliases.includes('plugins')).fn.bind(this)(
-        'reload'
+        'reload',
       );
     },
   },
@@ -276,7 +276,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
         log(
           'Use',
           '/plugins reload'.yellow,
-          'to reload all plugins and use the installed ones'
+          'to reload all plugins and use the installed ones',
         );
       } else if (subcommand === 'load') {
         if (args.length === 0) {
@@ -286,7 +286,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
 
         for (const pluginName of args) {
           const plugin = this.omegga.pluginLoader.plugins.find(
-            p => p.getName().toLowerCase() === pluginName.toLowerCase()
+            p => p.getName().toLowerCase() === pluginName.toLowerCase(),
           );
 
           if (!plugin) {
@@ -299,7 +299,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             warn(
               name.cyan,
               'is already loaded, reload with',
-              ('/plugins reload ' + name).yellow
+              ('/plugins reload ' + name).yellow,
             );
             return;
           }
@@ -321,7 +321,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
 
         for (const pluginName of args) {
           const plugin = this.omegga.pluginLoader.plugins.find(
-            p => p.getName().toLowerCase() === pluginName.toLowerCase()
+            p => p.getName().toLowerCase() === pluginName.toLowerCase(),
           );
 
           if (!plugin) {
@@ -334,7 +334,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             warn(
               name.cyan,
               'is already unloaded, load with',
-              ('/plugins load ' + name).yellow
+              ('/plugins load ' + name).yellow,
             );
             return;
           }
@@ -349,7 +349,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             : this.omegga.pluginLoader.plugins.filter(p =>
                 args
                   .map(a => a.toLowerCase())
-                  .includes(p.getName().toLowerCase())
+                  .includes(p.getName().toLowerCase()),
               )
         ).filter(p => p.isEnabled());
 
@@ -371,7 +371,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             : this.omegga.pluginLoader.plugins.filter(p =>
                 args
                   .map(a => a.toLowerCase())
-                  .includes(p.getName().toLowerCase())
+                  .includes(p.getName().toLowerCase()),
               )
         ).filter(p => p.isEnabled());
         log('Loading', plugins.length, 'plugins');
@@ -386,7 +386,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
 
         for (const pluginName of args) {
           const plugin = this.omegga.pluginLoader.plugins.find(
-            p => p.getName().toLowerCase() === pluginName.toLowerCase()
+            p => p.getName().toLowerCase() === pluginName.toLowerCase(),
           );
 
           if (!plugin) {
@@ -399,7 +399,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             warn(
               name.cyan,
               'is already enabled, disable with',
-              ('/plugins disable ' + name).yellow
+              ('/plugins disable ' + name).yellow,
             );
             return;
           }
@@ -408,7 +408,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             'Enabling',
             name.cyan.underline,
             '(load with',
-            ('/plugins load ' + name).yellow + ')'
+            ('/plugins load ' + name).yellow + ')',
           );
           plugin.setEnabled(true);
         }
@@ -420,7 +420,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
 
         for (const pluginName of args) {
           const plugin = this.omegga.pluginLoader.plugins.find(
-            p => p.getName().toLowerCase() === pluginName.toLowerCase()
+            p => p.getName().toLowerCase() === pluginName.toLowerCase(),
           );
 
           if (!plugin) {
@@ -433,7 +433,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             warn(
               name.cyan,
               'is already disabled, enable with',
-              ('/plugins enable ' + name).yellow
+              ('/plugins enable ' + name).yellow,
             );
             return;
           }
@@ -497,7 +497,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
           if (worlds.length === 0) {
             log(
               'No worlds found. Create one with',
-              '/worlds saveas <world>'.yellow
+              '/worlds saveas <world>'.yellow,
             );
           } else {
             log('Available worlds:');
@@ -505,7 +505,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             for (const world of worlds) {
               this.log(
                 '  ',
-                world.replace(prefix, '').replace(/\.brdb$/, '').yellow
+                world.replace(prefix, '').replace(/\.brdb$/, '').yellow,
               );
             }
           }
@@ -595,9 +595,8 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
           }
           log(`Listing revisions for world ${revisionsWorldName.yellow}...`);
           try {
-            const revisions = await this.omegga.getWorldRevisions(
-              revisionsWorldName
-            );
+            const revisions =
+              await this.omegga.getWorldRevisions(revisionsWorldName);
             if (revisions.length === 0) {
               log('No revisions found for world', revisionsWorldName.yellow);
             } else {
@@ -611,14 +610,14 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
                       .replace('T', ' ')
                       .replace('.000Z', '').blue
                   }`,
-                  `(${rev.note})`.grey
+                  `(${rev.note})`.grey,
                 );
               }
             }
           } catch (e) {
             err(
               'An error occurred while getting world revisions:',
-              e.toString()
+              e.toString(),
             );
           }
           return;
@@ -689,7 +688,7 @@ export default class Terminal {
         if (l.match(/Update Failed/)) {
           err(l);
           info(
-            'This might be resolved by deleting brickadia and reinstalling:'
+            'This might be resolved by deleting brickadia and reinstalling:',
           );
           info('  rm -rf ~/.local/share/brickadia-launcher'.grey);
         }
@@ -724,7 +723,7 @@ export default class Terminal {
       // [2025.07.07-20.45.40:310][845]LogBRWorldManager: World successfully loaded.
       if (
         l.match(
-          /^\[[^\]]+\]\[[^\]]+\]LogBRWorldManager: World successfully loaded\.$/
+          /^\[[^\]]+\]\[[^\]]+\]LogBRWorldManager: World successfully loaded\.$/,
         )
       ) {
         info('World successfully loaded.');
@@ -737,16 +736,16 @@ export default class Terminal {
     // print chat events as players join/leave the server
     omegga.on('join', (p: OmeggaPlayer) =>
       this.log(
-        `${p.name.underline} (${p.displayName.underline}) joined.`.brightBlue
-      )
+        `${p.name.underline} (${p.displayName.underline}) joined.`.brightBlue,
+      ),
     );
     omegga.on('leave', (p: OmeggaPlayer) =>
       this.log(
-        `${p.name.underline} (${p.displayName.underline}) left.`.brightBlue
-      )
+        `${p.name.underline} (${p.displayName.underline}) left.`.brightBlue,
+      ),
     );
     omegga.on('chat', (name, message) =>
-      this.log(`${name.brightYellow.underline}: ${message}`)
+      this.log(`${name.brightYellow.underline}: ${message}`),
     );
     omegga.on('start', () => {
       const { checkWsl } = require('../util/wsl');
@@ -754,7 +753,7 @@ export default class Terminal {
       log(
         `Server has started${
           wsl === 1 ? ' in single thread mode due to WSL1' : ''
-        }. Type ${'/help'.yellow} for more commands`
+        }. Type ${'/help'.yellow} for more commands`,
       );
 
       // check if this is WSL2 and wsl2binds is installed
@@ -767,38 +766,38 @@ export default class Terminal {
           '####'.yellow,
           `You are running ${'WSL2'.yellow} and you don't have the ${
             'wsl2binds'.yellow
-          } plugin.`
+          } plugin.`,
         );
         warn(
           '####'.yellow,
           `The wsl2binds plugin works as a ${
             'UDP proxy'.underline
-          } between Windows and the WSL2 VM.`
+          } between Windows and the WSL2 VM.`,
         );
         warn('####'.yellow, 'Install it by:');
         warn('####'.yellow, ' 1. Closing omegga with', '/stop'.green);
         warn(
           '####'.yellow,
           ' 2. Installing wsl2binds with',
-          'omegga install gh:Meshiest/wsl2binds'.green
+          'omegga install gh:Meshiest/wsl2binds'.green,
         );
         warn('####'.yellow, ' 3. Restarting', 'omegga'.green);
       }
     });
     omegga.on('mapchange', ({ map }) =>
-      log('Map changed to', (map.charAt(0).toUpperCase() + map.slice(1)).green)
+      log('Map changed to', (map.charAt(0).toUpperCase() + map.slice(1)).green),
     );
     omegga.on('unauthorized', () => {
       err('Server failed authentication check');
       info('You can clear auth tokens with', 'omegga auth -gl'.green);
       info(
-        'This will require you to paste a new hosting token or sign-in again'
+        'This will require you to paste a new hosting token or sign-in again',
       );
       process.exit();
     });
     omegga.on('error', e => err('Server caught unhandled exception:\n' + e));
     omegga.on('server:stopped', () =>
-      log('Server has closed. Type', '/stop'.yellow, 'to close omegga')
+      log('Server has closed. Type', '/stop'.yellow, 'to close omegga'),
     );
 
     this.rl.on('line', this.handleLine.bind(this));
@@ -813,7 +812,8 @@ export default class Terminal {
       const c = COMMANDS.find(c => c.aliases.includes(cmd));
       if (!c) {
         err(
-          `unrecognized command /${cmd.underline}. Type /help for more info`.red
+          `unrecognized command /${cmd.underline}. Type /help for more info`
+            .red,
         );
       } else {
         try {
@@ -827,7 +827,7 @@ export default class Terminal {
       if (this.omegga.started) {
         // broadcast when the chat does not start with a command
         this.omegga.broadcast(
-          `"[<b><color=\\"ff00ff\\">SERVER</></>]: ${sanitize(line)}"`
+          `"[<b><color=\\"ff00ff\\">SERVER</></>]: ${sanitize(line)}"`,
         );
         process.stdout.clearLine(0);
         this.log(`[${'SERVER'.brightMagenta.underline}]: ${line}`);
@@ -840,14 +840,18 @@ export default class Terminal {
             .to('chat')
             .emit(
               'chat',
-              await this.omegga.webserver.database.addChatLog('msg', user, line)
+              await this.omegga.webserver.database.addChatLog(
+                'msg',
+                user,
+                line,
+              ),
             );
         }
       } else {
         err(
           'Server is not started yet. type'.red,
           '/help'.yellow,
-          'for more info'.red
+          'for more info'.red,
         );
       }
     }

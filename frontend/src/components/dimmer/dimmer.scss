@@ -1,0 +1,23 @@
+@use '../../css/theme';
+
+.dimmer {
+  background-color: theme.$br-bg-primary;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: stretch;
+  z-index: 200;
+
+  &.visible {
+    display: flex;
+  }
+
+  .dimmer-content {
+    position: relative;
+    flex: 1;
+  }
+}

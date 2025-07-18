@@ -69,9 +69,9 @@ const buildTableHeaderRegex = (header: string) => {
       ]) // calculate the lengths (and remove the spaces)
       .map(
         ([name, len]: [string, number]) =>
-          ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`
+          ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`,
       ) // create a regex pattern to match strings of that length (and trim off whitespace at the end)
-      .join('\\|')
+      .join('\\|'),
   ); // join the regexes with the |
 };
 // A list of commands that can be injected to things with the log wrangler
@@ -91,7 +91,7 @@ const COMMANDS: InjectedCommands = {
       {
         first: match => match[1].startsWith('Server Name:'),
         timeoutDelay: 1000,
-      }
+      },
     );
 
     // the table lines all start with '* '
@@ -147,7 +147,7 @@ const COMMANDS: InjectedCommands = {
       {
         first: match => match[1].startsWith('Minigame Count:'),
         timeoutDelay: 1000,
-      }
+      },
     );
 
     // the table lines all start with '* '
@@ -224,7 +224,7 @@ const COMMANDS: InjectedCommands = {
         {
           first: 'index',
           timeoutDelay: 250,
-        }
+        },
       ),
       this.watchLogChunk<RegExpMatchArray>(
         'GetAll BP_FigureV2_C bIsDead',
@@ -232,12 +232,12 @@ const COMMANDS: InjectedCommands = {
         {
           first: 'index',
           timeoutDelay: 250,
-        }
+        },
       ),
       this.watchLogChunk<RegExpMatchArray>(
         'GetAll SceneComponent RelativeLocation Name=CollisionCylinder',
         posRegExp,
-        { first: 'index', timeoutDelay: 250 }
+        { first: 'index', timeoutDelay: 250 },
       ),
     ]);
 
@@ -250,7 +250,7 @@ const COMMANDS: InjectedCommands = {
           // find the position for the associated pawn
           pos: positions.find(pos => pawn.groups.pawn === pos.groups.pawn),
           isDead: deadFigures.find(
-            dead => pawn.groups.pawn === dead.groups.pawn
+            dead => pawn.groups.pawn === dead.groups.pawn,
           ),
           pawn,
         }))
@@ -293,7 +293,7 @@ const COMMANDS: InjectedCommands = {
             ruleNameRegExp,
             {
               first: 'index',
-            }
+            },
           ),
           this.watchLogArray<
             { index: string; ruleset: string },
@@ -301,7 +301,7 @@ const COMMANDS: InjectedCommands = {
           >(
             'GetAll BP_Ruleset_C MemberStates',
             ruleMembersRegExp,
-            playerStateRegExp
+            playerStateRegExp,
           ),
           this.watchLogArray<
             { index: string; ruleset: string; team: string },
@@ -309,14 +309,14 @@ const COMMANDS: InjectedCommands = {
           >(
             'GetAll BP_Team_C MemberStates',
             teamMembersRegExp,
-            playerStateRegExp
+            playerStateRegExp,
           ),
           this.watchLogChunk<RegExpMatchArray>(
             'GetAll BP_Team_C TeamName',
             teamNameRegExp,
             {
               first: 'index',
-            }
+            },
           ),
           // team color in a5 is based on (B=255,G=255,R=255,A=255)
           this.watchLogChunk<RegExpMatchArray>(
@@ -324,7 +324,7 @@ const COMMANDS: InjectedCommands = {
             teamColorRegExp,
             {
               first: 'index',
-            }
+            },
           ),
         ]);
 
@@ -332,7 +332,7 @@ const COMMANDS: InjectedCommands = {
       const handleColor = (
         match:
           | { color: string }
-          | { r: string; g: string; b: string; a: string }
+          | { r: string; g: string; b: string; a: string },
       ) => {
         // color index, return the colorset color
         if ('color' in match)
@@ -341,10 +341,10 @@ const COMMANDS: InjectedCommands = {
       };
 
       const sortedRulesets = rulesets.sort((a, b) =>
-        b.groups?.ruleset.localeCompare(a.groups?.ruleset)
+        b.groups?.ruleset.localeCompare(a.groups?.ruleset),
       );
       const globalIndex = rulesets.findIndex(
-        ruleset => ruleset.groups?.name === 'GLOBAL'
+        ruleset => ruleset.groups?.name === 'GLOBAL',
       );
 
       const indexMap = Object.fromEntries(
@@ -358,7 +358,7 @@ const COMMANDS: InjectedCommands = {
           }
 
           return [ruleset.groups?.ruleset, index];
-        })
+        }),
       );
 
       // join the data into a big object
@@ -381,7 +381,7 @@ const COMMANDS: InjectedCommands = {
             // team name
             name: _.get(
               teamNames.find(t => t.groups.team === m.item.team),
-              'groups.name'
+              'groups.name',
             ) as string,
             team: m.item.team,
 
@@ -395,8 +395,8 @@ const COMMANDS: InjectedCommands = {
                     b: 0,
                     a: 0,
                   } as any),
-                ['r', 'g', 'b', 'a']
-              )
+                ['r', 'g', 'b', 'a'],
+              ),
             ),
 
             // get the players from the team
@@ -415,7 +415,7 @@ const COMMANDS: InjectedCommands = {
 // inject the commands into the object given a log wrangler
 export default <T extends InjectedCommands>(
   obj: T,
-  logWrangler: LogWrangler
+  logWrangler: LogWrangler,
 ) => {
   for (const cmd in COMMANDS) {
     // disgusting type casting because we're injecting functions

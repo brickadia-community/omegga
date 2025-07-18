@@ -45,7 +45,7 @@ class LogWrangler implements LogWrangling {
   // returns a deregister function
   addMatcher<T>(
     pattern: IMatcher<T>['pattern'],
-    callback: IMatcher<T>['callback']
+    callback: IMatcher<T>['callback'],
   ) {
     if (
       (typeof pattern !== 'function' && !(pattern instanceof RegExp)) ||
@@ -88,7 +88,7 @@ class LogWrangler implements LogWrangling {
       afterMatchDelay?: number;
       last?: IWatcher<T>['last'];
       exec?: () => void;
-    } = {}
+    } = {},
   ): Promise<IWatcher<T>['matches']> {
     if (typeof pattern !== 'function' && !(pattern instanceof RegExp))
       return undefined;
@@ -160,7 +160,7 @@ class LogWrangler implements LogWrangling {
       last?: IWatcher<T>['last'];
       afterMatchDelay?: number;
       timeoutDelay?: number;
-    } = {}
+    } = {},
   ): Promise<IWatcher<T>['matches']> {
     // we're focused on the counter part of this, the rest will be passed to the pattern matcher
     const logLineRegExp =
@@ -242,7 +242,7 @@ class LogWrangler implements LogWrangling {
         debounce: true,
         timeoutDelay,
         afterMatchDelay,
-      }
+      },
     );
   }
 
@@ -260,7 +260,7 @@ class LogWrangler implements LogWrangling {
   */
   async watchLogArray<
     Item extends Record<string, string> = Record<string, string>,
-    Member extends Record<string, string> = Record<string, string>
+    Member extends Record<string, string> = Record<string, string>,
   >(cmd: string, itemPattern: RegExp, memberPattern: RegExp) {
     const results = (await this.watchLogChunk<[string, RegExpMatchArray]>(
       cmd,
@@ -273,7 +273,7 @@ class LogWrangler implements LogWrangling {
         const memberMatch = line.match(memberPattern);
         if (memberMatch) return ['member', memberMatch];
       },
-      { first: arr => arr[0] === 'item' && arr[1].groups.index === '0' }
+      { first: arr => arr[0] === 'item' && arr[1].groups.index === '0' },
     )) as [string, RegExpMatchArray][];
 
     const array: { item: Item; members: Member[] }[] = [];
@@ -310,7 +310,7 @@ class LogWrangler implements LogWrangling {
         array: this.#watchers,
         onMatch<T>(
           match: T | RegExpMatchArray | '[OMEGGA_WATCHER_DONE]',
-          watcher: IWatcher<T>
+          watcher: IWatcher<T>,
         ) {
           // if the watcher is in bundle mode, add the match to its matches
           if (watcher.bundle) {
@@ -337,7 +337,7 @@ class LogWrangler implements LogWrangling {
               clearTimeout(watcher.timeout);
               watcher.timeout = setTimeout(
                 watcher.done,
-                watcher.afterMatchDelay || watcher.timeoutDelay
+                watcher.afterMatchDelay || watcher.timeoutDelay,
               );
             }
 
@@ -366,7 +366,7 @@ class LogWrangler implements LogWrangling {
           if (match)
             onMatch(
               match as RegExpMatchArray,
-              matcher as IWatcher<unknown> & IMatcher<unknown>
+              matcher as IWatcher<unknown> & IMatcher<unknown>,
             );
         } catch (e) {
           Logger.error('error in matcher', matcher.pattern, e);

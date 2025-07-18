@@ -1,0 +1,104 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.history-container {
+  display: flex;
+  align-items: stretch;
+}
+
+.chat-history {
+  @include mixins.column-container;
+  font-family: 'Roboto';
+}
+
+@media screen and (max-width: 600px) {
+}
+
+.chat-new-day {
+  @include mixins.center;
+  color: white;
+  height: 32px;
+  font-size: 24px;
+  text-shadow: none;
+  font-weight: bold;
+  text-align: center;
+  background-color: theme.$br-bg-header;
+  margin-bottom: 8px;
+  top: 0;
+  position: sticky;
+  text-transform: uppercase;
+  border-radius: theme.$br-radius-sm;
+}
+
+.calendar-container {
+  @include mixins.column;
+  margin-right: 8px;
+  z-index: 100;
+  min-height: 32px;
+  align-items: flex-end;
+}
+
+.calendar {
+  background-color: theme.$br-element-footer-bg;
+  border-radius: theme.$br-radius-md;
+  min-width: 200px;
+
+  .year,
+  .month {
+    @include mixins.center;
+    background-color: theme.$br-bg-header;
+    justify-content: space-between;
+    padding: 0 8px;
+    padding-bottom: 8px;
+  }
+
+  .year {
+    padding-top: 8px;
+  }
+
+  .calendar-days {
+    font-size: 24px;
+    display: grid;
+    grid-template-columns: repeat(7, 40px);
+    grid-auto-rows: 40px;
+    text-align: center;
+
+    .days {
+      @include mixins.center;
+      color: theme.$br-boring-button-fg;
+
+      &.week-header {
+        background-color: theme.$br-bg-header;
+      }
+
+      &.available {
+        color: white;
+        background-color: theme.$br-button-normal;
+        border-radius: 0;
+        cursor: pointer;
+
+        &:hover {
+          background-color: theme.$br-element-hover;
+        }
+        &:active {
+          background-color: theme.$br-element-pressed;
+        }
+        &.today:hover {
+          background-color: theme.$br-info-hover;
+        }
+        &.today:active {
+          background-color: theme.$br-info-pressed;
+        }
+      }
+
+      &.today {
+        color: white;
+        border: 2px solid theme.$br-info-normal;
+      }
+
+      &:not(.today):not(.available) {
+        pointer-events: none;
+      }
+    }
+  }
+}

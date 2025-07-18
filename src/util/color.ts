@@ -6,11 +6,11 @@
 export function hsv(
   h: number | { h: number; s: number; v: number },
   s?: number,
-  v?: number
+  v?: number,
 ) {
   var r, g, b, i, f, p, q, t;
   if (arguments.length === 1 && typeof h === 'object') {
-    (s = h.s), (v = h.v), (h = h.h);
+    ((s = h.s), (v = h.v), (h = h.h));
   }
   h = h as number;
   i = Math.floor(h * 6);
@@ -20,22 +20,22 @@ export function hsv(
   t = v * (1 - (1 - f) * s);
   switch (i % 6) {
     case 0:
-      (r = v), (g = t), (b = p);
+      ((r = v), (g = t), (b = p));
       break;
     case 1:
-      (r = q), (g = v), (b = p);
+      ((r = q), (g = v), (b = p));
       break;
     case 2:
-      (r = p), (g = v), (b = t);
+      ((r = p), (g = v), (b = t));
       break;
     case 3:
-      (r = p), (g = q), (b = v);
+      ((r = p), (g = q), (b = v));
       break;
     case 4:
-      (r = t), (g = p), (b = v);
+      ((r = t), (g = p), (b = v));
       break;
     case 5:
-      (r = v), (g = p), (b = q);
+      ((r = v), (g = p), (b = q));
       break;
   }
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
@@ -49,8 +49,8 @@ export const linearRGB = (rgba: number[]) =>
       : Math.round(
           (c / 255 > 0.04045
             ? Math.pow((c / 255) * (1.0 / 1.055) + 0.0521327, 2.4)
-            : (c / 255) * (1.0 / 12.92)) * 255
-        )
+            : (c / 255) * (1.0 / 12.92)) * 255,
+        ),
   );
 
 export const sRGB = (linear: number[]) =>
@@ -60,15 +60,15 @@ export const sRGB = (linear: number[]) =>
       : Math.round(
           (c / 255 > 0.0031308
             ? 1.055 * Math.pow(c / 255, 1 / 2.4) - 0.055
-            : (c / 255) * 12.92) * 255
-        )
+            : (c / 255) * 12.92) * 255,
+        ),
   );
 
 // convert (r, g, b), ([r, g, b]), and ({r, g, b}) to hex string
 export const rgbToHex = (
   r: number | [number, number, number] | { r: number; g: number; b: number },
   g?: number,
-  b?: number
+  b?: number,
 ) => {
   // parse array arguments
   if (typeof r === 'object' && 'length' in r && r.length > 0) [r, g, b] = r;

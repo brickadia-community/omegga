@@ -18,7 +18,8 @@ const reader =
 
     // parse the config file
     const blob = format.reader(
-      (format.encoding === 'string' ? data.toString() : data) as string & Buffer
+      (format.encoding === 'string' ? data.toString() : data) as string &
+        Buffer,
     );
 
     // validate the config blob

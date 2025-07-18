@@ -35,7 +35,7 @@ let vm: NodeVM,
     new (
       omegga: OmeggaLike,
       config: PluginConfig,
-      store: PluginStore
+      store: PluginStore,
     ): OmeggaPlugin;
   },
   pluginInstance: OmeggaPlugin;
@@ -114,7 +114,7 @@ parent.on('brickadiaEvent', (type, ...args) => {
     Logger.errorp(
       pluginName.brightRed,
       `Error in safe plugin worker's brickadiaEvent (${type}):`,
-      e?.stack ?? e.toString()
+      e?.stack ?? e.toString(),
     );
   }
 });
@@ -122,7 +122,7 @@ parent.on('brickadiaEvent', (type, ...args) => {
 // create the node vm
 async function createVm(
   pluginPath: string,
-  { builtin = ['*'], external = true, isTypeScript = false } = {}
+  { builtin = ['*'], external = true, isTypeScript = false } = {},
 ): Promise<[boolean, string]> {
   let pluginCode: string;
 
@@ -155,12 +155,12 @@ async function createVm(
             externals: [
               function (
                 { request }: ExternalItemFunctionData,
-                callback: (err?: Error, result?: string) => void
+                callback: (err?: Error, result?: string) => void,
               ) {
                 if (request.match(/\.node$/)) {
                   return callback(
                     null,
-                    'commonjs ' + path.resolve(pluginPath, request)
+                    'commonjs ' + path.resolve(pluginPath, request),
                   );
                 }
                 callback();
@@ -213,7 +213,7 @@ async function createVm(
               ],
             },
           }),
-          (err, stats) => (err ? reject(err) : resolve(stats))
+          (err, stats) => (err ? reject(err) : resolve(stats)),
         );
       });
 
@@ -243,7 +243,7 @@ async function createVm(
       const omeggaTypesDst = path.join(pluginPath, 'omegga.d.ts');
       const omeggaTypesSrc = path.join(
         __dirname,
-        '../../../../templates/safe-ts/omegga.d.ts'
+        '../../../../templates/safe-ts/omegga.d.ts',
       );
 
       // plugin has gitignore with "omegga.d.ts" in it and omegga has omegga.d.ts
@@ -270,7 +270,7 @@ async function createVm(
       Logger.errorp(
         pluginName.brightRed,
         'error copying latest omegga.d.ts to typescript plugin',
-        err
+        err,
       );
     }
   }
@@ -292,7 +292,7 @@ async function createVm(
     (
       logFn: 'log' | 'error' | 'info' | 'debug' | 'warn' | 'trace',
       name: string,
-      symbol: string
+      symbol: string,
     ) =>
     (...args: any[]) =>
       console[logFn](name.underline, symbol, ...args);
@@ -313,7 +313,7 @@ async function createVm(
 
   const file = path.join(
     pluginPath,
-    isTypeScript ? path.join(TS_BUILD_DIR, TS_BUILD_FILE) : MAIN_FILE
+    isTypeScript ? path.join(TS_BUILD_DIR, TS_BUILD_FILE) : MAIN_FILE,
   );
   if (!isTypeScript) {
     try {
@@ -321,7 +321,7 @@ async function createVm(
     } catch (e) {
       emit(
         'error',
-        'failed to read plugin source: ' + (e?.stack ?? e.toString())
+        'failed to read plugin source: ' + (e?.stack ?? e.toString()),
       );
       throw 'failed to read plugin source: ' + (e?.stack ?? e.toString());
     }
@@ -388,7 +388,7 @@ parent.on('load', async (resp, pluginPath, options) => {
     Logger.errorp(
       pluginName.brightRed,
       'error creating vm',
-      err?.stack ?? err.toString()
+      err?.stack ?? err.toString(),
     );
     emit(resp, false);
   }

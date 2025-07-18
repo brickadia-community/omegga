@@ -166,7 +166,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     this.on(
       'plugin:players:raw',
       (players: [string, string, string, string, string][]) =>
-        (this.players = players.map(p => new Player(this as OmeggaLike, ...p)))
+        (this.players = players.map(p => new Player(this as OmeggaLike, ...p))),
     );
 
     this.on('start', ({ map }) => {
@@ -186,7 +186,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     pattern: RegExp | ((line: string, match: RegExpMatchArray) => T),
     callback:
       | ((match: RegExpMatchArray) => boolean)
-      | ((match: RegExpMatchArray) => T)
+      | ((match: RegExpMatchArray) => T),
   ): void {
     throw badBorrow('addMatcher');
   }
@@ -199,7 +199,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
       afterMatchDelay?: number;
       last?: (match: T) => boolean;
       exec?: () => void;
-    }
+    },
   ): Promise<RegExpMatchArray[] | T[]> {
     throw badBorrow('addWatcher');
   }
@@ -211,17 +211,17 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
       last?: (match: T) => boolean;
       afterMatchDelay?: number;
       timeoutDelay?: number;
-    }
+    },
   ): Promise<RegExpMatchArray[] | T[]> {
     throw badBorrow('watchLogChunk');
   }
   watchLogArray<
     Item extends Record<string, string> = Record<string, string>,
-    Member extends Record<string, string> = Record<string, string>
+    Member extends Record<string, string> = Record<string, string>,
   >(
     cmd: string,
     itemPattern: RegExp,
-    memberPattern: RegExp
+    memberPattern: RegExp,
   ): Promise<{ item: Item; members: Member[] }[]> {
     throw badBorrow('watchLogArray');
   }
@@ -312,7 +312,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     },
     options: {
       target: string | OmeggaPlayer;
-    }
+    },
   ): void {
     throw badBorrow('clearRegion');
   }
@@ -327,14 +327,14 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   }
   loadBricks(
     saveName: string,
-    options?: { offX?: number; offY?: number; offZ?: number; quiet?: boolean }
+    options?: { offX?: number; offY?: number; offZ?: number; quiet?: boolean },
   ): void {
     throw badBorrow('loadBricks');
   }
   loadBricksOnPlayer(
     saveName: string,
     player: string | OmeggaPlayer,
-    options?: { offX?: number; offY?: number; offZ?: number }
+    options?: { offX?: number; offY?: number; offZ?: number },
   ): void {
     throw badBorrow('loadBricksOnPlayer');
   }
@@ -351,7 +351,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     throw badBorrow('getWorldPath');
   }
   getWorldRevisions(
-    worldName: string
+    worldName: string,
   ): Promise<{ index: number; date: Date; note: string }[]> {
     throw badBorrow('getWorldRevisions');
   }
@@ -378,14 +378,14 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   }
   loadSaveData(
     saveData: WriteSaveObject,
-    options?: { offX?: number; offY?: number; offZ?: number; quiet?: boolean }
+    options?: { offX?: number; offY?: number; offZ?: number; quiet?: boolean },
   ): Promise<void> {
     throw badBorrow('loadSaveData');
   }
   loadSaveDataOnPlayer(
     saveData: WriteSaveObject,
     player: string | OmeggaPlayer,
-    options?: { offX?: number; offY?: number; offZ?: number }
+    options?: { offX?: number; offY?: number; offZ?: number },
   ): Promise<void> {
     throw badBorrow('loadSaveDataOnPlayer');
   }

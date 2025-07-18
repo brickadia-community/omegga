@@ -1,0 +1,54 @@
+@mixin row {
+  display: flex;
+}
+
+@mixin column {
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin column-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  position: relative;
+}
+
+@mixin column-stretch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+@mixin center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// centered with absolute position
+@mixin absolute-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+// alternate a property
+@mixin alternate($prop, $odd, $even) {
+  #{$prop}: $odd;
+  &:nth-child(even) {
+    #{$prop}: $even;
+  }
+}
+
+@mixin br-button($normal, $hover, $active) {
+  background-color: $normal;
+  &:hover {
+    background-color: $hover;
+  }
+  &:active,
+  &.disabled {
+    background-color: $active;
+  }
+}

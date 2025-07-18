@@ -38,7 +38,7 @@ type FixedSizeArray<N extends number, T, M extends string = '0'> = {
 // generate a punchcard (days x week)
 const createPunchcard = (): number[][] =>
   Array.from({ length: 7 }).map(() =>
-    Array.from<number>({ length: 24 }).fill(0)
+    Array.from<number>({ length: 24 }).fill(0),
   );
 
 // the database keeps track of metrics for omegga
@@ -158,7 +158,7 @@ export default class Database extends EventEmitter {
           // update the stored version
           await store.update({ _id: versionEntry._id }, { version });
         }
-      })
+      }),
     );
   }
 
@@ -183,7 +183,7 @@ export default class Database extends EventEmitter {
 
     const watcher = chokidar.watch(
       path.join(this.omegga.configPath, 'BanList.json'),
-      { persistent: false }
+      { persistent: false },
     );
     watcher
       .on('add', () => setTimeout(this.syncBanList.bind(this), 500))
@@ -191,7 +191,7 @@ export default class Database extends EventEmitter {
         setTimeout(() => {
           this.syncBanList();
           this.emit('update.bans');
-        }, 500)
+        }, 500),
       );
     setTimeout(this.syncBanList.bind(this), 500);
 
@@ -218,7 +218,7 @@ export default class Database extends EventEmitter {
           await this.stores.players.update(
             entry,
             { $set: entry },
-            { upsert: true }
+            { upsert: true },
           );
         }
       });
@@ -332,7 +332,7 @@ export default class Database extends EventEmitter {
 
     await this.stores.users.update(
       { type: 'user', username },
-      { $set: { hash } }
+      { $set: { hash } },
     );
   }
 
@@ -347,7 +347,7 @@ export default class Database extends EventEmitter {
       // update last online status
       await this.stores.users.update(
         { _id: user._id },
-        { $set: { lastOnline: Date.now() } }
+        { $set: { lastOnline: Date.now() } },
       );
       return user;
     }
@@ -379,7 +379,7 @@ export default class Database extends EventEmitter {
   async addChatLog(
     action: 'msg' | 'server' | 'leave' | 'join',
     user: IPlayer,
-    message?: string
+    message?: string,
   ) {
     this.calendar.addDate(Date.now());
     return await this.stores.chat.insert<IStoreChat>({
@@ -411,8 +411,8 @@ export default class Database extends EventEmitter {
         created: before
           ? { $lt: before }
           : after
-          ? { $gt: after }
-          : { $lt: Date.now() },
+            ? { $gt: after }
+            : { $lt: Date.now() },
       })
       .sort({ created: !before && after ? 1 : -1 })
       .limit(count)
@@ -645,7 +645,7 @@ export default class Database extends EventEmitter {
             : {
                 $addToSet: { nameHistory: { name: user.name, date: now } },
               }),
-        }
+        },
       );
       return false;
     }
@@ -679,7 +679,7 @@ export default class Database extends EventEmitter {
         // increment heartbeats
         $inc: { heartbeats: 1 },
       },
-      { multi: true }
+      { multi: true },
     );
 
     // get all players in the status update
@@ -697,9 +697,9 @@ export default class Database extends EventEmitter {
             { _id: p._id },
             {
               $addToSet: { ips: data.ips[p.id] },
-            }
-          )
-        )
+            },
+          ),
+        ),
     );
   }
 
@@ -730,7 +730,7 @@ export default class Database extends EventEmitter {
   async setAutoRestartConfig(config: IStoreAutoRestartConfig): Promise<void> {
     config.maxUptime = Math.round(Math.max(1, Math.min(config.maxUptime, 168)));
     config.emptyUptime = Math.round(
-      Math.max(1, Math.min(config.emptyUptime, 168))
+      Math.max(1, Math.min(config.emptyUptime, 168)),
     );
     config.dailyHour = Math.round(Math.max(0, Math.min(config.dailyHour, 23)));
     await this.stores.server.update(
@@ -740,7 +740,7 @@ export default class Database extends EventEmitter {
           ...config,
         },
       },
-      { upsert: false }
+      { upsert: false },
     );
   }
 
@@ -789,7 +789,7 @@ export default class Database extends EventEmitter {
             punchcard: card.punchcard,
             updated: time,
           },
-        }
+        },
       );
     }
   }

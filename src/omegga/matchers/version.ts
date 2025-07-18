@@ -21,7 +21,7 @@ const version: MatchGenerator<number> = omegga => {
       if (!existsSync(LOG_PATH)) {
         Logger.warnp(
           'Log file not found',
-          LOG_PATH.yellow + '. Cannot check version.'
+          LOG_PATH.yellow + '. Cannot check version.',
         );
         return;
       }

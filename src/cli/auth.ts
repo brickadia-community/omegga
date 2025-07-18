@@ -14,7 +14,7 @@ async function credentialPrompt() {
     '>>'.green,
     'Enter',
     'Brickadia'.green.underline,
-    'credentials (not stored)'
+    'credentials (not stored)',
   );
 
   const response = await prompts([
@@ -101,7 +101,7 @@ async function authFromPrompt({
     if (isSteam) {
       console.error(
         '!>'.red,
-        'Launching with steam requires a hosting token right now.'
+        'Launching with steam requires a hosting token right now.',
       );
       return false;
     }
@@ -155,7 +155,7 @@ async function authFromPrompt({
     const authPath = path.join(
       soft.CONFIG_HOME,
       savedDir !== soft.CONFIG_SAVED_DIR ? savedDir : '',
-      authDir ?? soft.CONFIG_AUTH_DIR
+      authDir ?? soft.CONFIG_AUTH_DIR,
     );
     file.mkdir(authPath);
     writeAuthFiles(authPath, files);
@@ -171,7 +171,7 @@ async function authFromPrompt({
 // check if auth files exist
 function authExists(dir?: string) {
   return soft.BRICKADIA_AUTH_FILES.every(f =>
-    fs.existsSync(path.join(dir ?? AUTH_PATH, f))
+    fs.existsSync(path.join(dir ?? AUTH_PATH, f)),
   );
 }
 

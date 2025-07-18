@@ -1,0 +1,44 @@
+@use '../../css/theme';
+
+.log-entry {
+  text-decoration: none;
+  font-family: 'Roboto';
+
+  .log-row {
+    display: flex;
+    align-items: center;
+
+    .user,
+    .time-link {
+      text-decoration: none;
+    }
+
+    .time-link {
+      display: flex;
+      align-items: center;
+
+      .tabler-icon {
+        opacity: 0;
+        color: white;
+      }
+    }
+
+    .message {
+      flex: 1;
+    }
+  }
+
+  &:hover .log-row {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: theme.$br-radius-sm;
+
+    .tabler-icon {
+      opacity: 1;
+    }
+  }
+
+  &.focused .log-row {
+    border-radius: theme.$br-radius-sm;
+    background: theme.$br-main-normal;
+  }
+}

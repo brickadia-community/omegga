@@ -1,0 +1,96 @@
+@use '../css/style';
+@use '../css/theme';
+@use '../css/mixins';
+@use '../components';
+
+html {
+  width: 100%;
+  height: 100%;
+  display: table;
+}
+
+body {
+  width: 100%;
+  display: table-cell;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal {
+  @include mixins.absolute-center;
+  background-color: theme.$br-bg-primary;
+  width: 500px;
+  opacity: 0;
+
+  &.visible {
+    opacity: 1;
+    animation: fadeIn 0.4s ease 1;
+  }
+
+  .modal-content {
+    position: relative;
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 40px));
+  }
+  100% {
+    opacity: 1;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.turkey {
+  filter: blur(10px);
+  position: absolute;
+  left: -20vw;
+  top: 30%;
+  animation:
+    turkeyBob 5s infinite ease-in-out,
+    turkeyMove 20s infinite alternate linear;
+}
+
+.turkey img {
+  animation: turkeyRotate 7s infinite ease-in-out;
+}
+
+@keyframes turkeyBob {
+  0% {
+    transform: translateY(0);
+  }
+  33% {
+    transform: translateY(-20px);
+  }
+  67% {
+    transform: translateY(20px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes turkeyRotate {
+  0% {
+    transform: rotate(0);
+  }
+  33% {
+    transform: rotate(-20deg);
+  }
+  67% {
+    transform: rotate(20deg);
+  }
+  100% {
+    transform: rotate(0);
+  }
+}
+@keyframes turkeyMove {
+  0% {
+    left: -30vw;
+  }
+  100% {
+    left: calc(100% + 30vw);
+  }
+}

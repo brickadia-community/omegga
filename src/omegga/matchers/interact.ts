@@ -71,7 +71,7 @@ const interact: MatchGenerator<BrickInteraction> = omegga => {
             ?.replace(/\\,/g, '{ESCAPED_COMMA}')
             .split(',')
             .filter(v => typeof v !== 'undefined')
-            .map(v => v.replace(/\{ESCAPED_COMMA\}/g, ',')) ?? [])
+            .map(v => v.replace(/\{ESCAPED_COMMA\}/g, ',')) ?? []),
         );
       }
 

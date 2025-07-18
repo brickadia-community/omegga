@@ -1,0 +1,28 @@
+@use '../../css/theme';
+
+.nav-header {
+  color: white;
+  font-weight: bold;
+  font-size: 50px;
+  text-transform: uppercase;
+}
+
+.main-nav {
+  margin-bottom: 16px;
+}
+
+.navbar {
+  display: flex;
+  height: 32px;
+  font-size: theme.$br-footer-font;
+  color: theme.$br-fg-footer;
+  background-color: theme.$br-bg-footer;
+  font-weight: bold;
+  padding: 10px;
+  border-radius: theme.$br-radius-md;
+
+  &.attached {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}

@@ -2,5 +2,4 @@
 **/*.html
 **/*.md
 **/*.vue
-**/*.scss
 templates/**/*.js

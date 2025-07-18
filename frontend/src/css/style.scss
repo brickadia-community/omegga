@@ -1,0 +1,285 @@
+@use './font';
+@use './theme';
+@use './mixins';
+
+:root {
+  --br-bg-primary: theme.$br-bg-primary;
+  --br-bg-primary-alt: theme.$br-bg-primary-alt;
+  --br-bg-secondary: theme.$br-bg-secondary;
+  --br-bg-secondary-alt: theme.$br-bg-secondary-alt;
+  --br-bg-footer: theme.$br-bg-footer;
+  --br-bg-header: theme.$br-bg-header;
+  --br-fg-footer: theme.$br-fg-footer;
+  --br-fg-header: theme.$br-fg-header;
+
+  --br-header-font: theme.$br-header-font;
+  --br-header-height: theme.$br-header-height;
+  --br-footer-font: theme.$br-footer-font;
+  --br-footer-height: theme.$br-footer-height;
+
+  --br-radius-sm: theme.$br-radius-sm;
+  --br-radius-md: theme.$br-radius-md;
+  --br-radius-lg: theme.$br-radius-lg;
+
+  --br-boring-button-fg: theme.$br-boring-button-fg;
+  --br-button-fg: theme.$br-button-fg;
+  --br-inverted-fg: theme.$br-inverted-fg;
+
+  --br-main-normal: theme.$br-main-normal;
+  --br-main-hover: theme.$br-main-hover;
+  --br-main-pressed: theme.$br-main-pressed;
+  --br-main-disabled: theme.$br-main-disabled;
+
+  --br-info-normal: theme.$br-info-normal;
+  --br-info-hover: theme.$br-info-hover;
+  --br-info-pressed: theme.$br-info-pressed;
+  --br-info-disabled: theme.$br-info-disabled;
+
+  --br-error-normal: theme.$br-error-normal;
+  --br-error-hover: theme.$br-error-hover;
+  --br-error-pressed: theme.$br-error-pressed;
+  --br-error-disabled: theme.$br-error-disabled;
+
+  --br-warn-normal: theme.$br-warn-normal;
+  --br-warn-hover: theme.$br-warn-hover;
+  --br-warn-pressed: theme.$br-warn-pressed;
+  --br-warn-disabled: theme.$br-warn-disabled;
+
+  --br-button-normal: theme.$br-button-normal;
+  --br-button-hover: theme.$br-button-hover;
+  --br-button-pressed: theme.$br-button-pressed;
+  --br-button-disabled: theme.$br-button-disabled;
+
+  --br-element-normal: theme.$br-element-normal;
+  --br-element-fg: theme.$br-element-fg;
+  --br-element-pressed: theme.$br-element-pressed;
+  --br-element-overlay: theme.$br-element-overlay;
+  --br-element-hover: theme.$br-element-hover;
+  --br-element-bg: theme.$br-element-bg;
+  --br-element-popout-bg: theme.$br-element-popout-bg;
+  --br-element-header-bg: theme.$br-element-header-bg;
+  --br-element-footer-bg: theme.$br-element-footer-bg;
+  --br-element-height: theme.$br-element-height;
+  --br-element-font: theme.$br-element-font;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  display: table;
+}
+
+body {
+  width: 100%;
+  display: table-cell;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Glacial Indifference';
+}
+
+@media screen and (max-width: 600px) {
+  body {
+    overflow-y: auto;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 16px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: theme.$br-element-footer-bg;
+}
+
+::-webkit-scrollbar-thumb {
+  background: theme.$br-element-bg;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #fff;
+}
+
+.generic-container {
+  flex: 1;
+  position: relative;
+  margin-left: 8px;
+}
+
+.stat {
+  color: white;
+  font-weight: bold;
+}
+
+.stats {
+  padding: 8px;
+  font-size: 24px;
+  word-break: break-all;
+  background-color: theme.$br-element-popout-bg;
+}
+
+.stat b {
+  color: theme.$br-boring-button-fg;
+}
+
+.log-entry {
+  & {
+    font-size: 24px;
+    text-shadow:
+      -1px -1px 0 #000,
+      1px -1px 0 #000,
+      -1px 1px 0 #000,
+      1px 1px 0 #000;
+    word-break: break-all;
+  }
+
+  .user {
+    font-weight: bold;
+  }
+
+  .join-message,
+  .join-message .user {
+    color: #3477e3 !important;
+  }
+
+  .chat-message {
+    color: #ffffff;
+  }
+
+  .server-message {
+    color: #ff00ff;
+  }
+}
+
+table.br-table {
+  font-weight: bold;
+  border-collapse: collapse;
+  font-size: 24px;
+
+  thead th {
+    color: white;
+    height: 50px;
+    background-color: theme.$br-bg-primary;
+    white-space: nowrap;
+  }
+
+  th,
+  td {
+    padding: 0 10px;
+  }
+
+  tr td:first-child,
+  tr th:first-child {
+    padding-left: 20px;
+  }
+
+  tr td:last-child,
+  tr th:last-child {
+    padding-right: 20px;
+  }
+
+  tbody tr {
+    @include mixins.alternate(
+      background-color,
+      theme.$br-bg-secondary,
+      theme.$br-bg-secondary-alt
+    );
+    td {
+      font-size: 20px;
+      color: theme.$br-boring-button-fg;
+      height: 50px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+  }
+}
+
+a,
+:visited {
+  color: #0ff;
+}
+
+.inputs-list {
+  background-color: theme.$br-element-footer-bg;
+
+  .inputs-item {
+    background-color: theme.$br-bg-primary;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 50px;
+    padding: 0 10px;
+
+    &:nth-child(even) {
+      background-color: theme.$br-bg-primary-alt;
+    }
+
+    label,
+    .inputs {
+      display: flex;
+      align-items: center;
+    }
+
+    .inputs {
+      flex: 1;
+      .toggle,
+      .br-input {
+        margin-right: 8px;
+      }
+    }
+
+    label {
+      color: theme.$br-boring-button-fg;
+      min-width: 300px;
+      flex: 0.5;
+      font-size: 18px;
+      font-weight: bold;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+  }
+}
+
+.widgets-container {
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+
+  .widgets-list {
+    background-color: theme.$br-element-footer-bg;
+    margin-right: 8px;
+    min-width: 200px;
+    border-radius: theme.$br-radius-md;
+
+    .widget-item {
+      border-radius: theme.$br-radius-md;
+
+      background-color: theme.$br-bg-primary;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 50px;
+      padding: 0 10px;
+
+      &:nth-child(even) {
+        background-color: theme.$br-bg-primary-alt;
+      }
+
+      .name {
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+
+        .tabler-icon {
+          margin-right: 10px;
+        }
+      }
+    }
+  }
+}

@@ -17,14 +17,9 @@ import setupMetrics from './metrics';
 import { IStoreUser, OmeggaSocketIo } from './types';
 import * as util from './util';
 
-// path to frontend directory
-const FRONTEND_PATH = path.join(__dirname, '../../../frontend');
-
-// path to assets folder
-const ASSET_PATH = path.join(FRONTEND_PATH, 'assets');
-
-// path to webpacked data
+// path to vite-built data
 const PUBLIC_PATH = path.join(__dirname, '../../../public');
+const ASSETS_PATH = path.join(__dirname, '../../../public/assets');
 
 const log = (...args: any[]) => Logger.log(...args);
 const error = (...args: any[]) => Logger.error(...args);
@@ -94,12 +89,12 @@ export default class Webserver {
                 key: certFile.keys.serviceKey,
                 cert: certFile.keys.certificate,
               },
-              this.app
+              this.app,
             );
           } else {
             error(
               '!>'.red,
-              'Error generating SSL certificate - falling back to http'
+              'Error generating SSL certificate - falling back to http',
             );
           }
         }
@@ -109,7 +104,7 @@ export default class Webserver {
           ':>'.yellow,
           'Running web server with http - install',
           'openssl'.yellow.underline,
-          'for https (more secure)'
+          'for https (more secure)',
         );
       }
 
@@ -157,13 +152,13 @@ export default class Webserver {
       session(req, res, async () => {
         // check if user is authenticated
         const user = await this.database.findUserById(
-          req.session.userId as string
+          req.session.userId as string,
         );
         if (user && !user.isBanned) {
           socket.data.user = user;
           await this.database.stores.users.update<IStoreUser>(
             { _id: user._id },
-            { $set: { lastOnline: Date.now() } }
+            { $set: { lastOnline: Date.now() } },
           );
           next();
         } else {
@@ -173,8 +168,7 @@ export default class Webserver {
     });
 
     // provide assets in the /public path
-    this.app.use('/public', express.static(PUBLIC_PATH));
-    this.app.use('/public', express.static(ASSET_PATH));
+    this.app.use('/assets', express.static(ASSETS_PATH));
     this.app.use(bodyParser.json());
 
     this.rooms = ['chat', 'status', 'plugins', 'server'];
@@ -189,11 +183,10 @@ export default class Webserver {
     this.app.use(async (req, res) => {
       const user = await this.database.findUserById(req.session.userId);
       const isAuth = user && !user.isBanned;
-
       if (isAuth) {
-        res.sendFile(path.join(FRONTEND_PATH, 'app.html'));
+        res.sendFile(path.join(PUBLIC_PATH, 'app.html'));
       } else {
-        res.sendFile(path.join(FRONTEND_PATH, 'auth.html'));
+        res.sendFile(path.join(PUBLIC_PATH, 'auth.html'));
       }
     });
   }
@@ -206,7 +199,7 @@ export default class Webserver {
       this.server.listen(this.port, () => {
         log(
           `${'>>'.green} Web UI available at`,
-          `http${this.https ? 's' : ''}://127.0.0.1:${this.port}`.green
+          `http${this.https ? 's' : ''}://127.0.0.1:${this.port}`.green,
         );
         this.started = true;
         this.database.addChatLog('server', {}, 'Server started');

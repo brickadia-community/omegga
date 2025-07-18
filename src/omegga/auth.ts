@@ -33,7 +33,7 @@ function readAuthFiles(savedDir: string, authDir: string) {
     soft.TEMP_DIR_NAME,
     soft.DATA_PATH,
     savedDir,
-    authDir
+    authDir,
   );
   for (const file of soft.BRICKADIA_AUTH_FILES) {
     const filepath = path.join(prefix, file);
@@ -75,7 +75,7 @@ export async function genAuthFiles(
     authDir?: string;
     savedDir?: string;
     launchArgs?: string;
-  }
+  },
 ) {
   Logger.verbose('Generating auth files');
 

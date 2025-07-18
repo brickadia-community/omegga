@@ -31,7 +31,7 @@ const rotationTable = [
 const translationTable: (([x, y, z]: [number, number, number]) => [
   number,
   number,
-  number
+  number,
 ])[] = [
   ([x, y, z]) => [z, -y, x],
   ([x, y, z]) => [z, -x, -y],

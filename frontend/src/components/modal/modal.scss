@@ -1,0 +1,26 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.modal {
+  @include mixins.absolute-center;
+  background-color: theme.$br-bg-primary;
+  width: 500px;
+  opacity: 0;
+  border-radius: theme.$br-radius-md;
+
+  &.visible {
+    opacity: 1;
+    animation: fadeIn 0.4s ease 1;
+  }
+
+  .modal-content {
+    position: relative;
+  }
+
+  .popout-inputs {
+    .dropdown,
+    .input {
+      margin: 8px;
+    }
+  }
+}
