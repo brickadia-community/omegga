@@ -885,10 +885,8 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       dailyHour: 'number',
       dailyHourEnabled: 'boolean',
       announcementEnabled: 'boolean',
-      bricksEnabled: 'boolean',
-      minigamesEnabled: 'boolean',
-      environmentEnabled: 'boolean',
       playersEnabled: 'boolean',
+      saveWorld: 'boolean',
     };
 
     rpc.addMethod(
@@ -950,10 +948,8 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         const config = await database.getAutoRestartConfig();
         await omegga.saveServer({
           players: config.playersEnabled,
-          bricks: config.bricksEnabled,
+          saveWorld: config.saveWorld ?? true,
           announcement: config.announcementEnabled,
-          minigames: config.minigamesEnabled,
-          environment: config.environmentEnabled,
         });
       } catch (err) {
         error('Error while saving server setup', err);
@@ -964,11 +960,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         `<size="20">Server restart in <b><color="ffffbb">${5} seconds</></></>`,
       );
       await new Promise(resolve => setTimeout(resolve, 5000));
-      omegga.changeMap(omegga.currentMap);
-      await new Promise(resolve => setTimeout(resolve, 100));
-      if (omegga.started) await omegga.stop();
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      await omegga.start();
+      await omegga.restartServer();
     });
 
     // subscribe and unsubscribe to events

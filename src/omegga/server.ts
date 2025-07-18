@@ -24,7 +24,7 @@ import 'colors';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { sync } from 'glob';
 import { basename, join } from 'path';
-import { AutoRestartConfig } from '..';
+import { AutoRestartConfig, omegga } from '..';
 import commandInjector from './commandInjector';
 import MATCHERS from './matchers';
 import Player from './player';
@@ -218,37 +218,34 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         );
     }
 
-    if (config.minigames) {
-      try {
-        Logger.logp('Getting minigames...');
-        const minigames = await this.listMinigames();
-        Logger.logp(`Saving ${minigames.length} minigames...`);
-        for (const minigame of minigames) {
-          const name =
-            'omegga_temp_' +
-            (minigame.index + '').padStart(4, '0') +
-            `_${minigame.owner.id}`;
-          Logger.log(` - Saved "${minigame.name}" as ${name}`);
-          this.saveMinigame(minigame.index, name);
-        }
-      } catch (err) {
-        Logger.errorp('Error getting minigames...', err);
-      }
+    if (config.saveWorld) {
+      Logger.logp('Saving world...');
+      this.saveWorld();
+    }
+  }
+
+  async restartServer() {
+    if (this.starting || this.stopping) return;
+    if (!this.started) return await this.start();
+
+    const nextWorld = this.getNextWorld();
+    if (nextWorld) {
+      Logger.logp('Loading world', nextWorld.file.yellow);
+      Logger.verbose('Next world configured from', nextWorld.source.yellow);
+      this.loadWorld(nextWorld.file);
+    } else {
+      this.changeMap(this.currentMap);
     }
 
-    if (config.environment) {
-      Logger.logp('Saving environment...');
-      this.saveEnvironment('omegga_temp');
-    }
-
-    if (config.bricks) {
-      try {
-        Logger.logp('Saving bricks...');
-        await this.saveBricksAsync('omegga_temp');
-      } catch (err) {
-        Logger.errorp('Error saving bricks', err);
-      }
-    }
+    const res = await Promise.race([
+      // wait for the map to change
+      new Promise(resolve =>
+        this.once('mapchange', () => resolve('mapchange')),
+      ),
+      // Timeout after 10 seconds
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000)),
+    ]);
+    Logger.verbose('Restart result:', res);
   }
 
   /** attempt to restore the server's state */
@@ -289,58 +286,6 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
             unlinkSync(tempPlayersFile);
           } catch (err) {
             Logger.error('Error removing omegga_temp_players.json', err);
-          }
-        }, 10000);
-      }
-
-      const minigames = this.getMinigamePresets().filter(s =>
-        s.startsWith('omegga_temp_'),
-      );
-      if (minigames.length > 0) {
-        Logger.logp('Loading previous minigames in a second...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        for (const minigame of minigames) {
-          const ownerId = minigame.match(
-            /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,
-          );
-          this.loadMinigame(minigame, ownerId?.[1]);
-
-          setTimeout(() => {
-            try {
-              unlinkSync(join(this.presetPath, 'Minigame', minigame + '.bp'));
-            } catch (err) {
-              Logger.error(`Error removing minigame ${minigame}`, err);
-            }
-          }, 10000);
-        }
-      }
-
-      const tempEnvironment = join(
-        this.presetPath,
-        'Environment',
-        'omegga_temp.bp',
-      );
-      if (existsSync(tempEnvironment)) {
-        Logger.logp('Loading previous environment...');
-        this.loadEnvironment('omegga_temp');
-        setTimeout(() => {
-          try {
-            unlinkSync(tempEnvironment);
-          } catch (err) {
-            Logger.error('Error removing environment omegga_temp.bp', err);
-          }
-        }, 10000);
-      }
-
-      const tempSave = this.getSavePath('omegga_temp');
-      if (tempSave) {
-        Logger.logp('Loading previous bricks...');
-        this.loadBricks('omegga_temp');
-        setTimeout(() => {
-          try {
-            unlinkSync(tempSave);
-          } catch (err) {
-            Logger.error('Error removing omegga_temp.brs', err);
           }
         }, 10000);
       }
@@ -1006,6 +951,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     return undefined;
   }
 
+  // TODO: switch this to use worlds...
   async changeMap(map: string) {
     if (!map) return;
 

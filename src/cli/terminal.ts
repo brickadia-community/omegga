@@ -146,6 +146,14 @@ const COMMANDS: TerminalCommand[] = [
     },
   },
   {
+    aliases: ['restart'],
+    desc: 'trigger a server restart (without announcement or saving)',
+    async fn() {
+      log('Restarting server...');
+      await this.omegga.restartServer();
+    },
+  },
+  {
     aliases: ['kill'],
     desc: 'forcefully kill brickadia server process without closing omegga',
     async fn() {
@@ -459,6 +467,11 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
         default:
           const commands = [
             {
+              command: '/worlds use [world]',
+              desc: 'set or remove a world as the default world for startup',
+              short: '/w u [world]',
+            },
+            {
               command: '/worlds load <world> [rev]',
               desc: 'load a world',
               short: '/w load <world> [rev]',
@@ -487,6 +500,28 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
           log('Available world commands:');
           for (const { command, desc, short } of commands) {
             this.log('  ', command.yellow, '-', desc, `(${short.yellow})`);
+          }
+          return;
+
+        case 'use':
+        case 'u':
+          const world = args[0]?.replace(/\.brdb$/, '');
+          if (world && !this.omegga.worldExists(world)) {
+            err(`World "${world}" does not exist`);
+            return;
+          }
+          if (this.omegga.setActiveWorld(world || null)) {
+            if (world) {
+              log(
+                `Default world set to ${world.yellow}. It will be loaded next startup.`,
+              );
+            } else {
+              log(
+                'Default world cleared. No world will be loaded on next startup.',
+              );
+            }
+          } else {
+            err(`Failed to set default world to ${world.yellow}.`);
           }
           return;
 
@@ -755,6 +790,15 @@ export default class Terminal {
           wsl === 1 ? ' in single thread mode due to WSL1' : ''
         }. Type ${'/help'.yellow} for more commands`,
       );
+      if (!this.omegga.getNextWorld()) {
+        info(
+          'No',
+          'default world'.yellow,
+          'is configured. Run',
+          '/worlds use <world>'.yellow,
+          'to load one on startup.',
+        );
+      }
 
       // check if this is WSL2 and wsl2binds is installed
       if (

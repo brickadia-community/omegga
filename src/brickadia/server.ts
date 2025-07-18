@@ -5,6 +5,9 @@
 
 import Logger from '@/logger';
 import {
+  ACTIVE_WORLD_FILE,
+  CONFIG_SAVED_DIR,
+  DATA_PATH,
   GAME_BIN_PATH,
   GAME_DIRNAME,
   GAME_INSTALL_DIR,
@@ -15,7 +18,7 @@ import { IConfig } from '@config/types';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import 'colors';
 import EventEmitter from 'events';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import path from 'path';
 import { env } from 'process';
 import readline from 'readline';
@@ -42,7 +45,7 @@ const knownErrors: {
   },
 ];
 
-// Start a brickadia server
+/** Start a brickadia server */
 export default class BrickadiaServer extends EventEmitter {
   #child: ChildProcessWithoutNullStreams = null;
   #errInterface: readline.Interface = null;
@@ -64,6 +67,92 @@ export default class BrickadiaServer extends EventEmitter {
     this.lineListener = this.lineListener.bind(this);
     this.errorListener = this.errorListener.bind(this);
     this.exitListener = this.exitListener.bind(this);
+  }
+
+  getActiveWorldFile(): string {
+    return path.join(this.path, ACTIVE_WORLD_FILE);
+  }
+
+  /** A world specified by the active world file */
+  getActiveWorld(): string | null {
+    const activeWorldFile = this.getActiveWorldFile();
+    if (existsSync(activeWorldFile)) {
+      try {
+        return readFileSync(activeWorldFile, 'utf8').trim();
+      } catch (err) {
+        Logger.errorp(
+          'Failed to read active world file',
+          activeWorldFile.yellow,
+          err,
+        );
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /** Set the world to use next startup */
+  setActiveWorld(world: string | null): boolean {
+    const activeWorldFile = this.getActiveWorldFile();
+    if (!world || world === null) {
+      if (existsSync(activeWorldFile)) {
+        Logger.verbose('Removing active world file', activeWorldFile.yellow);
+        unlinkSync(activeWorldFile);
+      }
+      return true;
+    }
+
+    if (!this.worldExists(world)) {
+      Logger.verbose(
+        'Cannot set active world to',
+        world.yellow,
+        'as it does not exist',
+      );
+      return false;
+    }
+
+    Logger.verbose('Setting active world to', world.yellow);
+    try {
+      writeFileSync(activeWorldFile, world, 'utf8');
+      return true;
+    } catch (err) {
+      Logger.errorp(
+        'Failed to write active world file',
+        activeWorldFile.yellow,
+        err,
+      );
+      return false;
+    }
+  }
+
+  /** A world specified by the config */
+  getConfigWorld(): string | null {
+    return this.config?.server?.world ?? null;
+  }
+
+  /** A world specified by the BRICKADIA_WORLD env variable */
+  getEnvWorld(): string | null {
+    return env.BRICKADIA_WORLD || null;
+  }
+
+  /** Check if a world exists */
+  worldExists(world: string): boolean {
+    const savedDir = this.config?.server?.savedDir ?? CONFIG_SAVED_DIR;
+    const worldPath = path.join(this.path, savedDir, 'Worlds', world + '.brdb');
+    return existsSync(worldPath);
+  }
+
+  /** Get the world that will be used next startup */
+  getNextWorld() {
+    const candidates = [
+      { source: 'file', file: this.getActiveWorld() },
+      { source: 'config', file: this.getConfigWorld() },
+      { source: 'env', file: this.getEnvWorld() },
+    ];
+
+    return (
+      candidates.find(({ file }) => file && this.worldExists(file)) ?? null
+    );
   }
 
   // start the server child process
@@ -147,11 +236,26 @@ export default class BrickadiaServer extends EventEmitter {
           '--',
         ];
 
+    const world = this.getNextWorld();
+    if (world) {
+      Logger.verbose(
+        'Using world',
+        world.file.yellow,
+        'from',
+        world.source.yellow,
+      );
+    } else if (this.config.server.map) {
+      Logger.verbose('Using map', this.config.server.map.yellow, 'from config');
+    }
+
     const params = [
       '--output=L',
       '--',
       ...launchArgs,
-      this.config.server.map && `${this.config.server.map}`,
+      !world &&
+        this.config.server.map &&
+        `-Environment="${this.config.server.map}"`,
+      world && `-World="${world.file}"`,
       '-NotInstalled',
       '-log',
       require('../util/wsl') === 1 ? '-OneThread' : null,

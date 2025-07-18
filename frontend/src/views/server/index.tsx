@@ -75,10 +75,8 @@ export const ServerView = () => {
       dailyHour: Math.round(Math.max(0, Math.min(config.dailyHour, 23))),
       dailyHourEnabled: config.dailyHourEnabled,
       announcementEnabled: config.announcementEnabled,
-      bricksEnabled: config.bricksEnabled,
       playersEnabled: config.playersEnabled,
-      minigamesEnabled: config.minigamesEnabled,
-      environmentEnabled: config.environmentEnabled,
+      saveWorld: config.saveWorld,
     };
     rpcNotify('server.autorestart.set', blob);
   }, [config]);
@@ -134,7 +132,7 @@ export const ServerView = () => {
             </Button>
             <Button
               warn
-              data-tooltip="Stop the server if it's running, then start the server. Saves minigames/environment/bricks if enabled below."
+              data-tooltip="Reloads the server's world. Saves minigames/environment/bricks if 'Save World' is enabled below."
               disabled={starting || stopping || statusLoading}
               onClick={() =>
                 prompt('restart the server').then(ok => ok && restartServer())
@@ -238,40 +236,14 @@ export const ServerView = () => {
               </div>
               <div
                 className="inputs-item"
-                data-tooltip="When enabled, saves and re-loads bricks on autorestart"
+                data-tooltip="When enabled, saves the current world. The default world will be loaded on restart"
               >
-                <label>Reload Bricks</label>
+                <label>Save World</label>
                 <div className="inputs">
                   <Toggle
                     tooltip="Enabled"
-                    value={config.bricksEnabled}
-                    onChange={changeConfig('bricksEnabled')}
-                  />
-                </div>
-              </div>
-              <div
-                className="inputs-item"
-                data-tooltip="When enabled, saves and re-loads minigames on autorestart"
-              >
-                <label>Reload Minigames</label>
-                <div className="inputs">
-                  <Toggle
-                    tooltip="Enabled"
-                    value={config.minigamesEnabled}
-                    onChange={changeConfig('minigamesEnabled')}
-                  />
-                </div>
-              </div>
-              <div
-                className="inputs-item"
-                data-tooltip="When enabled, saves and re-loads environment on autorestart"
-              >
-                <label>Reload Environment</label>
-                <div className="inputs">
-                  <Toggle
-                    tooltip="Enabled"
-                    value={config.environmentEnabled}
-                    onChange={changeConfig('environmentEnabled')}
+                    value={config.saveWorld ?? true}
+                    onChange={changeConfig('saveWorld')}
                   />
                 </div>
               </div>

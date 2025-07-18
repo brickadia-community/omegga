@@ -6,7 +6,11 @@ export interface IServerConfig {
 
 export interface IBrickadiaConfig {
   port: number;
+  /** Map to load on startup if a world is not specified */
   map?: string;
+  /** World file name to load on startup */
+  world?: string;
+
   /** old launcher branch name */
   branch?: string;
   /** Steam beta name */

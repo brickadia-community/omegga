@@ -71,6 +71,7 @@ export const STATUS_STORE = 'status.db';
 export const USER_STORE = 'users.db';
 export const SERVER_STORE = 'store.db';
 export const SESSION_STORE = 'session.db';
+export const ACTIVE_WORLD_FILE = 'active_world';
 
 // website config
 export const WEB_CERTS_DATA = 'web_certs.json';

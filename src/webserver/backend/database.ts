@@ -717,10 +717,8 @@ export default class Database extends EventEmitter {
         dailyHour: 2,
         dailyHourEnabled: false,
         announcementEnabled: true,
-        bricksEnabled: true,
-        minigamesEnabled: true,
-        environmentEnabled: true,
         playersEnabled: true,
+        saveWorld: true,
       });
     }
 

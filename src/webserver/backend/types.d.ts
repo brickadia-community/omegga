@@ -48,9 +48,7 @@ export interface IStoreAutoRestartConfig {
   dailyHourEnabled: boolean;
   announcementEnabled: boolean;
   playersEnabled: boolean;
-  bricksEnabled: boolean;
-  minigamesEnabled: boolean;
-  environmentEnabled: boolean;
+  saveWorld: boolean;
 }
 
 export interface IStoreChat {

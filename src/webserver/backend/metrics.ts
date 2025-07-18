@@ -31,10 +31,8 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     lastRestart = Date.now();
     const iconfig: AutoRestartConfig = {
       players: config.playersEnabled,
-      bricks: config.bricksEnabled,
       announcement: config.announcementEnabled,
-      minigames: config.minigamesEnabled,
-      environment: config.environmentEnabled,
+      saveWorld: config.saveWorld,
     };
     omegga.emit('autorestart', iconfig);
     await sleep(1000);
@@ -74,7 +72,8 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     omegga.once('mapchange', () => {
       omegga.restoreServer();
     });
-    omegga.changeMap(omegga.currentMap);
+
+    await omegga.restartServer();
   }
 
   async function checkAutoRestart(status: IServerStatus) {

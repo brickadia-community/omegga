@@ -64,10 +64,8 @@ export interface BrickInteraction {
 /** AutoRestart options */
 export type AutoRestartConfig = {
   players: boolean;
-  bricks: boolean;
-  minigames: boolean;
-  environment: boolean;
   announcement: boolean;
+  saveWorld: boolean;
 };
 
 export interface OmeggaPlayer {

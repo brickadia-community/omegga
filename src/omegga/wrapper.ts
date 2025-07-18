@@ -74,6 +74,26 @@ class OmeggaWrapper extends EventEmitter {
     }
     return (super.emit as EventEmitter['emit'])(type, ...args);
   }
+
+  /** Get which world will be loaded on startup (form file, config, or env) */
+  getNextWorld() {
+    return this.#server.getNextWorld();
+  }
+
+  /** Get the configured default world */
+  getActiveWorld() {
+    return this.#server.getActiveWorld();
+  }
+
+  /** Configure the default world  */
+  setActiveWorld(world: string | null): boolean {
+    return this.#server.setActiveWorld(world);
+  }
+
+  /** Check if a world exists */
+  worldExists(file: string) {
+    return this.#server.worldExists(file);
+  }
 }
 
 export default OmeggaWrapper;
