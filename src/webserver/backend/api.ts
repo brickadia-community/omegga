@@ -1,4 +1,7 @@
 import Logger from '@/logger';
+import { IPluginDocumentation } from '@/plugin';
+import { steamcmdDownloadGame } from '@/updater';
+import { getLastSteamUpdateCheck, hasSteamUpdate } from '@/updater/steam';
 import Player from '@omegga/player';
 import { Plugin } from '@omegga/plugin';
 import { parseLinks, sanitize } from '@util/chat';
@@ -12,13 +15,13 @@ import {
   JSONRPCServerAndClient,
 } from 'json-rpc-2.0';
 import _ from 'lodash';
+import Database from './database';
 import type Webserver from './index';
 import {
   IFrontendBanEntry,
   IPlayer,
   IStoreAutoRestartConfig,
   IStoreBanHistory,
-  IStoreChat,
   IStoreKickHistory,
   IStoreUser,
   IUserAgo,
@@ -26,9 +29,25 @@ import {
   IUserNote,
   OmeggaSocketIo,
 } from './types';
-import { IPluginDocumentation } from '@/plugin';
-import Database from './database';
 const pkg = require('../../../package.json');
+
+export type OmeggaSocketData = {
+  roles: { type: 'role'; name: string }[];
+  version: string;
+  canLogOut: boolean;
+  now: number;
+  userless: boolean;
+  isSteam: boolean;
+  update: {
+    canCheck: boolean;
+    lastCheck: boolean | null;
+  };
+  user: {
+    username: string;
+    isOwner: boolean;
+    roles: string[];
+  };
+};
 
 export type GetPlayersRes = {
   pages: number;
@@ -85,6 +104,12 @@ export type GetUsersRes = {
 };
 
 export type HistoryRes = Awaited<ReturnType<Database['getChats']>>;
+
+export type WorldRevisionsRes = {
+  index: number;
+  date: Date;
+  note: string;
+}[];
 
 export default function (server: Webserver, io: OmeggaSocketIo) {
   const { database, omegga } = server;
@@ -171,7 +196,12 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           isOwner: socket.data.user.isOwner,
           roles: socket.data.user.roles,
         },
-      });
+        isSteam: Boolean(omegga.config.__STEAM),
+        update: {
+          canCheck: omegga.config.__STEAM && !omegga.config.server?.steambeta,
+          lastCheck: getLastSteamUpdateCheck()?.result ?? null,
+        },
+      } satisfies OmeggaSocketData);
     });
 
     // logging for this user in the console for web ui actions
@@ -963,6 +993,126 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       );
       await new Promise(resolve => setTimeout(resolve, 5000));
       await omegga.restartServer();
+    });
+
+    // check if the server has a steam update available
+    rpc.addMethod('server.updatecheck', async () => {
+      if (!omegga.config.__STEAM) return null;
+      const lastUpdate = getLastSteamUpdateCheck();
+      if (Date.now() - lastUpdate.attempt < 1000 * 5) {
+        Logger.verbose('[rpc] Using cached steam update check');
+        return lastUpdate.result;
+      }
+      Logger.verbose('[rpc] Checking for steam update');
+      return await hasSteamUpdate(omegga.config.server?.steambeta);
+    });
+
+    // check if the server has a steam update available
+    rpc.addMethod('server.update', async () => {
+      if (!omegga.config.__STEAM) return false;
+      if (omegga.stopping || omegga.starting) return false;
+      const wasStarted = omegga.started;
+      if (wasStarted) {
+        log('Stopping server to update...');
+        await omegga.stop();
+      }
+      log('Updating server...');
+      let ok = false;
+      try {
+        steamcmdDownloadGame({
+          steambeta: omegga.config.server?.steambeta,
+          steambetaPassword: omegga.config.server?.steambetaPassword,
+        });
+        ok = true;
+        log('Server updated successfully');
+      } catch (err) {
+        error('Error updating server', err);
+      }
+      if (wasStarted) {
+        log('Starting server...');
+        await omegga.start();
+      }
+
+      return ok;
+    });
+
+    // list available worlds
+    rpc.addMethod('world.list', async () => {
+      const prefix = omegga.worldPath + '/';
+      return omegga
+        .getWorlds()
+        .map(world => world.replace(prefix, '').replace(/\.brdb$/, ''));
+    });
+
+    // list a world's revisions (while the server is running)
+    rpc.addMethod('world.revisions', async ([world]: [string]) => {
+      try {
+        return (await omegga.getWorldRevisions(
+          world,
+        )) satisfies WorldRevisionsRes;
+      } catch (_err) {
+        return null;
+      }
+    });
+
+    // get the next world to load
+    rpc.addMethod('world.next', async () => {
+      return omegga.getNextWorld();
+    });
+
+    // get the configured default world
+    rpc.addMethod('world.active', async () => {
+      return omegga.getActiveWorld();
+    });
+
+    // load a world or revision of a world
+    rpc.addMethod(
+      'world.load',
+      async ([world, revision]: [string, number?]) => {
+        try {
+          if (revision) {
+            return await omegga.loadWorldRevision(world, revision);
+          } else {
+            return await omegga.loadWorld(world);
+          }
+        } catch (err) {
+          error('Error while loading world', err);
+          return false;
+        }
+      },
+    );
+
+    /// set or clear the default world
+    rpc.addMethod('world.use', async ([world]: [string?]) => {
+      try {
+        return omegga.setActiveWorld(world || null);
+      } catch (err) {
+        error('Error while using world', err);
+        return false;
+      }
+    });
+
+    // save a world or save as a world
+    rpc.addMethod('world.save', async ([name]: [string?]) => {
+      try {
+        let res = false;
+        if (name) {
+          log('Saving world as', name.yellow);
+          res = await omegga.saveWorldAs(name);
+        } else {
+          log('Saving current world');
+          res = await omegga.saveWorld();
+        }
+        if (res) {
+          log('World saved successfully');
+        } else {
+          log('World save failed');
+        }
+        return res;
+      } catch (err) {
+        error('Error while saving world', err);
+        return false;
+      }
     });
 
     // subscribe and unsubscribe to events

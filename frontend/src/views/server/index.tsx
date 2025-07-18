@@ -13,9 +13,14 @@ import {
   Toggle,
 } from '@components';
 import { SavedSpan, SavedStatus, useSaved } from '@hooks';
+import { useStore } from '@nanostores/react';
 import type { IStoreAutoRestartConfig } from '@omegga/webserver/backend/types';
 import {
   IconCheck,
+  IconCloudDownload,
+  IconCloudSearch,
+  IconDeviceFloppy,
+  IconDownload,
   IconPlayerPlay,
   IconPlayerStop,
   IconRefresh,
@@ -27,8 +32,10 @@ import {
   restartServer,
   startServer,
   stopServer,
+  updateServer,
   useServerLiveness,
 } from '../../stores/liveness';
+import { $omeggaData } from '../../stores/user';
 
 export const ServerView = () => {
   const {
@@ -58,10 +65,30 @@ export const ServerView = () => {
   );
 
   const [config, setConfig] = useState<IStoreAutoRestartConfig | null>(null);
+  const omeggaData = useStore($omeggaData);
+  const [hasUpdate, setHasUpdate] = useState<boolean | null>(
+    omeggaData?.update?.lastCheck ?? null,
+  );
+  useEffect(() => {
+    setHasUpdate(omeggaData?.update?.lastCheck ?? null);
+  }, [omeggaData?.update?.lastCheck]);
+  const [checkingForUpdate, setCheckingForUpdate] = useState(false);
+
+  const [savingWorld, setSavingWorld] = useState(false);
 
   useEffect(() => {
     rpcReq('server.autorestart.get').then(setConfig);
   }, []);
+
+  const canUpdateCheck = omeggaData?.update?.canCheck ?? false;
+  const checkForUpdate = useCallback(() => {
+    if (!canUpdateCheck) return;
+    setCheckingForUpdate(true);
+    rpcReq('server.updatecheck').then(res => {
+      setHasUpdate(res);
+      setCheckingForUpdate(false);
+    });
+  }, [canUpdateCheck]);
 
   const saveConfig = useCallback(async () => {
     if (!config) return;
@@ -84,6 +111,12 @@ export const ServerView = () => {
     } satisfies IStoreAutoRestartConfig;
     rpcNotify('server.autorestart.set', blob);
   }, [config]);
+
+  const saveWorld = async () => {
+    setSavingWorld(true);
+    await rpcReq('world.save');
+    setSavingWorld(false);
+  };
 
   const saved = useSaved(saveConfig);
 
@@ -113,6 +146,28 @@ export const ServerView = () => {
                 : started
                   ? 'started'
                   : 'stopped'}
+            <span style={{ flex: 1 }} />
+            {omeggaData?.isSteam && canUpdateCheck !== null && (
+              <Button
+                main={Boolean(hasUpdate)}
+                normal={!hasUpdate}
+                data-tooltip="Check for updates"
+                disabled={checkingForUpdate}
+                onClick={checkForUpdate}
+              >
+                {hasUpdate === true ? (
+                  <>
+                    <IconDownload />
+                    Update Available
+                  </>
+                ) : (
+                  <>
+                    <IconCloudSearch />
+                    Check for Update
+                  </>
+                )}
+              </Button>
+            )}
           </NavBar>
           <div className="buttons">
             <Button
@@ -148,6 +203,31 @@ export const ServerView = () => {
               <IconRefresh />
               Restart
             </Button>
+            <Button
+              info
+              data-tooltip="Save the current world."
+              disabled={starting || stopping || statusLoading || savingWorld}
+              onClick={saveWorld}
+            >
+              <IconDeviceFloppy />
+              Save World
+            </Button>
+            {omeggaData?.isSteam && (
+              <Button
+                normal={!hasUpdate}
+                main={hasUpdate === true}
+                data-tooltip={
+                  'Stop and update the server even if there are no updates available.\n\nDoes not save the world or player locations.'
+                }
+                disabled={starting || stopping || statusLoading}
+                onClick={() =>
+                  prompt('update the server').then(ok => ok && updateServer())
+                }
+              >
+                <IconCloudDownload />
+                Update
+              </Button>
+            )}
           </div>
           <NavBar attached style={{ marginTop: 8 }}>
             Auto Restart
@@ -159,7 +239,10 @@ export const ServerView = () => {
                 className="inputs-item"
                 data-tooltip="When enabled on servers setup with SteamCMD, automatically updates the server when a new version is available"
               >
-                <label>Auto Update (SteamCMD Only)</label>
+                <label>
+                  Auto Update
+                  {canUpdateCheck ? '' : ' (Feature requires SteamCMD)'}
+                </label>
                 <div className="inputs">
                   <Toggle
                     tooltip="Enabled"

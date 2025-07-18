@@ -1,10 +1,10 @@
 import { OmeggaPlayer } from '@/plugin';
+import { steamcmdDownloadGame } from '@/updater';
 import Omegga from '@omegga/server';
 import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
 import readline from 'readline';
 import { install } from './plugin';
-import { steamcmdDownloadGame } from '@/updater';
 
 declare global {
   interface String {
@@ -172,7 +172,7 @@ const COMMANDS: TerminalCommand[] = [
       }
       const wasStarted = this.omegga.started;
       if (wasStarted) {
-        log('Stopping server before updating...');
+        log('Stopping server to update...');
         await this.omegga.stop();
       }
       log('Updating server...');
@@ -183,7 +183,7 @@ const COMMANDS: TerminalCommand[] = [
         });
         log('Server updated successfully.');
       } catch (e) {
-        err('An error occurred while updating the server:', e);
+        err('Error updating server:', e);
       }
       if (wasStarted) {
         log('Starting server...');
@@ -535,6 +535,10 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
               short: '/w new <name> [Plate|Space|Studio|Peaks]',
             },
           ];
+          log(
+            'Default world is',
+            this.omegga.getNextWorld()?.file?.yellow || 'none'.grey,
+          );
           log('Available world commands:');
           for (const { command, desc, short } of commands) {
             this.log('  ', command.yellow, '-', desc, `(${short.yellow})`);
@@ -566,7 +570,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
         case 'list':
         case 'ls':
           // list worlds
-          const worlds = await this.omegga.getWorlds();
+          const worlds = this.omegga.getWorlds();
           if (worlds.length === 0) {
             log(
               'No worlds found. Create one with',
@@ -608,13 +612,20 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
               return;
             }
           }
+          let loadRes: boolean = false;
           if (revision) {
             log(`Loading world ${worldName.yellow} at revision ${revision}...`);
-            this.omegga.loadWorldRevision(worldName, revision);
+            loadRes = await this.omegga.loadWorldRevision(worldName, revision);
           } else {
             log(`Loading world ${worldName.yellow}...`);
-            this.omegga.loadWorld(worldName);
+            loadRes = await this.omegga.loadWorld(worldName);
           }
+          if (loadRes) {
+            log(`World ${worldName.yellow} loaded successfully.`);
+          } else {
+            err(`Failed to load world ${worldName.yellow}`);
+          }
+
           return;
         case 'saveas':
         case 'sa':
@@ -634,7 +645,12 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             return;
           }
           log(`Saving current world as ${saveWorldName.yellow}...`);
-          this.omegga.saveWorldAs(saveWorldName);
+          const saveAsRes = await this.omegga.saveWorldAs(saveWorldName);
+          if (saveAsRes) {
+            log(`Current world saved as ${saveWorldName.yellow} successfully.`);
+          } else {
+            err(`Failed to save current world as ${saveWorldName.yellow}`);
+          }
           return;
 
         case 'save':

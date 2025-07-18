@@ -3,7 +3,6 @@ import { installLauncher } from '@cli/installer';
 import * as config from '@config';
 import Omegga from '@omegga/server';
 import * as file from '@util/file';
-import { execSync } from 'child_process';
 import 'colors';
 import commander from 'commander';
 import fs from 'fs';
@@ -14,12 +13,7 @@ import updateNotifier from 'update-notifier-cjs';
 import { auth, config as omeggaConfig, pluginUtil, Terminal } from './cli';
 import { IConfig } from './config/types';
 import Logger from './logger';
-import {
-  GAME_BIN_PATH,
-  GAME_INSTALL_DIR,
-  STEAM_APP_ID,
-  STEAMCMD_PATH,
-} from './softconfig';
+import { GAME_BIN_PATH, GAME_INSTALL_DIR, STEAMCMD_PATH } from './softconfig';
 import {
   hasSteamUpdate,
   steamcmdDownloadGame,
@@ -574,31 +568,31 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
     // Lookup steamcmd in path
     const hasSteamcmd = hasbin.sync('steamcmd');
 
-    // Prompt to install steamcmd
-    const { install } = await prompts({
-      type: 'confirm',
-      name: 'install',
-      message: hasSteamcmd
-        ? // TODO... just steamcmd directly
-          'SteamCMD is installed. OK to reference it?'
-        : 'SteamCMD is not installed. OK to download it?',
-      initial: true,
-    });
+    if (!hasSteamcmd) {
+      // Prompt to install steamcmd
+      const { install } = await prompts({
+        type: 'confirm',
+        name: 'install',
+        message: 'SteamCMD is not installed. OK to download it?',
+        initial: true,
+      });
 
-    if (!install) {
-      Logger.errorp('SteamCMD is required for steam support. Exiting...');
-      process.exit(1);
+      if (!install) {
+        Logger.errorp('SteamCMD is required for steam support. Exiting...');
+        process.exit(1);
+      }
+
+      Logger.logp('Downloading SteamCMD...');
     }
 
-    Logger.logp('Downloading SteamCMD...');
     try {
       steamcmdDownloadSelf();
       if (!fs.existsSync(STEAMCMD_PATH)) {
-        Logger.errorp('Failed to download SteamCMD. Exiting...');
+        Logger.errorp('Failed to setup SteamCMD. Exiting...');
         process.exit(1);
       }
     } catch (err) {
-      Logger.errorp('Error Downloading SteamCMD:', err);
+      Logger.errorp('Error setting up SteamCMD:', err);
       process.exit(1);
     }
   }

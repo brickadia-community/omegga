@@ -12,7 +12,7 @@ import {
   IServerStatus,
 } from '@omegga/types';
 import util from '@util';
-import brs, { ReadSaveObject, WriteSaveObject } from 'brs-js';
+import { ReadSaveObject, WriteSaveObject } from 'brs-js';
 
 export const _OMEGGA_UTILS_IMPORT = util;
 declare global {
@@ -741,19 +741,19 @@ export interface OmeggaCore {
    * Load a world by its name
    * @param worldName World name
    */
-  loadWorld(worldName: string): void;
+  loadWorld(worldName: string): Promise<boolean>;
 
   /**
    * Load a world at a specific revision
    * @param worldName World name
    */
-  loadWorldRevision(worldName: string, revision: number): void;
+  loadWorldRevision(worldName: string, revision: number): Promise<boolean>;
 
   /**
    * Save a world as a new name
    * @param worldName World name
    */
-  saveWorldAs(worldName: string): void;
+  saveWorldAs(worldName: string): Promise<boolean>;
 
   /**
    * Save the current world

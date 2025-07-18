@@ -7,7 +7,6 @@ import Logger from '@/logger';
 import {
   ACTIVE_WORLD_FILE,
   CONFIG_SAVED_DIR,
-  DATA_PATH,
   GAME_BIN_PATH,
   GAME_DIRNAME,
   GAME_INSTALL_DIR,

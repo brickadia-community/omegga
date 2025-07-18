@@ -24,7 +24,7 @@ import 'colors';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { sync } from 'glob';
 import { basename, join } from 'path';
-import { AutoRestartConfig, omegga } from '..';
+import { AutoRestartConfig } from '..';
 import commandInjector from './commandInjector';
 import MATCHERS from './matchers';
 import Player from './player';
@@ -750,6 +750,10 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   async getWorldRevisions(worldName: string) {
+    if (!this.started || this.starting || this.stopping) {
+      throw new Error('Server is not started');
+    }
+
     worldName = worldName.replace(/\.brdb$/i, '');
 
     if (!worldName || !this.getWorldPath(worldName)) {
@@ -799,27 +803,75 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       .filter(Boolean);
   }
 
-  loadWorld(worldName: string) {
+  async loadWorld(worldName: string): Promise<boolean> {
     worldName = worldName.replace(/\.brdb$/i, '');
-    if (!worldName || !this.getWorldPath(worldName)) return;
+    if (!worldName || !this.getWorldPath(worldName)) return false;
     this.writeln(`BR.World.Load "${worldName}"`);
+    const res = await Promise.race([
+      // wait for the map to change
+      new Promise(resolve =>
+        this.once('mapchange', () => resolve('mapchange')),
+      ),
+      // Timeout after 10 seconds
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000)),
+    ]);
+    Logger.verbose('LoadWorld', worldName, 'result:', res);
+    return res === 'mapchange';
   }
 
-  loadWorldRevision(worldName: string, revision: number) {
+  async loadWorldRevision(
+    worldName: string,
+    revision: number,
+  ): Promise<boolean> {
     worldName = worldName.replace(/\.brdb$/i, '');
-    if (!worldName || !this.getWorldPath(worldName)) return;
+    if (!worldName || !this.getWorldPath(worldName)) return false;
     if (typeof revision !== 'number' || revision < 1) {
       throw new Error(`Invalid revision number: ${revision}`);
     }
     this.writeln(`BR.World.LoadRevision "${worldName}" ${revision}`);
+    const res = await Promise.race([
+      // wait for the map to change
+      new Promise(resolve =>
+        this.once('mapchange', () => resolve('mapchange')),
+      ),
+      // Timeout after 10 seconds
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000)),
+    ]);
+    Logger.verbose('LoadWorld', worldName, 'result:', res);
+    return res === 'mapchange';
   }
 
-  saveWorldAs(worldName: string) {
-    if (!worldName) return;
-    if (this.stopping || this.starting || !this.started) return;
+  async saveWorldAs(worldName: string) {
+    if (!worldName) return false;
+    if (this.stopping || this.starting || !this.started) return false;
 
+    if (this.getWorldPath(worldName)) {
+      return false;
+    }
     worldName = worldName.replace(/\.brdb$/i, '');
-    this.writeln(`BR.World.SaveAs "${worldName}"`);
+
+    try {
+      const match = await this.addWatcher<{ res: boolean }>(
+        (_line, match) => {
+          if (match?.groups?.generator !== 'LogBRWorldManager') return;
+
+          const ok = match.groups.data.match(/^World files saved after /);
+          const err = match.groups.data.match(
+            /^Error: (World already exists|Failed to create new world)?/,
+          );
+          return ok ? { res: true } : err ? { res: false } : undefined;
+        },
+        {
+          exec: () => {
+            this.writeln(`BR.World.SaveAs "${worldName}"`);
+          },
+          timeoutDelay: 2000,
+        },
+      );
+      return match?.[0]?.['res'] ?? false;
+    } catch (err) {
+      return false;
+    }
   }
 
   async saveWorld(): Promise<boolean> {
@@ -833,7 +885,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
           const ok = match.groups.data.match(/^World files saved after /);
           const err = match.groups.data.match(
-            /^Error: World has not been saved\./,
+            /^Error: (World has not been saved\.)?/,
           );
           return ok ? { res: true } : err ? { res: false } : undefined;
         },

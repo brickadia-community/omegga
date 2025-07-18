@@ -1,7 +1,7 @@
-import { atom } from 'nanostores';
-import { ioEmit, rpcReq } from '../socket';
-import { useEffect } from 'react';
 import { useStore } from '@nanostores/react';
+import { atom } from 'nanostores';
+import { useEffect } from 'react';
+import { ioEmit, rpcReq } from '../socket';
 
 export const $liveness = atom<{
   starting: boolean;
@@ -49,4 +49,8 @@ export const stopServer = () => {
 export const restartServer = () => {
   $liveness.set({ ...$liveness.get(), loading: true });
   rpcReq('server.restart');
+};
+export const updateServer = () => {
+  $liveness.set({ ...$liveness.get(), loading: true });
+  rpcReq('server.update');
 };
