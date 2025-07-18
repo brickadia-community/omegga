@@ -589,8 +589,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
 
       // check if user is banned
       const banList = (omegga.getBanList() || { banList: {} }).banList;
-      if (!banList[id] || parseBrickadiaTime(banList[id].expires) < Date.now())
-        return false;
+      if (!banList[id]) return false;
 
       log(
         'Unbanning player',
