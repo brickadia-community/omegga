@@ -641,7 +641,12 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
 
           // save the current world
           log('Saving current world...');
-          this.omegga.saveWorld();
+          const res = await this.omegga.saveWorld();
+          if (res) {
+            log('Current world saved successfully.');
+          } else {
+            err('Failed to save the current world');
+          }
           return;
 
         case 'revisions':

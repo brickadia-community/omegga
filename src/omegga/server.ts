@@ -808,12 +808,38 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   saveWorldAs(worldName: string) {
     if (!worldName) return;
+    if (this.stopping || this.starting || !this.started) return;
+
     worldName = worldName.replace(/\.brdb$/i, '');
     this.writeln(`BR.World.SaveAs "${worldName}"`);
   }
 
-  saveWorld() {
-    this.writeln(`BR.World.Save 0`);
+  async saveWorld(): Promise<boolean> {
+    // Don't allow saving while the server is starting or stopping
+    if (this.stopping || this.starting || !this.started) return false;
+
+    try {
+      const match = await this.addWatcher<{ res: boolean }>(
+        (_line, match) => {
+          if (match?.groups?.generator !== 'LogBRWorldManager') return;
+
+          const ok = match.groups.data.match(/^World files saved after /);
+          const err = match.groups.data.match(
+            /^Error: World has not been saved\./,
+          );
+          return ok ? { res: true } : err ? { res: false } : undefined;
+        },
+        {
+          exec: () => {
+            this.writeln(`BR.World.Save 0`);
+          },
+          timeoutDelay: 2000,
+        },
+      );
+      return match?.[0]?.['res'] ?? false;
+    } catch (err) {
+      return false;
+    }
   }
 
   createEmptyWorld(

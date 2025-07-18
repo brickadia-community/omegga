@@ -758,7 +758,7 @@ export interface OmeggaCore {
   /**
    * Save the current world
    */
-  saveWorld(): void;
+  saveWorld(): Promise<boolean>;
 
   /**
    * Create an empty world with the given name
