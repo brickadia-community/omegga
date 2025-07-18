@@ -887,6 +887,8 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       announcementEnabled: 'boolean',
       playersEnabled: 'boolean',
       saveWorld: 'boolean',
+      autoUpdateEnabled: 'boolean',
+      autoUpdateIntervalMins: 'number',
     };
 
     rpc.addMethod(

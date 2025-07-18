@@ -46,6 +46,8 @@ export interface IStoreAutoRestartConfig {
   emptyUptimeEnabled: boolean;
   dailyHour: number;
   dailyHourEnabled: boolean;
+  autoUpdateEnabled: boolean;
+  autoUpdateIntervalMins: number;
   announcementEnabled: boolean;
   playersEnabled: boolean;
   saveWorld: boolean;

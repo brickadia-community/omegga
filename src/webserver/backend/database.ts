@@ -716,11 +716,17 @@ export default class Database extends EventEmitter {
         emptyUptimeEnabled: false,
         dailyHour: 2,
         dailyHourEnabled: false,
+        autoUpdateEnabled: true,
+        autoUpdateIntervalMins: 60,
         announcementEnabled: true,
         playersEnabled: true,
         saveWorld: true,
       });
     }
+
+    config.autoUpdateEnabled ??= true;
+    config.autoUpdateIntervalMins ??= 60;
+    config.saveWorld ??= true;
 
     return config;
   }
@@ -731,6 +737,10 @@ export default class Database extends EventEmitter {
       Math.max(1, Math.min(config.emptyUptime, 168)),
     );
     config.dailyHour = Math.round(Math.max(0, Math.min(config.dailyHour, 23)));
+    config.autoUpdateIntervalMins = Math.round(
+      Math.max(10, Math.min(config.autoUpdateIntervalMins ?? 60, Infinity)),
+    );
+    config.autoUpdateEnabled ??= true;
     await this.stores.server.update(
       { type: 'autoRestartConfig' },
       {

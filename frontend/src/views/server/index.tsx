@@ -77,7 +77,11 @@ export const ServerView = () => {
       announcementEnabled: config.announcementEnabled,
       playersEnabled: config.playersEnabled,
       saveWorld: config.saveWorld,
-    };
+      autoUpdateEnabled: config.autoUpdateEnabled ?? true,
+      autoUpdateIntervalMins: Math.round(
+        Math.max(10, Math.min(config.autoUpdateIntervalMins ?? 60, Infinity)),
+      ),
+    } satisfies IStoreAutoRestartConfig;
     rpcNotify('server.autorestart.set', blob);
   }, [config]);
 
@@ -86,7 +90,10 @@ export const ServerView = () => {
   const changeConfig = <K extends keyof IStoreAutoRestartConfig>(name: K) => {
     return (value: IStoreAutoRestartConfig[K]) => {
       if (!config) return;
-      config[name] = value;
+      setConfig(prev => ({
+        ...prev!,
+        [name]: value,
+      }));
       saved.fire();
     };
   };
@@ -148,6 +155,26 @@ export const ServerView = () => {
           </NavBar>
           {config && (
             <div className="inputs-list">
+              <div
+                className="inputs-item"
+                data-tooltip="When enabled on servers setup with SteamCMD, automatically updates the server when a new version is available"
+              >
+                <label>Auto Update (SteamCMD Only)</label>
+                <div className="inputs">
+                  <Toggle
+                    tooltip="Enabled"
+                    value={config.autoUpdateEnabled}
+                    onChange={changeConfig('autoUpdateEnabled')}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Minutes"
+                    tooltip="Interval in minutes to check for updates (min 10)"
+                    value={config.autoUpdateIntervalMins}
+                    onChange={changeConfig('autoUpdateIntervalMins')}
+                  />
+                </div>
+              </div>
               <div
                 className="inputs-item"
                 data-tooltip="How many hours before restarting regardless of online players"

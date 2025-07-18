@@ -159,15 +159,33 @@ export async function getRemoteSteamDepot(steambeta?: string) {
   return depot;
 }
 
+let lastUpdateCheck = 0;
+let lastUpdateAvailable = 0;
+let lastUpdateResult = false;
+
+export const getLastSteamUpdateCheck = () => ({
+  attempt: lastUpdateCheck,
+  available: lastUpdateAvailable,
+  result: lastUpdateResult,
+});
+
+export const clearLastSteamUpdateCheck = () => {
+  lastUpdateResult = false;
+};
+
 export async function hasSteamUpdate(steambeta?: string) {
+  lastUpdateCheck = Date.now();
   const localDepot = getLocalSteamDepot(steambeta);
   if (!localDepot) return false;
 
   const remoteDepot = await getRemoteSteamDepot(steambeta);
   if (!remoteDepot) return false;
 
-  return (
+  lastUpdateAvailable = Date.now();
+  const res =
     localDepot.buildId !== remoteDepot.buildId ||
-    localDepot.timeUpdated < remoteDepot.timeUpdated
-  );
+    localDepot.timeUpdated < remoteDepot.timeUpdated;
+  lastUpdateResult = res;
+
+  return res;
 }
