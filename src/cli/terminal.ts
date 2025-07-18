@@ -158,6 +158,12 @@ const COMMANDS: TerminalCommand[] = [
     aliases: ['update'],
     desc: 'try to update the server and restart if started (without announcement or saving',
     async fn() {
+      if (!this.omegga.config.__STEAM) {
+        err(
+          'This command is only available when the server is installed via SteamCMD',
+        );
+        return;
+      }
       if (this.omegga.stopping || this.omegga.starting) {
         err(
           'The server is currently starting or stopping. Please wait a moment',
