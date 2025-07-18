@@ -10,6 +10,7 @@ import { PlayerList } from './views/players/PlayerList';
 import { PluginList } from './views/plugins';
 import { ServerView } from './views/server';
 import { UserList } from './views/users';
+import { WorldList } from './views/worlds/WorldList';
 
 const App = () => (
   <Page>
@@ -17,10 +18,11 @@ const App = () => (
       <Switch>
         <Route path="/" component={HomeView} />
         <Route path="/history/:time?" component={HistoryView} />
-        <Route path="/plugins/:id?" component={PluginList} />
         <Route path="/players/:id?" component={PlayerList} />
-        <Route path="/users/:id?" component={UserList} />
+        <Route path="/plugins/:id?" component={PluginList} />
         <Route path="/server" component={ServerView} />
+        <Route path="/users/:id?" component={UserList} />
+        <Route path="/worlds/*?" component={WorldList} />
         <Route component={NotFound} />
       </Switch>
     </Router>

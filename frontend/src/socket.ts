@@ -1,3 +1,4 @@
+import type { OmeggaSocketData } from '@omegga/webserver/backend/api';
 import {
   JSONRPCClient,
   JSONRPCServer,
@@ -6,13 +7,7 @@ import {
 import io from 'socket.io-client';
 import { $rpcConnected, $rpcDisconnected } from './stores/connected';
 import { $liveness } from './stores/liveness';
-import {
-  $omeggaData,
-  $roles,
-  $showLogout,
-  $user,
-  type OmeggaSocketData,
-} from './stores/user';
+import { $omeggaData, $roles, $showLogout, $user } from './stores/user';
 import { $version } from './stores/version';
 
 export const socket = io();

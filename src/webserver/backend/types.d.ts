@@ -46,11 +46,11 @@ export interface IStoreAutoRestartConfig {
   emptyUptimeEnabled: boolean;
   dailyHour: number;
   dailyHourEnabled: boolean;
+  autoUpdateEnabled: boolean;
+  autoUpdateIntervalMins: number;
   announcementEnabled: boolean;
   playersEnabled: boolean;
-  bricksEnabled: boolean;
-  minigamesEnabled: boolean;
-  environmentEnabled: boolean;
+  saveWorld: boolean;
 }
 
 export interface IStoreChat {

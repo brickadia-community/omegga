@@ -5,6 +5,7 @@ import {
   IconPlug,
   IconServer,
   IconUser,
+  IconWorld,
 } from '@tabler/icons-react';
 import type React from 'react';
 import { memo, type AnchorHTMLAttributes } from 'react';
@@ -39,6 +40,10 @@ export const SideNav = memo(() => (
     >
       <IconDashboard style={{ background: '#de4f43' }} />
       Dashboard
+    </MenuButton>
+    <MenuButton to="/worlds" data-tooltip="Manage worlds">
+      <IconWorld style={{ background: '#f0a500' }} />
+      Worlds
     </MenuButton>
     <MenuButton to="/history" data-tooltip="Browse chat history">
       <IconMessages style={{ background: '#008bd6' }} />

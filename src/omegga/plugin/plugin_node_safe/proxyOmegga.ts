@@ -355,19 +355,19 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   ): Promise<{ index: number; date: Date; note: string }[]> {
     throw badBorrow('getWorldRevisions');
   }
-  loadWorld(worldName: string) {
+  loadWorld(worldName: string): Promise<boolean> {
     throw badBorrow('loadWorld');
   }
-  loadWorldRevision(worldName: string, revision: number) {
+  loadWorldRevision(worldName: string, revision: number): Promise<boolean> {
     throw badBorrow('loadWorldRevision');
   }
-  saveWorldAs(worldName: string) {
+  saveWorldAs(worldName: string): Promise<boolean> {
     throw badBorrow('saveWorldAs');
   }
-  saveWorld() {
+  saveWorld(): Promise<boolean> {
     throw badBorrow('saveWorld');
   }
-  createEmptyWorld(worldName: string): Promise<void> {
+  createEmptyWorld(worldName: string): Promise<boolean> {
     throw badBorrow('createEmptyWorld');
   }
   writeSaveData(saveName: string, saveData: WriteSaveObject) {

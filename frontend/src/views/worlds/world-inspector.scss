@@ -1,0 +1,66 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.world-view,
+.world-info {
+  @include mixins.column-container;
+
+  .scroll-scroller {
+    background-color: theme.$br-bg-primary;
+  }
+}
+
+.world-info {
+  .section-header {
+    @include mixins.center;
+    color: white;
+    height: 32px;
+    font-size: 24px;
+    text-shadow: none;
+    font-weight: bold;
+    text-align: center;
+    background-color: theme.$br-bg-header;
+    top: 0;
+    position: sticky;
+    text-transform: uppercase;
+  }
+}
+
+.revision-item {
+  @include mixins.alternate(
+    background-color,
+    theme.$br-bg-secondary,
+    theme.$br-bg-secondary-alt
+  );
+  font-size: 20px;
+  min-height: 60px;
+  overflow: visible;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  color: theme.$br-boring-button-fg;
+
+  .revision-note {
+    color: theme.$br-button-fg;
+    flex: 1;
+  }
+
+  .revision-index {
+    width: 40px;
+    margin-left: 8px;
+    margin-right: 16px;
+    text-align: right;
+    color: theme.$br-info-normal;
+  }
+
+  .revision-date {
+    color: theme.$br-boring-button-fg;
+
+    font-size: 12px;
+  }
+
+  .button {
+    margin-right: 16px;
+  }
+}

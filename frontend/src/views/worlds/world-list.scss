@@ -1,17 +1,31 @@
 @use '../../css/theme';
 @use '../../css/mixins';
 
-.plugins-container {
+.worlds.widgets-container .widgets-list {
+  .button {
+    border-radius: 0;
+    margin-right: 0;
+  }
+  .button:first-child {
+    border-top-left-radius: theme.$br-radius-md;
+    border-top-right-radius: theme.$br-radius-md;
+  }
+  .button:last-child {
+    border-bottom-left-radius: theme.$br-radius-md;
+    border-bottom-right-radius: theme.$br-radius-md;
+  }
+}
+.worlds-container {
   display: flex;
   align-items: stretch;
 }
 
-.plugins-list-container,
-.plugin-inspector-container {
+.worlds-list-container,
+.world-inspector-container {
   @include mixins.column-container;
 }
 
-.plugins-list-container {
+.worlds-list-container {
   margin-right: 16px;
 
   .input {
@@ -22,11 +36,11 @@
   }
 }
 
-.plugins-list {
+.worlds-list {
   @include mixins.column-container;
   margin-top: 8px;
 
-  .plugin-item {
+  .world-item {
     background-color: theme.$br-button-normal;
     margin-bottom: 8px;
     margin-right: 8px;
@@ -73,7 +87,7 @@
   }
 }
 
-.plugin-inspector {
+.world-inspector {
   @include mixins.column;
   background-color: theme.$br-element-popout-bg;
   flex: 1;

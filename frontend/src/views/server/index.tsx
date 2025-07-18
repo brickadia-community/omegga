@@ -1,25 +1,24 @@
 import {
   Button,
-  Dimmer,
-  Footer,
-  Header,
   Input,
-  Modal,
   NavBar,
   NavHeader,
   PageContent,
-  PopoutContent,
   SideNav,
   Toggle,
+  useConfirm,
 } from '@components';
 import { SavedSpan, SavedStatus, useSaved } from '@hooks';
+import { useStore } from '@nanostores/react';
 import type { IStoreAutoRestartConfig } from '@omegga/webserver/backend/types';
 import {
-  IconCheck,
+  IconCloudDownload,
+  IconCloudSearch,
+  IconDeviceFloppy,
+  IconDownload,
   IconPlayerPlay,
   IconPlayerStop,
   IconRefresh,
-  IconX,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
 import { rpcNotify, rpcReq } from '../../socket';
@@ -27,8 +26,10 @@ import {
   restartServer,
   startServer,
   stopServer,
+  updateServer,
   useServerLiveness,
 } from '../../stores/liveness';
+import { $omeggaData } from '../../stores/user';
 
 export const ServerView = () => {
   const {
@@ -37,31 +38,33 @@ export const ServerView = () => {
     starting,
     loading: statusLoading,
   } = useServerLiveness();
-  const [confirm, setConfim] = useState({
-    show: false,
-    message: '',
-    resolve: (_val: boolean) => {},
-  });
-  const prompt = useCallback(
-    (message: string) =>
-      new Promise(resolve => {
-        setConfim({
-          message,
-          show: true,
-          resolve(val) {
-            resolve(val);
-            setConfim({ show: false, message: '', resolve: () => {} });
-          },
-        });
-      }),
-    [],
-  );
+  const confirm = useConfirm();
 
   const [config, setConfig] = useState<IStoreAutoRestartConfig | null>(null);
+  const omeggaData = useStore($omeggaData);
+  const [hasUpdate, setHasUpdate] = useState<boolean | null>(
+    omeggaData?.update?.lastCheck ?? null,
+  );
+  useEffect(() => {
+    setHasUpdate(omeggaData?.update?.lastCheck ?? null);
+  }, [omeggaData?.update?.lastCheck]);
+  const [checkingForUpdate, setCheckingForUpdate] = useState(false);
+
+  const [savingWorld, setSavingWorld] = useState(false);
 
   useEffect(() => {
     rpcReq('server.autorestart.get').then(setConfig);
   }, []);
+
+  const canUpdateCheck = omeggaData?.update?.canCheck ?? false;
+  const checkForUpdate = useCallback(() => {
+    if (!canUpdateCheck) return;
+    setCheckingForUpdate(true);
+    rpcReq('server.updatecheck').then(res => {
+      setHasUpdate(res);
+      setCheckingForUpdate(false);
+    });
+  }, [canUpdateCheck]);
 
   const saveConfig = useCallback(async () => {
     if (!config) return;
@@ -75,27 +78,60 @@ export const ServerView = () => {
       dailyHour: Math.round(Math.max(0, Math.min(config.dailyHour, 23))),
       dailyHourEnabled: config.dailyHourEnabled,
       announcementEnabled: config.announcementEnabled,
-      bricksEnabled: config.bricksEnabled,
       playersEnabled: config.playersEnabled,
-      minigamesEnabled: config.minigamesEnabled,
-      environmentEnabled: config.environmentEnabled,
-    };
+      saveWorld: config.saveWorld,
+      autoUpdateEnabled: config.autoUpdateEnabled ?? true,
+      autoUpdateIntervalMins: Math.round(
+        Math.max(10, Math.min(config.autoUpdateIntervalMins ?? 60, Infinity)),
+      ),
+    } satisfies IStoreAutoRestartConfig;
     rpcNotify('server.autorestart.set', blob);
   }, [config]);
+
+  const saveWorld = async () => {
+    setSavingWorld(true);
+    await rpcReq('world.save');
+    setSavingWorld(false);
+  };
 
   const saved = useSaved(saveConfig);
 
   const changeConfig = <K extends keyof IStoreAutoRestartConfig>(name: K) => {
     return (value: IStoreAutoRestartConfig[K]) => {
       if (!config) return;
-      config[name] = value;
+      setConfig(prev => ({
+        ...prev!,
+        [name]: value,
+      }));
       saved.fire();
     };
   };
 
   return (
     <>
-      <NavHeader title="Server" />
+      <NavHeader title="Server">
+        {omeggaData?.isSteam && canUpdateCheck !== null && (
+          <Button
+            main={Boolean(hasUpdate)}
+            normal={!hasUpdate}
+            data-tooltip="Check for updates"
+            disabled={checkingForUpdate}
+            onClick={checkForUpdate}
+          >
+            {hasUpdate === true ? (
+              <>
+                <IconDownload />
+                Update Available
+              </>
+            ) : (
+              <>
+                <IconCloudSearch />
+                Check for Update
+              </>
+            )}
+          </Button>
+        )}
+      </NavHeader>
       <PageContent>
         <SideNav />
         <div className="generic-container server-container">
@@ -115,7 +151,9 @@ export const ServerView = () => {
               data-tooltip="Start the server"
               disabled={starting || stopping || statusLoading || started}
               onClick={() =>
-                prompt('start the server').then(ok => ok && startServer())
+                confirm
+                  .prompt('start the server')
+                  .then(ok => ok && startServer())
               }
             >
               <IconPlayerPlay />
@@ -126,7 +164,7 @@ export const ServerView = () => {
               data-tooltip="Stop the server"
               disabled={starting || stopping || statusLoading || !started}
               onClick={() =>
-                prompt('stop the server').then(ok => ok && stopServer())
+                confirm.prompt('stop the server').then(ok => ok && stopServer())
               }
             >
               <IconPlayerStop />
@@ -134,15 +172,44 @@ export const ServerView = () => {
             </Button>
             <Button
               warn
-              data-tooltip="Stop the server if it's running, then start the server. Saves minigames/environment/bricks if enabled below."
+              data-tooltip="Reloads the server's world. Saves minigames/environment/bricks if 'Save World' is enabled below."
               disabled={starting || stopping || statusLoading}
               onClick={() =>
-                prompt('restart the server').then(ok => ok && restartServer())
+                confirm
+                  .prompt('restart the server')
+                  .then(ok => ok && restartServer())
               }
             >
               <IconRefresh />
               Restart
             </Button>
+            <Button
+              info
+              data-tooltip="Save the current world."
+              disabled={starting || stopping || statusLoading || savingWorld}
+              onClick={saveWorld}
+            >
+              <IconDeviceFloppy />
+              Save World
+            </Button>
+            {omeggaData?.isSteam && (
+              <Button
+                normal={!hasUpdate}
+                main={hasUpdate === true}
+                data-tooltip={
+                  'Stop and update the server even if there are no updates available.\n\nDoes not save the world or player locations.'
+                }
+                disabled={starting || stopping || statusLoading}
+                onClick={() =>
+                  confirm
+                    .prompt('update the server')
+                    .then(ok => ok && updateServer())
+                }
+              >
+                <IconCloudDownload />
+                Update
+              </Button>
+            )}
           </div>
           <NavBar attached style={{ marginTop: 8 }}>
             Auto Restart
@@ -150,6 +217,29 @@ export const ServerView = () => {
           </NavBar>
           {config && (
             <div className="inputs-list">
+              <div
+                className="inputs-item"
+                data-tooltip="When enabled on servers setup with SteamCMD, automatically updates the server when a new version is available"
+              >
+                <label>
+                  Auto Update
+                  {canUpdateCheck ? '' : ' (Feature requires SteamCMD)'}
+                </label>
+                <div className="inputs">
+                  <Toggle
+                    tooltip="Enabled"
+                    value={config.autoUpdateEnabled}
+                    onChange={changeConfig('autoUpdateEnabled')}
+                  />
+                  <Input
+                    type="number"
+                    placeholder="Minutes"
+                    tooltip="Interval in minutes to check for updates (min 10)"
+                    value={config.autoUpdateIntervalMins}
+                    onChange={changeConfig('autoUpdateIntervalMins')}
+                  />
+                </div>
+              </div>
               <div
                 className="inputs-item"
                 data-tooltip="How many hours before restarting regardless of online players"
@@ -238,64 +328,20 @@ export const ServerView = () => {
               </div>
               <div
                 className="inputs-item"
-                data-tooltip="When enabled, saves and re-loads bricks on autorestart"
+                data-tooltip="When enabled, saves the current world. The default world will be loaded on restart"
               >
-                <label>Reload Bricks</label>
+                <label>Save World</label>
                 <div className="inputs">
                   <Toggle
                     tooltip="Enabled"
-                    value={config.bricksEnabled}
-                    onChange={changeConfig('bricksEnabled')}
-                  />
-                </div>
-              </div>
-              <div
-                className="inputs-item"
-                data-tooltip="When enabled, saves and re-loads minigames on autorestart"
-              >
-                <label>Reload Minigames</label>
-                <div className="inputs">
-                  <Toggle
-                    tooltip="Enabled"
-                    value={config.minigamesEnabled}
-                    onChange={changeConfig('minigamesEnabled')}
-                  />
-                </div>
-              </div>
-              <div
-                className="inputs-item"
-                data-tooltip="When enabled, saves and re-loads environment on autorestart"
-              >
-                <label>Reload Environment</label>
-                <div className="inputs">
-                  <Toggle
-                    tooltip="Enabled"
-                    value={config.environmentEnabled}
-                    onChange={changeConfig('environmentEnabled')}
+                    value={config.saveWorld ?? true}
+                    onChange={changeConfig('saveWorld')}
                   />
                 </div>
               </div>
             </div>
           )}
-          <Dimmer visible={confirm.show}>
-            <Modal visible>
-              <Header> Confirmation </Header>
-              <PopoutContent>
-                <p>Are you sure you want to {confirm.message}?</p>
-              </PopoutContent>
-              <Footer>
-                <Button main onClick={() => confirm.resolve(true)}>
-                  <IconCheck />
-                  Yes
-                </Button>
-                <div style={{ flex: 1 }} />
-                <Button normal onClick={() => confirm.resolve(false)}>
-                  <IconX />
-                  No
-                </Button>
-              </Footer>
-            </Modal>
-          </Dimmer>
+          {confirm.children}
         </div>
       </PageContent>
     </>

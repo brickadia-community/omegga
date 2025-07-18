@@ -1,8 +1,14 @@
 import Logger from '@/logger';
-import { AutoRestartConfig, IServerStatus, OmeggaLike } from '@/plugin';
+import { AutoRestartConfig, IServerStatus } from '@/plugin';
 import soft from '@/softconfig';
+import {
+  clearLastSteamUpdateCheck,
+  getLastSteamUpdateCheck,
+  hasSteamUpdate,
+  steamcmdDownloadGame,
+} from '@/updater/steam';
 import type Webserver from './index';
-import { OmeggaSocketIo, IStoreAutoRestartConfig } from './types';
+import { IStoreAutoRestartConfig, OmeggaSocketIo } from './types';
 
 const error = (...args: any[]) => Logger.error(...args);
 let lastRestart = 0;
@@ -27,25 +33,28 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       throw new Error('Omegga is already closing');
   };
 
-  async function restartServer(config: IStoreAutoRestartConfig) {
+  async function restartServer(
+    config: IStoreAutoRestartConfig,
+    update?: boolean,
+  ) {
     lastRestart = Date.now();
     const iconfig: AutoRestartConfig = {
       players: config.playersEnabled,
-      bricks: config.bricksEnabled,
       announcement: config.announcementEnabled,
-      minigames: config.minigamesEnabled,
-      environment: config.environmentEnabled,
+      saveWorld: config.saveWorld,
     };
     omegga.emit('autorestart', iconfig);
     await sleep(1000);
     exitOnStop();
 
+    const action = update ? 'Updating' : 'Restarting';
+
     if (config.announcementEnabled) {
-      database.addChatLog('server', {}, 'Restarting in 30 seconds...');
-      Logger.logp('Restarting in 30 seconds...');
+      database.addChatLog('server', {}, action + ' in 30 seconds...');
+      Logger.logp(action + ' in 30 seconds...');
       const announce = (t: number) =>
         omegga.broadcast(
-          `<size="20">Server restart in <b><color="ffffbb">${t} second${
+          `<size="20">${action} in <b><color="ffffbb">${t} second${
             t !== 1 ? 's' : ''
           }</></></>`,
         );
@@ -69,19 +78,38 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
 
     await omegga.saveServer(iconfig);
 
-    Logger.logp('Restarting...');
-    database.addChatLog('server', {}, 'Restarting server...');
+    Logger.logp(action + '...');
+    database.addChatLog('server', {}, action + ' server...');
     omegga.once('mapchange', () => {
       omegga.restoreServer();
     });
-    omegga.changeMap(omegga.currentMap);
+
+    if (
+      update &&
+      omegga.config.__STEAM &&
+      !omegga.config.server?.steambetaPassword
+    ) {
+      Logger.logp('Stopping server for auto-update...');
+      await omegga.stop();
+      Logger.logp('Downloading update...');
+      try {
+        steamcmdDownloadGame({
+          steambeta: omegga.config.server?.steambeta,
+        });
+      } catch (e) {
+        error('An error occurred while downloading the update:', e);
+      }
+      Logger.logp('Starting server after update...');
+      await omegga.start();
+    } else {
+      await omegga.restartServer();
+    }
   }
 
   async function checkAutoRestart(status: IServerStatus) {
     const now = new Date();
     const currHour = now.getHours();
     const currMinute = now.getMinutes();
-    Logger.verbose('Autorestart check');
 
     /// skip restart check if we sent restart command within 5 minutes
     if (lastRestart > now.getTime() - 5 * 60 * 1000) {
@@ -90,6 +118,8 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     }
 
     const config = await database.getAutoRestartConfig();
+    Logger.verbose('Autorestart check', config);
+
     const uptimeMinutes = Math.floor(status.time / 1000 / 60);
     const uptimeHours = Math.floor(uptimeMinutes / 60);
 
@@ -114,6 +144,37 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     ) {
       Logger.verbose('Restarting due to daily schedule');
       return await restartServer(config);
+    }
+
+    // Cannot auto-update on steam betas with passwords
+    const lastCheck = getLastSteamUpdateCheck();
+    if (
+      omegga.config.__STEAM &&
+      config.autoUpdateEnabled &&
+      !omegga.config.server?.steambetaPassword
+    ) {
+      const now = Date.now();
+      if (
+        // If there is no update
+        !lastCheck.available &&
+        // And the last update was too recent
+        now - lastCheck.attempt < config.autoUpdateIntervalMins * 60 * 1000
+      ) {
+        // Skip this check
+        Logger.verbose(
+          `Skipping auto update check, last check was ${Math.floor(
+            (now - lastCheck.attempt) / 1000 / 60,
+          )} minutes ago`,
+        );
+        return;
+      }
+      Logger.verbose('Checking for steam update');
+      const hasUpdate = await hasSteamUpdate(omegga.config.server?.steambeta);
+      if (hasUpdate) {
+        clearLastSteamUpdateCheck();
+        return await restartServer(config, true);
+      }
+      Logger.verbose('No steam update found');
     }
   }
 
@@ -248,6 +309,11 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     io
       .to('server')
       .emit('status', { started: false, starting: true, stopping: false }),
+  );
+  omegga.on('mapchange', () =>
+    io
+      .to('server')
+      .emit('status', { started: true, starting: false, stopping: false }),
   );
   omegga.on('server:stopped', () =>
     io

@@ -1,4 +1,5 @@
 import { OmeggaPlayer } from '@/plugin';
+import { steamcmdDownloadGame } from '@/updater';
 import Omegga from '@omegga/server';
 import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
@@ -143,6 +144,51 @@ const COMMANDS: TerminalCommand[] = [
       log('Stopping server...');
       await this.omegga.stop();
       process.exit();
+    },
+  },
+  {
+    aliases: ['restart'],
+    desc: 'trigger a server restart (without announcement or saving)',
+    async fn() {
+      log('Restarting server...');
+      await this.omegga.restartServer();
+    },
+  },
+  {
+    aliases: ['update'],
+    desc: 'try to update the server and restart if started (without announcement or saving',
+    async fn() {
+      if (!this.omegga.config.__STEAM) {
+        err(
+          'This command is only available when the server is installed via SteamCMD',
+        );
+        return;
+      }
+      if (this.omegga.stopping || this.omegga.starting) {
+        err(
+          'The server is currently starting or stopping. Please wait a moment',
+        );
+        return;
+      }
+      const wasStarted = this.omegga.started;
+      if (wasStarted) {
+        log('Stopping server to update...');
+        await this.omegga.stop();
+      }
+      log('Updating server...');
+      try {
+        steamcmdDownloadGame({
+          steambeta: this.omegga.config.server?.steambeta,
+          steambetaPassword: this.omegga.config.server?.steambetaPassword,
+        });
+        log('Server updated successfully.');
+      } catch (e) {
+        err('Error updating server:', e);
+      }
+      if (wasStarted) {
+        log('Starting server...');
+        await this.omegga.start();
+      }
     },
   },
   {
@@ -459,6 +505,11 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
         default:
           const commands = [
             {
+              command: '/worlds use [world]',
+              desc: 'set or remove a world as the default world for startup',
+              short: '/w u [world]',
+            },
+            {
               command: '/worlds load <world> [rev]',
               desc: 'load a world',
               short: '/w load <world> [rev]',
@@ -484,16 +535,42 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
               short: '/w new <name> [Plate|Space|Studio|Peaks]',
             },
           ];
+          log(
+            'Default world is',
+            this.omegga.getNextWorld()?.file?.yellow || 'none'.grey,
+          );
           log('Available world commands:');
           for (const { command, desc, short } of commands) {
             this.log('  ', command.yellow, '-', desc, `(${short.yellow})`);
           }
           return;
 
+        case 'use':
+        case 'u':
+          const world = args[0]?.replace(/\.brdb$/, '');
+          if (world && !this.omegga.worldExists(world)) {
+            err(`World "${world}" does not exist`);
+            return;
+          }
+          if (this.omegga.setActiveWorld(world || null)) {
+            if (world) {
+              log(
+                `Default world set to ${world.yellow}. It will be loaded next startup.`,
+              );
+            } else {
+              log(
+                'Default world cleared. No world will be loaded on next startup.',
+              );
+            }
+          } else {
+            err(`Failed to set default world to ${world.yellow}.`);
+          }
+          return;
+
         case 'list':
         case 'ls':
           // list worlds
-          const worlds = await this.omegga.getWorlds();
+          const worlds = this.omegga.getWorlds();
           if (worlds.length === 0) {
             log(
               'No worlds found. Create one with',
@@ -535,13 +612,20 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
               return;
             }
           }
+          let loadRes: boolean = false;
           if (revision) {
             log(`Loading world ${worldName.yellow} at revision ${revision}...`);
-            this.omegga.loadWorldRevision(worldName, revision);
+            loadRes = await this.omegga.loadWorldRevision(worldName, revision);
           } else {
             log(`Loading world ${worldName.yellow}...`);
-            this.omegga.loadWorld(worldName);
+            loadRes = await this.omegga.loadWorld(worldName);
           }
+          if (loadRes) {
+            log(`World ${worldName.yellow} loaded successfully.`);
+          } else {
+            err(`Failed to load world ${worldName.yellow}`);
+          }
+
           return;
         case 'saveas':
         case 'sa':
@@ -561,7 +645,12 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             return;
           }
           log(`Saving current world as ${saveWorldName.yellow}...`);
-          this.omegga.saveWorldAs(saveWorldName);
+          const saveAsRes = await this.omegga.saveWorldAs(saveWorldName);
+          if (saveAsRes) {
+            log(`Current world saved as ${saveWorldName.yellow} successfully.`);
+          } else {
+            err(`Failed to save current world as ${saveWorldName.yellow}`);
+          }
           return;
 
         case 'save':
@@ -573,7 +662,12 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
 
           // save the current world
           log('Saving current world...');
-          this.omegga.saveWorld();
+          const res = await this.omegga.saveWorld();
+          if (res) {
+            log('Current world saved successfully.');
+          } else {
+            err('Failed to save the current world');
+          }
           return;
 
         case 'revisions':
@@ -755,6 +849,15 @@ export default class Terminal {
           wsl === 1 ? ' in single thread mode due to WSL1' : ''
         }. Type ${'/help'.yellow} for more commands`,
       );
+      if (!this.omegga.getNextWorld()) {
+        info(
+          'No',
+          'default world'.yellow,
+          'is configured. Run',
+          '/worlds use <world>'.yellow,
+          'to load one on startup.',
+        );
+      }
 
       // check if this is WSL2 and wsl2binds is installed
       if (

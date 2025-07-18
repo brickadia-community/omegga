@@ -218,37 +218,34 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         );
     }
 
-    if (config.minigames) {
-      try {
-        Logger.logp('Getting minigames...');
-        const minigames = await this.listMinigames();
-        Logger.logp(`Saving ${minigames.length} minigames...`);
-        for (const minigame of minigames) {
-          const name =
-            'omegga_temp_' +
-            (minigame.index + '').padStart(4, '0') +
-            `_${minigame.owner.id}`;
-          Logger.log(` - Saved "${minigame.name}" as ${name}`);
-          this.saveMinigame(minigame.index, name);
-        }
-      } catch (err) {
-        Logger.errorp('Error getting minigames...', err);
-      }
+    if (config.saveWorld) {
+      Logger.logp('Saving world...');
+      this.saveWorld();
+    }
+  }
+
+  async restartServer() {
+    if (this.starting || this.stopping) return;
+    if (!this.started) return await this.start();
+
+    const nextWorld = this.getNextWorld();
+    if (nextWorld) {
+      Logger.logp('Loading world', nextWorld.file.yellow);
+      Logger.verbose('Next world configured from', nextWorld.source.yellow);
+      this.loadWorld(nextWorld.file);
+    } else {
+      this.changeMap(this.currentMap);
     }
 
-    if (config.environment) {
-      Logger.logp('Saving environment...');
-      this.saveEnvironment('omegga_temp');
-    }
-
-    if (config.bricks) {
-      try {
-        Logger.logp('Saving bricks...');
-        await this.saveBricksAsync('omegga_temp');
-      } catch (err) {
-        Logger.errorp('Error saving bricks', err);
-      }
-    }
+    const res = await Promise.race([
+      // wait for the map to change
+      new Promise(resolve =>
+        this.once('mapchange', () => resolve('mapchange')),
+      ),
+      // Timeout after 10 seconds
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000)),
+    ]);
+    Logger.verbose('Restart result:', res);
   }
 
   /** attempt to restore the server's state */
@@ -290,59 +287,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
           } catch (err) {
             Logger.error('Error removing omegga_temp_players.json', err);
           }
-        }, 10000);
-      }
-
-      const minigames = this.getMinigamePresets().filter(s =>
-        s.startsWith('omegga_temp_'),
-      );
-      if (minigames.length > 0) {
-        Logger.logp('Loading previous minigames in a second...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        for (const minigame of minigames) {
-          const ownerId = minigame.match(
-            /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,
-          );
-          this.loadMinigame(minigame, ownerId?.[1]);
-
-          setTimeout(() => {
-            try {
-              unlinkSync(join(this.presetPath, 'Minigame', minigame + '.bp'));
-            } catch (err) {
-              Logger.error(`Error removing minigame ${minigame}`, err);
-            }
-          }, 10000);
-        }
-      }
-
-      const tempEnvironment = join(
-        this.presetPath,
-        'Environment',
-        'omegga_temp.bp',
-      );
-      if (existsSync(tempEnvironment)) {
-        Logger.logp('Loading previous environment...');
-        this.loadEnvironment('omegga_temp');
-        setTimeout(() => {
-          try {
-            unlinkSync(tempEnvironment);
-          } catch (err) {
-            Logger.error('Error removing environment omegga_temp.bp', err);
-          }
-        }, 10000);
-      }
-
-      const tempSave = this.getSavePath('omegga_temp');
-      if (tempSave) {
-        Logger.logp('Loading previous bricks...');
-        this.loadBricks('omegga_temp');
-        setTimeout(() => {
-          try {
-            unlinkSync(tempSave);
-          } catch (err) {
-            Logger.error('Error removing omegga_temp.brs', err);
-          }
-        }, 10000);
+        }, 180000);
       }
     } catch (err) {
       Logger.error('Error restoring previous server state', err);
@@ -395,6 +340,14 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     }
     Logger.verbose('Stopping server');
     super.stop();
+
+    const res = await Promise.race([
+      new Promise(resolve => this.once('exit', () => resolve('exit'))),
+      // Timeout after 10 seconds
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000)),
+    ]);
+
+    Logger.verbose('Stop result:', res);
     if (this.stopping) this.emit('server:stopped');
     this.stopping = false;
     this.started = false;
@@ -797,6 +750,10 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   async getWorldRevisions(worldName: string) {
+    if (!this.started || this.starting || this.stopping) {
+      throw new Error('Server is not started');
+    }
+
     worldName = worldName.replace(/\.brdb$/i, '');
 
     if (!worldName || !this.getWorldPath(worldName)) {
@@ -846,38 +803,134 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       .filter(Boolean);
   }
 
-  loadWorld(worldName: string) {
+  async loadWorld(worldName: string): Promise<boolean> {
     worldName = worldName.replace(/\.brdb$/i, '');
-    if (!worldName || !this.getWorldPath(worldName)) return;
+    if (!worldName || !this.getWorldPath(worldName)) return false;
     this.writeln(`BR.World.Load "${worldName}"`);
+    const res = await Promise.race([
+      // wait for the map to change
+      new Promise(resolve =>
+        this.once('mapchange', () => resolve('mapchange')),
+      ),
+      // Timeout after 10 seconds
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000)),
+    ]);
+    Logger.verbose('LoadWorld', worldName, 'result:', res);
+    return res === 'mapchange';
   }
 
-  loadWorldRevision(worldName: string, revision: number) {
+  async loadWorldRevision(
+    worldName: string,
+    revision: number,
+  ): Promise<boolean> {
     worldName = worldName.replace(/\.brdb$/i, '');
-    if (!worldName || !this.getWorldPath(worldName)) return;
+    if (!worldName || !this.getWorldPath(worldName)) return false;
     if (typeof revision !== 'number' || revision < 1) {
       throw new Error(`Invalid revision number: ${revision}`);
     }
     this.writeln(`BR.World.LoadRevision "${worldName}" ${revision}`);
+    const res = await Promise.race([
+      // wait for the map to change
+      new Promise(resolve =>
+        this.once('mapchange', () => resolve('mapchange')),
+      ),
+      // Timeout after 10 seconds
+      new Promise(resolve => setTimeout(() => resolve('timeout'), 10000)),
+    ]);
+    Logger.verbose('LoadWorld', worldName, 'result:', res);
+    return res === 'mapchange';
   }
 
-  saveWorldAs(worldName: string) {
-    if (!worldName) return;
+  async saveWorldAs(worldName: string) {
+    if (!worldName) return false;
+    if (this.stopping || this.starting || !this.started) return false;
+
+    if (this.getWorldPath(worldName)) {
+      return false;
+    }
     worldName = worldName.replace(/\.brdb$/i, '');
-    this.writeln(`BR.World.SaveAs "${worldName}"`);
+
+    try {
+      const match = await this.addWatcher<{ res: boolean }>(
+        (_line, match) => {
+          if (match?.groups?.generator !== 'LogBRWorldManager') return;
+
+          const ok = match.groups.data.match(/^World files saved after /);
+          const err = match.groups.data.match(
+            /^Error: (World already exists|Failed to create new world)?/,
+          );
+          return ok ? { res: true } : err ? { res: false } : undefined;
+        },
+        {
+          exec: () => {
+            this.writeln(`BR.World.SaveAs "${worldName}"`);
+          },
+          timeoutDelay: 2000,
+        },
+      );
+      return match?.[0]?.['res'] ?? false;
+    } catch (err) {
+      return false;
+    }
   }
 
-  saveWorld() {
-    this.writeln(`BR.World.Save 0`);
+  async saveWorld(): Promise<boolean> {
+    // Don't allow saving while the server is starting or stopping
+    if (this.stopping || this.starting || !this.started) return false;
+
+    try {
+      const match = await this.addWatcher<{ res: boolean }>(
+        (_line, match) => {
+          if (match?.groups?.generator !== 'LogBRWorldManager') return;
+
+          const ok = match.groups.data.match(/^World files saved after /);
+          const err = match.groups.data.match(
+            /^Error: (World has not been saved\.)?/,
+          );
+          return ok ? { res: true } : err ? { res: false } : undefined;
+        },
+        {
+          exec: () => {
+            this.writeln(`BR.World.Save 0`);
+          },
+          timeoutDelay: 2000,
+        },
+      );
+      return match?.[0]?.['res'] ?? false;
+    } catch (err) {
+      return false;
+    }
   }
 
-  createEmptyWorld(
+  async createEmptyWorld(
     worldName: string,
     map: 'Plate' | 'Space' | 'Studio' | 'Peaks' = 'Plate',
-  ) {
+  ): Promise<boolean> {
     if (!worldName) return;
     worldName = worldName.replace(/\.brdb$/i, '');
-    this.writeln(`BR.World.CreateEmpty "${worldName}" ${map}`);
+
+    try {
+      const match = await this.addWatcher<{ res: boolean }>(
+        (_line, match) => {
+          if (match?.groups?.generator !== 'LogBRWorldManager') return;
+
+          const ok = match.groups.data.match(/^World files saved after /);
+          const err = match.groups.data.match(
+            /^Error: (Invalid preset|World already exists|Failed to create new world)?/,
+          );
+          return ok ? { res: true } : err ? { res: false } : undefined;
+        },
+        {
+          exec: () => {
+            this.writeln(`BR.World.CreateEmpty "${worldName}" ${map}`);
+          },
+          timeoutDelay: 2000,
+        },
+      );
+      return match?.[0]?.['res'] ?? false;
+    } catch (err) {
+      return false;
+    }
   }
 
   writeSaveData(saveName: string, saveData: WriteSaveObject) {
@@ -1006,6 +1059,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     return undefined;
   }
 
+  // TODO: switch this to use worlds...
   async changeMap(map: string) {
     if (!map) return;
 

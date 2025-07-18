@@ -4,9 +4,18 @@ Read the README first before asking questions! [Join the discord](https://discor
 
 Omegga wraps brickadia's server console to provide interactivity and utility via plugins.
 
+Omegga can do things like:
+
+- Automatically update/restart your server
+- Manage your worlds from a web interface and load a world on startup/restart
+- Chat with players while not on the server
+- Read chat history with timestamps
+- See kick and ban history
+- Configure plugins from a web interface
+
 Omegga plugins can do things like:
 
-- Add custom chat commands
+- Add custom chat !commands and /commands
 - Respond to and send chat messages
 - Load bricks to player's clipboards
 - Load/Clear regions of bricks

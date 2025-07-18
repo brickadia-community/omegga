@@ -10,7 +10,7 @@ export { InfiniteScroll } from './infinite-scroll';
 export { Input } from './input';
 export { ListInput, type ListInputType } from './list-input';
 export { Loader } from './loader';
-export { Modal } from './modal';
+export { Modal, useConfirm } from './modal';
 export { NavBar, NavHeader } from './navbar';
 export { Page, PageContent } from './page';
 export { PlayerDropdown } from './player-dropdown';
