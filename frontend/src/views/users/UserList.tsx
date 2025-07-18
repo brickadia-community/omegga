@@ -290,7 +290,7 @@ export const UserList = () => {
                         key={u.username}
                       >
                         <td>
-                          {u.username || 'Admin'}
+                          {u.username || 'Admin'}{' '}
                           {(u.username || 'Admin') ===
                             (myUser?.username || 'Admin') && (
                             <span style={{ fontSize: 12 }}>(You)</span>

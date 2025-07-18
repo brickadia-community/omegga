@@ -475,7 +475,7 @@ export const PlayerInspector = () => {
               </p>
             </PopoutContent>
           )}
-          <Footer>
+          <Footer attached>
             {modal === 'ban' && (
               <Button error onClick={ban}>
                 <IconBan />

@@ -17,6 +17,7 @@ Object.assign(tooltipElem.style, {
   padding: '8px',
   maxWidth: '300px',
   zIndex: '100000',
+  borderRadius: '8px',
   pointerEvents: 'none',
   opacity: 0,
   transition: 'opacity .2s ease',

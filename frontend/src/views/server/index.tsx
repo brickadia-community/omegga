@@ -5,6 +5,7 @@ import {
   Header,
   Input,
   Modal,
+  NavBar,
   NavHeader,
   PageContent,
   PopoutContent,
@@ -98,7 +99,7 @@ export const ServerView = () => {
       <PageContent>
         <SideNav />
         <div className="generic-container server-container">
-          <Header>
+          <NavBar>
             Server Status:{' '}
             {starting
               ? 'starting'
@@ -107,7 +108,7 @@ export const ServerView = () => {
                 : started
                   ? 'started'
                   : 'stopped'}
-          </Header>
+          </NavBar>
           <div className="buttons">
             <Button
               main
@@ -143,10 +144,10 @@ export const ServerView = () => {
               Restart
             </Button>
           </div>
-          <Header style={{ marginTop: 8 }}>
+          <NavBar attached style={{ marginTop: 8 }}>
             Auto Restart
             <SavedSpan show={saved.status === SavedStatus.Waiting} />
-          </Header>
+          </NavBar>
           {config && (
             <div className="inputs-list">
               <div

@@ -255,8 +255,11 @@ a,
     background-color: theme.$br-element-footer-bg;
     margin-right: 8px;
     min-width: 200px;
+    border-radius: theme.$br-radius-md;
 
     .widget-item {
+      border-radius: theme.$br-radius-md;
+
       background-color: theme.$br-bg-primary;
       display: flex;
       align-items: center;
@@ -273,7 +276,7 @@ a,
         display: flex;
         align-items: center;
 
-        .icon {
+        .tabler-icon {
           margin-right: 10px;
         }
       }

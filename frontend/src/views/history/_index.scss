@@ -40,6 +40,7 @@
 
 .calendar {
   background-color: theme.$br-element-footer-bg;
+  border-radius: theme.$br-radius-md;
   min-width: 200px;
 
   .year,

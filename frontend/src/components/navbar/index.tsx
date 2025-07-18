@@ -17,13 +17,14 @@ export const NavBar = ({
 
 export const NavHeader = ({
   title,
+  className,
   children,
-}: PropsWithChildren<{ title: string }>) => {
+}: PropsWithChildren<{ title: string; className?: string }>) => {
   const user = useStore($user);
   const showLogout = useStore($showLogout);
 
   return (
-    <div className="main-nav">
+    <div className={`main-nav ${className ?? ''}`}>
       <header className="nav-header">{title}</header>
       <NavBar>
         <span style={{ flex: 1, marginLeft: 8 }}>

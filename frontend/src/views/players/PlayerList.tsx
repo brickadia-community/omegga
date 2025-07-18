@@ -114,7 +114,7 @@ export const PlayerList = () => {
 
   return (
     <>
-      <NavHeader title="Players">
+      <NavHeader title="Players" className="players-view">
         <div className="widgets-container">
           <Button
             normal

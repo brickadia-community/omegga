@@ -5,7 +5,10 @@
   align-items: stretch;
   flex-direction: column;
 
-  .header {
+  .navbar {
+    margin-top: 8px;
+    text-transform: uppercase;
+
     .saved-note {
       color: theme.$br-info-normal;
       display: inline-flex;
@@ -20,6 +23,12 @@
         opacity: 1;
       }
     }
+  }
+
+  .inputs-list {
+    border-bottom-left-radius: theme.$br-radius-md;
+    border-bottom-right-radius: theme.$br-radius-md;
+    overflow: hidden;
   }
 }
 

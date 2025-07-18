@@ -6,6 +6,12 @@
   align-items: stretch;
 }
 
+.players-view {
+  .widgets-container {
+    z-index: 200;
+  }
+}
+
 .player-table-container,
 .player-inspector-container {
   @include mixins.column-container;
