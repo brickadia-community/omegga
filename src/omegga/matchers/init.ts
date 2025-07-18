@@ -16,7 +16,7 @@ const init: MatchGenerator<void> = _omegga => {
       if (data.match(/we are not the first instance of this executable/)) {
         Logger.warn(
           'W> WARNING'.yellow,
-          'You are running multiple brickadia instances, this better be intentional'
+          'You are running multiple brickadia instances, this better be intentional',
         );
       }
     },

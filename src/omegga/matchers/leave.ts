@@ -52,7 +52,7 @@ const leave: MatchGenerator<Promise<OmeggaPlayer>> = omegga => {
         omegga.emit('leave', player);
         omegga.emit(
           'plugin:players:raw',
-          omegga.players.map(p => p.raw())
+          omegga.players.map(p => p.raw()),
         );
       } catch (e) {
         Logger.error('error getting player leave', e);

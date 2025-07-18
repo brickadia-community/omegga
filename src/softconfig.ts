@@ -19,7 +19,7 @@ export const CONFIG_FILENAMES = [
 
 export const BRICKADIA_INSTALLS = path.join(
   os.homedir(),
-  '.local/share/brickadia-launcher/brickadia-installs'
+  '.local/share/brickadia-launcher/brickadia-installs',
 );
 
 let GAME_DIR = 'Brickadia';
@@ -38,7 +38,7 @@ export const GAME_BIN_PATH = 'Binaries/Linux/BrickadiaServer-Linux-Shipping';
 
 export const LOCAL_LAUNCHER = path.join(
   CONFIG_HOME,
-  'launcher/brickadia-launcher/main-brickadia-launcher'
+  'launcher/brickadia-launcher/main-brickadia-launcher',
 );
 
 // path to auth files

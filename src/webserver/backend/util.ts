@@ -6,7 +6,7 @@ import { promisify } from 'util';
 import soft from '@/softconfig';
 
 const createCertificate: (
-  options: pem.CertificateCreationOptions
+  options: pem.CertificateCreationOptions,
 ) => Promise<pem.CertificateCreationResult> = promisify(pem.createCertificate);
 
 // generate SSL certs for the https server

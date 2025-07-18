@@ -3,7 +3,7 @@ import { MatchGenerator } from './types';
 const auth: MatchGenerator<
   [
     'host' | 'invalid' | 'valid',
-    { displayName: string; name: string; id: string } | null
+    { displayName: string; name: string; id: string } | null,
   ]
 > = omegga => {
   // patterns for leave message and host detection

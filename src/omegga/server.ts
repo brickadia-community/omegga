@@ -214,7 +214,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       if (players.length > 0)
         writeFileSync(
           join(this.path, DATA_PATH, 'omegga_temp_players.json'),
-          JSON.stringify(data)
+          JSON.stringify(data),
         );
     }
 
@@ -257,14 +257,14 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       const tempPlayersFile = join(
         this.path,
         DATA_PATH,
-        'omegga_temp_players.json'
+        'omegga_temp_players.json',
       );
       if (existsSync(tempPlayersFile)) {
         Logger.logp('Loading previous player positions...');
 
         // player positions are an array to address multi-clienting
         const players: { position: number[]; id: string }[] = JSON.parse(
-          readFileSync(tempPlayersFile).toString()
+          readFileSync(tempPlayersFile).toString(),
         );
 
         // restore player position on join
@@ -273,7 +273,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
           if (index > -1) {
             const { position } = players[index];
             this.writeln(
-              `Chat.Command /TP "${player.name}" ${position.join(' ')} 0`
+              `Chat.Command /TP "${player.name}" ${position.join(' ')} 0`,
             );
 
             // remove the entry
@@ -294,14 +294,14 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       }
 
       const minigames = this.getMinigamePresets().filter(s =>
-        s.startsWith('omegga_temp_')
+        s.startsWith('omegga_temp_'),
       );
       if (minigames.length > 0) {
         Logger.logp('Loading previous minigames in a second...');
         await new Promise(resolve => setTimeout(resolve, 1000));
         for (const minigame of minigames) {
           const ownerId = minigame.match(
-            /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/
+            /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/,
           );
           this.loadMinigame(minigame, ownerId?.[1]);
 
@@ -318,7 +318,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       const tempEnvironment = join(
         this.presetPath,
         'Environment',
-        'omegga_temp.bp'
+        'omegga_temp.bp',
       );
       if (existsSync(tempEnvironment)) {
         Logger.logp('Loading previous environment...');
@@ -412,7 +412,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     const authPath = join(this.path, DATA_PATH, savedDir, authDir);
     const homeAuthPath = join(
       CONFIG_HOME,
-      (savedDir !== CONFIG_SAVED_DIR ? savedDir : '') + authDir
+      (savedDir !== CONFIG_SAVED_DIR ? savedDir : '') + authDir,
     );
 
     copyFiles(homeAuthPath, authPath, BRICKADIA_AUTH_FILES);
@@ -436,7 +436,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       .flatMap(m => m.toString().split('\n'))
       .filter(m => m.length < 512)
       .forEach(m =>
-        this.writeln(`Chat.Whisper "${(target as { name: string }).name}" ${m}`)
+        this.writeln(
+          `Chat.Whisper "${(target as { name: string }).name}" ${m}`,
+        ),
       );
   }
 
@@ -447,7 +449,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     // whisper the messages to that player
     if (message.length > 512) return;
     this.writeln(
-      `Chat.StatusMessage "${(target as { name: string }).name}" ${message}`
+      `Chat.StatusMessage "${(target as { name: string }).name}" ${message}`,
     );
   }
 
@@ -468,7 +470,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   getRoleAssignments(): BRRoleAssignments {
     return readWatchedJSON(
-      join(this.configPath, 'RoleAssignments.json')
+      join(this.configPath, 'RoleAssignments.json'),
     ) as BRRoleAssignments;
   }
 
@@ -478,7 +480,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   getNameCache(): BRPlayerNameCache {
     return readWatchedJSON(
-      join(this.configPath, 'PlayerNameCache.json')
+      join(this.configPath, 'PlayerNameCache.json'),
     ) as BRPlayerNameCache;
   }
 
@@ -488,7 +490,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         p.name === target ||
         p.id === target ||
         p.controller === target ||
-        p.state === target
+        p.state === target,
     );
   }
 
@@ -498,10 +500,10 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     return (
       this.players.find(p => p.name === name || p.displayName === name) || // find by exact match
       this.players.find(
-        p => p.name.indexOf(name) > -1 || p.displayName.indexOf(name) > -1
+        p => p.name.indexOf(name) > -1 || p.displayName.indexOf(name) > -1,
       ) || // find by rough match
       this.players.find(
-        p => p.name.match(exploded) || p.displayName.match(exploded)
+        p => p.name.match(exploded) || p.displayName.match(exploded),
       ) // find by exploded regex match (ck finds cake, tbp finds TheBlackParrot)
     );
   }
@@ -528,7 +530,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   loadMinigame(presetName: string, owner = '') {
     this.writeln(
-      `Server.Minigames.LoadPreset "${presetName}" ${owner ? `"${owner}"` : ''}`
+      `Server.Minigames.LoadPreset "${presetName}" ${owner ? `"${owner}"` : ''}`,
     );
   }
 
@@ -581,7 +583,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   loadEnvironmentData(
-    preset: EnvironmentPreset | EnvironmentPreset['data']['groups']
+    preset: EnvironmentPreset | EnvironmentPreset['data']['groups'],
   ) {
     if ('data' in preset) preset = preset.data.groups;
 
@@ -601,7 +603,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
             ...preset,
           },
         },
-      })
+      }),
     );
 
     this.loadEnvironment(saveFile);
@@ -638,7 +640,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       center: [number, number, number];
       extent: [number, number, number];
     },
-    options?: { target: string | OmeggaPlayer }
+    options?: { target: string | OmeggaPlayer },
   ) {
     let target = '';
 
@@ -655,8 +657,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     this.writeln(
       `Bricks.ClearRegion ${region.center.join(' ')} ${region.extent.join(
-        ' '
-      )}${target}`
+        ' ',
+      )}${target}`,
     );
   }
 
@@ -669,7 +671,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     region?: {
       center: [number, number, number];
       extent: [number, number, number];
-    }
+    },
   ) {
     if (!saveName) return;
 
@@ -680,8 +682,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     if (region?.center && region?.extent)
       this.writeln(
         `Bricks.SaveRegion ${saveName} ${region.center.join(
-          ' '
-        )} ${region.extent.join(' ')}`
+          ' ',
+        )} ${region.extent.join(' ')}`,
       );
     else this.writeln(`Bricks.Save ${saveName}`);
   }
@@ -691,7 +693,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     region?: {
       center: [number, number, number];
       extent: [number, number, number];
-    }
+    },
   ): Promise<void> {
     if (!saveName) return;
 
@@ -703,7 +705,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     const command =
       region?.center && region?.extent
         ? `Bricks.SaveRegion ${saveNameClean} ${region.center.join(
-            ' '
+            ' ',
           )} ${region.extent.join(' ')}`
         : `Bricks.Save ${saveNameClean}`;
 
@@ -713,8 +715,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       last: match =>
         Boolean(
           match[2].match(
-            /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!|Error: No bricks selected to save!/
-          )
+            /Saved .+ bricks and .+ components from .+ owners|Error: No bricks in grid!|Error: No bricks selected to save!/,
+          ),
         ),
       afterMatchDelay: 0,
       timeoutDelay: 30000,
@@ -730,7 +732,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       quiet = false,
       correctPalette = false,
       correctCustom = false,
-    } = {}
+    } = {},
   ) {
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
     if (!(saveName.startsWith('"') && saveName.endsWith('"')))
@@ -739,7 +741,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     this.writeln(
       `Bricks.Load ${saveName} ${offX} ${offY} ${offZ} ${quiet ? 1 : 0} ${
         correctPalette ? 1 : 0
-      } ${correctCustom ? 1 : 0}`
+      } ${correctCustom ? 1 : 0}`,
     );
   }
 
@@ -752,7 +754,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       offZ = 0,
       correctPalette = false,
       correctCustom = false,
-    } = {}
+    } = {},
   ) {
     player = typeof player === 'string' ? this.getPlayer(player) : player;
     if (!player) return;
@@ -764,7 +766,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     this.writeln(
       `Bricks.LoadTemplate ${saveName} ${offX} ${offY} ${offZ}  ${
         correctPalette ? 1 : 0
-      } ${correctCustom ? 1 : 0} "${player.name}"`
+      } ${correctCustom ? 1 : 0} "${player.name}"`,
     );
   }
 
@@ -781,7 +783,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   getSavePath(saveName: string) {
     const file = join(
       this.savePath,
-      saveName.endsWith('.brs') ? saveName : saveName + '.brs'
+      saveName.endsWith('.brs') ? saveName : saveName + '.brs',
     );
     return existsSync(file) ? file : undefined;
   }
@@ -789,7 +791,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   getWorldPath(worldName: string) {
     const file = join(
       this.worldPath,
-      worldName.endsWith('.brdb') ? worldName : worldName + '.brdb'
+      worldName.endsWith('.brdb') ? worldName : worldName + '.brdb',
     );
     return existsSync(file) ? file : undefined;
   }
@@ -819,7 +821,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
           }
           return false;
         },
-      }
+      },
     );
 
     if (!revisionsRaw) return [];
@@ -835,7 +837,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         // parse date from YYYY.MM.DD-HH.MM.SS to YYYY-MM-DDTHH:MM:SSZ
         const dateStr = match.groups.date.replace(
           /(\d{4})\.(\d{2})\.(\d{2})-(\d{2})\.(\d{2})\.(\d{2})/,
-          '$1-$2-$3T$4:$5:$6Z'
+          '$1-$2-$3T$4:$5:$6Z',
         );
         const date = new Date(dateStr);
         const note = match.groups.note || '';
@@ -871,7 +873,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   createEmptyWorld(
     worldName: string,
-    map: 'Plate' | 'Space' | 'Studio' | 'Peaks' = 'Plate'
+    map: 'Plate' | 'Space' | 'Studio' | 'Peaks' = 'Plate',
   ) {
     if (!worldName) return;
     worldName = worldName.replace(/\.brdb$/i, '');
@@ -911,7 +913,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       quiet = false,
       correctPalette = false,
       correctCustom = false,
-    } = {}
+    } = {},
   ) {
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
@@ -929,7 +931,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         last: match => Boolean(match[1].match(/Read .+ bricks/)),
         afterMatchDelay: 0,
         timeoutDelay: 30000,
-      }
+      },
     );
 
     // delete the save file after we're done
@@ -948,7 +950,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       offZ = 0,
       correctPalette = false,
       correctCustom = false,
-    } = {}
+    } = {},
   ) {
     player = typeof player === 'string' ? this.getPlayer(player) : player;
     if (!player) return;
@@ -969,7 +971,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         last: match => Boolean(match[1].match(/Read .+ bricks/)),
         afterMatchDelay: 0,
         timeoutDelay: 30000,
-      }
+      },
     );
 
     // delete the save file after we're done
@@ -1016,7 +1018,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       {
         timeoutDelay: 30000,
         exec: () => this.writeln(`ServerTravel ${brName}`),
-      }
+      },
     );
     const success = !!(
       match &&

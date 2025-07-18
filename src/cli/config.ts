@@ -55,7 +55,7 @@ const fields: Record<string, IConfigField> = {
 export default (
   field: keyof typeof fields | 'list',
   value: string,
-  _opts = {}
+  _opts = {},
 ) => {
   // list command lists all fields, current setting, and description
   if (field === 'list') {
@@ -66,7 +66,7 @@ export default (
       console.log(
         '\n  ' + key.yellow.underline,
         '-'.padStart(maxLen - key.length + 1),
-        field.desc
+        field.desc,
       );
       console.log('    current'.brightGreen + ':', field.get());
       console.log('    default:', field.default);
@@ -81,7 +81,7 @@ export default (
     err(
       'invalid field, run',
       'omegga config list'.yellow.underline,
-      'for a list of available fields'
+      'for a list of available fields',
     );
     process.exit(1);
   }

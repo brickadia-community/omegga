@@ -117,7 +117,7 @@
     "prepare": "ts-patch install",
     "start": "node index.js",
     "lint": "npx prettier --check \"src/\" \"frontend/src\"",
-    "lint:fix": "npx prettier \"src/\" \"frontend/src/\"",
+    "lint:fix": "npx prettier --write \"src/\" \"frontend/src/\"",
     "watch": "npx vite build --watch",
     "dist": "npx vite build && npm run build && npm run dts",
     "build:frontend": "npx vite buildk",

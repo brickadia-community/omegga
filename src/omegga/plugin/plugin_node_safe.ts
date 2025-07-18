@@ -99,7 +99,7 @@ export default class NodeVmPlugin extends Plugin {
           '!>'.red,
           'error in store.get of',
           key,
-          e
+          e,
         );
       }
     });
@@ -113,7 +113,7 @@ export default class NodeVmPlugin extends Plugin {
           'error in store.set of',
           key,
           value,
-          e
+          e,
         );
       }
       this.notify(resp);
@@ -127,7 +127,7 @@ export default class NodeVmPlugin extends Plugin {
           '!>'.red,
           'error in store.delete of',
           key,
-          e
+          e,
         );
       }
       this.notify(resp);
@@ -140,7 +140,7 @@ export default class NodeVmPlugin extends Plugin {
           name.brightRed.underline,
           '!>'.red,
           'error in store.wipe',
-          e
+          e,
         );
       }
       this.notify(resp);
@@ -153,7 +153,7 @@ export default class NodeVmPlugin extends Plugin {
           name.brightRed.underline,
           '!>'.red,
           'error in store.count',
-          e
+          e,
         );
       }
     });
@@ -165,7 +165,7 @@ export default class NodeVmPlugin extends Plugin {
           name.brightRed.underline,
           '!>'.red,
           'error in store.keys',
-          e
+          e,
         );
       }
     });
@@ -173,7 +173,7 @@ export default class NodeVmPlugin extends Plugin {
     // plugin fetching
     this.plugin.on('getPlugin', async (resp, name) => {
       const plugin = this.omegga.pluginLoader.plugins.find(
-        p => p.getName() === name
+        p => p.getName() === name,
       );
 
       if (plugin) {
@@ -189,7 +189,7 @@ export default class NodeVmPlugin extends Plugin {
 
     this.plugin.on('emitPlugin', async (resp, target, ev, args) => {
       const plugin = this.omegga.pluginLoader.plugins.find(
-        p => p.getName() === target
+        p => p.getName() === target,
       );
 
       if (plugin) {
@@ -257,7 +257,7 @@ export default class NodeVmPlugin extends Plugin {
       if (this.pluginConfig?.emitConfig) {
         await fs.promises.writeFile(
           path.join(this.path, this.pluginConfig.emitConfig),
-          JSON.stringify(config)
+          JSON.stringify(config),
         );
       }
       this.createWorker();
@@ -300,7 +300,7 @@ export default class NodeVmPlugin extends Plugin {
         '!>'.red,
         'error loading node vm plugin',
         this.getName().brightRed.underline,
-        e
+        e,
       );
       this.emitStatus();
       return false;
@@ -348,7 +348,7 @@ export default class NodeVmPlugin extends Plugin {
             '!>'.red,
             'error unloading node plugin',
             this.getName().brightRed.underline,
-            e
+            e,
           );
           this.emitStatus();
           return false;
@@ -361,7 +361,7 @@ export default class NodeVmPlugin extends Plugin {
           this.plugin.emit(
             'error',
             0,
-            'I appear to be in an unresponsive state - terminating worker'
+            'I appear to be in an unresponsive state - terminating worker',
           );
 
           // remove listeners
@@ -393,7 +393,7 @@ export default class NodeVmPlugin extends Plugin {
 
     // promise waits for the message to resolve
     const promise = new Promise<unknown[]>(resolve =>
-      this.plugin.once(messageId, (_, ...x) => resolve(x))
+      this.plugin.once(messageId, (_, ...x) => resolve(x)),
     );
 
     // post the message
@@ -434,7 +434,7 @@ export default class NodeVmPlugin extends Plugin {
         env: {
           VERBOSE: Logger.VERBOSE + '',
         },
-      }
+      },
     );
 
     // pipe plugin output into omegga
@@ -451,7 +451,7 @@ export default class NodeVmPlugin extends Plugin {
 
     // attach message emitter
     this.#worker.on('message', ({ action, args }) =>
-      this.plugin.emit(action, ...args)
+      this.plugin.emit(action, ...args),
     );
 
     // broadcast an error if there is one
@@ -460,7 +460,7 @@ export default class NodeVmPlugin extends Plugin {
         '!>'.red,
         'error in plugin',
         this.getName().brightRed.underline,
-        err
+        err,
       );
     });
 
@@ -476,7 +476,7 @@ export default class NodeVmPlugin extends Plugin {
           '!>'.red,
           'Error terminating worker for',
           this.getName().brightRed.underline,
-          err
+          err,
         );
       }
       this.#worker = undefined;

@@ -79,7 +79,7 @@ export default class NodePlugin extends Plugin {
       if (this.pluginConfig?.emitConfig) {
         await fs.promises.writeFile(
           path.join(this.path, this.pluginConfig.emitConfig),
-          JSON.stringify(config)
+          JSON.stringify(config),
         );
       }
 
@@ -162,7 +162,7 @@ export default class NodePlugin extends Plugin {
   disrequireAll() {
     // get all files in plugin directory from require cache
     const requiredFiles = Object.keys(require.cache).filter(requiredFile =>
-      requiredFile.includes(this.path)
+      requiredFile.includes(this.path),
     );
     // disrequire all the files
     requiredFiles.forEach(file => {

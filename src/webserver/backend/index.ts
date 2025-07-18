@@ -89,12 +89,12 @@ export default class Webserver {
                 key: certFile.keys.serviceKey,
                 cert: certFile.keys.certificate,
               },
-              this.app
+              this.app,
             );
           } else {
             error(
               '!>'.red,
-              'Error generating SSL certificate - falling back to http'
+              'Error generating SSL certificate - falling back to http',
             );
           }
         }
@@ -104,7 +104,7 @@ export default class Webserver {
           ':>'.yellow,
           'Running web server with http - install',
           'openssl'.yellow.underline,
-          'for https (more secure)'
+          'for https (more secure)',
         );
       }
 
@@ -152,13 +152,13 @@ export default class Webserver {
       session(req, res, async () => {
         // check if user is authenticated
         const user = await this.database.findUserById(
-          req.session.userId as string
+          req.session.userId as string,
         );
         if (user && !user.isBanned) {
           socket.data.user = user;
           await this.database.stores.users.update<IStoreUser>(
             { _id: user._id },
-            { $set: { lastOnline: Date.now() } }
+            { $set: { lastOnline: Date.now() } },
           );
           next();
         } else {
@@ -199,7 +199,7 @@ export default class Webserver {
       this.server.listen(this.port, () => {
         log(
           `${'>>'.green} Web UI available at`,
-          `http${this.https ? 's' : ''}://127.0.0.1:${this.port}`.green
+          `http${this.https ? 's' : ''}://127.0.0.1:${this.port}`.green,
         );
         this.started = true;
         this.database.addChatLog('server', {}, 'Server started');

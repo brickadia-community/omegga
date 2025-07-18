@@ -5,7 +5,7 @@ import { getScaleAxis } from './getScaleAxis';
 
 export function getAbsoluteSize(
   brick: Brick,
-  brick_assets: string[]
+  brick_assets: string[],
 ): [number, number, number] {
   const size = getBrickSize(brick, brick_assets);
   return [
@@ -20,7 +20,7 @@ function minMaxBound(
   brick: Brick,
   brick_assets: string[],
   bounds: IBrickBounds,
-  axis: number
+  axis: number,
 ) {
   const scaleAxis = getScaleAxis(brick, axis);
   const size = getBrickSize(brick, brick_assets);

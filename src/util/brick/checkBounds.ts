@@ -14,7 +14,7 @@ function checkBound(
   brick: Brick,
   brick_assets: string[],
   bounds: IBrickBounds,
-  axis: number
+  axis: number,
 ) {
   const scaleAxis = getScaleAxis(brick, axis);
   const size = getBrickSize(brick, brick_assets);
@@ -27,7 +27,7 @@ function checkBound(
 export function checkBounds(
   brick: Brick,
   brick_assets: string[],
-  bounds: IBrickBounds
+  bounds: IBrickBounds,
 ) {
   return (
     checkBound(brick, brick_assets, bounds, 0) &&

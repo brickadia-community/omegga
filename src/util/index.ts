@@ -114,13 +114,13 @@ const brs: {
     options?: {
       bricks?: boolean;
       preview?: boolean;
-    }
+    },
   ): ReadSaveObject;
   write(
     save: WriteSaveObject,
     options?: {
       compress?: boolean;
-    }
+    },
   ): Uint8Array;
   utils: any;
   constants: {

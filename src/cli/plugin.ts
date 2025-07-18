@@ -154,7 +154,7 @@ function checkPlugin(omeggaPath: string, plugin: IPlugin | IInstalledPlugin) {
     let data;
     try {
       data = JSON.parse(
-        fs.readFileSync(path.join(pluginPath, soft.PLUGIN_FILE), 'utf8')
+        fs.readFileSync(path.join(pluginPath, soft.PLUGIN_FILE), 'utf8'),
       );
     } catch (e) {
       plgErr(plugin, 'Error reading plugin file', e);
@@ -168,7 +168,7 @@ function checkPlugin(omeggaPath: string, plugin: IPlugin | IInstalledPlugin) {
         plugin,
         'WARNING - Plugin file has invalid',
         'formatVersion'.yellow + '. Expected',
-        '1'.yellow
+        '1'.yellow,
       );
       return;
     }
@@ -178,13 +178,13 @@ function checkPlugin(omeggaPath: string, plugin: IPlugin | IInstalledPlugin) {
       plgWarn(
         plugin,
         'WARNING - Plugin file has invalid',
-        'omeggaVersion'.yellow + '. Expected semver expression'
+        'omeggaVersion'.yellow + '. Expected semver expression',
       );
       return false;
     } else if (!semver.satisfies(pkg.version, data.omeggaVersion)) {
       plgWarn(
         plugin,
-        `WARNING - Plugin is not made for this version of omegga (${pkg.version.yellow} vs ${data.omeggaVersion.yellow})`
+        `WARNING - Plugin is not made for this version of omegga (${pkg.version.yellow} vs ${data.omeggaVersion.yellow})`,
       );
       return false;
     }
@@ -196,7 +196,7 @@ function checkPlugin(omeggaPath: string, plugin: IPlugin | IInstalledPlugin) {
   // no plugin file, no problem!
   plgWarn(
     plugin,
-    `WARNING - Plugin is missing plugin file (${soft.PLUGIN_FILE}), this may be a problem in future versions`
+    `WARNING - Plugin is missing plugin file (${soft.PLUGIN_FILE}), this may be a problem in future versions`,
   );
   return true;
 }
@@ -208,7 +208,7 @@ export async function install(plugins: string[], _options: unknown) {
     return err(
       'Not an omegga directory, run ',
       'omegga init'.yellow,
-      'to setup one.'
+      'to setup one.',
     );
 
   log('Attempting to install', (plugins.length + '').yellow, 'plugins...');
@@ -231,7 +231,7 @@ export async function install(plugins: string[], _options: unknown) {
       'Installing plugin',
       plugin.name.yellow,
       'from',
-      plugin.url.yellow + '...'
+      plugin.url.yellow + '...',
     );
 
     // plugin absolute path
@@ -247,7 +247,7 @@ export async function install(plugins: string[], _options: unknown) {
         plugin,
         'Directory already exists! Try',
         ('omegga update ' + plugin.name).yellow,
-        'or check for plugin name collisions'
+        'or check for plugin name collisions',
       );
       continue;
     }
@@ -301,7 +301,7 @@ export async function update(pluginsNames: string[], _options: unknown) {
     return err(
       'Not an omegga directory, run ',
       'omegga init'.yellow,
-      'to setup one.'
+      'to setup one.',
     );
 
   const pluginFolder = path.join(omeggaPath, soft.PLUGIN_PATH);
@@ -318,7 +318,7 @@ export async function update(pluginsNames: string[], _options: unknown) {
       dir =>
         fs.existsSync(dir) &&
         fs.lstatSync(dir).isDirectory() &&
-        fs.existsSync(path.join(dir, '.git'))
+        fs.existsSync(path.join(dir, '.git')),
     )
     .map(dir => ({ name: path.basename(dir) }));
 
@@ -496,14 +496,14 @@ export async function update(pluginsNames: string[], _options: unknown) {
       plgErr(
         plugin,
         'Error updating - attempting to restore from backup branch',
-        e
+        e,
       );
       try {
         const branches = await git.branch();
         if (!MAIN_BRANCHES.includes(branches.current)) {
           plgErr(
             plugin,
-            'Not on expected branch - exiting before I break more things'
+            'Not on expected branch - exiting before I break more things',
           );
           continue;
         }
@@ -523,7 +523,7 @@ export async function update(pluginsNames: string[], _options: unknown) {
         if ((await git.branch()).current !== mainBranch) {
           plgErr(
             plugin,
-            `Failed to checkout newly created ${mainBranch} branch`
+            `Failed to checkout newly created ${mainBranch} branch`,
           );
           continue;
         } else {
@@ -545,7 +545,7 @@ export async function check(pluginNames: string[], _options: unknown) {
     return err(
       'Not an omegga directory, run ',
       'omegga init'.yellow,
-      'to setup one.'
+      'to setup one.',
     );
 
   const pluginFolder = path.join(omeggaPath, soft.PLUGIN_PATH);
@@ -562,7 +562,7 @@ export async function check(pluginNames: string[], _options: unknown) {
       dir =>
         fs.existsSync(dir) &&
         fs.lstatSync(dir).isDirectory() &&
-        fs.existsSync(path.join(dir, '.git'))
+        fs.existsSync(path.join(dir, '.git')),
     )
     .map(dir => ({ name: path.basename(dir) }));
 
@@ -574,7 +574,7 @@ export async function check(pluginNames: string[], _options: unknown) {
   log(
     'Checking',
     (plugins.length + '').yellow,
-    'plugins for valid plugin files'
+    'plugins for valid plugin files',
   );
 
   for (const plugin of plugins) {
@@ -641,7 +641,7 @@ async function init() {
   if (!config.find('.')) {
     log(
       'Warning:'.yellow,
-      'This is not an omegga installation, initializing here instead...'
+      'This is not an omegga installation, initializing here instead...',
     );
     dest = `./${name}`;
   } else {
@@ -679,7 +679,7 @@ async function init() {
       await fs.promises.writeFile(
         dest,
         data.replace(/{{(\w+)}}/g, (_, p) => templateData[p] ?? `{{${p}}}`),
-        { mode }
+        { mode },
       );
     }
   };
@@ -719,12 +719,12 @@ async function loadPlugin(pluginName) {
     .find(dir => dir.toLowerCase() === pluginName.toLowerCase());
   if (!foundPluginDirectory) {
     err(
-      `Plugin ${pluginName} not found! Make sure to use the plugin's directory name.`
+      `Plugin ${pluginName} not found! Make sure to use the plugin's directory name.`,
     );
     process.exit(1);
   }
   const plugin = await pluginLoader.scanPlugin(
-    path.join(pluginLoader.path, foundPluginDirectory)
+    path.join(pluginLoader.path, foundPluginDirectory),
   );
   return plugin;
 }
@@ -744,7 +744,7 @@ async function listConfig(pluginName: string, json = false) {
         '=',
         ['string', 'number', 'boolean'].includes(typeof value)
           ? value.toString().yellow
-          : JSON.stringify(value).yellow
+          : JSON.stringify(value).yellow,
       );
     }
   }
@@ -797,7 +797,7 @@ async function setConfig(pluginName, configName: string, valueString: string) {
           'Config',
           configName.cyan,
           'must be one of',
-          configDoc.options.join(', ').yellow
+          configDoc.options.join(', ').yellow,
         );
         process.exit(1);
       }
@@ -817,7 +817,7 @@ async function setConfig(pluginName, configName: string, valueString: string) {
     'of plugin',
     plugin.getName().cyan,
     'to',
-    parsed.toString().yellow
+    parsed.toString().yellow,
   );
   process.exit();
 }
@@ -860,7 +860,7 @@ async function resetConfig(pluginName, configName: string) {
     'of plugin',
     plugin.getName().cyan,
     'to',
-    pluginConfig[configName]
+    pluginConfig[configName],
   );
   process.exit();
 }

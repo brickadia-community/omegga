@@ -83,7 +83,7 @@ export default class BrickadiaServer extends EventEmitter {
       Logger.verbose(
         'Starting server',
         (!email && !password ? 'without' : 'with').yellow,
-        'credentials'
+        'credentials',
       );
     }
 
@@ -93,13 +93,13 @@ export default class BrickadiaServer extends EventEmitter {
       OVERRIDE_GAME_DIR &&
       path.join(
         OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
-        GAME_BIN_PATH
+        GAME_BIN_PATH,
       );
     const steamBinary = path.join(
       GAME_INSTALL_DIR, // steam install directory
       steamBeta, // steam beta branch (or main)
       GAME_DIRNAME, // Brickadia
-      GAME_BIN_PATH // path to binary
+      GAME_BIN_PATH, // path to binary
     );
 
     let gameBinary = steamBinary;
@@ -109,7 +109,7 @@ export default class BrickadiaServer extends EventEmitter {
         Logger.error(
           'Override binary',
           overrideBinary.yellow,
-          'does not exist!'
+          'does not exist!',
         );
         throw new Error(`Override binary ${overrideBinary} does not exist!`);
       }
@@ -118,7 +118,7 @@ export default class BrickadiaServer extends EventEmitter {
         'Using override binary',
         overrideBinary.yellow,
         'instead of',
-        steamBinary.yellow
+        steamBinary.yellow,
       );
       gameBinary = overrideBinary;
     } else if (isSteam) {
@@ -129,7 +129,7 @@ export default class BrickadiaServer extends EventEmitter {
         (this.config.server.__LOCAL
           ? path.join(__dirname, '../../tools/brickadia.sh')
           : 'brickadia launcher'
-        ).yellow
+        ).yellow,
       );
       if (typeof this.config.server.branch === 'string')
         Logger.verbose('Using branch', this.config.server.branch.yellow);
@@ -168,7 +168,7 @@ export default class BrickadiaServer extends EventEmitter {
         .join(' ')
         .replace(/-User=".*?"/, '-User="<hidden>"')
         .replace(/-Password=".*?"/, '-Password="<hidden>"')
-        .replace(/-Token=".*?"/, '-Token="<hidden>"')
+        .replace(/-Token=".*?"/, '-Token="<hidden>"'),
     );
 
     // Either unbuffer or stdbuf must be used because brickadia's output is buffered
@@ -178,7 +178,7 @@ export default class BrickadiaServer extends EventEmitter {
 
     Logger.verbose(
       'Spawn process',
-      this.#child ? this.#child.pid : 'failed'.red
+      this.#child ? this.#child.pid : 'failed'.red,
     );
 
     this.#child.stdin.setDefaultEncoding('utf8');
@@ -201,7 +201,7 @@ export default class BrickadiaServer extends EventEmitter {
       Logger.warn(
         'WARNING'.yellow,
         'The following line was called and is',
-        'longer than allowed limit'.red
+        'longer than allowed limit'.red,
       );
       Logger.warn(line.replace(/\n$/, ''));
       // throw a fake error to get the line number
@@ -277,7 +277,7 @@ export default class BrickadiaServer extends EventEmitter {
         Logger.error(
           `Encountered ${name.red}. ${
             solution ? 'Known fix:\n  ' + solution : message || 'Unknown error.'
-          }`
+          }`,
         );
       }
     }

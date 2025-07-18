@@ -22,7 +22,7 @@ function prompt() {
       resp => {
         rl.close();
         resolve(['y', 'yes'].includes(resp.toLowerCase()));
-      }
+      },
     );
   });
 }
@@ -45,7 +45,7 @@ export async function installLauncher() {
     Logger.errorp(
       'Omegga could not be started - missing dependencies. Visit ' +
         'https://www.brickadia.com'.yellow.underline +
-        ' to download the launcher.'
+        ' to download the launcher.',
     );
     process.exit(1);
   }

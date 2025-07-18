@@ -76,7 +76,7 @@ export class Plugin {
     if (omegga) {
       this.shortPath = pluginPath.replace(
         path.join(omegga.path, soft.PLUGIN_PATH) + '/',
-        ''
+        '',
       );
     }
   }
@@ -188,7 +188,7 @@ export class PluginStorage {
       {
         $set: { value },
       },
-      { upsert: true }
+      { upsert: true },
     );
   }
 
@@ -206,7 +206,7 @@ export class PluginStorage {
   async wipeConfig() {
     await this.store.remove(
       { type: 'config', plugin: this.name },
-      { multi: true }
+      { multi: true },
     );
   }
 
@@ -247,7 +247,7 @@ export class PluginStorage {
   async wipe() {
     await this.store.remove(
       { type: 'store', plugin: this.name },
-      { multi: true }
+      { multi: true },
     );
   }
 
@@ -271,7 +271,7 @@ export class PluginStorage {
     await this.store.update<IStoreItem>(
       { type: 'store', plugin: this.name, key },
       { $set: { value } },
-      { upsert: true }
+      { upsert: true },
     );
   }
 }
@@ -337,7 +337,7 @@ export class PluginLoader {
         // all files match the plugin_nameType.js pattern
         .filter(file => file.match(/plugin_[a-zA-Z_]+\.js$/))
         // require all the formats
-        .map(file => require('./plugin/' + file).default)
+        .map(file => require('./plugin/' + file).default),
     );
     Logger.verbose('Found plugin formats:', this.formats);
   }
@@ -358,14 +358,14 @@ export class PluginLoader {
             Logger.verbose(
               'Loading plugin',
               (p.constructor as typeof Plugin).getFormat(),
-              p.getName().underline
+              p.getName().underline,
             );
             ok = (await p.load()) || ok;
           }
         } else {
           Logger.errorp(
             'Did not successfully unload plugin',
-            p.getName().brightRed.underline
+            p.getName().brightRed.underline,
           );
           ok = false;
         }
@@ -373,7 +373,7 @@ export class PluginLoader {
         Logger.errorp(
           'Error loading plugin',
           p.getName().brightRed.underline,
-          err
+          err,
         );
         ok = false;
       }
@@ -394,7 +394,7 @@ export class PluginLoader {
           if (!(await p.unload())) {
             Logger.errorp(
               'Could not unloading plugin',
-              p.getName().brightRed.underline
+              p.getName().brightRed.underline,
             );
             ok = false;
             continue;
@@ -405,7 +405,7 @@ export class PluginLoader {
       } catch (e) {
         Logger.errorp(
           'Error unloading plugin',
-          p.getName().brightRed.underline
+          p.getName().brightRed.underline,
         );
         ok = false;
       }
@@ -457,7 +457,7 @@ export class PluginLoader {
         'Error loading plugin',
         dir.brightRed.underline,
         PluginFormat,
-        e
+        e,
       );
     }
   }
@@ -483,7 +483,7 @@ export class PluginLoader {
         fs
           .readdirSync(this.path)
           .map(dir => path.join(this.path, dir)) // convert from local paths
-          .map(async dir => this.scanPlugin(dir))
+          .map(async dir => this.scanPlugin(dir)),
       )
     )
       // remove plugins without formats
@@ -492,7 +492,7 @@ export class PluginLoader {
     Logger.verbose('Finished scanning plugin directory');
     Logger.verbose(
       `Found ${this.plugins.length} plugins`,
-      this.plugins.map(p => p.getName())
+      this.plugins.map(p => p.getName()),
     );
 
     this.buildDocumentation();
@@ -523,13 +523,13 @@ export class PluginLoader {
     // no arguments
     if (!args.length) {
       send(
-        '"Use <code>/plugins plugin</>, <code>/plugins !command</>, <code>/plugins /command</> for more information"'
+        '"Use <code>/plugins plugin</>, <code>/plugins !command</>, <code>/plugins /command</> for more information"',
       );
       const plugins = Object.keys(docs).map(
         d =>
           `<color=\\"${
             docs[d]._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa'
-          }\\">${d}</>`
+          }\\">${d}</>`,
       );
       if (!plugins.length) {
         send('"<b>No Installed Plugins</>"');
@@ -549,7 +549,7 @@ export class PluginLoader {
         const desc = doc.description || 'no description';
         const color = doc._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa';
         send(
-          `"<b>Plugin</> <code><color=\\"${color}\\">${doc.name}</></>: ${desc}"`
+          `"<b>Plugin</> <code><color=\\"${color}\\">${doc.name}</></>: ${desc}"`,
         );
 
         if (doc.author)
@@ -557,7 +557,7 @@ export class PluginLoader {
 
         if (doc.commands && doc.commands.length > 0) {
           const lines = splitHelper(
-            doc.commands.map(c => `<code>${c.name}</>`)
+            doc.commands.map(c => `<code>${c.name}</>`),
           );
           send(`"<b>Commands</>: ${lines[0]}"`);
           for (let i = 1; i < lines.length; i++) send(`"${lines[i]}"`);
@@ -570,7 +570,7 @@ export class PluginLoader {
         const example = cmd.example || 'no example';
         const color = cmd._plugin.isLoaded() ? 'aaffaa' : 'aaaaaa';
         send(
-          `"<b>Command</> <code><color=\\"${color}\\">${cmd.name}</></>: ${desc}"`
+          `"<b>Command</> <code><color=\\"${color}\\">${cmd.name}</></>: ${desc}"`,
         );
         send(`"<b>Example</>: <code>${example}</>"`);
         if (cmd.args && cmd.args.length > 0) {
@@ -580,7 +580,7 @@ export class PluginLoader {
             send(
               `"- <code>${arg.name}</>${
                 arg.required ? ' (required)' : ''
-              }: ${desc}"`
+              }: ${desc}"`,
             );
           }
         } else {
@@ -594,7 +594,7 @@ export class PluginLoader {
         args[0] === 'plugin'
       ) {
         send(
-          '"Use <code>/plugins [name of plugin]</> or <code>/plugins [name of !command or /command]</> for more help for the respective plugin or command"'
+          '"Use <code>/plugins [name of plugin]</> or <code>/plugins [name of !command or /command]</> for more help for the respective plugin or command"',
         );
 
         // argument is not found
@@ -605,7 +605,7 @@ export class PluginLoader {
       // too many arguments
     } else {
       send(
-        '"Use <code>/plugins</> to list plugins and <code>/plugins plugin</> or <code>!help !command or /command</> for more information"'
+        '"Use <code>/plugins</> to list plugins and <code>/plugins plugin</> or <code>!help !command or /command</> for more information"',
       );
     }
   }

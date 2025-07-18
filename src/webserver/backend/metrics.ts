@@ -47,7 +47,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         omegga.broadcast(
           `<size="20">Server restart in <b><color="ffffbb">${t} second${
             t !== 1 ? 's' : ''
-          }</></></>`
+          }</></></>`,
         );
       announce(30);
       await sleep(15000);
@@ -207,7 +207,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     // tell web users a player left
     io.to('chat').emit(
       'chat',
-      await database.addChatLog('leave', { id, name })
+      await database.addChatLog('leave', { id, name }),
     );
   });
 
@@ -223,7 +223,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         id,
         name,
         ...(isFirst ? { isFirst } : {}),
-      })
+      }),
     );
   });
 
@@ -232,31 +232,31 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     'plugin:status',
     (
       shortPath: string,
-      info: { name: string; isLoaded: boolean; isEnabled: boolean }
+      info: { name: string; isLoaded: boolean; isEnabled: boolean },
     ) => {
       io.to('plugins').emit('plugin', shortPath, info);
-    }
+    },
   );
 
   // server status events
   omegga.on('start', () =>
     io
       .to('server')
-      .emit('status', { started: true, starting: false, stopping: false })
+      .emit('status', { started: true, starting: false, stopping: false }),
   );
   omegga.on('server:starting', () =>
     io
       .to('server')
-      .emit('status', { started: false, starting: true, stopping: false })
+      .emit('status', { started: false, starting: true, stopping: false }),
   );
   omegga.on('server:stopped', () =>
     io
       .to('server')
-      .emit('status', { started: false, starting: false, stopping: false })
+      .emit('status', { started: false, starting: false, stopping: false }),
   );
   omegga.on('server:stopping', () =>
     io
       .to('server')
-      .emit('status', { started: true, starting: false, stopping: true })
+      .emit('status', { started: true, starting: false, stopping: true }),
   );
 }

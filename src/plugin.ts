@@ -195,7 +195,7 @@ export interface OmeggaPlayer {
       offY?: number;
       offZ?: number;
       quiet?: boolean;
-    }
+    },
   ): Promise<void>;
 
   /**
@@ -216,7 +216,7 @@ export interface OmeggaPlayer {
       offY?: number;
       offZ?: number;
       quiet?: boolean;
-    }
+    },
   ): Promise<void>;
 
   /**
@@ -307,7 +307,7 @@ export interface StaticPlayer {
   damage(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    amount: number
+    amount: number,
   ): void;
 
   /**
@@ -327,7 +327,7 @@ export interface StaticPlayer {
   giveItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    item: WeaponClass
+    item: WeaponClass,
   ): void;
 
   /**
@@ -339,7 +339,7 @@ export interface StaticPlayer {
   takeItem(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    item: WeaponClass
+    item: WeaponClass,
   ): void;
 
   /**
@@ -351,7 +351,7 @@ export interface StaticPlayer {
   setTeam(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    teamIndex: number
+    teamIndex: number,
   ): void;
 
   /**
@@ -363,7 +363,7 @@ export interface StaticPlayer {
   setMinigame(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    index: number
+    index: number,
   ): void;
 
   /**
@@ -377,7 +377,7 @@ export interface StaticPlayer {
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
     minigameIndex: number,
-    score: number
+    score: number,
   ): void;
 
   /**
@@ -389,7 +389,7 @@ export interface StaticPlayer {
   getScore(
     omegga: OmeggaLike,
     target: string | OmeggaPlayer,
-    minigameIndex: number
+    minigameIndex: number,
   ): Promise<number>;
 }
 
@@ -435,14 +435,14 @@ export interface MockEventEmitter {
   on(event: 'autorestart', listener: (config: AutoRestartConfig) => void): this;
   on(
     event: 'interact',
-    listener: (interaction: BrickInteraction) => void
+    listener: (interaction: BrickInteraction) => void,
   ): this;
   on(
     event: 'minigamejoin',
     listener: (info: {
       player: { name: string; id: string };
       minigameName: string;
-    }) => void
+    }) => void,
   ): this;
 }
 
@@ -615,7 +615,7 @@ export interface OmeggaCore {
    * @param preset preset data
    */
   loadEnvironmentData(
-    preset: EnvironmentPreset | EnvironmentPreset['data']['groups']
+    preset: EnvironmentPreset | EnvironmentPreset['data']['groups'],
   ): void;
 
   /**
@@ -642,7 +642,7 @@ export interface OmeggaCore {
     },
     options?: {
       target?: string | OmeggaPlayer;
-    }
+    },
   ): void;
 
   /**
@@ -661,7 +661,7 @@ export interface OmeggaCore {
     region?: {
       center: [number, number, number];
       extent: [number, number, number];
-    }
+    },
   ): void;
 
   /**
@@ -674,7 +674,7 @@ export interface OmeggaCore {
     region?: {
       center: [number, number, number];
       extent: [number, number, number];
-    }
+    },
   ): Promise<void>;
 
   /**
@@ -689,7 +689,7 @@ export interface OmeggaCore {
       quiet?: boolean;
       correctPalette?: boolean;
       correctCustom?: boolean;
-    }
+    },
   ): void;
 
   /**
@@ -704,7 +704,7 @@ export interface OmeggaCore {
       offZ?: number;
       correctPalette?: boolean;
       correctCustom?: boolean;
-    }
+    },
   ): void;
 
   /**
@@ -736,7 +736,7 @@ export interface OmeggaCore {
    * @param worldName World name
    */
   getWorldRevisions(
-    worldName: string
+    worldName: string,
   ): Promise<{ index: number; date: Date; note: string }[]>;
 
   /**
@@ -795,7 +795,7 @@ export interface OmeggaCore {
       quiet?: boolean;
       correctPalette?: boolean;
       correctCustom?: boolean;
-    }
+    },
   ): Promise<void>;
 
   /**
@@ -812,7 +812,7 @@ export interface OmeggaCore {
       offZ?: number;
       correctPalette?: boolean;
       correctCustom?: boolean;
-    }
+    },
   ): Promise<void>;
 
   /**
@@ -852,7 +852,7 @@ export interface OmeggaCore {
 
 /** A simple document store for plugins */
 export interface PluginStore<
-  Storage extends Record<string, unknown> = Record<string, unknown>
+  Storage extends Record<string, unknown> = Record<string, unknown>,
 > {
   /** Get a value from plugin storage */
   get<T extends keyof Storage>(key: T): Promise<Storage[T]>;
@@ -870,13 +870,13 @@ export interface PluginStore<
 
 /** A config representative of the config outlined in doc.json */
 export type PluginConfig<
-  T extends Record<string, unknown> = Record<string, unknown>
+  T extends Record<string, unknown> = Record<string, unknown>,
 > = T;
 
 /** An omegga plugin */
 export default abstract class OmeggaPlugin<
   Config extends Record<string, unknown> = Record<string, unknown>,
-  Storage extends Record<string, unknown> = Record<string, unknown>
+  Storage extends Record<string, unknown> = Record<string, unknown>,
 > {
   omegga: OmeggaLike;
   config: PluginConfig<Config>;
@@ -885,7 +885,7 @@ export default abstract class OmeggaPlugin<
   constructor(
     omegga: OmeggaLike,
     config: PluginConfig<Config>,
-    store: PluginStore<Storage>
+    store: PluginStore<Storage>,
   ) {
     this.omegga = omegga;
     this.config = config;
@@ -914,7 +914,7 @@ export interface LogWrangling {
   /** Add a passive pattern on console output that invokes callback on match */
   addMatcher<T>(
     pattern: IMatcher<T>['pattern'],
-    callback: IMatcher<T>['callback']
+    callback: IMatcher<T>['callback'],
   ): void;
 
   /** Run an active pattern on console output that resolves a match */
@@ -927,7 +927,7 @@ export interface LogWrangling {
       afterMatchDelay?: number;
       last?: IWatcher<T>['last'];
       exec?: () => void;
-    }
+    },
   ): Promise<IWatcher<T>['matches']>;
 
   /** Run a command and capture bundled output */
@@ -939,23 +939,23 @@ export interface LogWrangling {
       last?: IWatcher<T>['last'];
       afterMatchDelay?: number;
       timeoutDelay?: number;
-    }
+    },
   ): Promise<IWatcher<T>['matches']>;
 
   /** Run a command and capture bundled output for array functions */
   watchLogArray<
     Item extends Record<string, string> = Record<string, string>,
-    Member extends Record<string, string> = Record<string, string>
+    Member extends Record<string, string> = Record<string, string>,
   >(
     cmd: string,
     itemPattern: RegExp,
-    memberPattern: RegExp
+    memberPattern: RegExp,
   ): Promise<{ item: Item; members: Member[] }[]>;
 }
 
 export type WatcherPattern<T> = (
   line: string,
-  match: RegExpMatchArray
+  match: RegExpMatchArray,
 ) => T | RegExpMatchArray | '[OMEGGA_WATCHER_DONE]';
 
 export type IMatcher<T> =

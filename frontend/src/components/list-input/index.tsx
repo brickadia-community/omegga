@@ -36,7 +36,7 @@ export const ListInput = ({
         password: '',
         role: '',
         enum: options && options[0],
-      }[type]
+      }[type],
     );
     onChange(clone);
   };
