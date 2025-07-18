@@ -38,7 +38,7 @@ pkg_manager="apt-get install"
 if [[ -f /etc/arch-release ]]; then
   lib32gcc_dep="lib32-gcc-libs"
   pkg_manager="pacman -S"
-  has_lib32gcc=$(dpkg -s lib32-gcc-libs >/dev/null 2>&1 && echo "yes" || echo "no")
+  has_lib32gcc=$(pacman -Q lib32-gcc-libs >/dev/null 2>&1 && echo "yes" || echo "no")
 fi
 
 # check if lib32gcc-s1 exists in debian/ubuntu
