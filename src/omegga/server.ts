@@ -409,6 +409,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   getPlayers(): {
     id: string;
     name: string;
+    displayName: string;
     controller: string;
     state: string;
   }[] {
