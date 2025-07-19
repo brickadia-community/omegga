@@ -284,6 +284,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       await database.addChatLog('join', {
         id,
         name,
+        displayName,
         ...(isFirst ? { isFirst } : {}),
       }),
     );
