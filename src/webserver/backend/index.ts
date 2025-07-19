@@ -48,7 +48,9 @@ export default class Webserver {
 
   // create a webserver
   constructor(options: IServerConfig, omegga: Omegga) {
-    this.port = Number(options.port || process.env.PORT || soft.DEFAULT_PORT);
+    this.port = Number(
+      options.port || process.env.OMEGGA_PORT || soft.DEFAULT_PORT,
+    );
     this.options = options;
     this.omegga = omegga;
     this.dataPath = path.join(omegga.path, soft.DATA_PATH);

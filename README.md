@@ -2,7 +2,7 @@
 
 Read the README first before asking questions! [Join the discord](https://discord.gg/UcdwTYhS75) to browse plugins and get support.
 
-Omegga wraps brickadia's server console to provide interactivity and utility via plugins.
+Omegga wraps [Brickadia](https://brickadia.com/)'s server console to provide interactivity and utility via plugins along with a web interface for managing your server.
 
 Omegga can do things like:
 
@@ -51,7 +51,7 @@ If any of the above are true, [create a new user](#creating-a-new-user) and cont
 
 If you need to run omegga as root, make sure your branch is `main-server` or `unstable-server`, as `main` will not work as root.
 
-### Quick Setup (automatically download launcher)
+### Quick Setup
 
 1. Install linux if you haven't already ([Windows Install](#wsl) is not that bad)
 
@@ -222,6 +222,12 @@ Omegga will tell you when it's out of date. You can update with this command:
 
     npm i -g omegga
 
+If don't have automatic update enabled, you can start update the Brickadia server by starting omegga with the `--update` flag:
+
+    omegga --update
+
+Or you can run the `/update` command in the Omegga console, or even update from the Server menu in the web UI.
+
 ## Configuration
 
 - CLI config via `omegga config`
@@ -238,21 +244,18 @@ omegga:
   webui: true
   https: true
   debug: false
+credentials:
+  token: # hosting token can go here instead of global config
+  # if you are hosting servers for multiple people
 server:
   port: 7777
   map: Plate
-  branch: unstable:unstable-server
+  # Specifying a branch will use the old launcher instead of SteamCMD
+  # This does not have full auto-updater support yet, though the game will update every time it is restarted
+  # branch: release:release-server
 ```
 
 Note: `BRANCH-server` branches download only server data
-
-### Environment Variables
-
-Not all of them are listed here but here are a few:
-
-- `BRICKADIA_TOKEN` - Specify hosting token instead of using config
-- `BRICKADIA_DIR` - Override the need to use steamcmd and point to a brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
-- `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default to `~/.config/omegga/steam_installs`)
 
 ## Troubleshooting
 
@@ -326,7 +329,7 @@ You can clone a plugin's github repo inside the `plugins` folder (created when y
 Plugins can be updated with `omegga update`:
 
 ```sh
-# update all plugin
+# update all plugins
 omegga update
 
 # update plugins named "pluginName" and "anotherPluginName"
@@ -994,10 +997,15 @@ rpc.addMethod('stop', async () => 'ok');
 
 `omegga` accepts the following environment variables:
 
-- `BRICKADIA_USER` - brickadia auth username (on first start)
-- `BRICKADIA_PASS` - brickadia auth password (on first start)
-- `BRICKADIA_PORT` - brickadia server port (on config creation)
-- `OMEGGA_PORT` - omegga webserver port (on config creation)
+- `BRICKADIA_TOKEN` - Specify hosting token instead of using config
+- `BRICKADIA_USER` - Brickadia auth username (on first start)
+- `BRICKADIA_PASS` - Brickadia auth password (on first start)
+- `BRICKADIA_PORT` - Brickadia server port (default `7777`, on config creation)
+- `OMEGGA_PORT` - omegga webserver port (default `8080`, on config creation)
+- `BRICKADIA_DIR` - Override the need to use steamcmd and point to a Brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
+- `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default `~/.config/omegga/steam_installs`)
+- `STEAM_APP_ID` - Set the Steam App ID for Brickadia (default `3017590`)
+- `VERBOSE` - Set to `true` to enable verbose logging (default `false`)
 
 ## Config
 
@@ -1014,5 +1022,7 @@ omegga:
 server:
   port: 7777 # game server port
   map: Plate # map name
-  branch: unstable:unstable-server # branch alias:branch name
+  # When branch is present, steamcmd is not used
+  #branch: release:release-server # branch alias:branch name
+  steambeta: public # try `unstable`
 ```

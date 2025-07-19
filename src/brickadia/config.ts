@@ -6,7 +6,7 @@ import * as file from '../util/file';
 
 import { CONFIG_SAVED_DIR } from '@/softconfig';
 const CONFIG_PATH = 'Config/LinuxServer';
-const SERVER_SETTINGS = '/ServerSettings.ini';
+const SERVER_SETTINGS = 'GameUserSettings.ini';
 
 // Function that writes config
 export function write(serverPath: string, config: IConfig) {
@@ -22,23 +22,46 @@ export function write(serverPath: string, config: IConfig) {
   fs.writeFileSync(
     settingsPath,
     `[Server__BP_ServerSettings_General_C BP_ServerSettings_General_C]
-MaxSelectedBricks=1000
-MaxPlacedBricks=1000
-SelectionTimeout=2.000000
-PlaceTimeout=2.000000
 ServerName=${config.server.name || ''}
 ServerDescription=${config.server.description || ''}
 ServerPassword=${config.server.password || ''}
 MaxPlayers=${config.server.players || 20}
-bPubliclyListed=${
-      'publiclyListed' in config.server || config.server.publiclyListed
-        ? 'True'
-        : 'False'
-    }
-WelcomeMessage="${config.server.welcomeMessage || ''}"
-bGlobalRulesetSelfDamage=True
-bGlobalRulesetPhysicsDamage=False`,
+bPubliclyListed=${(config.server.publiclyListed ?? true) ? 'True' : 'False'}
+WelcomeMessage="${config.server.welcomeMessage?.replace(/"/g, '\"').replace(/\\/g, '\\\\') || ''}"`,
   );
+
+  /*
+[Server__BP_ServerSettings_General_C BP_ServerSettings_General_C]
+ServerTypeIndex2=1
+ServerName=
+ServerDescription=
+ServerPassword=
+MaxPlayers=30
+bPubliclyListed=True
+WelcomeMessage="<color=\"0055ff\">Welcome to <b>{2}</>, {1}.</><>a"
+bGlobalRulesetSelfDamage=True
+bGlobalRulesetPhysicsDamage=False
+bGlobalRulesetEnableCameraBlockedEffects=False
+UploadTimeout=5.000000
+MaxPrefabBricks=1000
+MaxPrefabComponents=20
+MaxPrefabSize=(X=1000,Y=1000,Z=1000)
+MaxPhysicsObjects=2000
+MaxPhysicsObjectsPerUser=50
+MaxPlacementBricks=2000
+MaxPlacementEntities=10
+bEnforceApplicatorLimits=False
+TemplatePlacementTimeout=2.000000
+MaxSelectionBoxSize=(X=1000,Y=1000,Z=1000)
+MaxSelectedBricks=1000
+SelectionTimeout=2.000000
+
+[Server__BP_ServerSettingsAutoSave_C BP_ServerSettingsAutoSave_C]
+bEnableAutoSave=True
+bAnnounceAutoSave=True
+AutoSaveInterval=300.000000
+bIncludeScreenshot=False
+  */
 }
 
 export function read() {
