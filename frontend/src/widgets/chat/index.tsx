@@ -2,7 +2,7 @@ import { Button, Footer, Input, Scroll } from '@components';
 import type { IStoreChat } from '@omegga/webserver/backend/types';
 import { IconSend } from '@tabler/icons-react';
 import Linkify from 'linkify-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ioEmit, rpcNotify, rpcReq, socket } from '../../socket';
 
 type ChatEntry = IStoreChat & {
@@ -30,14 +30,12 @@ export const ChatWidget = () => {
           ? updatedChats.slice(updatedChats.length - 50)
           : updatedChats;
       });
-      scrollToBottom();
     };
 
     socket.on('chat', handleChat);
     ioEmit('subscribe', 'chat');
     rpcReq('chat.recent').then((logs: ChatEntry[]) => {
       setChats(logs.reverse());
-      scrollToBottom();
     });
 
     return () => {
@@ -45,6 +43,10 @@ export const ChatWidget = () => {
       ioEmit('unsubscribe', 'chat');
     };
   }, []);
+
+  useLayoutEffect(() => {
+    scrollToBottom();
+  }, [chats]);
 
   const sendMessage = (event: React.FormEvent) => {
     event.preventDefault();
@@ -58,7 +60,7 @@ export const ChatWidget = () => {
 
   return (
     <div className="chat-widget">
-      <Scroll className="messages">
+      <Scroll className="messages" ref={ref}>
         <div className="messages-child">
           {chats.map(log => (
             <div key={log._id} className="log-entry">
