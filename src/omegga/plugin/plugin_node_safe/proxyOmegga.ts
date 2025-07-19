@@ -240,6 +240,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   getPlayers(): {
     id: string;
     name: string;
+    displayName: string;
     controller: string;
     state: string;
   }[] {
