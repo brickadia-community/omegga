@@ -1,4 +1,4 @@
-import { Button, Footer, Input, Scroll } from '@components';
+import { Button, Footer, Input, Scroll, UserName } from '@components';
 import type { IStoreChat } from '@omegga/webserver/backend/types';
 import { IconSend } from '@tabler/icons-react';
 import Linkify from 'linkify-react';
@@ -67,21 +67,19 @@ export const ChatWidget = () => {
               {log.action === 'msg' && (
                 <div className="chat-message">
                   {log.user?.web ? '[' : ''}
-                  <span style={{ color: `#${log.user?.color}` }}>
-                    {log.user?.name}
-                  </span>
+                  <UserName color user={log.user} />
                   {log.user?.web ? ']' : ''}:{' '}
                   <Linkify as="span">{log.message}</Linkify>
                 </div>
               )}
               {log.action === 'leave' && (
                 <div className="join-message">
-                  <span>{log.user?.name}</span> left the game.
+                  <UserName user={log.user} /> left the game.
                 </div>
               )}
               {log.action === 'join' && (
                 <div className="join-message">
-                  <span>{log.user?.name}</span> joined the game
+                  <UserName user={log.user} /> joined the game
                   {log.user?.isFirst ? ' for the first time' : ''}.
                 </div>
               )}
@@ -97,6 +95,7 @@ export const ChatWidget = () => {
       <form onSubmit={sendMessage}>
         <Footer>
           <Input
+            roboto
             type="text"
             placeholder="Message"
             value={message}

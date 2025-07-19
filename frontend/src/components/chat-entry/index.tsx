@@ -1,8 +1,41 @@
+import type { HistoryRes } from '@omegga/webserver/backend/api';
+import type { IChatUser } from '@omegga/webserver/backend/types';
 import { IconLink } from '@tabler/icons-react';
 import Linkify from 'linkify-react';
 import { Link, useRoute } from 'wouter';
 import { ChatTime } from '../chat-time';
-import type { HistoryRes } from '@omegga/webserver/backend/api';
+
+export const UserName = ({
+  color,
+  user,
+  link,
+  className,
+}: {
+  color?: boolean;
+  link?: boolean;
+  user?: Partial<IChatUser>;
+  className?: string;
+}) => {
+  const props = {
+    className,
+    style: color ? { color: `#${user?.color}` } : undefined,
+    'data-tooltip': [
+      user?.name && `Username: ${user?.name}`,
+      user?.displayName && `Display Name: ${user?.displayName}`,
+    ]
+      .filter(Boolean)
+      .join('\n'),
+  };
+
+  if (link && user?.id)
+    return (
+      <Link href={`/players/${user.id}`} {...props}>
+        {user?.displayName ?? user?.name}
+      </Link>
+    );
+
+  return <span {...props}>{user?.displayName ?? user?.name}</span>;
+};
 
 export const ChatEntry = ({ log }: { log: HistoryRes[number] }) => {
   const [_match, params] = useRoute('/history/:time?');
@@ -22,17 +55,9 @@ export const ChatEntry = ({ log }: { log: HistoryRes[number] }) => {
           <div className="chat-message message">
             {log.user.web ? '[' : ''}
             {log.user.web ? (
-              <span className="user" style={{ color: `#${log.user.color}` }}>
-                {log.user.name}
-              </span>
+              <UserName color user={log.user} />
             ) : (
-              <Link
-                href={`/players/${log.user.id}`}
-                className="user"
-                style={{ color: `#${log.user.color}` }}
-              >
-                {log.user.name}
-              </Link>
+              <UserName link color className="user" user={log.user} />
             )}
             {log.user.web ? ']' : ''}:{' '}
             <Linkify as="span">{log.message}</Linkify>
@@ -40,18 +65,13 @@ export const ChatEntry = ({ log }: { log: HistoryRes[number] }) => {
         )}
         {log.action === 'leave' && (
           <div className="message join-message">
-            <Link href={`/players/${log.user.id}`} className="user">
-              {log.user.name}
-            </Link>{' '}
-            left the game.
+            <UserName link className="user" user={log.user} /> left the game.
           </div>
         )}
         {log.action === 'join' && (
           <div className="message join-message">
-            <Link href={`/players/${log.user.id}`} className="user">
-              {log.user.name}
-            </Link>{' '}
-            joined the game{log.user.isFirst ? ' for the first time' : ''}.
+            <UserName link className="user" user={log.user} /> joined the game
+            {log.user.isFirst ? ' for the first time' : ''}.
           </div>
         )}
         {log.action === 'server' && (

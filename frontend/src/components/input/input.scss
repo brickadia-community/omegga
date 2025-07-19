@@ -45,6 +45,10 @@
       outline: none;
     }
   }
+  &.roboto > input {
+    font-family: 'Roboto';
+    font-weight: 400;
+  }
 
   .icon {
     margin-right: 8px;

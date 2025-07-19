@@ -454,9 +454,15 @@ export default class Database extends EventEmitter {
                   { id: search },
                   // user's current name
                   { name: { $regex: pattern } },
+                  { displayName: { $regex: pattern } },
                   // user's past name
                   {
                     nameHistory: { $elemMatch: { name: { $regex: pattern } } },
+                  },
+                  {
+                    nameHistory: {
+                      $elemMatch: { displayName: { $regex: pattern } },
+                    },
                   },
                 ],
               },
@@ -474,6 +480,8 @@ export default class Database extends EventEmitter {
         { id: search },
         // user's current name
         { name: search },
+        // user's current display name
+        { displayName: search },
       ],
     };
 
@@ -601,8 +609,11 @@ export default class Database extends EventEmitter {
         // base brickadia user info
         id: user.id,
         name: user.name,
+        displayName: user.displayName,
         // list of names and when they were first used
-        nameHistory: [{ name: user.name, date: now }],
+        nameHistory: [
+          { name: user.name, displayName: user.displayName, date: now },
+        ],
         // list of ips this player has been on
         ips: [],
         // first time player was seen
@@ -634,16 +645,25 @@ export default class Database extends EventEmitter {
             // update last seen time and user name
             lastSeen: now,
             name: user.name,
+            displayName: user.displayName,
 
             // set the last joined instance
             lastInstanceId: instanceId,
           },
 
           // add the name to the history if it was not already in it
-          ...(existing.nameHistory.some(h => h.name === user.name)
+          ...(existing.nameHistory.some(
+            h => h.name === user.name && h.displayName === user.displayName,
+          )
             ? {}
             : {
-                $addToSet: { nameHistory: { name: user.name, date: now } },
+                $addToSet: {
+                  nameHistory: {
+                    name: user.name,
+                    displayName: user.displayName,
+                    date: now,
+                  },
+                },
               }),
         },
       );
