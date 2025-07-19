@@ -511,9 +511,7 @@ class Player implements OmeggaPlayer {
         {
           timeoutDelay: 1000,
           exec: () =>
-            this.#omegga.writeln(
-              `GetAll BRPlayerState ColorSelectionState Owner=${controller}`,
-            ),
+            this.#omegga.writeln('GetAll BRPlayerState ColorSelectionState'),
         },
       )
       .catch(() => null);
