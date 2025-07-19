@@ -5,6 +5,7 @@
   .button {
     border-radius: 0;
     margin-right: 0;
+    text-align: left;
   }
   .button:first-child {
     border-top-left-radius: theme.$br-radius-md;
@@ -54,13 +55,31 @@
     text-decoration: none;
     border-radius: theme.$br-radius-md;
 
-    &:hover,
-    .router-link-active {
+    &:hover {
       background-color: theme.$br-element-hover;
     }
-    &:active,
-    &.disabled {
+    &:active {
       background-color: theme.$br-element-pressed;
+    }
+
+    &.selected {
+      background-color: theme.$br-info-normal;
+      &:hover {
+        background-color: theme.$br-info-hover;
+      }
+      &:active {
+        background-color: theme.$br-info-pressed;
+      }
+    }
+
+    &.next {
+      background-color: theme.$br-main-normal;
+      &:hover {
+        background-color: theme.$br-main-hover;
+      }
+      &:active {
+        background-color: theme.$br-main-pressed;
+      }
     }
 
     .tabler-icon {

@@ -85,10 +85,25 @@
       &:hover td,
       &.active td {
         background-color: theme.$br-element-hover;
+        .username {
+          color: theme.$br-boring-button-fg !important;
+        }
       }
 
       &:active td {
         background-color: theme.$br-element-pressed;
+      }
+
+      td.player-name {
+        .player-name-container {
+          display: flex;
+          align-items: center;
+
+          .username {
+            font-size: 14px;
+            color: theme.$br-element-fg;
+          }
+        }
       }
     }
   }

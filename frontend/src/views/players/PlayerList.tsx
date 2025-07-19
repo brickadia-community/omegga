@@ -242,9 +242,31 @@ export const PlayerList = () => {
                         className={player.id === params?.id ? 'active' : ''}
                         key={player.id}
                       >
-                        <td className={player.ban ? 'ban' : ''}>
-                          {player.name}
-                          {player.ban && <IconBan size="18" />}
+                        <td
+                          className={`player-name ${player.ban ? 'ban' : ''}`}
+                        >
+                          <div className="player-name-container">
+                            <div>
+                              <div
+                                data-tooltip={
+                                  player.displayName
+                                    ? 'Display Name'
+                                    : 'Username'
+                                }
+                              >
+                                {player.displayName ?? player.name}
+                              </div>
+                              {player.displayName && (
+                                <div
+                                  className="username"
+                                  data-tooltip="Username"
+                                >
+                                  {player.name}
+                                </div>
+                              )}
+                            </div>
+                            {player.ban && <IconBan size="18" />}
+                          </div>
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           {heartbeatAgo(player.heartbeats)}

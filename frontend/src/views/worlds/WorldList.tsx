@@ -275,9 +275,9 @@ export const WorldList = () => {
                         key={w}
                         className={`world-item ${
                           w === selectedWorld ? 'selected' : ''
-                        }`}
+                        } ${w === activeWorld ? 'next' : ''}`}
                         data-tooltip={
-                          w === nextWorld
+                          w === activeWorld
                             ? 'This world will load when the server starts'
                             : ''
                         }

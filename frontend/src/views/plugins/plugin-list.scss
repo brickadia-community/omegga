@@ -40,13 +40,21 @@
     text-decoration: none;
     border-radius: theme.$br-radius-md;
 
-    &:hover,
-    .router-link-active {
+    &:hover {
       background-color: theme.$br-element-hover;
     }
-    &:active,
-    &.disabled {
+    &:active {
       background-color: theme.$br-element-pressed;
+    }
+
+    &.selected {
+      background-color: theme.$br-info-normal;
+      &:hover {
+        background-color: theme.$br-info-hover;
+      }
+      &:active {
+        background-color: theme.$br-info-pressed;
+      }
     }
 
     .tabler-icon {

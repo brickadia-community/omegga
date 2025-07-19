@@ -16,6 +16,7 @@ import {
   IconBackspace,
   IconBan,
   IconCaretDown,
+  IconCaretUp,
   IconEraser,
   IconPlug,
   IconX,
@@ -138,8 +139,8 @@ export const PlayerInspector = () => {
         {player && (
           <div className="widgets-container">
             <Button normal boxy onClick={() => setShowActions(!showActions)}>
-              <IconCaretDown />
-              User Actions...
+              {showActions ? <IconCaretUp /> : <IconCaretDown />}
+              User Actions
             </Button>
             <div
               className="widgets-list"

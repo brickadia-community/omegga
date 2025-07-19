@@ -52,7 +52,7 @@ export const PluginList = () => {
   const [_location, params] = useRoute('/plugins/:id?');
   const selectedPluginName = useMemo(
     () =>
-      plugins.find(plugin => plugin.name === params?.id)?.name ??
+      plugins.find(plugin => plugin.path === params?.id)?.name ??
       'SELECT A PLUGIN',
     [plugins, params?.id],
   );
@@ -137,7 +137,7 @@ export const PluginList = () => {
                         href={'/plugins/' + plugin.path}
                         key={plugin.path}
                         data-tooltip={plugin.documentation?.description}
-                        className="plugin-item"
+                        className={`plugin-item ${params?.id === plugin.path ? 'selected' : ''}`}
                       >
                         <plugin.icon
                           className={plugin.status}
