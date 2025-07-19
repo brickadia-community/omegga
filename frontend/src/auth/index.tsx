@@ -1,6 +1,7 @@
 import { IconArrowRight, IconLockOpen } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import turkeyImage from '../../assets/img/turkey.webp';
 import { Background } from '../components/background';
 import { Button } from '../components/button';
 import { Footer } from '../components/footer';
@@ -9,7 +10,6 @@ import { Input } from '../components/input';
 import { Loader } from '../components/loader';
 import { Modal } from '../components/modal';
 import { PopoutContent } from '../components/popout';
-import turkeyImage from '../../assets/img/turkey.webp';
 
 const Auth = () => {
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ const Auth = () => {
         </div>
       </Background>
       <Modal visible={!loading}>
-        <Header>Brickadia Server Login</Header>
+        <Header attached>Brickadia Server Login</Header>
         <PopoutContent>
           <p>Welcome to the Omegga Web UI.</p>
           {firstLoad && (
@@ -78,27 +78,27 @@ const Auth = () => {
         </PopoutContent>
         <div className="popout-inputs">
           <Input
-            placeholder="username"
+            placeholder="Username"
             type="text"
             value={username}
             onChange={setUsername}
           />
           <Input
-            placeholder="password"
+            placeholder="Password"
             type="password"
             value={password}
             onChange={setPassword}
           />
           {firstLoad && (
             <Input
-              placeholder="confirm password"
+              placeholder="Confirm Password"
               type="password"
               value={confirm}
               onChange={setConfirm}
             />
           )}
         </div>
-        <Footer>
+        <Footer attached>
           {firstLoad && (
             <Button
               main
