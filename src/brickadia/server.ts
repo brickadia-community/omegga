@@ -14,6 +14,7 @@ import {
 } from '@/softconfig';
 import { getGlobalToken } from '@cli/auth';
 import { IConfig } from '@config/types';
+import { checkWsl } from '@util/wsl';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import 'colors';
 import EventEmitter from 'events';
@@ -257,7 +258,7 @@ export default class BrickadiaServer extends EventEmitter {
       world && `-World="${world.file}"`,
       '-NotInstalled',
       '-log',
-      require('../util/wsl') === 1 ? '-OneThread' : null,
+      checkWsl() === 1 ? '-OneThread' : null,
       this.path ? `-UserDir="${this.path}"` : null,
       token ? `-Token="${token}"` : null, // remove token argument if not provided
       !token && email ? `-User="${email}"` : null, // remove email argument if not provided or token is provided

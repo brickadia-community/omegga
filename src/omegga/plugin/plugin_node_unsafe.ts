@@ -1,11 +1,11 @@
-import { Plugin } from '@omegga/plugin';
-import type Omegga from '@omegga/server';
+import Logger from '@/logger';
 import OmeggaPlugin, { PluginStore } from '@/plugin';
+import type Omegga from '@omegga/server';
 import * as util from '@util';
 import disrequire from 'disrequire';
 import fs from 'fs';
 import path from 'path';
-import Logger from '@/logger';
+import { Plugin } from './interface';
 
 global.OMEGGA_UTIL = util;
 
@@ -91,7 +91,7 @@ export default class NodePlugin extends Plugin {
         typeof (Plugin as any).prototype !== 'object' ||
         typeof (Plugin as any).prototype.constructor !== 'function'
       )
-        return stopPlugin();
+        return stopPlugin('missing constructor in plugin');
 
       // interface with plugin store
       const store: PluginStore = {

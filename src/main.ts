@@ -19,13 +19,16 @@ import {
   steamcmdDownloadGame,
   steamcmdDownloadSelf,
 } from './updater';
-const pkg = require('../package.json');
+import { PKG, VERSION } from './version';
 
-const notifier = updateNotifier({
-  pkg,
-  updateCheckInterval: 1000 * 60 * 60 * 24,
-});
-notifier.notify();
+const notifier =
+  process.env.PACKAGE_NOTIFIER !== 'false'
+    ? updateNotifier({
+        pkg: PKG,
+        updateCheckInterval: 1000 * 60 * 60 * 24,
+      })
+    : null;
+notifier?.notify();
 
 // TODO: let omegga bundle config (roles, bans, server config) to zip
 // TODO: let omegga unbundle config from zip to current omegga dir
@@ -40,8 +43,8 @@ const createDefaultConfig = () => {
 };
 
 const program = commander
-  .description(pkg.description)
-  .version(pkg.version)
+  .description(PKG.description)
+  .version(VERSION)
   .option(
     '-d, --debug',
     'Print all console logs rather than just chat messages',
@@ -215,7 +218,7 @@ const program = commander
     // create a terminal
     Logger.setTerminal(new Terminal(server, options));
 
-    if (notifier.update) {
+    if (notifier?.update) {
       Logger.logp(
         `Omegga update is available (${('v' + notifier.update.latest).yellow})! Run`,
         'npm i -g omegga'.yellow,
@@ -223,7 +226,12 @@ const program = commander
       );
     }
 
-    if (conf.__STEAM && !update && !conf.server?.steambetaPassword) {
+    if (
+      conf.__STEAM &&
+      !update &&
+      !conf.server?.steambetaPassword &&
+      process.env.STEAM_NOTIFIER !== 'false'
+    ) {
       hasSteamUpdate(conf.server?.steambeta).then(hasUpdate => {
         if (hasUpdate) {
           Logger.logp('A server update is available!'.brightBlue);
@@ -570,12 +578,15 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
 
     if (!hasSteamcmd) {
       // Prompt to install steamcmd
-      const { install } = await prompts({
-        type: 'confirm',
-        name: 'install',
-        message: 'SteamCMD is not installed. OK to download it?',
-        initial: true,
-      });
+      const { install } =
+        process.env.SKIP_STEAMCMD_PROMPT === 'true'
+          ? { install: true }
+          : await prompts({
+              type: 'confirm',
+              name: 'install',
+              message: 'SteamCMD is not installed. OK to download it?',
+              initial: true,
+            });
 
       if (!install) {
         Logger.errorp('SteamCMD is required for steam support. Exiting...');

@@ -134,4 +134,5 @@ const brs: {
 export * as brs from 'brs-js';
 export { chat, color, uuid, pattern, time, map, brick, wsl };
 
-export default { chat, color, uuid, pattern, time, map, brick, wsl, brs };
+const OMEGGA_UTIL = { chat, color, uuid, pattern, time, map, brick, wsl, brs };
+export default OMEGGA_UTIL;

@@ -6,6 +6,7 @@ import { IServerStatus } from '@omegga/types';
 import bodyParser from 'body-parser';
 import express from 'express';
 import expressSession from 'express-session';
+import hasbin from 'hasbin';
 import http from 'http';
 import https from 'https';
 import NedbStore from 'nedb-promises-session-store';
@@ -68,7 +69,7 @@ export default class Webserver {
 
   // create the webserver
   async createServer() {
-    const hasOpenSSL = require('hasbin').sync('openssl');
+    const hasOpenSSL = hasbin.sync('openssl');
 
     // let the database do migrations
     await this.database.doMigrations();

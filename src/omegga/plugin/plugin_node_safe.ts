@@ -1,11 +1,11 @@
 import Logger from '@/logger';
+import Omegga from '@omegga/server';
 import EventEmitter from 'events';
 import fs from 'fs';
 import path from 'path';
 import readline from 'readline';
 import { Worker } from 'worker_threads';
-import { Plugin } from '@omegga/plugin';
-import Omegga from '@omegga/server';
+import { Plugin } from './interface';
 import { bootstrap } from './plugin_node_safe/proxyOmegga';
 
 // Main plugin file (like index.js)

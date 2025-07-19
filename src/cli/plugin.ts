@@ -3,16 +3,17 @@ import soft from '@/softconfig';
 import * as config from '@config';
 import { PluginLoader } from '@omegga/plugin';
 import { exec as execNonPromise } from 'child_process';
+import 'colors';
 import fs from 'fs';
+import hasbin from 'hasbin';
+import { VERSION } from 'lodash';
 import path from 'path';
 import prompts from 'prompts';
 import semver from 'semver';
 import simpleGit, { ResetMode, SimpleGit } from 'simple-git';
 import { promisify } from 'util';
-const pkg = require('../../package.json');
-const exec = promisify(execNonPromise);
 
-require('colors');
+const exec = promisify(execNonPromise);
 
 const MAIN_BRANCHES = ['master', 'main'];
 
@@ -181,10 +182,10 @@ function checkPlugin(omeggaPath: string, plugin: IPlugin | IInstalledPlugin) {
         'omeggaVersion'.yellow + '. Expected semver expression',
       );
       return false;
-    } else if (!semver.satisfies(pkg.version, data.omeggaVersion)) {
+    } else if (!semver.satisfies(VERSION, data.omeggaVersion)) {
       plgWarn(
         plugin,
-        `WARNING - Plugin is not made for this version of omegga (${pkg.version.yellow} vs ${data.omeggaVersion.yellow})`,
+        `WARNING - Plugin is not made for this version of omegga (${VERSION.yellow} vs ${data.omeggaVersion.yellow})`,
       );
       return false;
     }
@@ -659,7 +660,7 @@ async function init() {
   const templateData = {
     name,
     author: author ?? 'AUTHOR',
-    omeggaVersion: pkg.version,
+    omeggaVersion: VERSION,
   };
 
   const copyAndRender = async (src: string, dest: string) => {
@@ -689,7 +690,7 @@ async function init() {
   verboseLog('Copying and rendering template...');
   await copyAndRender(src, dest);
 
-  if (require('hasbin').sync('git')) {
+  if (hasbin.sync('git')) {
     verboseLog('Running', 'git init'.yellow, 'in the new plugin directory ...');
     await exec('git init', { cwd: dest });
   }

@@ -413,7 +413,12 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   }
 }
 
-// copy prototypes from core omegga to the proxy omegga
-for (const fn in STEAL_PROTOTYPES) {
-  (ProxyOmegga as any).prototype[fn] = Omegga.prototype[fn];
+export function injectOmeggaPrototypes(
+  proxyOmegga: typeof ProxyOmegga,
+  omegga: typeof Omegga,
+) {
+  // copy prototypes from core omegga to the proxy omegga
+  for (const fn in STEAL_PROTOTYPES) {
+    proxyOmegga.prototype[fn] = omegga.prototype[fn];
+  }
 }

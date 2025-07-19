@@ -3,6 +3,7 @@ import { steamcmdDownloadGame } from '@/updater';
 import Omegga from '@omegga/server';
 import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
+import { checkWsl } from '@util/wsl';
 import readline from 'readline';
 import { install } from './plugin';
 
@@ -845,7 +846,6 @@ export default class Terminal {
       );
     });
     omegga.on('start', () => {
-      const { checkWsl } = require('../util/wsl');
       const wsl = checkWsl();
       log(
         `Server has started${

@@ -2,13 +2,5 @@
 if (module.parent) {
   module.exports = require('./dist/index.js');
 } else {
-  require('source-map-support').install({
-    hookRequire: true,
-  });
-
-  // process.on('unhandledRejection', (error, p) => {
-  //   console.log(error, error.stack);
-  // });
-
   require('./dist/main.js');
 }

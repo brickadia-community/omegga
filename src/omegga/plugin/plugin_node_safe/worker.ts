@@ -4,7 +4,6 @@
 // rather than unloading and reloading code
 
 import Logger from '@/logger';
-Logger.VERBOSE = process.env.VERBOSE === 'true';
 import OmeggaPlugin, {
   OmeggaLike,
   PluginConfig,
@@ -12,7 +11,8 @@ import OmeggaPlugin, {
   PluginStore,
 } from '@/plugin';
 import Player from '@omegga/player';
-import type Omegga from '@omegga/server';
+import Omegga from '@omegga/server';
+import OmeggaUtil from '@util';
 import { mkdir } from '@util/file';
 import 'colors';
 import EventEmitter from 'events';
@@ -20,11 +20,10 @@ import fs from 'fs';
 import { cloneDeep } from 'lodash';
 import path from 'path';
 import { NodeVM } from 'vm2';
-import webpack, { Stats } from 'webpack';
+import webpack, { ExternalItemFunctionData, Stats } from 'webpack';
 import { parentPort } from 'worker_threads';
-import { ProxyOmegga } from './proxyOmegga';
-import 'source-map-support/register';
-import { ExternalItemFunctionData } from 'webpack';
+import { injectOmeggaPrototypes, ProxyOmegga } from './proxyOmegga';
+Logger.VERBOSE = process.env.VERBOSE === 'true';
 
 const MAIN_FILE = 'omegga.plugin.js';
 const MAIN_FILE_TS = 'omegga.plugin.ts';
@@ -73,6 +72,7 @@ const emit = (action: string, ...args: any[]) => {
 const exec = (cmd: string) => emit('exec', cmd);
 
 // create the proxy omegga
+injectOmeggaPrototypes(ProxyOmegga, Omegga);
 const omegga = new ProxyOmegga(exec);
 
 // add plugin fetcher
@@ -305,7 +305,7 @@ async function createVm(
   vm.on('console.warn', ezLog('warn', pluginName.brightYellow, ':>'.yellow));
   vm.on('console.trace', ezLog('trace', pluginName, 'T>'.grey));
 
-  global.OMEGGA_UTIL = require('../../../util/index.js');
+  global.OMEGGA_UTIL = OmeggaUtil;
   // pass in util functions
   vm.freeze(global.OMEGGA_UTIL, 'OMEGGA_UTIL');
   vm.freeze(omegga, 'Omegga');

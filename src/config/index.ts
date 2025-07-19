@@ -1,7 +1,9 @@
+import soft from '@/softconfig';
 import Configstore from 'configstore';
 import fs from 'fs';
 import path from 'path';
-import soft from '@/softconfig';
+import format_js from './formats/format_js';
+import format_yaml from './formats/format_yml';
 import reader from './reader';
 import { IConfig, IConfigFormat } from './types';
 import writer from './writer';
@@ -19,24 +21,7 @@ export const store = new Configstore(
 );
 
 // find all format_EXT.js files in the formats path
-const formats: IConfigFormat[] = fs
-  .readdirSync(path.join(__dirname, 'formats'))
-  // all formats match the format_EXT.js pattern
-  .filter(file => file.match(/format_[a-z]+\.js$/))
-  // require all the formats
-  .map(file => require(path.join(__dirname, 'formats', file)).default)
-  // format has a valid extension, reader, and writer
-  .filter(
-    format =>
-      format.extension &&
-      format.extension.match(/^[a-z]+$/) &&
-      format.encoding &&
-      format.encoding.match(/^(string|buffer)$/) &&
-      format.reader &&
-      typeof format.reader === 'function' &&
-      format.writer &&
-      typeof format.writer === 'function',
-  );
+const formats: IConfigFormat[] = [format_js, format_yaml];
 
 // create read/write funcs for the provided formats
 export const defaultConfig: IConfig = {

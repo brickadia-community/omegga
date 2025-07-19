@@ -1,21 +1,21 @@
 import Logger from '@/logger';
-import OmeggaPlugin from '@/plugin';
+import { IPluginCommand, IPluginDocumentation } from '@/plugin';
 import soft from '@/softconfig';
 import fs from 'fs';
 import Datastore from 'nedb-promises';
 import path from 'path';
 import type Player from './player';
+import { Plugin } from './plugin/interface';
+import RpcPlugin from './plugin/plugin_jsonrpc_stdio';
+import NodeVmPlugin from './plugin/plugin_node_safe';
+import NodePlugin from './plugin/plugin_node_unsafe';
 import type Omegga from './server';
-import { IPluginDocumentation, IPluginCommand } from '@/plugin';
 
 export interface IPluginJSON {
   formatVersion: number;
   omeggaVersion: string;
   emitConfig?: string;
 }
-
-// Check if this plugin is disabled
-const DISABLED_FILE = 'disabled.omegga';
 
 // TODO: move doc.json to this file (maybe)
 // TODO: cleaner plugin error messages
@@ -31,126 +31,6 @@ export interface IStoreConfig {
   type: 'config';
   plugin: string;
   value: Record<string, unknown>;
-}
-
-/*
-  Plugin interface
-    Allows omegga to interface with plugins of a format
-*/
-export class Plugin {
-  // returns true if a plugin at this path can be loaded
-  // only one kind of plugin should match this type
-  static canLoad(_pluginPath: string) {
-    return false;
-  }
-
-  // returns the kind of plugin this is
-  static getFormat(): string {
-    throw 'undefined plugin format';
-  }
-
-  // read a file as json or return null
-  static readJSON(file: string) {
-    try {
-      return JSON.parse(fs.readFileSync(file, 'utf8'));
-    } catch (e) {
-      return null;
-    }
-  }
-
-  path: string;
-  omegga: Omegga;
-  shortPath: string;
-  storage: PluginStorage;
-
-  documentation: IPluginDocumentation;
-  pluginConfig: IPluginJSON;
-  pluginFile: string;
-  commands: string[];
-  loadedPlugin: OmeggaPlugin;
-
-  // initialize a plugin at this path
-  constructor(pluginPath: string, omegga?: Omegga) {
-    this.path = pluginPath;
-    this.omegga = omegga;
-    if (omegga) {
-      this.shortPath = pluginPath.replace(
-        path.join(omegga.path, soft.PLUGIN_PATH) + '/',
-        '',
-      );
-    }
-  }
-
-  // assign plugin storage
-  setStorage(storage: PluginStorage) {
-    this.storage = storage;
-  }
-
-  // check if the plugin is enabled
-  isEnabled() {
-    return !fs.existsSync(path.join(this.path, DISABLED_FILE));
-  }
-  // set the plugin enabled/disabled
-  setEnabled(enabled: boolean) {
-    const disabledPath = path.join(this.path, DISABLED_FILE);
-    if (enabled === this.isEnabled()) {
-      return;
-    }
-    if (enabled) {
-      fs.unlinkSync(disabledPath);
-    } else {
-      fs.closeSync(fs.openSync(disabledPath, 'w'));
-    }
-    this.emitStatus();
-  }
-
-  // emit a plugin status change
-  emitStatus() {
-    this.omegga.emit('plugin:status', this.shortPath, {
-      name: this.getName(),
-      isLoaded: this.isLoaded(),
-      isEnabled: this.isEnabled(),
-    });
-  }
-
-  // emit a custom event from another plugin
-  async emitPlugin(_ev: string, _from: string, _args: any[]): Promise<any> {}
-
-  // get the plugin name, usually based on documentation data
-  getName() {
-    const doc = this.getDocumentation();
-    return (doc ? doc.name : path.basename(this.path)) || 'unnamed plugin';
-  }
-
-  // get the documentation object for this plugin
-  getDocumentation(): IPluginDocumentation {
-    return null;
-  }
-
-  // return true if this plugin is loaded
-  isLoaded() {
-    return false;
-  }
-
-  // return true if the command exists
-  isCommand(_cmd: string) {
-    return false;
-  }
-
-  // start the plugin, returns true if plugin successfully loaded
-  async load() {
-    return false;
-  }
-
-  // stop + kill the plugin, returns true if plugin successfully unloaded
-  async unload() {
-    return false;
-  }
-
-  // extra info for this kind of plugin
-  getInfo(): Record<string, unknown> {
-    return {};
-  }
 }
 
 // key-value storage for a plugin
@@ -298,12 +178,11 @@ export class PluginLoader {
       autoload: true,
     });
     this.store.persistence.setAutocompactionInterval(1000 * 60 * 5);
-    this.formats = [];
     this.plugins = [];
 
     Logger.verbose('Loading plugin formats');
-    // load all the plugin formats in
-    this.loadFormats(path.join(__dirname, 'plugin'));
+    this.formats = [RpcPlugin, NodeVmPlugin, NodePlugin];
+    Logger.verbose('Found plugin formats:', this.formats);
 
     if (omegga) {
       // soon to be deprecated !help
@@ -314,32 +193,9 @@ export class PluginLoader {
     }
   }
 
-  // let the plugin loader scan another kind of plugin in
-  addFormat(format: typeof Plugin) {
-    if (!(format instanceof Plugin))
-      throw 'provided plugin format is not a plugin';
-
-    this.formats.push(format);
-  }
-
   // determine if this command is a command on the plugin
   isCommand(cmd: string) {
     return cmd === 'plugins' || this.plugins.some(p => p.isCommand(cmd));
-  }
-
-  // scan a folder and load in formats
-  loadFormats(dir: string) {
-    // add all the discovered formats into the formats list
-    this.formats.push(
-      // find all plugin_EXT.js files in the given dir
-      ...fs
-        .readdirSync(dir)
-        // all files match the plugin_nameType.js pattern
-        .filter(file => file.match(/plugin_[a-zA-Z_]+\.js$/))
-        // require all the formats
-        .map(file => require('./plugin/' + file).default),
-    );
-    Logger.verbose('Found plugin formats:', this.formats);
   }
 
   // unload and load all installed plugins

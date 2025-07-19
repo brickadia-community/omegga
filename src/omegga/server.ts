@@ -8,6 +8,7 @@ import {
   CONFIG_SAVED_DIR,
   DATA_PATH,
 } from '@/softconfig';
+import { VERSION } from '@/version';
 import { EnvironmentPreset } from '@brickadia/presets';
 import {
   BRBanList,
@@ -37,7 +38,6 @@ import {
   IServerStatus,
 } from './types';
 import OmeggaWrapper from './wrapper';
-const pkg = require('../../package.json');
 
 const MISSING_CMD =
   '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
@@ -83,7 +83,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     super(serverPath, cfg);
     this.verbose = Logger.VERBOSE;
 
-    Logger.verbose('Running omegga', `v${pkg.version}`.green);
+    Logger.verbose('Running omegga', `v${VERSION}`.green);
     Logger.verbose('Versions', process.versions);
     Logger.verbose('Config', cfg);
 

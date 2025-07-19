@@ -2,8 +2,8 @@ import Logger from '@/logger';
 import { IPluginDocumentation } from '@/plugin';
 import { steamcmdDownloadGame } from '@/updater';
 import { getLastSteamUpdateCheck, hasSteamUpdate } from '@/updater/steam';
+import { VERSION } from '@/version';
 import Player from '@omegga/player';
-import { Plugin } from '@omegga/plugin';
 import { parseLinks, sanitize } from '@util/chat';
 import { rgbToHex } from '@util/color';
 import { parseBrickadiaTime } from '@util/time';
@@ -29,11 +29,12 @@ import {
   IUserNote,
   OmeggaSocketIo,
 } from './types';
-const pkg = require('../../../package.json');
+import { Plugin } from '@omegga/plugin/interface';
 
 export type OmeggaSocketData = {
   roles: { type: 'role'; name: string }[];
   version: string;
+  brickadiaVersion: number | null;
   canLogOut: boolean;
   now: number;
   userless: boolean;
@@ -188,7 +189,8 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     database.getRoles().then(roles => {
       socket.emit('data', {
         roles,
-        version: pkg.version,
+        version: VERSION,
+        brickadiaVersion: omegga.version ?? null,
         canLogOut: socket.data.user.username !== '',
         now: Date.now(), // this can be used for the frontend to anticipate drift
         userless: !socket.data.user.username,

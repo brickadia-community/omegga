@@ -1,3 +1,6 @@
+import Logger from '@/logger';
+import { EnvironmentPreset } from '@brickadia/presets';
+import Omegga from '@omegga/server';
 import { WriteSaveObject } from 'brs-js';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import fs from 'fs';
@@ -8,11 +11,8 @@ import {
 } from 'json-rpc-2.0';
 import path from 'path';
 import readline from 'readline';
-import Omegga from '@omegga/server';
-import { Plugin } from '@omegga/plugin';
+import { Plugin } from './interface';
 import { bootstrap } from './plugin_node_safe/proxyOmegga';
-import Logger from '@/logger';
-import { EnvironmentPreset } from '@brickadia/presets';
 
 // TODO: check if version is compatible (v1 -> v2) from file
 // TODO: write jsonrpc wrappers in a few languages, implement a few simple plugins
