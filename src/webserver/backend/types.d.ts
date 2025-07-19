@@ -18,11 +18,13 @@ export type OmeggaSocketIo = SocketIo<
 export interface IPlayer {
   id?: string;
   name?: string;
+  displayName?: string;
 }
 
 export interface IChatUser {
   id: string;
   name: string;
+  displayName: string;
   web?: boolean;
   color: string;
   isFirst?: boolean;
@@ -93,7 +95,8 @@ export interface IUserHistory {
   type: 'userHistory';
   id: string;
   name: string;
-  nameHistory: { name: string; date: number }[];
+  displayName: string;
+  nameHistory: { displayName: string; name: string; date: number }[];
   ips: string[];
   created: number;
   lastSeen: number;

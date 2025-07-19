@@ -256,6 +256,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     const user = {
       id: p.id,
       name,
+      displayName: p.displayName,
       color: p.getNameColor(),
     };
 
@@ -264,18 +265,18 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
   });
 
   // player leave events
-  omegga.on('leave', async ({ id, name }) => {
+  omegga.on('leave', async ({ id, name, displayName }) => {
     // tell web users a player left
     io.to('chat').emit(
       'chat',
-      await database.addChatLog('leave', { id, name }),
+      await database.addChatLog('leave', { id, name, displayName }),
     );
   });
 
   // player join events
-  omegga.on('join', async ({ id, name }) => {
+  omegga.on('join', async ({ id, name, displayName }) => {
     // add the visit to the database
-    const isFirst = await database.addVisit({ id, name });
+    const isFirst = await database.addVisit({ id, name, displayName });
 
     // tell web users a player joined (and if it's their first time joining)
     io.to('chat').emit(

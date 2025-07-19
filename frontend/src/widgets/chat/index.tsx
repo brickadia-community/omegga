@@ -1,8 +1,8 @@
-import { Button, Footer, Input, Scroll } from '@components';
+import { Button, Footer, Input, Scroll, UserName } from '@components';
 import type { IStoreChat } from '@omegga/webserver/backend/types';
 import { IconSend } from '@tabler/icons-react';
 import Linkify from 'linkify-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ioEmit, rpcNotify, rpcReq, socket } from '../../socket';
 
 type ChatEntry = IStoreChat & {
@@ -30,14 +30,12 @@ export const ChatWidget = () => {
           ? updatedChats.slice(updatedChats.length - 50)
           : updatedChats;
       });
-      scrollToBottom();
     };
 
     socket.on('chat', handleChat);
     ioEmit('subscribe', 'chat');
     rpcReq('chat.recent').then((logs: ChatEntry[]) => {
       setChats(logs.reverse());
-      scrollToBottom();
     });
 
     return () => {
@@ -45,6 +43,10 @@ export const ChatWidget = () => {
       ioEmit('unsubscribe', 'chat');
     };
   }, []);
+
+  useLayoutEffect(() => {
+    scrollToBottom();
+  }, [chats]);
 
   const sendMessage = (event: React.FormEvent) => {
     event.preventDefault();
@@ -58,28 +60,26 @@ export const ChatWidget = () => {
 
   return (
     <div className="chat-widget">
-      <Scroll className="messages">
+      <Scroll className="messages" ref={ref}>
         <div className="messages-child">
           {chats.map(log => (
             <div key={log._id} className="log-entry">
               {log.action === 'msg' && (
                 <div className="chat-message">
                   {log.user?.web ? '[' : ''}
-                  <span style={{ color: `#${log.user?.color}` }}>
-                    {log.user?.name}
-                  </span>
+                  <UserName color user={log.user} />
                   {log.user?.web ? ']' : ''}:{' '}
                   <Linkify as="span">{log.message}</Linkify>
                 </div>
               )}
               {log.action === 'leave' && (
                 <div className="join-message">
-                  <span>{log.user?.name}</span> left the game.
+                  <UserName user={log.user} /> left the game.
                 </div>
               )}
               {log.action === 'join' && (
                 <div className="join-message">
-                  <span>{log.user?.name}</span> joined the game
+                  <UserName user={log.user} /> joined the game
                   {log.user?.isFirst ? ' for the first time' : ''}.
                 </div>
               )}
@@ -95,6 +95,7 @@ export const ChatWidget = () => {
       <form onSubmit={sendMessage}>
         <Footer>
           <Input
+            roboto
             type="text"
             placeholder="Message"
             value={message}

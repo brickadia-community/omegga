@@ -830,17 +830,20 @@ export default class Terminal {
     // print chat events as players join/leave the server
     omegga.on('join', (p: OmeggaPlayer) =>
       this.log(
-        `${p.name.underline} (${p.displayName.underline}) joined.`.brightBlue,
+        `${p.displayName.underline} (${p.name.underline}) joined.`.brightBlue,
       ),
     );
     omegga.on('leave', (p: OmeggaPlayer) =>
       this.log(
-        `${p.name.underline} (${p.displayName.underline}) left.`.brightBlue,
+        `${p.displayName.underline} (${p.name.underline}) left.`.brightBlue,
       ),
     );
-    omegga.on('chat', (name, message) =>
-      this.log(`${name.brightYellow.underline}: ${message}`),
-    );
+    omegga.on('chat', (name, message) => {
+      const player = omegga.getPlayer(name);
+      this.log(
+        `${(player.displayName ?? player.name ?? name).brightYellow.underline}: ${message}`,
+      );
+    });
     omegga.on('start', () => {
       const { checkWsl } = require('../util/wsl');
       const wsl = checkWsl();

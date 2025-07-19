@@ -86,6 +86,11 @@
     overflow: visible;
     max-width: 300px;
   }
+
+  .name-history .username {
+    font-size: 14px;
+    color: theme.$br-element-fg;
+  }
 }
 
 .player-inspector {

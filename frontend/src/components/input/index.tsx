@@ -6,6 +6,7 @@ export function Input<T extends 'text' | 'number' | 'password'>({
   disabled,
   type = 'text' as T,
   value,
+  roboto,
   onBlur,
   onFocus,
   onChange,
@@ -14,13 +15,14 @@ export function Input<T extends 'text' | 'number' | 'password'>({
   placeholder?: string;
   tooltip?: string;
   disabled?: boolean;
+  roboto?: boolean;
   type?: T;
   value: T extends 'number' ? number : string;
   onChange?: (v: T extends 'number' ? number : string) => void;
 } & Omit<HTMLAttributes<HTMLInputElement>, 'onChange'>) {
   return (
     <div
-      className={`input ${disabled ? 'disabled' : ''}`}
+      className={`input ${disabled ? 'disabled' : ''} ${roboto ? 'roboto' : ''}`}
       data-tooltip={tooltip}
     >
       <input

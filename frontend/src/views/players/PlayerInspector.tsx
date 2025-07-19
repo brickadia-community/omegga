@@ -222,6 +222,9 @@ export const PlayerInspector = () => {
                     </a>
                   </div>
                   <div className="stat">
+                    <b>Display Name:</b> {player.displayName ?? 'unknown'}
+                  </div>
+                  <div className="stat">
                     <b>Host:</b> {player.isHost ? 'Yes' : 'No'}
                   </div>
                   <div className="stat">
@@ -300,7 +303,7 @@ export const PlayerInspector = () => {
                 >
                   Name History
                 </div>
-                <table className="br-table">
+                <table className="br-table name-history">
                   <thead>
                     <tr>
                       <th style={{ textAlign: 'left', width: '100%' }}>
@@ -312,7 +315,22 @@ export const PlayerInspector = () => {
                   <tbody>
                     {player.nameHistory.map(h => (
                       <tr key={h.date + h.name}>
-                        <td>{h.name}</td>
+                        <td>
+                          {/* If the display name is not set, show the username */}
+                          <div
+                            data-tooltip={
+                              h.displayName ? 'Display Name' : 'Username'
+                            }
+                          >
+                            {h.displayName ?? h.name}
+                          </div>
+                          {/* If the display name is set, display the username below */}
+                          {h.displayName && (
+                            <div data-tooltip="Username" className="username">
+                              {h.name}
+                            </div>
+                          )}
+                        </td>
                         <td
                           style={{ textAlign: 'right' }}
                           data-tooltip={new Date(h.date)}

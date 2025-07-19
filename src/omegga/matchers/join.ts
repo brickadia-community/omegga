@@ -70,10 +70,9 @@ const join: MatchGenerator<Player> = omegga => {
               id: joinData.UserId,
             });
 
-            // get the state of the joining player
-            omegga.writeln(
-              `GetAll BRPlayerState UserName UserName=${joinData.UserName}`,
-            );
+            // get the state of all players so we can determine which is this player
+            // TODO: maybe also use the ReplicatedJoinTime, which matches the time for these logs
+            omegga.writeln('GetAll BRPlayerState UserName');
           }
         }
 

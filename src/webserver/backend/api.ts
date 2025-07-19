@@ -66,6 +66,7 @@ export type GetPlayerRes = Omit<IUserHistory, 'nameHistory'> & {
   notes: IUserNote[];
   nameHistory: {
     name: string;
+    displayName: string;
     date: number;
     ago?: number;
   }[];
@@ -416,7 +417,12 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         })[];
         kickHistory: (IStoreKickHistory & { kickerName?: string })[];
         notes: IUserNote[];
-        nameHistory: { name: string; date: number; ago?: number }[];
+        nameHistory: {
+          name: string;
+          displayName: string;
+          date: number;
+          ago?: number;
+        }[];
       } & IUserAgo = await database.getPlayer(id);
       if (!entry) return null;
       const now = Date.now();

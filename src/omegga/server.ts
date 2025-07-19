@@ -409,6 +409,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   getPlayers(): {
     id: string;
     name: string;
+    displayName: string;
     controller: string;
     state: string;
   }[] {
@@ -856,9 +857,13 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
           if (match?.groups?.generator !== 'LogBRWorldManager') return;
 
           const ok = match.groups.data.match(/^World files saved after /);
-          const err = match.groups.data.match(
-            /^Error: (World already exists|Failed to create new world)?/,
-          );
+          const err =
+            !match.groups.data.startsWith(
+              'Error: Failed to capture minigame settings',
+            ) &&
+            match.groups.data.match(
+              /^Error: (World already exists|Failed to create new world)?/,
+            );
           return ok ? { res: true } : err ? { res: false } : undefined;
         },
         {
@@ -884,9 +889,11 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
           if (match?.groups?.generator !== 'LogBRWorldManager') return;
 
           const ok = match.groups.data.match(/^World files saved after /);
-          const err = match.groups.data.match(
-            /^Error: (World has not been saved\.)?/,
-          );
+          const err =
+            !match.groups.data.startsWith(
+              'Error: Failed to capture minigame settings',
+            ) &&
+            match.groups.data.match(/^Error: (World has not been saved\.)?/);
           return ok ? { res: true } : err ? { res: false } : undefined;
         },
         {
