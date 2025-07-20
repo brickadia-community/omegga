@@ -1,9 +1,23 @@
-import { execSync } from 'child_process';
-import path from 'path';
+import { existsSync } from 'fs';
+import { platform, version } from 'os';
 
-export function checkWsl() {
-  // run script that checks wsl version
-  const TOOL_PATH = path.join(__dirname, '../../tools/check_wsl.sh');
-  const out = execSync(TOOL_PATH, { shell: 'bash' }).toString();
-  return { WSL1: 1, WSL2: 2 }[out.trim()] ?? 0;
+export function getPlatform() {
+  if (platform() === 'win32') return 'WINDOWS';
+  // Only WSL1 has this
+  if (version().match(/Microsoft/)) return 'WSL1';
+  // Both WSL1 and WSL2 have this
+  if (existsSync('/run/WSL')) return 'WSL2';
+  if (platform() === 'linux') return 'LINUX';
+  return 'UNKNOWN';
+}
+
+export function checkWsl(): number {
+  switch (getPlatform()) {
+    case 'WSL1':
+      return 1;
+    case 'WSL2':
+      return 2;
+    default:
+      return 0;
+  }
 }
