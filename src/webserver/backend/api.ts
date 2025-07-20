@@ -251,7 +251,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       );
 
       // broadcast to chat
-      server.omegga.broadcast(
+      omegga.broadcast(
         `"[<b><color=\\"ff00ff\\">${user.name}</></>]: ${parseLinks(
           sanitize(message),
         )}"`,
@@ -593,7 +593,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
         // wait for the player to disconnect
         const ok = await Promise.race([
           new Promise(resolve => {
-            this.omegga.once('leave', async (leavingPlayer: IPlayer) => {
+            omegga.once('leave', async (leavingPlayer: IPlayer) => {
               if (leavingPlayer.id === id) {
                 resolve(true);
 
