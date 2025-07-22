@@ -44,42 +44,70 @@ function readFile(db: BetterSqlite3.Database, name: string): Buffer | null {
 }
 
 /** read the meta and owner data from a brdb file */
+// TODO: specify a create/delete time range for the reading the owner data to allow "browsing" of revisions
 export function readBrdbMeta(path: string) {
   const db = openBrdb(path);
   if (!db) return null;
 
   try {
-    const worldJson = JSON.parse(readFile(db, 'World.json').toString('utf8'));
-    const bundleJson = JSON.parse(readFile(db, 'Bundle.json').toString('utf8'));
+    const worldJson: { environment: string } = JSON.parse(
+      readFile(db, 'World.json').toString('utf8'),
+    );
+    const bundleJson: {
+      type: 'World';
+      iD: string;
+      name: string;
+      version: string;
+      tags: string[];
+      authors: string[];
+      createdAt: string;
+      updatedAt: string;
+      description: string;
+      dependencies: string[];
+    } = JSON.parse(readFile(db, 'Bundle.json').toString('utf8'));
 
     // parse the owner schema and its data
-    const ownersSchema = readBrdbSchema(readFile(db, 'Owners.schema'));
-    const { value: ownersMps } = readBrdbType(
-      readFile(db, 'Owners.mps'),
-      0,
-      ownersSchema,
-      'BRSavedOwnerTableSoA',
-    );
+    const ownersSchemaBuf = readFile(db, 'Owners.schema');
+    const ownersBuf = readFile(db, 'Owners.mps');
 
     // Convert the struct of arrays into an array of structs
-    const owners = [];
-    for (let i = 0; i < ownersMps['UserIds'].length; i++) {
-      const id = guidToUuid(ownersMps['UserIds'][i]);
-      const name: string = ownersMps['UserNames'][i];
-      const display_name: string = ownersMps['DisplayNames'][i];
-      const entity_count: number = ownersMps['EntityCounts'][i];
-      const brick_count: number = ownersMps['BrickCounts'][i];
-      const component_count: number = ownersMps['ComponentCounts'][i];
-      const wire_count: number = ownersMps['WireCounts'][i];
-      owners.push({
-        id,
-        name,
-        display_name,
-        entity_count,
-        brick_count,
-        component_count,
-        wire_count,
-      });
+    const owners: {
+      id: string;
+      name: string;
+      display_name: string;
+      entity_count: number;
+      brick_count: number;
+      component_count: number;
+      wire_count: number;
+    }[] = [];
+
+    if (ownersBuf && ownersSchemaBuf) {
+      const ownersSchema = readBrdbSchema(ownersSchemaBuf);
+      const { value: ownersMps } = readBrdbType(
+        ownersBuf,
+        0,
+        ownersSchema,
+        'BRSavedOwnerTableSoA',
+      );
+
+      for (let i = 0; i < ownersMps['UserIds'].length; i++) {
+        const id = guidToUuid(ownersMps['UserIds'][i]);
+        const name: string = ownersMps['UserNames'][i];
+        const display_name: string = ownersMps['DisplayNames'][i];
+        const entity_count: number = ownersMps['EntityCounts'][i];
+        const brick_count: number = ownersMps['BrickCounts'][i];
+        const component_count: number = ownersMps['ComponentCounts'][i];
+        const wire_count: number = ownersMps['WireCounts'][i];
+        owners.push({
+          id,
+          name,
+          display_name,
+          entity_count,
+          brick_count,
+          component_count,
+          wire_count,
+        });
+      }
     }
 
     db.close();

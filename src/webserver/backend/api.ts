@@ -30,6 +30,7 @@ import {
   OmeggaSocketIo,
 } from './types';
 import { Plugin } from '@omegga/plugin/interface';
+import { readBrdbMeta } from '@util/brdb';
 
 export type OmeggaSocketData = {
   roles: { type: 'role'; name: string }[];
@@ -112,6 +113,35 @@ export type WorldRevisionsRes = {
   date: number;
   note: string;
 }[];
+
+export type WorldMetaRes = {
+  meta: {
+    world: {
+      environment: string;
+    };
+    bundle: {
+      type: 'World';
+      iD: string;
+      name: string;
+      version: string;
+      tags: string[];
+      authors: string[];
+      createdAt: string;
+      updatedAt: string;
+      description: string;
+      dependencies: string[];
+    };
+  };
+  owners: {
+    id: string;
+    name: string;
+    display_name: string;
+    entity_count: number;
+    brick_count: number;
+    component_count: number;
+    wire_count: number;
+  }[];
+};
 
 export default function (server: Webserver, io: OmeggaSocketIo) {
   const { database, omegga } = server;
@@ -1059,6 +1089,17 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
           ({ date, ...r }) => ({ ...r, date: date.getTime() }),
         ) satisfies WorldRevisionsRes;
       } catch (_err) {
+        return null;
+      }
+    });
+
+    rpc.addMethod('world.meta', async ([world]: [string]) => {
+      try {
+        const path = omegga.getWorldPath(world);
+        if (!path) return null;
+        return readBrdbMeta(path) satisfies WorldMetaRes;
+      } catch (err) {
+        error('Error while getting world meta', err);
         return null;
       }
     });
