@@ -37,7 +37,7 @@ notifier?.notify();
 const createDefaultConfig = () => {
   Logger.logp('Created default config file');
   config.write(soft.CONFIG_FILENAMES[0] + '.yml', config.defaultConfig);
-  file.mkdir('data/${soft.CONFIG_SAVED_DIR}/Builds');
+  file.mkdir(`data/${soft.CONFIG_SAVED_DIR}/Builds`);
   file.mkdir('plugins');
   return config.defaultConfig;
 };
