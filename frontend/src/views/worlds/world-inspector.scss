@@ -24,6 +24,12 @@
     position: sticky;
     text-transform: uppercase;
   }
+
+  .owners-table {
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .revision-item {
