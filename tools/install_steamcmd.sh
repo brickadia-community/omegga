@@ -34,15 +34,13 @@ has_lib32gcc="yes" # sorry anyone not running arch/debian
 lib32gcc_dep="lib32gcc-s1"
 pkg_manager="apt-get install"
 
-# check if lib32-gcc-libs is installed in arch linux
 if [[ -f /etc/arch-release ]]; then
+  # if lib32-gcc-libs is installed in arch linux
   lib32gcc_dep="lib32-gcc-libs"
   pkg_manager="pacman -S"
   has_lib32gcc=$(pacman -Q lib32-gcc-libs >/dev/null 2>&1 && echo "yes" || echo "no")
-fi
-
-# check if lib32gcc-s1 exists in debian/ubuntu
-if [[ -f /etc/debian_version ]] || [[ -f /etc/lsb-release ]]; then
+elif [[ -f /etc/debian_version ]] || [[ -f /etc/lsb-release ]]; then
+  # if lib32gcc-s1 exists in debian/ubuntu
   lib32gcc_dep="lib32gcc-s1"
   pkg_manager="apt-get install"
   has_lib32gcc=$(dpkg -s lib32gcc-s1 >/dev/null 2>&1 && echo "yes" || echo "no")
