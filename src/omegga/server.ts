@@ -220,7 +220,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     if (config.saveWorld) {
       Logger.logp('Saving world...');
-      this.saveWorld();
+      await this.saveWorld();
     }
   }
 
