@@ -250,45 +250,49 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   /** attempt to restore the server's state */
   async restoreServer() {
+    const tempPlayersFile = join(
+      this.path,
+      DATA_PATH,
+      'omegga_temp_players.json',
+    );
+    if (!existsSync(tempPlayersFile)) return;
+
     try {
-      const tempPlayersFile = join(
-        this.path,
-        DATA_PATH,
-        'omegga_temp_players.json',
+      Logger.logp('Loading previous player positions...');
+
+      // player positions are an array to address multi-clienting
+      const players: { position: number[]; id: string }[] = JSON.parse(
+        readFileSync(tempPlayersFile).toString(),
       );
-      if (existsSync(tempPlayersFile)) {
-        Logger.logp('Loading previous player positions...');
 
-        // player positions are an array to address multi-clienting
-        const players: { position: number[]; id: string }[] = JSON.parse(
-          readFileSync(tempPlayersFile).toString(),
-        );
+      // restore player position on join
+      const callback = (player: OmeggaPlayer) => {
+        const index = players.findIndex(p => p.id === player.id);
+        if (index > -1) {
+          const { position } = players[index];
+          this.writeln(
+            `Chat.Command /TP "${player.name}" ${position.join(' ')} 0`,
+          );
 
-        // restore player position on join
-        const callback = (player: OmeggaPlayer) => {
-          const index = players.findIndex(p => p.id === player.id);
-          if (index > -1) {
-            const { position } = players[index];
-            this.writeln(
-              `Chat.Command /TP "${player.name}" ${position.join(' ')} 0`,
-            );
+          // remove the entry
+          players[index] = players[players.length - 1];
+          players.pop();
+        }
+      };
+      this.on('join', callback);
 
-            // remove the entry
-            players[index] = players[players.length - 1];
-            players.pop();
-          }
-        };
-        this.on('join', callback);
-
-        setTimeout(() => {
-          try {
-            this.off('join', callback);
-            unlinkSync(tempPlayersFile);
-          } catch (err) {
-            Logger.error('Error removing omegga_temp_players.json', err);
-          }
-        }, 180000);
-      }
+      let timeout = setTimeout(() => {
+        try {
+          this.off('join', callback);
+          if (existsSync(tempPlayersFile)) unlinkSync(tempPlayersFile);
+        } catch (err) {
+          Logger.error('Error removing omegga_temp_players.json', err);
+        }
+      }, 10000);
+      this.once('changemap', () => {
+        clearTimeout(timeout);
+        this.off('join', callback);
+      });
     } catch (err) {
       Logger.error('Error restoring previous server state', err);
     }
