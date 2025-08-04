@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "Brickadia server installer, updater, manager, wrapper, configurator, and automator",
   "engines": {
     "node": ">=23.0.0"
@@ -81,8 +81,8 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "jsdoc-to-markdown": "^7.0.1",
-    "linkify-react": "^4.3.1",
-    "linkifyjs": "^4.3.1",
+    "linkify-react": "^4.3.2",
+    "linkifyjs": "^4.3.2",
     "nanostores": "^1.0.1",
     "react-grid-layout": "^1.5.2",
     "sass": "^1.89.2",
