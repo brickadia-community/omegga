@@ -493,7 +493,7 @@ class Player implements OmeggaPlayer {
         line => {
           // [date][counter]0) BP_PlayerState_C /Game/Maps/Plate/Plate.Plate:PersistentLevel.BP_PlayerState_C_2147482378.ColorSelectionState = (SelectedColor=(B=6,G=73,R=246,A=255),MaterialIndex=3,MaterialAlpha=5)
           const match = line.match(
-            /^\[[^\]]+\]\[[^\]]+\]0\) BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.ColorSelectionState = \(SelectedColor=\(B=(?<b>\d+),G=(?<g>\d+),R=(?<r>\d+),A=(?<a>\d+)\),MaterialIndex=(?<materialIndex>\d+),MaterialAlpha=(?<materialAlpha>\d+)\)$/,
+            /^\[[^\]]+\]\[[^\]]+\]\d+\) BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.ColorSelectionState = \(SelectedColor=\(B=(?<b>\d+),G=(?<g>\d+),R=(?<r>\d+),A=(?<a>\d+)\),MaterialIndex=(?<materialIndex>\d+),MaterialAlpha=(?<materialAlpha>\d+)\)$/,
           );
           if (!match) return;
           if (match.groups.state !== this.state) return;
