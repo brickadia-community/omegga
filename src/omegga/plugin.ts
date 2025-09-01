@@ -15,6 +15,12 @@ export interface IPluginJSON {
   formatVersion: number;
   omeggaVersion: string;
   emitConfig?: string;
+  dependencies?: {
+    [pluginName: string]: { optional?: boolean; repo?: string } | string;
+  };
+  loadPriority?: number;
+  loadBefore?: string[];
+  loadAfter?: string[];
 }
 
 // TODO: move doc.json to this file (maybe)
@@ -270,7 +276,7 @@ export class PluginLoader {
   }
 
   /** Scans a plugin at the specified directory and create a Plugin object. */
-  async scanPlugin(dir: string): Promise<Plugin> {
+  async scanPlugin(dir: string): Promise<Plugin | undefined> {
     Logger.verbose('Scanning plugin', dir.underline);
 
     if (!fs.existsSync(dir)) {
@@ -318,6 +324,119 @@ export class PluginLoader {
     }
   }
 
+  calculateLoadOrder(unsortedPlugins: Plugin[]) {
+    if (!unsortedPlugins.length) {
+      return [];
+    }
+
+    // create a DAG of plugins based on dependencies, loadBefore, and loadAfter
+    type DependencyGraphNode = {
+      plugin: Plugin;
+      inDegree: number;
+      behind: string[];
+    };
+    type DependencyGraph = Record<string, DependencyGraphNode>;
+
+    const depGraph = unsortedPlugins.reduce((graph, plugin) => {
+      const name = plugin.getName();
+      const {
+        dependencies = {},
+        loadAfter = [],
+        loadBefore = [],
+      } = plugin.pluginConfig ?? {};
+
+      //create a node in case it doesn't exist
+      graph[name] ??= {} as DependencyGraphNode;
+      graph[name].plugin ??= plugin;
+      graph[name].behind ??= [];
+      graph[name].inDegree ??= 0;
+
+      // add edges for everything ahead of name
+      for (const depName of [...loadAfter, ...Object.keys(dependencies)]) {
+        graph[name].behind.push(depName);
+
+        //create a node and set an inDegree in case it doesn't exist
+        graph[depName] ??= {} as DependencyGraphNode;
+        graph[depName].inDegree ??= 0;
+
+        graph[depName].inDegree++;
+      }
+
+      // add edges for everything behind name
+      for (const depName of [...loadBefore]) {
+        //create a node and a behind array in case it doesn't exist
+        graph[depName] ??= {} as DependencyGraphNode;
+        graph[depName].behind ??= [];
+
+        graph[depName].behind.push(name);
+
+        graph[name].inDegree++;
+      }
+
+      return graph;
+    }, {} as DependencyGraph);
+
+    // find all nodes with no incoming edges to start processing
+    let zeros: string[] = Object.entries(depGraph).reduce(
+      (arr, [name, { inDegree }]) => {
+        if (inDegree === 0) {
+          arr.push(name);
+        }
+        return arr;
+      },
+      [],
+    );
+
+    // execute a topological sort, grouping nodes where the order doesn't matter, in the order that *does* matter
+    const result: string[][] = [];
+    while (zeros.length) {
+      // these nodes can be in any order
+      result.unshift([...zeros]);
+
+      const nextZero = [];
+
+      for (const node of zeros) {
+        for (const neighbor of depGraph[node].behind) {
+          depGraph[neighbor].inDegree--;
+          if (depGraph[neighbor].inDegree === 0) {
+            nextZero.push(neighbor);
+          }
+        }
+      }
+
+      zeros = nextZero;
+    }
+
+    if (Object.values(depGraph).some(({ inDegree }) => inDegree > 0)) {
+      Logger.verbose(
+        'Cyclic or missing dependencies detected in plugins. Could not resolve load order.',
+      );
+      return [];
+    }
+
+    return result
+      .map(interchangeablePlugins =>
+        interchangeablePlugins
+          .map(name => depGraph[name].plugin)
+          // alphabetical order for the sub groups where order doesn't matter so its deterministic
+          .sort((a, b) => a.getName().localeCompare(b.getName())),
+      )
+      .flat()
+      .sort((a, b) => {
+        const A = a.pluginConfig?.loadPriority;
+        const B = b.pluginConfig?.loadPriority;
+        const aU = A == null;
+        const bU = B == null;
+        // sort the result by load priority so that
+        // a defined loadPriority that is negative comes before undefined (lower is earlier)
+        // and a defined loadPriority that is positive comes after undefined (higher is later)
+        if (aU && bU) return 0;
+        if (aU) return B <= 0 ? 1 : -1;
+        if (bU) return A <= 0 ? -1 : 1;
+        return A - B;
+      });
+  }
+
   /** Scans plugin directory for plugins and builds their documentation. */
   async scan() {
     Logger.verbose('Scanning plugin directory');
@@ -334,7 +453,7 @@ export class PluginLoader {
     }
 
     // find all directories in the plugin path
-    this.plugins = (
+    const unsortedPlugins = (
       await Promise.all(
         fs
           .readdirSync(this.path)
@@ -345,9 +464,11 @@ export class PluginLoader {
       // remove plugins without formats
       .filter(p => p);
 
+    this.plugins = this.calculateLoadOrder(unsortedPlugins);
+
     Logger.verbose('Finished scanning plugin directory');
     Logger.verbose(
-      `Found ${this.plugins.length} plugins`,
+      `Found ${this.plugins.length} plugins.Loading in this order: `,
       this.plugins.map(p => p.getName()),
     );
 
