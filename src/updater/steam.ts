@@ -1,8 +1,8 @@
 import Logger from '@/logger';
 import { GAME_INSTALL_DIR, STEAM_APP_ID, STEAMCMD_PATH } from '@/softconfig';
-import { execSync } from 'child_process';
-import { existsSync, readFileSync } from 'fs';
-import path from 'path';
+import { execSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import acfParser from 'steam-acf2json';
 
 export function getAppId() {

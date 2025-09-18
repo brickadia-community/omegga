@@ -1,9 +1,9 @@
 import Logger from '@/logger';
 import { IPluginCommand, IPluginDocumentation } from '@/plugin';
 import soft from '@/softconfig';
-import fs from 'fs';
 import Datastore from 'nedb-promises';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import type Player from './player';
 import { Plugin } from './plugin/interface';
 import RpcPlugin from './plugin/plugin_jsonrpc_stdio';

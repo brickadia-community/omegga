@@ -1,10 +1,10 @@
 import Logger from '@/logger';
 import Omegga from '@omegga/server';
-import EventEmitter from 'events';
-import fs from 'fs';
-import path from 'path';
+import EventEmitter from 'node:events';
+import fs from 'node:fs';
+import path from 'node:path';
+import { Worker } from 'node:worker_threads';
 import readline from 'readline';
-import { Worker } from 'worker_threads';
 import { Plugin } from './interface';
 import { bootstrap } from './plugin_node_safe/proxyOmegga';
 

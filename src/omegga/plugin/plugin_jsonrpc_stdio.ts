@@ -2,14 +2,14 @@ import Logger from '@/logger';
 import { EnvironmentPreset } from '@brickadia/presets';
 import Omegga from '@omegga/server';
 import { WriteSaveObject } from 'brs-js';
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
-import fs from 'fs';
 import {
   JSONRPCClient,
   JSONRPCServer,
   JSONRPCServerAndClient,
 } from 'json-rpc-2.0';
-import path from 'path';
+import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import readline from 'readline';
 import { Plugin } from './interface';
 import { bootstrap } from './plugin_node_safe/proxyOmegga';

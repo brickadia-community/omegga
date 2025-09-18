@@ -1,5 +1,5 @@
-import { existsSync } from 'fs';
-import { platform, version } from 'os';
+import { existsSync } from 'node:fs';
+import { platform, version } from 'node:os';
 
 export function getPlatform() {
   if (platform() === 'win32') return 'WINDOWS';

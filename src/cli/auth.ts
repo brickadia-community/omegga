@@ -2,8 +2,8 @@ import soft from '@/softconfig';
 import { genAuthFiles, writeAuthFiles } from '@omegga/auth';
 import * as file from '@util/file';
 import 'colors';
-import fs, { existsSync } from 'fs';
-import path from 'path';
+import fs, { existsSync } from 'node:fs';
+import path from 'node:path';
 import prompts from 'prompts';
 
 export const AUTH_PATH = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);

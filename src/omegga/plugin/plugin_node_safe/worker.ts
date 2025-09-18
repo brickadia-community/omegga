@@ -15,13 +15,13 @@ import Omegga from '@omegga/server';
 import OmeggaUtil from '@util';
 import { mkdir } from '@util/file';
 import 'colors';
-import EventEmitter from 'events';
-import fs from 'fs';
 import { cloneDeep } from 'lodash';
-import path from 'path';
+import EventEmitter from 'node:events';
+import fs from 'node:fs';
+import path from 'node:path';
+import { parentPort } from 'node:worker_threads';
 import { NodeVM } from 'vm2';
 import webpack, { ExternalItemFunctionData, Stats } from 'webpack';
-import { parentPort } from 'worker_threads';
 import { injectOmeggaPrototypes, ProxyOmegga } from './proxyOmegga';
 Logger.VERBOSE = process.env.VERBOSE === 'true';
 

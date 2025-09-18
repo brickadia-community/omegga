@@ -1,5 +1,5 @@
+import { writeFileSync } from 'node:fs';
 import { IConfig, IConfigFormat } from './types';
-import fs from 'fs';
 import validate from './validator';
 
 // given a list of formats, generate a function for write to any of those formats
@@ -17,7 +17,7 @@ const writer = (formats: IConfigFormat[]) => (path: string, blob: IConfig) => {
   const data = format.writer(blob);
 
   // write the encoded config to file
-  fs.writeFileSync(path, data);
+  writeFileSync(path, data);
 };
 
 export default writer;
