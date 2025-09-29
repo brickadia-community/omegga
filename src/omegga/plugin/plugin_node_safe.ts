@@ -428,7 +428,8 @@ export default class NodeVmPlugin extends Plugin {
   // create the worker for this plugin, attach emitter
   createWorker() {
     this.#worker = new Worker(
-      path.join(__dirname, 'plugin_node_safe/worker.js'),
+      // vite transpiles worker.ts to dist/worker.js
+      path.join(__dirname, '../../worker.js'),
       {
         stdout: true,
         env: {

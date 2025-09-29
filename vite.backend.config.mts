@@ -14,6 +14,10 @@ export default defineConfig({
       input: {
         main: path.resolve(__dirname, 'src/main.ts'),
         index: path.resolve(__dirname, 'src/index.ts'),
+        worker: path.resolve(
+          __dirname,
+          'src/omegga/plugin/plugin_node_safe/worker.ts',
+        ),
       },
       output: {
         format: 'cjs',
