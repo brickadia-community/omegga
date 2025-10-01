@@ -2,8 +2,14 @@ import OmeggaPlugin, { IPluginDocumentation } from '@/plugin';
 import { PLUGIN_PATH } from '@/softconfig';
 import { IPluginJSON, PluginStorage } from '@omegga/plugin';
 import Omegga from '@omegga/server';
-import { closeSync, existsSync, openSync, readFileSync, unlinkSync } from 'fs';
-import path from 'path';
+import {
+  closeSync,
+  existsSync,
+  openSync,
+  readFileSync,
+  unlinkSync,
+} from 'node:fs';
+import path from 'node:path';
 
 // Check if this plugin is disabled
 const DISABLED_FILE = 'disabled.omegga';

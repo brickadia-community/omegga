@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import { IConfigFormat } from './types';
 import validate from './validator';
 

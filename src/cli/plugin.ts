@@ -2,16 +2,16 @@ import Logger from '@/logger';
 import soft from '@/softconfig';
 import * as config from '@config';
 import { PluginLoader } from '@omegga/plugin';
-import { exec as execNonPromise } from 'child_process';
+import { exec as execNonPromise } from 'node:child_process';
 import 'colors';
-import fs from 'fs';
+import fs from 'node:fs';
 import hasbin from 'hasbin';
-import { VERSION } from 'lodash';
-import path from 'path';
+import path from 'node:path';
 import prompts from 'prompts';
 import semver from 'semver';
 import simpleGit, { ResetMode, SimpleGit } from 'simple-git';
-import { promisify } from 'util';
+import { promisify } from 'node:util';
+import { VERSION } from '@/version';
 
 const exec = promisify(execNonPromise);
 

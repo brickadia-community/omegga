@@ -15,12 +15,12 @@ import {
 import { getGlobalToken } from '@cli/auth';
 import { IConfig } from '@config/types';
 import { checkWsl } from '@util/wsl';
-import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import 'colors';
-import EventEmitter from 'events';
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
-import path from 'path';
-import { env } from 'process';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
+import EventEmitter from 'node:events';
+import path from 'node:path';
+import { env } from 'node:process';
 import readline from 'readline';
 import stripAnsi from 'strip-ansi';
 

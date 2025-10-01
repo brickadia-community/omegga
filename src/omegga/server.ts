@@ -20,10 +20,10 @@ import { IConfig } from '@config/types';
 import { map as mapUtils, pattern, uuid } from '@util';
 import { copyFiles, mkdir, readWatchedJSON } from '@util/file';
 import Webserver from '@webserver/backend';
-import { read, ReadSaveObject, write, WriteSaveObject } from 'brs-js';
+import brs, { type ReadSaveObject, type WriteSaveObject } from 'brs-js';
 import 'colors';
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
-import { sync } from 'glob';
+import glob from 'glob';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'path';
 import { AutoRestartConfig } from '..';
 import commandInjector from './commandInjector';
@@ -495,7 +495,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   getMinigamePresets(): string[] {
     const presetPath = join(this.presetPath, 'Minigame');
     return existsSync(presetPath)
-      ? sync(presetPath + '/**/*.bp').map(f => basename(f).replace(/\.bp$/, ''))
+      ? glob
+          .sync(presetPath + '/**/*.bp')
+          .map(f => basename(f).replace(/\.bp$/, ''))
       : [];
   }
 
@@ -574,7 +576,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   getEnvironmentPresets(): string[] {
     const presetPath = join(this.presetPath, 'Environment');
     return existsSync(presetPath)
-      ? sync(presetPath + '/**/*.bp').map(f => basename(f).replace(/\.bp$/, ''))
+      ? glob
+          .sync(presetPath + '/**/*.bp')
+          .map(f => basename(f).replace(/\.bp$/, ''))
       : [];
   }
 
@@ -729,12 +733,14 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   getSaves(): string[] {
-    return existsSync(this.savePath) ? sync(this.savePath + '/**/*.brs') : [];
+    return existsSync(this.savePath)
+      ? glob.sync(this.savePath + '/**/*.brs')
+      : [];
   }
 
   getWorlds(): string[] {
     return existsSync(this.worldPath)
-      ? sync(this.worldPath + '/**/*.brdb')
+      ? glob.sync(this.worldPath + '/**/*.brdb')
       : [];
   }
 
@@ -951,7 +957,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     const file = join(this.savePath, saveName + '.brs');
     if (!file.startsWith(this.savePath))
       throw 'save file not in Saved/Builds directory';
-    writeFileSync(file, new Uint8Array(write(saveData)));
+    writeFileSync(file, new Uint8Array(brs.write(saveData)));
   }
 
   readSaveData(saveName: string, nobricks = false): ReadSaveObject {
@@ -962,7 +968,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     if (!file || !file.startsWith(this.savePath))
       throw 'save file not in Saved/Builds directory';
     if (file)
-      return read(readFileSync(file), {
+      return brs.read(readFileSync(file), {
         preview: false,
         bricks: !nobricks,
       });
@@ -1058,7 +1064,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     const savePath = this.getSavePath(saveFile);
     if (savePath) {
       // read and parse the save file
-      const saveData = read(readFileSync(savePath));
+      const saveData = brs.read(readFileSync(savePath));
 
       // delete the save file after we're done reading it
       unlinkSync(savePath);

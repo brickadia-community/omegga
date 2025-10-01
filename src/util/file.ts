@@ -1,8 +1,8 @@
 import Logger from '@/logger';
 import chokidar from 'chokidar';
-import fs from 'fs';
+import fs from 'node:fs';
 import _ from 'lodash';
-import path from 'path';
+import path from 'node:path';
 import rimraf from 'rimraf';
 
 // objects to store cached data

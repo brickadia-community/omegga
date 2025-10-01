@@ -1,4 +1,4 @@
-export { randomUUID as random } from 'crypto';
+export { randomUUID as random } from 'node:crypto';
 
 // regex pattern that matches uuids
 export const UUID_PATTERN =

@@ -1,10 +1,10 @@
 import Logger from '@/logger';
 import Omegga from '@omegga/server';
-import EventEmitter from 'events';
-import fs from 'fs';
-import path from 'path';
+import EventEmitter from 'node:events';
+import fs from 'node:fs';
+import path from 'node:path';
+import { Worker } from 'node:worker_threads';
 import readline from 'readline';
-import { Worker } from 'worker_threads';
 import { Plugin } from './interface';
 import { bootstrap } from './plugin_node_safe/proxyOmegga';
 
@@ -428,7 +428,8 @@ export default class NodeVmPlugin extends Plugin {
   // create the worker for this plugin, attach emitter
   createWorker() {
     this.#worker = new Worker(
-      path.join(__dirname, 'plugin_node_safe/worker.js'),
+      // vite transpiles worker.ts to dist/worker.js
+      path.join(__dirname, '../../worker.js'),
       {
         stdout: true,
         env: {
