@@ -1,7 +1,7 @@
 import Logger from '@/logger';
 import { MatchGenerator } from './types';
 import path from 'path';
-import { createReadStream, existsSync } from 'fs';
+import { createReadStream, existsSync } from 'node:fs';
 
 const versionRegExp =
   /Brickadia (?<branchName>.+?) \(.+-CL(?<version>\d+)\), Engine (?<engineVersion>.+)/;

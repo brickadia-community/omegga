@@ -1,9 +1,9 @@
-import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
-import pem from 'pem';
-import { promisify } from 'util';
 import soft from '@/softconfig';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { promisify } from 'node:util';
+import pem from 'pem';
 
 const createCertificate: (
   options: pem.CertificateCreationOptions,

@@ -1,6 +1,6 @@
 import { IConfig } from '@config/types';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import * as file from '../util/file';
 

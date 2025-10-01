@@ -1,7 +1,7 @@
 // DEPRECATED
 import Logger from '@/logger';
-import { spawn } from 'child_process';
-import path from 'path';
+import { spawn } from 'node:child_process';
+import path from 'node:path';
 import readline from 'readline';
 
 const INSTALLER_PATH = path.join(__dirname, '../../tools/install_launcher.sh');

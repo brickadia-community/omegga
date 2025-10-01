@@ -3,8 +3,8 @@ import OmeggaPlugin, { PluginStore } from '@/plugin';
 import type Omegga from '@omegga/server';
 import * as util from '@util';
 import disrequire from 'disrequire';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { Plugin } from './interface';
 
 global.OMEGGA_UTIL = util;

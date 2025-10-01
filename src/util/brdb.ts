@@ -1,5 +1,5 @@
 import BetterSqlite3 from 'better-sqlite3';
-import { existsSync } from 'fs';
+import { existsSync } from 'node:fs';
 import { zstdDecompressSync } from 'zlib';
 
 /** Open a brdb file if it exists */

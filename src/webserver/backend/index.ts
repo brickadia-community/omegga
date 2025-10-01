@@ -129,7 +129,8 @@ export default class Webserver {
         maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
       },
       // use a nedb database for session store
-      store: NedbStore({
+      // For some reason vite is not importing the default export properly without this...
+      store: (NedbStore['default'] as typeof NedbStore)({
         filename: path.join(this.dataPath, soft.SESSION_STORE),
         connect: expressSession,
       }),

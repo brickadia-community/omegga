@@ -1,6 +1,6 @@
 import { store } from '@config';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const err = (...args: any[]) => console.error('!>'.red, ...args);
 const log = (...args: any[]) => console.log('>>'.green, ...args);
