@@ -324,7 +324,7 @@ export class PluginLoader {
     }
   }
 
-  calculateLoadOrder(unsortedPlugins: Plugin[]) {
+  static calculateLoadOrder(unsortedPlugins: Plugin[]) {
     if (!unsortedPlugins.length) {
       return [];
     }
@@ -464,7 +464,7 @@ export class PluginLoader {
       // remove plugins without formats
       .filter(p => p);
 
-    this.plugins = this.calculateLoadOrder(unsortedPlugins);
+    this.plugins = PluginLoader.calculateLoadOrder(unsortedPlugins);
 
     Logger.verbose('Finished scanning plugin directory');
     Logger.verbose(
