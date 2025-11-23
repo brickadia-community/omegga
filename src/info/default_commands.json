@@ -12,6 +12,7 @@
   "help",
   "jointeam",
   "kick",
+  "killallbots",
   "leaveteam",
   "listautosaves",
   "listplayers",
