@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "description": "Brickadia server installer, updater, manager, wrapper, configurator, and automator",
   "engines": {
     "node": ">=23.0.0"

@@ -1005,6 +1005,8 @@ rpc.addMethod('stop', async () => 'ok');
 - `BRICKADIA_DIR` - Override the need to use steamcmd and point to a Brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
 - `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default `~/.config/omegga/steam_installs`)
 - `STEAM_APP_ID` - Set the Steam App ID for Brickadia (default `3017590`)
+- `STEAM_USERNAME` - Set the Steam username for downloading Brickadia via steamcmd
+- `STEAM_PASSWORD` - Set the Steam password for downloading Brickadia via steamcmd
 - `VERBOSE` - Set to `true` to enable verbose logging (default `false`)
 - `PACKAGE_NOTIFIER` - When set to `false`, disables the npm update notifier
 - `STEAM_NOTIFIER` - When set to `false`, disables the SteamCMD update notifier

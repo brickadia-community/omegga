@@ -22,9 +22,14 @@ export function steamcmdDownloadGame({
   steambeta?: string;
   steambetaPassword?: string;
 } = {}) {
+  let steamLogin = 'anonymous';
+  if (process.env.STEAM_USERNAME && process.env.STEAM_PASSWORD) {
+    steamLogin = `"${process.env.STEAM_USERNAME}" "${process.env.STEAM_PASSWORD}"`;
+  }
+
   const args = [
     `+force_install_dir ${path.join(GAME_INSTALL_DIR, steambeta ?? 'main')}`,
-    `+login anonymous`,
+    `+login ${steamLogin}`,
     `+app_update ${getAppId()}`,
     steambeta ? `-beta ${steambeta}` : null,
     steambeta && steambetaPassword
