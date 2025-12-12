@@ -514,13 +514,32 @@ This is an example `plugin.json`, located inside a plugin folder. The plugin fil
 {
   "formatVersion": 1,
   "omeggaVersion": ">=0.1.32",
-  "emitConfig": "config.json"
+  "emitConfig": "config.json",
+  "dependencies": {
+    "otherPlugin": "https://github.com/owner/repo",
+    "requiredPlugin": { "optional": false },
+    "optionalPlugin": { "optional": true, "repo": "https://github.com/owner/repo" }
+  },
+  "loadPriority": 0,
+  "loadBefore": ["pluginToLoadAfterThis"],
+  "loadAfter": ["pluginToLoadBeforeThis"]
 }
 ```
 
 - `formatVersion` - indicates the plugin file format version
 - `omeggaVersion` - indicates compatible omegga versions ([semver cheatsheet](https://www.npmjs.com/package/semver#user-content-ranges))
 - `emitConfig` - optional, a path to a json file where plugin config will be saved to before the plugin starts.
+- `dependencies` - optional, declares dependencies on other plugins
+  - Can be a string specifying the GitHub repository URL (e.g., `"otherPlugin": "https://github.com/owner/repo"`)
+  - Can be an object with optional properties:
+    - `optional` - if `true`, the plugin will load even if this dependency is missing
+    - `repo` - GitHub repository URL where the dependency can be found (e.g., `"https://github.com/owner/repo"`)
+  - Dependencies are automatically loaded before the dependent plugin
+- `loadPriority` - optional, numeric priority for load order (lower/negative numbers load earlier, higher/positive numbers load later, undefined loads in the middle)
+- `loadBefore` - optional, array of plugin names that should load after this plugin
+- `loadAfter` - optional, array of plugin names that should load before this plugin
+
+**Note:** Omegga will automatically resolve the correct load order based on dependencies, `loadPriority`, `loadBefore`, and `loadAfter` constraints. If there's a cyclic dependency or conflicting constraints, plugins may fail to load.
 
 ## Plugin Store
 
