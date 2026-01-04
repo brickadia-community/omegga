@@ -1,10 +1,16 @@
-import soft, { GAME_DIRNAME, OVERRIDE_GAME_DIR } from '@/softconfig';
+import soft, {
+  getOverrideGameBinary,
+  getOverrideGameDir,
+  getSteamGameDir,
+  getSteamInstallDir,
+} from '@/softconfig';
 import { installLauncher } from '@cli/installer';
 import * as config from '@config';
 import Omegga from '@omegga/server';
 import * as file from '@util/file';
 import 'colors';
 import commander from 'commander';
+import dotenv from 'dotenv';
 import hasbin from 'hasbin';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,13 +19,15 @@ import updateNotifier from 'update-notifier-cjs';
 import { auth, config as omeggaConfig, pluginUtil, Terminal } from './cli';
 import { IConfig } from './config/types';
 import Logger from './logger';
-import { GAME_BIN_PATH, GAME_INSTALL_DIR, STEAMCMD_PATH } from './softconfig';
+import { GAME_BIN_PATH, STEAMCMD_PATH } from './softconfig';
 import {
   hasSteamUpdate,
   steamcmdDownloadGame,
   steamcmdDownloadSelf,
 } from './updater';
 import { PKG, VERSION } from './version';
+
+dotenv.config({ quiet: true });
 
 const notifier =
   process.env.PACKAGE_NOTIFIER !== 'false'
@@ -98,13 +106,7 @@ const program = commander
       }
     }
 
-    const overrideBinary =
-      OVERRIDE_GAME_DIR &&
-      path.join(
-        OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
-        GAME_BIN_PATH,
-      );
-
+    const overrideBinary = getOverrideGameBinary();
     const isSteam = !conf?.server?.branch;
     if (overrideBinary) {
       if (!fs.existsSync(overrideBinary)) {
@@ -130,6 +132,10 @@ const program = commander
       Logger.warnp(
         'Brickadia will be launched with',
         'non-steam launcher'.yellow,
+      );
+      Logger.warnp(
+        'New versions of Brickadia are not published on the old launcher.'
+          .yellow,
       );
 
       // Check if the local launcher is installed
@@ -556,9 +562,9 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
   const steambetaPassword = config?.server?.steambetaPassword;
 
   const binaryPath = path.join(
-    GAME_INSTALL_DIR, // steam install directory
+    getSteamInstallDir(), // steam install directory
     steambeta ?? 'main', // steam beta branch (or main)
-    GAME_DIRNAME, // Brickadia
+    getSteamGameDir(), // Brickadia
     GAME_BIN_PATH, // path to binary
   );
 

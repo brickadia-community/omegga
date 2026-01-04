@@ -8,17 +8,17 @@ import {
   ACTIVE_WORLD_FILE,
   CONFIG_SAVED_DIR,
   GAME_BIN_PATH,
-  GAME_DIRNAME,
-  GAME_INSTALL_DIR,
-  OVERRIDE_GAME_DIR,
+  getOverrideGameBinary,
+  getSteamGameDir,
+  getSteamInstallDir,
 } from '@/softconfig';
 import { getGlobalToken } from '@cli/auth';
 import { IConfig } from '@config/types';
 import { checkWsl } from '@util/wsl';
 import 'colors';
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import EventEmitter from 'node:events';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { env } from 'node:process';
 import readline from 'readline';
@@ -178,16 +178,11 @@ export default class BrickadiaServer extends EventEmitter {
 
     const isSteam = !this.config.server.branch;
     const steamBeta = this.config.server.steambeta ?? 'main';
-    const overrideBinary =
-      OVERRIDE_GAME_DIR &&
-      path.join(
-        OVERRIDE_GAME_DIR, // from BRICKADIA_DIR env
-        GAME_BIN_PATH,
-      );
+    const overrideBinary = getOverrideGameBinary();
     const steamBinary = path.join(
-      GAME_INSTALL_DIR, // steam install directory
+      getSteamInstallDir(), // steam install directory
       steamBeta, // steam beta branch (or main)
-      GAME_DIRNAME, // Brickadia
+      getSteamGameDir(), // Brickadia
       GAME_BIN_PATH, // path to binary
     );
 
