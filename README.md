@@ -821,16 +821,32 @@ Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` 
 | `loadSaveDataOnPlayer`         | {data: object, player: string, offX, offY, offY}     | Builds brs file from data, loads the file onto a player's clipboard |                                                                 |
 | `changeMap`                    | map (string)                                         | Change map to specified map name, returns success                   | Boolean                                                         |
 | `player.get`                   | target (string)                                      | Gets the player by their name or UUID.                              | `{name, id, controller, state, host: bool}`                     |
-| `player.getRoles`              | target (string)                                      | Target's roles                                                      |                                                                 |
-| `player.getPermissions`        | target (string)                                      | Target's permissions                                                | List of Strings                                                 |
-| `player.getNameColor`          | target (string)                                      | Target's name color                                                 | _RGB Hex Object_ (int, int ,int)                                |
-| `player.getPosition`           | target (string)                                      | Target's position                                                   | _Position Object_                                               |
-| `player.getGhostBrick`         | target (string)                                      | Target's ghost brick                                                | {targetGrid, location(_Location_), orientation}                 |
-| `player.getPaint`              | target (string)                                      | Target's current paint selection                                    | {materialIndex, materialAlpha, material, color)}                |
-| `player.getTemplateBounds`     | target (string)                                      | Target's template/selection bounds                                  | {minBound, maxBound, Center}                                    |
-| `player.getTemplateBoundsData` | target (string)                                      | Target's template/selection as brs-js save data                     | _Brick Object_                                                  |
-| `player.loadSaveData`          | {target, data, offX, offY, offZ}                     | Loads brs-js save data to the targets clipboard                     |                                                                 |
-| `player.loadDataAtGhostBrick`  | {target, data, rotate=true, offX, offY, offZ, quiet} | Loads brs-js save data at the target's selection bounds             |                                                                 |
+| `player.getRoles`              | target (string)                                      | Target's roles                                                      | List of Strings                                                 |
+| `player.getPermissions`        | target (string)                                      | Target's permissions                                                | Record<string, boolean>                                         |
+| `player.getNameColor`          | target (string)                                      | Target's name color                                                 | _RGB Hex String_                                                |
+| `player.getPosition`           | target (string)                                      | Target's position                                                   | [number, number, number] or null                                |
+| `player.getPawn`               | target (string)                                      | Target's pawn name                                                  | string or null                                                  |
+| `player.getGhostBrick`         | target (string)                                      | Target's ghost brick                                                | {targetGrid, location, orientation}                             |
+| `player.getPaint`              | target (string)                                      | Target's current paint selection                                    | {materialIndex, materialAlpha, material, color}                 |
+| `player.isCrouched`            | target (string)                                      | Check if target is crouched                                         | boolean                                                         |
+| `player.isDead`                | target (string)                                      | Check if target is dead                                             | boolean                                                         |
+| `player.getTemplateBounds`     | target (string)                                      | Target's template/selection bounds                                  | {minBound, maxBound, center}                                    |
+| `player.getTemplateBoundsData` | target (string)                                      | Target's template/selection as brs-js save data                     | _BRS Object_                                                    |
+| `player.clearBricks`           | {target, quiet}                                      | Clears target's bricks                                              |                                                                 |
+| `player.loadBricks`            | {target, saveName}                                   | Loads save file to target's clipboard                               |                                                                 |
+| `player.loadSaveData`          | {target, data, offX, offY, offZ}                     | Loads brs-js save data to target's clipboard                        |                                                                 |
+| `player.loadDataAtGhostBrick`  | {target, data, rotate=true, offX, offY, offZ, quiet} | Loads brs-js save data at target's selection bounds                 |                                                                 |
+| `player.kill`                  | target (string)                                      | Kills the target player                                             |                                                                 |
+| `player.damage`                | {target, amount}                                     | Damages target by amount                                            |                                                                 |
+| `player.heal`                  | {target, amount}                                     | Heals target by amount                                              |                                                                 |
+| `player.giveItem`              | {target, item}                                       | Gives target an item                                                |                                                                 |
+| `player.takeItem`              | {target, item}                                       | Removes item from target                                            |                                                                 |
+| `player.setTeam`               | {target, teamIndex}                                  | Sets target's team                                                  |                                                                 |
+| `player.setMinigame`           | {target, index}                                      | Adds target to minigame at index                                    |                                                                 |
+| `player.setScore`              | {target, minigameIndex, score}                       | Sets target's score in minigame                                     |                                                                 |
+| `player.getScore`              | target (string)                                      | Gets target's score in minigame                                     | number                                                          |
+| `player.setLeaderboard`        | {target, key, value}                                 | Sets leaderboard value for target                                   |                                                                 |
+| `player.getLeaderboard`        | target (string)                                      | Gets leaderboard value for target                                   | number or null                                                  |
 | `plugin.get`                   | target (string)                                      | Gets info on the target plugin                                      | Object                                                          |
 | `plugin.emit`                  | [target (string), event (string), ...args (any)]     | Emit a custom event to the target plugin                            |                                                                 |
 
@@ -1014,6 +1030,8 @@ rpc.addMethod('stop', async () => 'ok');
 
 ## Environment Variables
 
+These can be set in your shell or in a `.env` file the same directory as a `omegga-config.yml` file.
+
 `omegga` accepts the following environment variables:
 
 - `BRICKADIA_TOKEN` - Specify hosting token instead of using config
@@ -1024,6 +1042,8 @@ rpc.addMethod('stop', async () => 'ok');
 - `BRICKADIA_DIR` - Override the need to use steamcmd and point to a Brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
 - `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default `~/.config/omegga/steam_installs`)
 - `STEAM_APP_ID` - Set the Steam App ID for Brickadia (default `3017590`)
+- `STEAM_USERNAME` - Set the Steam username for downloading Brickadia via steamcmd
+- `STEAM_PASSWORD` - Set the Steam password for downloading Brickadia via steamcmd
 - `VERBOSE` - Set to `true` to enable verbose logging (default `false`)
 - `PACKAGE_NOTIFIER` - When set to `false`, disables the npm update notifier
 - `STEAM_NOTIFIER` - When set to `false`, disables the SteamCMD update notifier

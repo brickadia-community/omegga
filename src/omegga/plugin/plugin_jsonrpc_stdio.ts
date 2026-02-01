@@ -579,10 +579,16 @@ export default class RpcPlugin extends Plugin {
     addPlayerMethod('getPermissions');
     addPlayerMethod('getNameColor');
     addPlayerMethod('getPosition');
+    addPlayerMethod('getPawn');
     addPlayerMethod('getGhostBrick');
     addPlayerMethod('getPaint');
+    addPlayerMethod('isCrouched');
+    addPlayerMethod('isDead');
     addPlayerMethod('getTemplateBounds');
     addPlayerMethod('getTemplateBoundsData');
+    addPlayerMethod('kill');
+    addPlayerMethod('getScore');
+    addPlayerMethod('getLeaderboard');
     rpc.addMethod(
       'player.loadDataAtGhostBrick',
       ({
@@ -622,6 +628,70 @@ export default class RpcPlugin extends Plugin {
         offZ?: number;
       }) =>
         this.omegga.getPlayer(target)?.loadSaveData(data, { offX, offY, offZ }),
+    );
+    rpc.addMethod(
+      'player.clearBricks',
+      ({ target, quiet = false }: { target: string; quiet?: boolean }) =>
+        this.omegga.getPlayer(target)?.clearBricks(quiet),
+    );
+    rpc.addMethod(
+      'player.loadBricks',
+      ({ target, saveName }: { target: string; saveName: string }) =>
+        this.omegga.getPlayer(target)?.loadBricks(saveName),
+    );
+    rpc.addMethod(
+      'player.damage',
+      ({ target, amount }: { target: string; amount: number }) =>
+        this.omegga.getPlayer(target)?.damage(amount),
+    );
+    rpc.addMethod(
+      'player.heal',
+      ({ target, amount }: { target: string; amount: number }) =>
+        this.omegga.getPlayer(target)?.heal(amount),
+    );
+    rpc.addMethod(
+      'player.giveItem',
+      ({ target, item }: { target: string; item: string }) =>
+        this.omegga.getPlayer(target)?.giveItem(item as any),
+    );
+    rpc.addMethod(
+      'player.takeItem',
+      ({ target, item }: { target: string; item: string }) =>
+        this.omegga.getPlayer(target)?.takeItem(item as any),
+    );
+    rpc.addMethod(
+      'player.setTeam',
+      ({ target, teamIndex }: { target: string; teamIndex: number }) =>
+        this.omegga.getPlayer(target)?.setTeam(teamIndex),
+    );
+    rpc.addMethod(
+      'player.setMinigame',
+      ({ target, index }: { target: string; index: number }) =>
+        this.omegga.getPlayer(target)?.setMinigame(index),
+    );
+    rpc.addMethod(
+      'player.setScore',
+      ({
+        target,
+        minigameIndex,
+        score,
+      }: {
+        target: string;
+        minigameIndex: number;
+        score: number;
+      }) => this.omegga.getPlayer(target)?.setScore(minigameIndex, score),
+    );
+    rpc.addMethod(
+      'player.setLeaderboard',
+      ({
+        target,
+        key,
+        value,
+      }: {
+        target: string;
+        key: string;
+        value: number;
+      }) => this.omegga.getPlayer(target)?.setLeaderboard(key, value),
     );
 
     // plugin related operations

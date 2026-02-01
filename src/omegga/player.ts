@@ -227,33 +227,81 @@ class Player implements OmeggaPlayer {
     minigameIndex: number,
   ): Promise<number> {
     if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (target?.name) {
-      const name = target?.name;
-      const id = target?.id;
+    if (!target?.name) return 0;
 
-      const match = await omegga.addWatcher(
+    const name = target?.name;
+    const id = target?.id;
+
+    const match = await omegga.addWatcher(
+      (line, match) => {
+        if (match?.groups.generator !== 'LogConsoleCommands') return;
+
+        const test = match.groups.data.match(
+          /^(?<uuid>.+) leaderboard value (?<minigame>\d+) = (?<score>-?\d+)$/,
+        );
+        if (!test) return;
+        if (test.groups.uuid !== id) return;
+        if (Number(test.groups.minigame) !== minigameIndex) return;
+        return test;
+      },
+      {
+        timeoutDelay: 1000,
+        exec: () =>
+          omegga.writeln(
+            `Server.Players.PrintLeaderboardValue "${name}" ${minigameIndex}`,
+          ),
+      },
+    );
+    if (match) return Number(match[0].groups.score);
+  }
+
+  static setLeaderboard(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    key: string,
+    value: number,
+  ): void {
+    if (typeof target === 'string') target = omegga.getPlayer(target);
+    if (!target?.name) return null;
+
+    omegga.writeln(
+      `Server.Players.SetLeaderboardValue "${target.name}" "${key}" "${value}"`,
+    );
+  }
+
+  static async getLeaderboard(
+    omegga: OmeggaLike,
+    target: string | OmeggaPlayer,
+    key: string,
+  ): Promise<number | null> {
+    if (typeof target === 'string') target = omegga.getPlayer(target);
+    if (!target?.name) return null;
+
+    // LogConsoleCommands: <uuid> leaderboard value Key = 0
+    const match = await omegga
+      .addWatcher<RegExpMatchArray>(
         (line, match) => {
-          if (match && match.groups.generator === 'LogConsoleCommands') {
-            const test = match.groups.data.match(
-              /^(?<uuid>.+) leaderboard value (?<minigame>\d+) = (?<score>-?\d+)$/,
-            );
-            if (!test) return;
-            if (test.groups.uuid !== id) return;
-            if (Number(test.groups.minigame) !== minigameIndex) return;
-            return test;
-          }
+          if (match?.groups.generator !== 'LogConsoleCommands') return;
+
+          const test = match.groups.data.match(
+            /^(?<uuid>.+) leaderboard value (?<key>.+) = (?<value>-?\d+)$/,
+          );
+          if (!test) return;
+          if (test.groups.uuid !== target.id) return;
+          if (test.groups.key !== key) return;
+          return test;
         },
         {
           timeoutDelay: 1000,
           exec: () =>
             omegga.writeln(
-              `Server.Players.PrintLeaderboardValue "${name}" ${minigameIndex}`,
+              `Server.Players.PrintLeaderboardValue "${target.name}" "${key}"`,
             ),
         },
-      );
-      if (match) return Number(match[0].groups.score);
-    }
-    return 0;
+      )
+      .catch(() => null);
+    if (match) return Number(match[0].groups.value);
+    return null;
   }
 
   /**
@@ -800,6 +848,14 @@ class Player implements OmeggaPlayer {
 
   getScore(minigameIndex: number): Promise<number> {
     return Player.getScore(this.#omegga, this, minigameIndex);
+  }
+
+  setLeaderboard(key: string, value: number): void {
+    Player.setLeaderboard(this.#omegga, this, key, value);
+  }
+
+  async getLeaderboard(key: string): Promise<number | null> {
+    return Player.getLeaderboard(this.#omegga, this, key);
   }
 }
 

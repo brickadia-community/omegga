@@ -1,13 +1,9 @@
 import Logger from '@/logger';
-import { GAME_INSTALL_DIR, STEAM_APP_ID, STEAMCMD_PATH } from '@/softconfig';
+import { getAppId, getSteamInstallDir, STEAMCMD_PATH } from '@/softconfig';
 import { execSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import acfParser from 'steam-acf2json';
-
-export function getAppId() {
-  return process.env.STEAM_APP_ID ?? STEAM_APP_ID;
-}
 
 export function steamcmdDownloadSelf() {
   execSync(path.join(__dirname, '../../tools/install_steamcmd.sh'), {
@@ -22,10 +18,21 @@ export function steamcmdDownloadGame({
   steambeta?: string;
   steambetaPassword?: string;
 } = {}) {
+  let steamLogin = 'anonymous';
+  if (process.env.STEAM_USERNAME && process.env.STEAM_PASSWORD) {
+    Logger.verbose('Using provided Steam credentials for download.');
+    steamLogin = `"${process.env.STEAM_USERNAME}" "${process.env.STEAM_PASSWORD}"`;
+  }
+  const installDir = getSteamInstallDir();
+  const appId = getAppId();
+
+  Logger.verbose('Using with steam install dir:', installDir.yellow);
+  Logger.verbose('Using with app ID:', appId.yellow);
+
   const args = [
-    `+force_install_dir ${path.join(GAME_INSTALL_DIR, steambeta ?? 'main')}`,
-    `+login anonymous`,
-    `+app_update ${getAppId()}`,
+    `+force_install_dir ${path.join(installDir, steambeta ?? 'main')}`,
+    `+login ${steamLogin}`,
+    `+app_update ${appId}`,
     steambeta ? `-beta ${steambeta}` : null,
     steambeta && steambetaPassword
       ? `-betapassword ${steambetaPassword}`
@@ -85,7 +92,7 @@ export type SteamAcf = {
 
 function getSteamAcf(steambeta?: string) {
   const appId = getAppId();
-  const installDir = path.join(GAME_INSTALL_DIR, steambeta ?? 'main');
+  const installDir = path.join(getSteamInstallDir(), steambeta ?? 'main');
   const acfPath = path.join(
     installDir,
     'steamapps',
