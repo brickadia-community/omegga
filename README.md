@@ -1030,6 +1030,8 @@ rpc.addMethod('stop', async () => 'ok');
 
 ## Environment Variables
 
+These can be set in your shell or in a `.env` file the same directory as a `omegga-config.yml` file.
+
 `omegga` accepts the following environment variables:
 
 - `BRICKADIA_TOKEN` - Specify hosting token instead of using config
