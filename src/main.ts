@@ -1,6 +1,5 @@
 import soft, {
   getOverrideGameBinary,
-  getOverrideGameDir,
   getSteamGameDir,
   getSteamInstallDir,
 } from '@/softconfig';
