@@ -14,4 +14,5 @@ omegga-config.json
 omegga.json
 test.js
 webpack.config.js
-vite.config.mts
+vite.*.config.mts
+vitest.*.config.mts
