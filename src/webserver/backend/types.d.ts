@@ -53,6 +53,7 @@ export interface IStoreAutoRestartConfig {
   announcementEnabled: boolean;
   playersEnabled: boolean;
   saveWorld: boolean;
+  crashRestartEnabled: boolean;
 }
 
 export interface IStoreChat {

@@ -69,6 +69,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   started = false;
   starting = false;
   stopping = false;
+  crashDetected = false;
   currentMap: string;
 
   getServerStatus: () => Promise<IServerStatus>;
@@ -178,6 +179,22 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       this.restoreServer();
     });
 
+    // detect engine crash from stderr or stdout
+    const crashHandler = (line: string) => {
+      if (
+        !this.crashDetected &&
+        (/Engine crash handling finished; re-raising signal \d+ for the default handler\. Good bye\./.test(
+          line,
+        ) ||
+          /LogCore: === Critical error: ===/.test(line))
+      ) {
+        Logger.error('Engine crash detected!');
+        this.crashDetected = true;
+      }
+    };
+    this.on('err', crashHandler);
+    this.on('line', crashHandler);
+
     // when brickadia exits, stop omegga
     this.on('exit', () => {
       this.stop();
@@ -185,8 +202,34 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     // when the process closes, emit the exit signal and stop
     this.on('closed', () => {
+      // capture crash state before 'exit' handler triggers stop()
+      const wasCrash = this.crashDetected;
+      this.crashDetected = false;
       if (this.started) this.emit('exit');
-      if (!this.stopping) this.stop();
+      const doRestart = async () => {
+        if (!wasCrash) return;
+        try {
+          const config =
+            await this.webserver?.database?.getAutoRestartConfig();
+          if (config?.crashRestartEnabled) {
+            Logger.logp('Restarting server after crash...');
+            this.webserver?.database?.addChatLog(
+              'server',
+              {},
+              'Server crashed, restarting...',
+            );
+            await this.start();
+          }
+        } catch (err) {
+          Logger.error('Error restarting after crash', err);
+        }
+      };
+      if (!this.stopping) {
+        this.stop().then(doRestart);
+      } else {
+        // stop() already in progress from 'exit' handler — wait for it to finish
+        this.once('server:stopped', () => doRestart());
+      }
     });
 
     // detect when a missing command is sent

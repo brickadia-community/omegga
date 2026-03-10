@@ -957,6 +957,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       saveWorld: 'boolean',
       autoUpdateEnabled: 'boolean',
       autoUpdateIntervalMins: 'number',
+      crashRestartEnabled: 'boolean',
     };
 
     rpc.addMethod(
