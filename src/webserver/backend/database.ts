@@ -741,12 +741,14 @@ export default class Database extends EventEmitter {
         announcementEnabled: true,
         playersEnabled: true,
         saveWorld: true,
+        crashRestartEnabled: true,
       });
     }
 
     config.autoUpdateEnabled ??= true;
     config.autoUpdateIntervalMins ??= 60;
     config.saveWorld ??= true;
+    config.crashRestartEnabled ??= true;
 
     return config;
   }

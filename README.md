@@ -731,6 +731,8 @@ Cleanup is important as code can still be running after the plugin is unloaded r
 
 Register custom `/commands` by returning `{registeredCommands: ['foo', 'bar']}` (registers command `/foo` and `/bar`) in the `async init()` method.
 
+By defining an `async pluginEvent(event, from, ...args)` method in your plugin class, you can respond to events from other plugins, where `from` is the name of the other plugin, `event` is the name of the custom event, and `args` is an array of any passed arguments.
+
 ### Globals
 
 - `OMEGGA_UTIL` - access to the `src/util/index.js` module
@@ -769,6 +771,13 @@ class PluginName {
     this.omegga
       .removeAllListeners('chatcmd:ping')
       .removeAllListeners('chatcmd:pos');
+  }
+
+  // optional: respond to events from other plugins
+  async pluginEvent(event, from, ...args) {
+    if (event === 'greeting') {
+      return `Hello from ${from}!`;
+    }
   }
 }
 

@@ -41,6 +41,7 @@ class OmeggaWrapper extends EventEmitter {
     this.logWrangler = new LogWrangler(this as unknown as Omegga);
     this.#server.on('line', this.logWrangler.callback);
     this.#server.on('line', (line: string) => this.emit('line', line));
+    this.#server.on('err', (line: string) => this.emit('err', line));
     this.#server.on('closed', () => this.emit('closed'));
 
     this.addMatcher = this.logWrangler.addMatcher;

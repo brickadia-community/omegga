@@ -84,6 +84,7 @@ export const ServerView = () => {
       autoUpdateIntervalMins: Math.round(
         Math.max(10, Math.min(config.autoUpdateIntervalMins ?? 60, Infinity)),
       ),
+      crashRestartEnabled: config.crashRestartEnabled ?? true,
     } satisfies IStoreAutoRestartConfig;
     rpcNotify('server.autorestart.set', blob);
   }, [config]);
@@ -217,6 +218,19 @@ export const ServerView = () => {
           </NavBar>
           {config && (
             <div className="inputs-list">
+              <div
+                className="inputs-item"
+                data-tooltip="When enabled, automatically restarts the server if the game engine crashes"
+              >
+                <label>Restart on Crash</label>
+                <div className="inputs">
+                  <Toggle
+                    tooltip="Enabled"
+                    value={config.crashRestartEnabled ?? true}
+                    onChange={changeConfig('crashRestartEnabled')}
+                  />
+                </div>
+              </div>
               <div
                 className="inputs-item"
                 data-tooltip="When enabled on servers setup with SteamCMD, automatically updates the server when a new version is available"

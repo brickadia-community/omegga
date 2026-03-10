@@ -5,6 +5,39 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import acfParser from 'steam-acf2json';
 
+// Steam EAppState flags (bitmask)
+const STEAM_APP_STATES: Record<number, string> = {
+  0x1: 'Uninstalled',
+  0x2: 'Update Required',
+  0x4: 'Fully Installed',
+  0x8: 'Encrypted',
+  0x10: 'Locked',
+  0x20: 'Files Missing',
+  0x40: 'App Running',
+  0x80: 'Files Corrupt',
+  0x100: 'Update Running',
+  0x200: 'Update Paused',
+  0x400: 'Update Started',
+  0x800: 'Uninstalling',
+  0x1000: 'Backup Running',
+  0x10000: 'Reconfiguring',
+  0x20000: 'Validating',
+  0x40000: 'Adding Files',
+  0x80000: 'Preallocating',
+  0x100000: 'Downloading',
+  0x200000: 'Staging',
+  0x400000: 'Committing',
+  0x800000: 'Update Stopping',
+};
+
+function decodeAppState(state: number): string[] {
+  const flags: string[] = [];
+  for (const [bit, name] of Object.entries(STEAM_APP_STATES)) {
+    if (state & Number(bit)) flags.push(name);
+  }
+  return flags;
+}
+
 export function steamcmdDownloadSelf() {
   execSync(path.join(__dirname, '../../tools/install_steamcmd.sh'), {
     stdio: 'inherit',
@@ -40,7 +73,31 @@ export function steamcmdDownloadGame({
     '+quit',
   ].filter(Boolean);
 
-  execSync(`${STEAMCMD_PATH} ${args.join(' ')}`, { stdio: 'inherit' });
+  try {
+    execSync(`${STEAMCMD_PATH} ${args.join(' ')}`, { stdio: 'inherit' });
+  } catch (err) {
+    if (err instanceof Error && err.message) {
+      // Log decoded app state if present
+      const stateMatch = err.message.match(
+        /state is (0x[0-9A-Fa-f]+) after update job/,
+      );
+      if (stateMatch) {
+        const state = parseInt(stateMatch[1], 16);
+        const flags = decodeAppState(state);
+        Logger.error(
+          `Steam app state ${stateMatch[1]} (${state}):`,
+          flags.length > 0 ? flags.join(', ') : 'Unknown',
+        );
+      }
+
+      // Redact credentials from error messages
+      err.message = err.message
+        .replace(/\+login\s+"[^"]*"\s+"[^"]*"/, '+login <REDACTED>')
+        .replace(/\+login\s+(\S+)\s+\S+/, '+login $1 <REDACTED>')
+        .replace(/-betapassword\s+\S+/, '-betapassword <REDACTED>');
+    }
+    throw err;
+  }
 }
 
 export type SteamInfo = {
