@@ -158,6 +158,13 @@ export default class NodePlugin extends Plugin {
     }
   }
 
+  // forward plugin events to the loaded plugin instance
+  async emitPlugin(ev: string, from: string, args: any[]) {
+    if (typeof this.loadedPlugin?.pluginEvent === 'function') {
+      return await this.loadedPlugin.pluginEvent(ev, from, ...args);
+    }
+  }
+
   // disrequire all that match plugin path in require.cache
   disrequireAll() {
     // get all files in plugin directory from require cache
