@@ -209,8 +209,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       const doRestart = async () => {
         if (!wasCrash) return;
         try {
-          const config =
-            await this.webserver?.database?.getAutoRestartConfig();
+          const config = await this.webserver?.database?.getAutoRestartConfig();
           if (config?.crashRestartEnabled) {
             Logger.logp('Restarting server after crash...');
             this.webserver?.database?.addChatLog(
