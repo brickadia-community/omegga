@@ -16,3 +16,4 @@ public/*
 dist/
 templates/safe-ts/omegga.d.ts
 .vsls.json
+.mcp.json

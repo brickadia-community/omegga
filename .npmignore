@@ -16,3 +16,4 @@ test.js
 webpack.config.js
 vite.*.config.mts
 vitest.*.config.mts
+.mcp.json
