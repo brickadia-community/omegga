@@ -267,7 +267,9 @@ export default class BrickadiaServer extends EventEmitter {
         .join(' ')
         .replace(/-User=".*?"/, '-User="<hidden>"')
         .replace(/-Password=".*?"/, '-Password="<hidden>"')
-        .replace(/-Token=".*?"/, '-Token="<hidden>"'),
+        .replace(/-Token=".*?"/, '-Token="<hidden>"')
+        .replace(/-Cookie=".*?"/, '-Cookie="<hidden>"')
+        .replace(/-Cookie=\S+/, '-Cookie=<hidden>'),
     );
 
     // Either unbuffer or stdbuf must be used because brickadia's output is buffered

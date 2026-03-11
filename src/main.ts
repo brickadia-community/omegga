@@ -105,6 +105,10 @@ const program = commander
       }
     }
 
+    if (conf?.terminal?.timestamp) {
+      Logger.setTimestamp(conf.terminal.timestamp);
+    }
+
     const overrideBinary = getOverrideGameBinary();
     const isSteam = !conf?.server?.branch;
     if (overrideBinary) {

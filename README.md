@@ -253,6 +253,15 @@ server:
   # Specifying a branch will use the old launcher instead of SteamCMD
   # This does not have full auto-updater support yet, though the game will update every time it is restarted
   # branch: release:release-server
+terminal:
+  # prepend timestamps to terminal output using dateformat syntax
+  # see https://www.npmjs.com/package/dateformat for format options
+  # timestamp: "HH:MM:ss"             # 14:05:30
+  # timestamp: "yyyy-mm-dd"           # 2026-03-10
+  # timestamp: "yyyy-mm-dd HH:MM:ss"  # 2026-03-10 14:05:30
+  # timestamp: "HH:MM"                # 14:05
+  # timestamp: "hh:MM:ss TT"          # 02:05:30 PM
+  # timestamp: "[HH:MM:ss]"           # [14:05:30]
 ```
 
 Note: `BRANCH-server` branches download only server data
@@ -1076,4 +1085,7 @@ server:
   # When branch is present, steamcmd is not used
   #branch: release:release-server # branch alias:branch name
   steambeta: public # try `unstable`
+terminal:
+  # prepend timestamps to terminal output (see https://www.npmjs.com/package/dateformat)
+  #timestamp: "HH:MM:ss" # e.g. 14:05:30, "[HH:MM:ss]" for [14:05:30]
 ```

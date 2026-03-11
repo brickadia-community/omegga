@@ -1,3 +1,4 @@
+import Logger from '@/logger';
 import { OmeggaPlayer } from '@/plugin';
 import { steamcmdDownloadGame } from '@/updater';
 import Omegga from '@omegga/server';
@@ -755,7 +756,6 @@ export default class Terminal {
   options: IOmeggaOptions;
   omegga: Omegga;
   rl: readline.Interface;
-
   constructor(omegga: Omegga, options: IOmeggaOptions = {}) {
     this.options = options;
     this.omegga = omegga;
@@ -967,7 +967,7 @@ export default class Terminal {
   log(...args: any[]) {
     process.stdout.clearLine(0);
     process.stdout.cursorTo(0);
-    console.log(...args);
+    console.log(...Logger.timestamped(args));
     this.rl.prompt(true);
   }
 
@@ -975,7 +975,7 @@ export default class Terminal {
   debug(...args: any[]) {
     process.stdout.clearLine(0);
     process.stdout.cursorTo(0);
-    console.debug(...args);
+    console.debug(...Logger.timestamped(args));
     this.rl.prompt(true);
   }
 
@@ -983,7 +983,7 @@ export default class Terminal {
   warn(...args: any[]) {
     process.stdout.clearLine(0);
     process.stdout.cursorTo(0);
-    console.warn(...args);
+    console.warn(...Logger.timestamped(args));
     this.rl.prompt(true);
   }
 
@@ -991,7 +991,7 @@ export default class Terminal {
   error(...args: any[]) {
     process.stdout.clearLine(0);
     process.stdout.cursorTo(0);
-    console.error(...args);
+    console.error(...Logger.timestamped(args));
     this.rl.prompt(true);
   }
 }

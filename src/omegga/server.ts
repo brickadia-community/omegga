@@ -86,7 +86,24 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     Logger.verbose('Running omegga', `v${VERSION}`.green);
     Logger.verbose('Versions', process.versions);
-    Logger.verbose('Config', cfg);
+    Logger.verbose('Config', {
+      ...cfg,
+      credentials: cfg.credentials
+        ? Object.fromEntries(
+            Object.entries(cfg.credentials).map(([k, v]) => [k, v ? '***' : v]),
+          )
+        : cfg.credentials,
+      server: {
+        ...cfg.server,
+        ...(cfg.server.password && { password: '***' }),
+        ...(cfg.server.steambetaPassword && { steambetaPassword: '***' }),
+        ...(cfg.server.launchArgs && {
+          launchArgs: cfg.server.launchArgs
+            .replace(/-Cookie=".*?"/g, '-Cookie="<hidden>"')
+            .replace(/-Cookie=\S+/g, '-Cookie=<hidden>'),
+        }),
+      },
+    });
 
     // inject commands
     Logger.verbose('Setting up command injector');

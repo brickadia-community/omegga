@@ -29,6 +29,10 @@ export const BrickadiaConfigSchema = z.object({
   __LEGACY: z.string().optional(),
 });
 
+export const TerminalConfigSchema = z.object({
+  timestamp: z.string().optional(),
+});
+
 export const CredentialsSchema = z.object({
   email: z.string().optional(),
   password: z.string().optional(),
@@ -38,6 +42,7 @@ export const CredentialsSchema = z.object({
 export const ConfigSchema = z.object({
   omegga: ServerConfigSchema.optional(),
   server: BrickadiaConfigSchema,
+  terminal: TerminalConfigSchema.optional(),
   credentials: CredentialsSchema.optional(),
   __STEAM: z.boolean().optional(),
 });
