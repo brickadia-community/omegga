@@ -44,7 +44,8 @@
     "swc-loader": "^0.2.0",
     "update-notifier-cjs": "^5.1.6",
     "vm2": "^3.10.3",
-    "webpack": "^5.80.0"
+    "webpack": "^5.80.0",
+    "zod": "^4.3.6"
   },
   "types": "./dist/lib.d.ts",
   "devDependencies": {

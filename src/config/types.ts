@@ -1,50 +1,50 @@
-export interface IServerConfig {
-  webui?: boolean;
-  port?: number;
-  https?: boolean;
-}
+import { z } from 'zod';
 
-export interface IBrickadiaConfig {
-  port: number;
-  /** Map to load on startup if a world is not specified */
-  map?: string;
-  /** World file name to load on startup */
-  world?: string;
+export const ServerConfigSchema = z.object({
+  webui: z.boolean().optional(),
+  port: z.number().optional(),
+  https: z.boolean().optional(),
+  plugins: z.boolean().optional(),
+  singleUser: z.boolean().optional(),
+  debug: z.boolean().optional(),
+});
 
-  /** old launcher branch name */
-  branch?: string;
-  /** Steam beta name */
-  steambeta?: string;
-  /** Steam beta password */
-  steambetaPassword?: string;
+export const BrickadiaConfigSchema = z.object({
+  port: z.number(),
+  map: z.string().optional(),
+  world: z.string().optional(),
+  branch: z.string().optional(),
+  steambeta: z.string().optional(),
+  steambetaPassword: z.string().optional(),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  password: z.string().optional(),
+  players: z.number().optional(),
+  publiclyListed: z.boolean().optional(),
+  welcomeMessage: z.string().optional(),
+  authDir: z.string().optional(),
+  savedDir: z.string().optional(),
+  launchArgs: z.string().optional(),
+  __LOCAL: z.boolean().optional(),
+  __LEGACY: z.string().optional(),
+});
 
-  name?: string;
-  description?: string;
-  password?: string;
-  players?: number;
+export const CredentialsSchema = z.object({
+  email: z.string().optional(),
+  password: z.string().optional(),
+  token: z.string().optional(),
+});
 
-  publiclyListed?: boolean;
-  welcomeMessage?: string;
+export const ConfigSchema = z.object({
+  omegga: ServerConfigSchema.optional(),
+  server: BrickadiaConfigSchema,
+  credentials: CredentialsSchema.optional(),
+  __STEAM: z.boolean().optional(),
+});
 
-  authDir?: string;
-  savedDir?: string;
-  launchArgs?: string;
-
-  __LOCAL?: boolean;
-  __LEGACY?: string;
-}
-
-export interface IConfig {
-  omegga?: IServerConfig;
-  server: IBrickadiaConfig;
-  credentials?: {
-    email?: string;
-    password?: string;
-    token?: string;
-  };
-  /** Internal use - this is a steam install */
-  __STEAM?: boolean;
-}
+export type IServerConfig = z.infer<typeof ServerConfigSchema>;
+export type IBrickadiaConfig = z.infer<typeof BrickadiaConfigSchema>;
+export type IConfig = z.infer<typeof ConfigSchema>;
 
 export type IConfigFormat = {
   extension: string;
