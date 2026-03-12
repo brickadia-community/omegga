@@ -125,16 +125,30 @@ export const HistoryView = () => {
       });
       handleChats(chatData);
 
-      // remove chats that our off screen
-      if (dir === 'bottom' && chatsRef.current.length > 200) {
-        chatsRef.current.splice(0, chatsRef.current.length - 200);
-      }
-      if (dir === 'top' && chatsRef.current.length > 200) {
-        chatsRef.current.splice(200, chatsRef.current.length - 200);
-      }
-
       setFirstLoad(false);
       setLoading(false);
+
+      // Defer trimming to a separate frame so InfiniteScroll's useLayoutEffect
+      // sees the correct scrollHeight delta (prepend only, no truncation).
+      // Reset the absolute boundary for the truncated end so infinite scroll
+      // can re-fetch that direction.
+      const trimDir = dir;
+      if (trimDir && chatsRef.current.length > 200) {
+        requestAnimationFrame(() => {
+          if (trimDir === 'bottom') {
+            chatsRef.current.splice(0, chatsRef.current.length - 200);
+            minRef.current = chatsRef.current[0].created;
+            setAbsMin(null);
+          } else if (trimDir === 'top') {
+            chatsRef.current.splice(200, chatsRef.current.length - 200);
+            maxRef.current =
+              chatsRef.current[chatsRef.current.length - 1].created;
+            setAbsMax(null);
+          }
+          setHistoryKey(prev => prev + 1);
+        });
+      }
+
       return chatData;
     },
     [],
