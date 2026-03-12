@@ -8,14 +8,15 @@ import {
   steamcmdDownloadGame,
 } from '@/updater/steam';
 import type Webserver from './index';
-import { IStoreAutoRestartConfig, OmeggaSocketIo } from './types';
+import { serverEvents } from './events';
+import { IStoreAutoRestartConfig } from './types';
 
 const error = (...args: any[]) => Logger.error(...args);
 let lastRestart = 0;
 
 const sleep = t => new Promise(resolve => setTimeout(resolve, t));
 
-export default function (server: Webserver, io: OmeggaSocketIo) {
+export default function (server: Webserver) {
   const { database, omegga } = server;
 
   // server status is checked every minute
@@ -195,9 +196,9 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       // get players by id
       const players = status.players.map(p => p.id);
 
-      // send the unaltered status to the frontend
+      // send the unaltered status to the frontend via serverEvents
       server.lastReportedStatus = status;
-      io.to('status').emit('server.status', status);
+      serverEvents.emit('heartbeat', status);
       try {
         omegga.emit('metrics:heartbeat', status);
       } catch (e) {
@@ -261,13 +262,13 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     };
 
     // tell web users about a chat message
-    io.to('chat').emit('chat', await database.addChatLog('msg', user, message));
+    serverEvents.emit('chat', await database.addChatLog('msg', user, message));
   });
 
   // player leave events
   omegga.on('leave', async ({ id, name, displayName }) => {
     // tell web users a player left
-    io.to('chat').emit(
+    serverEvents.emit(
       'chat',
       await database.addChatLog('leave', { id, name, displayName }),
     );
@@ -279,7 +280,7 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
     const isFirst = await database.addVisit({ id, name, displayName });
 
     // tell web users a player joined (and if it's their first time joining)
-    io.to('chat').emit(
+    serverEvents.emit(
       'chat',
       await database.addChatLog('join', {
         id,
@@ -297,34 +298,44 @@ export default function (server: Webserver, io: OmeggaSocketIo) {
       shortPath: string,
       info: { name: string; isLoaded: boolean; isEnabled: boolean },
     ) => {
-      io.to('plugins').emit('plugin', shortPath, info);
+      serverEvents.emit('plugin', { shortPath, ...info });
     },
   );
 
   // server status events
   omegga.on('start', () =>
-    io
-      .to('server')
-      .emit('status', { started: true, starting: false, stopping: false }),
+    serverEvents.emit('serverStatus', {
+      started: true,
+      starting: false,
+      stopping: false,
+    }),
   );
   omegga.on('server:starting', () =>
-    io
-      .to('server')
-      .emit('status', { started: false, starting: true, stopping: false }),
+    serverEvents.emit('serverStatus', {
+      started: false,
+      starting: true,
+      stopping: false,
+    }),
   );
   omegga.on('mapchange', () =>
-    io
-      .to('server')
-      .emit('status', { started: true, starting: false, stopping: false }),
+    serverEvents.emit('serverStatus', {
+      started: true,
+      starting: false,
+      stopping: false,
+    }),
   );
   omegga.on('server:stopped', () =>
-    io
-      .to('server')
-      .emit('status', { started: false, starting: false, stopping: false }),
+    serverEvents.emit('serverStatus', {
+      started: false,
+      starting: false,
+      stopping: false,
+    }),
   );
   omegga.on('server:stopping', () =>
-    io
-      .to('server')
-      .emit('status', { started: true, starting: false, stopping: true }),
+    serverEvents.emit('serverStatus', {
+      started: true,
+      starting: false,
+      stopping: true,
+    }),
   );
 }

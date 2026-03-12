@@ -1,3 +1,4 @@
+import type { IStoreAutoRestartConfig } from '@backend/types';
 import {
   Button,
   Input,
@@ -10,7 +11,6 @@ import {
 } from '@components';
 import { SavedSpan, SavedStatus, useSaved } from '@hooks';
 import { useStore } from '@nanostores/react';
-import type { IStoreAutoRestartConfig } from '@omegga/webserver/backend/types';
 import {
   IconCloudDownload,
   IconCloudSearch,
@@ -21,7 +21,6 @@ import {
   IconRefresh,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
-import { rpcNotify, rpcReq } from '../../socket';
 import {
   restartServer,
   startServer,
@@ -30,6 +29,7 @@ import {
   useServerLiveness,
 } from '../../stores/liveness';
 import { $omeggaData } from '../../stores/user';
+import { trpc } from '../../trpc';
 
 export const ServerView = () => {
   const {
@@ -52,19 +52,30 @@ export const ServerView = () => {
 
   const [savingWorld, setSavingWorld] = useState(false);
 
+  const { data: autoRestartData } = trpc.server.autoRestart.get.useQuery();
+
   useEffect(() => {
-    rpcReq('server.autorestart.get').then(setConfig);
-  }, []);
+    if (autoRestartData) {
+      setConfig(autoRestartData);
+    }
+  }, [autoRestartData]);
 
   const canUpdateCheck = omeggaData?.update?.canCheck ?? false;
+
+  const updateCheckQuery = trpc.server.update.check.useQuery(undefined, {
+    enabled: false,
+  });
+
   const checkForUpdate = useCallback(() => {
     if (!canUpdateCheck) return;
     setCheckingForUpdate(true);
-    rpcReq('server.updatecheck').then(res => {
-      setHasUpdate(res);
+    updateCheckQuery.refetch().then(({ data }) => {
+      setHasUpdate(data ?? null);
       setCheckingForUpdate(false);
     });
-  }, [canUpdateCheck]);
+  }, [canUpdateCheck, updateCheckQuery]);
+
+  const autoRestartSetMutation = trpc.server.autoRestart.set.useMutation();
 
   const saveConfig = useCallback(async () => {
     if (!config) return;
@@ -86,12 +97,14 @@ export const ServerView = () => {
       ),
       crashRestartEnabled: config.crashRestartEnabled ?? true,
     } satisfies IStoreAutoRestartConfig;
-    rpcNotify('server.autorestart.set', blob);
-  }, [config]);
+    autoRestartSetMutation.mutate(blob);
+  }, [config, autoRestartSetMutation]);
+
+  const worldSaveMutation = trpc.world.save.useMutation();
 
   const saveWorld = async () => {
     setSavingWorld(true);
-    await rpcReq('world.save');
+    await worldSaveMutation.mutateAsync({});
     setSavingWorld(false);
   };
 

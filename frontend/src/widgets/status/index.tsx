@@ -1,23 +1,25 @@
 import { Loader, Scroll } from '@components';
-import type { IServerStatus } from '@omegga/omegga/types';
+import type { IServerStatus } from '@omegga/types';
 import { duration } from '@utils';
 import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import { ioEmit, rpcReq, socket } from '../../socket';
+import { trpc } from '../../trpc';
 
 export const StatusWidget = () => {
   const [status, setStatus] = useState<IServerStatus | null>(null);
 
-  useEffect(() => {
-    socket.on('server.status', setStatus);
-    ioEmit('subscribe', 'status');
-    rpcReq('server.status').then(setStatus);
+  const { data: queryStatus } = trpc.server.status.useQuery();
 
-    return () => {
-      socket.off('server.status', setStatus);
-      ioEmit('unsubscribe', 'status');
-    };
-  }, []);
+  // Sync query data into state so subscription updates merge seamlessly
+  useEffect(() => {
+    if (queryStatus && !status) {
+      setStatus(queryStatus);
+    }
+  }, [queryStatus]);
+
+  trpc.server.onHeartbeat.useSubscription(undefined, {
+    onData: setStatus,
+  });
 
   return (
     <div className="status-widget">

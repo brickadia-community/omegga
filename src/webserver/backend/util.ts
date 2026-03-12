@@ -1,5 +1,6 @@
 import soft from '@/softconfig';
 import crypto from 'node:crypto';
+import type { EventEmitter } from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -73,4 +74,35 @@ export function getSessionSecret(dataPath: string) {
   }
 
   return secret;
+}
+
+/**
+ * Race an event listener against a timeout. Subscribes to `event` on
+ * `emitter`, invoking `check` on every emission. Resolves with the first
+ * truthy return value from `check`, or `false` after `ms` milliseconds.
+ * Cleans up the listener in both cases.
+ */
+export function waitForEvent<T>(
+  emitter: EventEmitter,
+  event: string,
+  check: (...args: any[]) => T | false | undefined,
+  ms = 5000,
+): Promise<T | false> {
+  return new Promise<T | false>(resolve => {
+    const timer = setTimeout(() => {
+      emitter.off(event, listener);
+      resolve(false);
+    }, ms);
+
+    function listener(...args: any[]) {
+      const result = check(...args);
+      if (result) {
+        clearTimeout(timer);
+        emitter.off(event, listener);
+        resolve(result);
+      }
+    }
+
+    emitter.on(event, listener);
+  });
 }

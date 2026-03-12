@@ -5,6 +5,7 @@ import Omegga from '@omegga/server';
 import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
 import { checkWsl } from '@util/wsl';
+import { serverEvents } from '@webserver/backend/events';
 import readline from 'readline';
 import { install } from './plugin';
 
@@ -942,16 +943,12 @@ export default class Terminal {
         if (this.omegga.webserver) {
           const user = { name: 'SERVER', id: '', web: true, color: 'ff00ff' };
           // create database entry, send to web ui
-          this.omegga.webserver.io
-            .to('chat')
-            .emit(
-              'chat',
-              await this.omegga.webserver.database.addChatLog(
-                'msg',
-                user,
-                line,
-              ),
-            );
+          const chatLog = await this.omegga.webserver.database.addChatLog(
+            'msg',
+            user,
+            line,
+          );
+          serverEvents.emit('chat', chatLog);
         }
       } else {
         err(

@@ -425,14 +425,14 @@ export default class Database extends EventEmitter {
     search = '',
     page = 0,
     sort = 'name',
-    direction = '1',
+    direction = 1,
     limitId = undefined,
   }: {
     count?: number;
     search?: string;
     page?: number;
     sort?: string;
-    direction?: string;
+    direction?: number;
     limitId?: string[];
   } = {}) {
     const pattern = explode(search);
@@ -527,7 +527,7 @@ export default class Database extends EventEmitter {
     search = '',
     page = 0,
     sort = 'name',
-    direction = '1',
+    direction = 1,
   } = {}) {
     const pattern = explode(search);
 

@@ -9,7 +9,7 @@ import {
   type HTMLAttributes,
 } from 'react';
 import { Link } from 'wouter';
-import { rpcReq } from '../../socket';
+import { trpc } from '../../trpc';
 import { Button } from '../button';
 import { Input } from '../input';
 import { Loader } from '../loader';
@@ -32,6 +32,8 @@ export const PlayerDropdown = ({
   const [options, setOptions] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
+
+  const utils = trpc.useUtils();
 
   // Hide the dropdown when clicking outside of it
   useEffect(() => {
@@ -72,7 +74,7 @@ export const PlayerDropdown = ({
 
         setLoading(true);
         setOpen(true);
-        const { players } = await rpcReq('players.list', {
+        const { players } = await utils.player.list.fetch({
           page: 0,
           search: searchRef.current,
           sort: 'lastSeen',

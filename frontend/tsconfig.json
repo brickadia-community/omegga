@@ -35,9 +35,22 @@
       "@hooks": [
         "./src/hooks"
       ],
+      "@backend/*": [
+        "../src/webserver/backend/*"
+      ],
+      /* Backend path aliases — mirrored here so tRPC can resolve backend types */
       "@omegga/*": [
+        "../src/omegga/*"
+      ],
+      "@/*": [
         "../src/*"
       ],
+      "@util/*": [
+        "../src/util/*"
+      ],
+      "@config/*": [
+        "../src/config/*"
+      ]
     },
     "baseUrl": "."
   },

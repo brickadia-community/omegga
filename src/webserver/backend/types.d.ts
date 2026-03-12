@@ -1,19 +1,8 @@
-import { Server as SocketIo, DefaultEventsMap } from 'socket.io';
-
 declare module 'express-session' {
   interface SessionData {
     userId: string;
   }
 }
-
-export type OmeggaSocketIo = SocketIo<
-  DefaultEventsMap,
-  DefaultEventsMap,
-  DefaultEventsMap,
-  {
-    user: IStoreUser & { _id: string };
-  }
->;
 
 export interface IPlayer {
   id?: string;

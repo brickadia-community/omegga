@@ -1,8 +1,8 @@
-import type { BRRoleSetupEntry } from '@omegga/brickadia/types';
+import type { BRRoleSetupEntry } from '@/brickadia/types';
 import { IconCaretDown } from '@tabler/icons-react';
 import type React from 'react';
 import { useEffect, useRef, useState, type HTMLAttributes } from 'react';
-import { rpcReq } from '../../socket';
+import { trpc } from '../../trpc';
 import { Loader } from '../loader';
 
 export const RoleDropdown = ({
@@ -21,10 +21,12 @@ export const RoleDropdown = ({
   const [options, setOptions] = useState<string[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
+  const utils = trpc.useUtils();
+
   async function fetchRoles() {
     setLoading(true);
     setOptions([]);
-    const roles: BRRoleSetupEntry[] = await rpcReq('roles.list');
+    const roles: BRRoleSetupEntry[] = await utils.role.list.fetch();
     setOptions(roles.map(role => role.name));
     setLoading(false);
   }

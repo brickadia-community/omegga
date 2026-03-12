@@ -1,3 +1,4 @@
+import type { GetUsersRes } from '@backend/api';
 import {
   Button,
   Dimmer,
@@ -15,7 +16,6 @@ import {
   SortIcons,
 } from '@components';
 import { useStore } from '@nanostores/react';
-import type { GetUsersRes } from '@omegga/webserver/backend/api';
 import {
   IconArrowBarToLeft,
   IconArrowBarToRight,
@@ -30,8 +30,8 @@ import {
 import { debounce, duration, logout } from '@utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
-import { rpcReq } from '../../socket';
 import { $omeggaData, $user } from '../../stores/user';
+import { trpc } from '../../trpc';
 
 export const UserList = () => {
   const userless = useStore($omeggaData)?.userless;
@@ -57,6 +57,10 @@ export const UserList = () => {
 
   const [_location, navigate] = useLocation();
   const [_match, params] = useRoute('/users/:id?');
+
+  const utils = trpc.useUtils();
+  const createMutation = trpc.user.create.useMutation();
+  const passwdMutation = trpc.user.passwd.useMutation();
 
   const query = useRef({
     page: 0,
@@ -84,7 +88,7 @@ export const UserList = () => {
   const getUsers = async () => {
     setLoading(true);
     const { page, search, sort, direction } = query.current;
-    const { users, total, pages }: GetUsersRes = await rpcReq('users.list', {
+    const { users, total, pages } = await utils.user.list.fetch({
       page,
       search,
       sort,
@@ -166,9 +170,12 @@ export const UserList = () => {
     let err = '';
     try {
       if (showCredentials && !userless) {
-        err = await rpcReq('users.passwd', myUser?.username, password);
+        err = await passwdMutation.mutateAsync({
+          username: myUser?.username ?? '',
+          password,
+        });
       } else {
-        err = await rpcReq('users.create', username, password);
+        err = await createMutation.mutateAsync({ username, password });
       }
       setModalLoading(false);
       if (!err) {

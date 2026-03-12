@@ -11,7 +11,6 @@ import {
   PopoutContent,
   Scroll,
 } from '@components';
-import type { GetPlayerRes } from '@omegga/webserver/backend/api';
 import {
   IconBackspace,
   IconBan,
@@ -22,9 +21,9 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { duration, heartbeatAgo, isoDate, isoTime } from '@utils';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useRoute } from 'wouter';
-import { rpcReq } from '../../socket';
+import { trpc } from '../../trpc';
 
 const UNIT_SCALARS = {
   'Minute(s)': 1,
@@ -48,36 +47,38 @@ export const PlayerInspector = () => {
   const [_loc, navigate] = useLocation();
 
   const [modal, setModal] = useState<'ban' | 'kick' | 'clear' | null>(null);
-  const [player, setPlayer] = useState<GetPlayerRes | null>(null);
   const [showActions, setShowActions] = useState(false);
   const [reason, setReason] = useState('');
   const [banDuration, setBanDuration] = useState(10);
   const [banUnit, setBanUnit] = useState('Permanent');
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const getPlayer = useCallback(async () => {
-    if (!params?.id) return;
-    setLoading(true);
-    const player: GetPlayerRes | null = await rpcReq('player.get', params!.id);
-    if (!player) return navigate('/players');
-    setPlayer(player);
-    setLoading(false);
-  }, [params?.id]);
+  const {
+    data: player,
+    isLoading: loading,
+    refetch: getPlayer,
+  } = trpc.player.get.useQuery(params?.id ?? '', { enabled: !!params?.id });
 
   useEffect(() => {
-    getPlayer();
-  }, [getPlayer]);
+    if (!loading && !player && params?.id) {
+      navigate('/players');
+    }
+  }, [loading, player, params?.id]);
+
+  const banMutation = trpc.player.ban.useMutation();
+  const kickMutation = trpc.player.kick.useMutation();
+  const unbanMutation = trpc.player.unban.useMutation();
+  const clearBricksMutation = trpc.player.clearBricks.useMutation();
 
   const ban = async () => {
     if (!player!.id) return;
     setActionLoading(true);
-    const duration =
+    const dur =
       banUnit === 'Permanent'
         ? -1
         : banDuration * UNIT_SCALARS[banUnit as keyof typeof UNIT_SCALARS];
     try {
-      await rpcReq('player.ban', player!.id, duration, reason);
+      await banMutation.mutateAsync({ id: player!.id, duration: dur, reason });
     } catch (err) {
       console.error('Failed to ban player:', err);
     }
@@ -89,7 +90,7 @@ export const PlayerInspector = () => {
     if (!player!.id) return;
     setActionLoading(true);
     try {
-      await rpcReq('player.kick', player!.id, reason);
+      await kickMutation.mutateAsync({ id: player!.id, reason });
     } catch (err) {
       console.error('Failed to kick player:', err);
     }
@@ -101,7 +102,7 @@ export const PlayerInspector = () => {
     if (!player!.id) return;
     setActionLoading(true);
     try {
-      await rpcReq('player.unban', player!.id);
+      await unbanMutation.mutateAsync({ id: player!.id });
     } catch (err) {
       console.error('Failed to unban player:', err);
     }
@@ -112,7 +113,7 @@ export const PlayerInspector = () => {
     if (!player!.id) return;
     setActionLoading(true);
     try {
-      await rpcReq('player.clearbricks', player!.id);
+      await clearBricksMutation.mutateAsync({ id: player!.id });
     } catch (err) {
       console.error('Failed to clear bricks:', err);
     }
@@ -282,7 +283,7 @@ export const PlayerInspector = () => {
                   Roles
                 </div>
                 <div className="option-list">
-                  {player.roles.map(r => (
+                  {player.roles.map((r: any) => (
                     <div className="option-item" key={r.name}>
                       <div
                         className="option-name"
@@ -314,7 +315,7 @@ export const PlayerInspector = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {player.nameHistory.map(h => (
+                    {player.nameHistory.map((h: any) => (
                       <tr key={h.date + h.name}>
                         <td>
                           {/* If the display name is not set, show the username */}
@@ -367,7 +368,7 @@ export const PlayerInspector = () => {
                         </td>
                       </tr>
                     )}
-                    {player.banHistory.map(b => (
+                    {player.banHistory.map((b: any) => (
                       <tr key={b.created}>
                         <td className="reason">{b.reason}</td>
                         <td
@@ -417,7 +418,7 @@ export const PlayerInspector = () => {
                         </td>
                       </tr>
                     )}
-                    {player.kickHistory.map(b => (
+                    {player.kickHistory.map((b: any) => (
                       <tr key={b.created}>
                         <td className="reason">{b.reason}</td>
                         <td>

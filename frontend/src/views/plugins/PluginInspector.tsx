@@ -1,3 +1,4 @@
+import type { IPluginCommand, IPluginDocumentation } from '@/plugin';
 import {
   Button,
   Dropdown,
@@ -10,8 +11,6 @@ import {
   Scroll,
   Toggle,
 } from '@components';
-import type { IPluginCommand, IPluginDocumentation } from '@omegga/plugin';
-import type { GetPluginRes } from '@omegga/webserver/backend/api';
 import {
   IconArrowBackUp,
   IconCheck,
@@ -24,9 +23,7 @@ import {
 import { debounce } from '@utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute } from 'wouter';
-import { rpcReq, socket } from '../../socket';
-import type { PluginInfo } from './PluginList';
-
+import { trpc } from '../../trpc';
 const jsonEq = (a: any, b: any) => {
   try {
     return JSON.stringify(a) === JSON.stringify(b);
@@ -37,50 +34,61 @@ const jsonEq = (a: any, b: any) => {
 
 export const PluginInspector = () => {
   const [_location, params] = useRoute('/plugins/:id');
-  const [plugin, setPlugin] = useState<GetPluginRes | null>(null);
-  const [config, setConfig] = useState<GetPluginRes['config']>({});
+  const [plugin, setPlugin] = useState<any | null>(null);
+  const [config, setConfig] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(Boolean(plugin?.path));
   const [waiting, setWaiting] = useState(false);
   const [showSave, setShowSave] = useState<Record<string, boolean>>({});
 
-  const getPlugin = async () => {
-    if (!params?.id) return;
-    setLoading(true);
-    const res = await rpcReq('plugin.get', params.id);
-    setPlugin(res);
-    setConfig(res.config);
-    setLoading(false);
-  };
+  const getQuery = trpc.plugin.get.useQuery(
+    { shortPath: params?.id ?? '' },
+    { enabled: !!params?.id },
+  );
+
+  useEffect(() => {
+    if (getQuery.data) {
+      setPlugin(getQuery.data);
+      setConfig(getQuery.data.config);
+      setLoading(false);
+    } else if (getQuery.isError) {
+      setLoading(false);
+    }
+  }, [getQuery.data, getQuery.isError]);
+
+  const loadMutation = trpc.plugin.load.useMutation();
+  const unloadMutation = trpc.plugin.unload.useMutation();
+  const toggleMutation = trpc.plugin.toggle.useMutation();
+  const configMutation = trpc.plugin.config.useMutation();
 
   const loadPlugin = async () => {
     if (!params?.id) return;
     setWaiting(true);
-    await rpcReq('plugin.load', params.id);
-    await getPlugin();
+    await loadMutation.mutateAsync({ shortPath: params.id });
+    await getQuery.refetch();
     setWaiting(false);
   };
   const unloadPlugin = async () => {
     if (!params?.id) return;
     setWaiting(true);
-    await rpcReq('plugin.unload', params.id);
-    await getPlugin();
+    await unloadMutation.mutateAsync({ shortPath: params.id });
+    await getQuery.refetch();
     setWaiting(false);
   };
   const reloadPlugin = async () => {
     if (!params?.id) return;
     setWaiting(true);
-    const ok = await rpcReq('plugin.unload', params.id);
+    const ok = await unloadMutation.mutateAsync({ shortPath: params.id });
     if (ok) {
-      await rpcReq('plugin.load', params.id);
+      await loadMutation.mutateAsync({ shortPath: params.id });
     }
-    await getPlugin();
+    await getQuery.refetch();
     setWaiting(false);
   };
   const togglePlugin = async (enabled: boolean) => {
     if (!params?.id) return;
     setWaiting(true);
-    await rpcReq('plugin.toggle', params.id, enabled);
-    await getPlugin();
+    await toggleMutation.mutateAsync({ shortPath: params.id, enabled });
+    await getQuery.refetch();
     setWaiting(false);
   };
 
@@ -89,27 +97,12 @@ export const PluginInspector = () => {
   const pluginRef = useRef(plugin);
   pluginRef.current = plugin;
 
-  // Get the plugin info when the component mounts
-  useEffect(() => {
-    if (!params?.id) return;
-    pluginRef.current = null;
-    configRef.current = {};
-    setPlugin(null);
-    setConfig({});
-    getPlugin();
-    // subscribe to plugin updates
-    const handlePluginUpdate = ([shortPath, info]: [
-      shortPath: string,
-      info: PluginInfo,
-    ]) => {
-      if (shortPath !== plugin?.path) return;
-      setPlugin(prev => ({ ...prev!, ...info }));
-    };
-    socket.on('plugin', handlePluginUpdate);
-    return () => {
-      socket.off('plugin', handlePluginUpdate);
-    };
-  }, [params?.id]);
+  trpc.plugin.onStatus.useSubscription(undefined, {
+    onData(data) {
+      if (data.shortPath !== pluginRef.current?.path) return;
+      setPlugin((prev: any) => ({ ...prev!, ...data }));
+    },
+  });
 
   const saveConfig = useMemo(
     () =>
@@ -123,12 +116,17 @@ export const PluginInspector = () => {
           if (pluginRef.current?.config[c] != config[c]) {
             diff[c] = true;
           }
-          const ok = await rpcReq('plugin.config', params?.id, config);
+          const ok = await configMutation.mutateAsync({
+            shortPath: params?.id,
+            config,
+          });
           if (ok) {
             setShowSave(diff);
             setTimeout(() => {
               setShowSave({});
-              setPlugin(p => (p?.path === pluginPath ? { ...p, config } : p));
+              setPlugin((p: any) =>
+                p?.path === pluginPath ? { ...p, config } : p,
+              );
             });
           }
         }
