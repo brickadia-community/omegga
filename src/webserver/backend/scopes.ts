@@ -36,6 +36,8 @@ export const SCOPES = {
   'server.autorestart.set': { description: 'Change auto-restart config' },
   'server.onStatus': { description: 'Receive server status updates' },
   'server.onHeartbeat': { description: 'Receive server heartbeat' },
+  'server.utilization': { description: 'View current system utilization' },
+  'server.onUtilization': { description: 'Receive system utilization metrics' },
 
   // User
   'user.list': { description: 'View web UI users' },

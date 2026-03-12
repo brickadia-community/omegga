@@ -5,6 +5,7 @@ import { on } from 'events';
 import { z } from 'zod/v4';
 import { serverEvents } from '../events';
 import type Webserver from '../index';
+import { getLastUtilization } from '../metrics';
 import { getContextDeps, protectedProcedure, router } from '../trpc';
 
 let _server: Webserver | null = null;
@@ -74,6 +75,10 @@ export const serverRouter = router({
 
     status: protectedProcedure('server.status').query(() => {
       return _server?.lastReportedStatus ?? null;
+    }),
+
+    utilization: protectedProcedure('server.utilization').query(() => {
+      return getLastUtilization();
     }),
 
     started: protectedProcedure('server.started').query(() => {
@@ -191,6 +196,16 @@ export const serverRouter = router({
           signal,
         })) {
           yield status;
+        }
+      },
+    ),
+
+    onUtilization: protectedProcedure('server.onUtilization').subscription(
+      async function* ({ signal }) {
+        for await (const [utilization] of on(serverEvents, 'utilization', {
+          signal,
+        })) {
+          yield utilization as import('../types').SystemUtilization;
         }
       },
     ),

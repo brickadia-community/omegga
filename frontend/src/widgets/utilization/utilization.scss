@@ -1,0 +1,123 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.utilization-widget {
+  @include mixins.column-stretch;
+  flex: 1;
+  height: 100%;
+  overflow: auto;
+  background-color: theme.$br-bg-secondary;
+}
+
+.util-donuts {
+  display: flex;
+  flex-direction: column;
+}
+
+.donut-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  background-color: theme.$br-bg-primary;
+
+  &:nth-child(even) {
+    background-color: theme.$br-bg-primary-alt;
+  }
+}
+
+.donut-svg {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+
+  .donut-pct {
+    fill: theme.$br-button-fg;
+    font-size: 22px;
+    font-weight: bold;
+  }
+}
+
+.donut-detail {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: theme.$br-boring-button-fg;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  gap: 1px;
+
+  b {
+    color: theme.$br-boring-button-fg;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  span {
+    font-weight: bold;
+    color: theme.$br-button-fg;
+  }
+
+  .donut-detail-line {
+    display: flex;
+    gap: 4px;
+    align-items: baseline;
+  }
+
+  .donut-detail-sub {
+    font-size: 11px;
+    font-weight: bold;
+    color: theme.$br-button-fg;
+    opacity: 0.6;
+  }
+}
+
+.util-sparklines {
+  display: flex;
+  flex-direction: column;
+}
+
+.spark-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 4px;
+  background-color: theme.$br-bg-primary-alt;
+
+  &:nth-child(even) {
+    background-color: theme.$br-bg-primary;
+  }
+}
+
+.spark-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: theme.$br-boring-button-fg;
+  width: 52px;
+  flex-shrink: 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sparkline {
+  flex: 1;
+  height: 22px;
+  min-width: 0;
+}
+
+.spark-value {
+  font-size: 12px;
+  color: theme.$br-button-fg;
+  width: 60px;
+  padding-right: 1em;
+  flex-shrink: 0;
+  font-weight: bold;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
