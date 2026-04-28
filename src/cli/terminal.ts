@@ -205,9 +205,7 @@ const COMMANDS: TerminalCommand[] = [
         return;
       }
       log('Checking for updates...');
-      const result = steamcmdCheckUpdate(
-        this.omegga.config.server?.steambeta,
-      );
+      const result = steamcmdCheckUpdate(this.omegga.config.server?.steambeta);
       if (!result) {
         err('Failed to check for updates.');
         return;
@@ -219,9 +217,8 @@ const COMMANDS: TerminalCommand[] = [
       else log('Could not determine update status.'.yellow);
 
       if (subcommand === 'show') {
-        const branch = local.betaKey && local.betaKey !== 'main'
-          ? local.betaKey
-          : 'public';
+        const branch =
+          local.betaKey && local.betaKey !== 'main' ? local.betaKey : 'public';
         const remoteBuild = remote?.branches?.[branch];
         const remotePart = remoteBuild
           ? `BuildID ${remoteBuild.buildid}` +

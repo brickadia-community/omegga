@@ -98,12 +98,7 @@ export const pluginRouter = router({
           const plugins = omegga.pluginLoader.plugins
             .filter(p => p.isLoaded())
             .map(p => p.getName());
-          log(
-            'Loaded',
-            (plugins.length + '').yellow,
-            'plugins:',
-            plugins,
-          );
+          log('Loaded', (plugins.length + '').yellow, 'plugins:', plugins);
           return true;
         } else {
           error('Could not load all plugins');

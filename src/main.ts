@@ -282,14 +282,10 @@ program
 
 program
   .command('steamlogin')
-  .description(
-    'Interactively log in to Steam (for Steam Guard authentication)',
-  )
+  .description('Interactively log in to Steam (for Steam Guard authentication)')
   .action(async () => {
     if (!process.env.STEAM_USERNAME) {
-      Logger.errorp(
-        'STEAM_USERNAME environment variable is required.',
-      );
+      Logger.errorp('STEAM_USERNAME environment variable is required.');
       Logger.errorp('Set it in your .env file or environment.');
       process.exit(1);
     }

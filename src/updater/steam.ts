@@ -173,10 +173,7 @@ export type SteamAppStatus = {
 };
 
 export type SteamAppInfo = {
-  branches: Record<
-    string,
-    { buildid: string; timeupdated?: string }
-  >;
+  branches: Record<string, { buildid: string; timeupdated?: string }>;
 };
 
 function stripAnsi(s: string): string {
@@ -235,7 +232,9 @@ export type SteamUpdateCheck = {
   hasUpdate: boolean | null;
 };
 
-export function steamcmdCheckUpdate(steambeta?: string): SteamUpdateCheck | null {
+export function steamcmdCheckUpdate(
+  steambeta?: string,
+): SteamUpdateCheck | null {
   const appId = getAppId();
   const installDir = path.join(getSteamInstallDir(), steambeta ?? 'main');
   const steamLogin = process.env.STEAM_USERNAME
@@ -265,9 +264,8 @@ export function steamcmdCheckUpdate(steambeta?: string): SteamUpdateCheck | null
     const remoteBranch = branch && branch !== 'main' ? branch : 'public';
     const remoteBuildId = remote?.branches?.[remoteBranch]?.buildid;
 
-    const hasUpdate = remoteBuildId != null
-      ? remoteBuildId !== local.buildId
-      : null;
+    const hasUpdate =
+      remoteBuildId != null ? remoteBuildId !== local.buildId : null;
 
     return { local, remote, hasUpdate };
   } catch (err) {

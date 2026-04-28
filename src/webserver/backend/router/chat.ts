@@ -28,9 +28,7 @@ export const chatRouter = router({
         omegga.broadcast(
           `"[<b><color=\\"ff00ff\\">${user.name}</></>]: ${parseLinks(sanitize(message))}"`,
         );
-        Logger.log(
-          `[${user.name.brightMagenta.underline}]: ${message}`,
-        );
+        Logger.log(`[${user.name.brightMagenta.underline}]: ${message}`);
 
         return 'ok';
       }),

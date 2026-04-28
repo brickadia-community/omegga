@@ -10,8 +10,7 @@ const command: MatchGenerator<{
     /^Player \"(?<name>.+?)\" is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
 
   // pattern to match the "command does not exist" error that follows
-  const errorRegExp =
-    /^Error: Command (?<errorCmd>.+?) does not exist\.$/;
+  const errorRegExp = /^Error: Command (?<errorCmd>.+?) does not exist\.$/;
 
   // track the last player who used a command for the error line
   let lastCommandPlayer: string | null = null;

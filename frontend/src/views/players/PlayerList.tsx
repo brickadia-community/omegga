@@ -82,10 +82,13 @@ export const PlayerList = () => {
     doSearch();
   };
 
-  const { data, isLoading: loading, refetch } = trpc.player.list.useQuery(
-    queryInput,
-    { placeholderData: (prev: any) => prev },
-  );
+  const {
+    data,
+    isLoading: loading,
+    refetch,
+  } = trpc.player.list.useQuery(queryInput, {
+    placeholderData: (prev: any) => prev,
+  });
   const players = data?.players ?? [];
   const total = data?.total ?? 0;
   const pages = data?.pages ?? 0;
