@@ -1,4 +1,3 @@
-import default_commands from '@/info/default_commands.json';
 import Logger from '@/logger';
 import { OmeggaLike, OmeggaPlayer, PluginInterop } from '@/plugin';
 import {
@@ -248,14 +247,10 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       }
     });
 
-    // detect when a missing command is sent
-    this.on('cmd', (cmd, name) => {
-      // if it's not in the default commands and it's not registered to a plugin,
-      // it's okay to send the missing command message
-      if (
-        !default_commands.includes(cmd) &&
-        (!this.pluginLoader || !this.pluginLoader.isCommand(cmd))
-      ) {
+    // detect when the game reports a command does not exist
+    this.on('unknownCommand', (name: string, cmd: string) => {
+      // if it's not registered to a plugin, send the missing command message
+      if (!this.pluginLoader || !this.pluginLoader.isCommand(cmd)) {
         this.whisper(name, MISSING_CMD);
       }
     });

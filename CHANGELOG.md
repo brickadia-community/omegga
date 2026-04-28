@@ -13,6 +13,7 @@
 - Web UI: show update status subheader on server page, spinner on update check button
 - Web UI: increase default dashboard widget size
 - Add `/exit`, `/quit`, `/close` aliases for `/stop`
+- Use game engine's "command does not exist" error for unknown command detection instead of a hardcoded command list
 
 ## 1.4.1 - 2026-03-10
 
