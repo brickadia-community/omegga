@@ -6,6 +6,7 @@ Add new changes here as they are implemented
 
 ## 1.5.0 - 2026-04-28
 
+- Add utilization widget to the dashboard view
 - Add configurable terminal timestamps via `terminal.timestamp` in config (uses [dateformat](https://www.npmjs.com/package/dateformat) syntax)
 - Refactor config validation to use zod schemas
 - Censor credentials and passwords in verbose config logging
