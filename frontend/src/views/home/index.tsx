@@ -2,6 +2,7 @@ import { Button, Header, NavHeader, PageContent, SideNav } from '@components';
 import {
   IconApps,
   IconChevronDownRight,
+  IconGauge,
   IconList,
   IconMessageDots,
   IconMinus,
@@ -10,7 +11,7 @@ import {
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import GridLayout, { type Layout } from 'react-grid-layout';
-import { ChatWidget, StatusWidget } from '../../widgets';
+import { ChatWidget, StatusWidget, UtilizationWidget } from '../../widgets';
 
 const WIDGET_LIST = {
   chat: {
@@ -23,10 +24,15 @@ const WIDGET_LIST = {
     icon: IconList,
     tooltip: 'View current online players and server status',
   },
+  utilization: {
+    component: UtilizationWidget,
+    icon: IconGauge,
+    tooltip: 'View CPU, memory, disk, and network usage',
+  },
 };
 const DEFAULT_LAYOUT = [
-  { x: 0, y: 0, w: 2, h: 2, i: 'chat' },
-  { x: 2, y: 0, w: 2, h: 2, i: 'status' },
+  { x: 0, y: 0, w: 4, h: 4, i: 'chat' },
+  { x: 4, y: 0, w: 4, h: 4, i: 'status' },
 ] satisfies Layout[];
 
 const GRID_DATA = {
@@ -68,8 +74,8 @@ export const HomeView = () => {
       {
         x: 0,
         y: 0,
-        w: 2,
-        h: 2,
+        w: 4,
+        h: 4,
         i: widget,
       },
     ]);

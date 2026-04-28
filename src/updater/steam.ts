@@ -1,8 +1,8 @@
 import Logger from '@/logger';
 import { getAppId, getSteamInstallDir, STEAMCMD_PATH } from '@/softconfig';
-import { execSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { execSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
+import prompts from 'prompts';
 import acfParser from 'steam-acf2json';
 
 // Steam EAppState flags (bitmask)
@@ -44,17 +44,70 @@ export function steamcmdDownloadSelf() {
   });
 }
 
-export function steamcmdDownloadGame({
+export async function steamcmdInteractiveLogin(): Promise<boolean> {
+  if (!process.env.STEAM_USERNAME) {
+    Logger.error('STEAM_USERNAME environment variable is required.');
+    return false;
+  }
+
+  const password =
+    process.env.STEAM_PASSWORD ??
+    (
+      await prompts({
+        type: 'password',
+        name: 'value',
+        message: `Steam password for ${process.env.STEAM_USERNAME}`,
+      })
+    ).value;
+
+  if (!password) {
+    Logger.error('No password provided.');
+    return false;
+  }
+
+  const result = spawnSync(
+    STEAMCMD_PATH,
+    ['+login', process.env.STEAM_USERNAME, password, '+quit'],
+    { stdio: 'inherit' },
+  );
+
+  return result.status === 0;
+}
+
+function handleSteamError(err: unknown) {
+  if (err instanceof Error && err.message) {
+    const stateMatch = err.message.match(
+      /state is (0x[0-9A-Fa-f]+) after update job/,
+    );
+    if (stateMatch) {
+      const state = parseInt(stateMatch[1], 16);
+      const flags = decodeAppState(state);
+      Logger.error(
+        `Steam app state ${stateMatch[1]} (${state}):`,
+        flags.length > 0 ? flags.join(', ') : 'Unknown',
+      );
+    }
+
+    err.message = err.message
+      .replace(/\+login\s+"[^"]*"\s+"[^"]*"/, '+login <REDACTED>')
+      .replace(/\+login\s+(\S+)\s+\S+/, '+login $1 <REDACTED>')
+      .replace(/-betapassword\s+\S+/, '-betapassword <REDACTED>');
+  }
+}
+
+export async function steamcmdDownloadGame({
   steambeta,
   steambetaPassword,
 }: {
   steambeta?: string;
   steambetaPassword?: string;
 } = {}) {
-  let steamLogin = 'anonymous';
-  if (process.env.STEAM_USERNAME && process.env.STEAM_PASSWORD) {
-    Logger.verbose('Using provided Steam credentials for download.');
-    steamLogin = `"${process.env.STEAM_USERNAME}" "${process.env.STEAM_PASSWORD}"`;
+  const hasCredentials = !!process.env.STEAM_USERNAME;
+  const steamLogin = hasCredentials
+    ? `"${process.env.STEAM_USERNAME}"`
+    : 'anonymous';
+  if (hasCredentials) {
+    Logger.verbose('Using cached Steam credentials for download.');
   }
   const installDir = getSteamInstallDir();
   const appId = getAppId();
@@ -73,154 +126,152 @@ export function steamcmdDownloadGame({
     '+quit',
   ].filter(Boolean);
 
+  const cmd = `${STEAMCMD_PATH} ${args.join(' ')}`;
+
   try {
-    execSync(`${STEAMCMD_PATH} ${args.join(' ')}`, { stdio: 'inherit' });
+    execSync(cmd, { stdio: 'inherit' });
   } catch (err) {
-    if (err instanceof Error && err.message) {
-      // Log decoded app state if present
-      const stateMatch = err.message.match(
-        /state is (0x[0-9A-Fa-f]+) after update job/,
+    if (
+      hasCredentials &&
+      err instanceof Error &&
+      'status' in err &&
+      (err as NodeJS.ErrnoException & { status: number }).status === 5
+    ) {
+      Logger.warnp(
+        'Steam login failed — this may require Steam Guard authentication.',
       );
-      if (stateMatch) {
-        const state = parseInt(stateMatch[1], 16);
-        const flags = decodeAppState(state);
-        Logger.error(
-          `Steam app state ${stateMatch[1]} (${state}):`,
-          flags.length > 0 ? flags.join(', ') : 'Unknown',
-        );
+      Logger.warnp('Attempting interactive login...');
+
+      if (await steamcmdInteractiveLogin()) {
+        Logger.logp('Login successful. Retrying download...');
+        try {
+          execSync(cmd, { stdio: 'inherit' });
+          return;
+        } catch (retryErr) {
+          handleSteamError(retryErr);
+          throw retryErr;
+        }
       }
 
-      // Redact credentials from error messages
-      err.message = err.message
-        .replace(/\+login\s+"[^"]*"\s+"[^"]*"/, '+login <REDACTED>')
-        .replace(/\+login\s+(\S+)\s+\S+/, '+login $1 <REDACTED>')
-        .replace(/-betapassword\s+\S+/, '-betapassword <REDACTED>');
+      Logger.errorp(
+        'Interactive login failed. Run',
+        'omegga steamlogin'.yellow,
+        'to authenticate manually.',
+      );
     }
+
+    handleSteamError(err);
     throw err;
   }
 }
 
-export type SteamInfo = {
-  data: Record<
-    string,
-    {
-      _change_number: number;
-      _missing_token: boolean;
-      _sha: string;
-      _size: number;
-      appid: number;
-      common: unknown;
-      config: unknown;
-      depots: Record<
-        string,
-        {
-          config: { oslist: 'linux' | 'windows' | 'macos' };
-        }
-      > & {
-        branches: Record<
-          string,
-          {
-            buildid: string;
-            timeupdated: string;
-            description?: string;
-          }
-        >;
-        privatebranches: '1';
-      };
-    }
-  >;
-  status: 'success';
+export type SteamAppStatus = {
+  installState: string;
+  buildId: string;
+  betaKey: string | null;
+  updateState: string;
 };
 
-async function fetchSteamInfo() {
-  const appId = getAppId();
-  const res = await fetch('https://api.steamcmd.net/v1/info/' + appId);
-  const json = await res.json();
-  return json as SteamInfo;
+export type SteamAppInfo = {
+  branches: Record<string, { buildid: string; timeupdated?: string }>;
+};
+
+function stripAnsi(s: string): string {
+  return s.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
-export type SteamAcf = {
-  AppState: {
-    appid: string;
-    buildid: string;
-    lastupdated: string;
+function parseAppStatus(output: string): SteamAppStatus | null {
+  const clean = stripAnsi(output);
+  const buildMatch = clean.match(/BuildID\s+(\d+)/);
+  const stateMatch = clean.match(/install state:\s*(.+)/i);
+  const betaMatch = clean.match(/"BetaKey"\s+"([^"]+)"/);
+  const updateMatch = clean.match(/update state:\s*(.+)/i);
+  if (!buildMatch) return null;
+  return {
+    installState: stateMatch?.[1]?.trim().replace(/,$/, '') ?? 'Unknown',
+    buildId: buildMatch[1],
+    betaKey: betaMatch?.[1] ?? null,
+    updateState: updateMatch?.[1]?.trim() ?? 'Unknown',
   };
+}
+
+function parseAppInfo(output: string, appId: string): SteamAppInfo | null {
+  const clean = stripAnsi(output);
+  const vdfStart = clean.indexOf(`"${appId}"`);
+  if (vdfStart === -1) return null;
+
+  const braceStart = clean.indexOf('{', vdfStart);
+  if (braceStart === -1) return null;
+
+  let depth = 0;
+  let braceEnd = -1;
+  for (let i = braceStart; i < clean.length; i++) {
+    if (clean[i] === '{') depth++;
+    if (clean[i] === '}') depth--;
+    if (depth === 0) {
+      braceEnd = i;
+      break;
+    }
+  }
+  if (braceEnd === -1) return null;
+
+  try {
+    const vdf = `"${appId}"\n${clean.slice(braceStart, braceEnd + 1)}\n`;
+    const parsed = acfParser.decode(vdf);
+    const branches = parsed?.[appId]?.depots?.branches;
+    if (!branches || typeof branches !== 'object') return null;
+    return { branches };
+  } catch {
+    return null;
+  }
+}
+
+export type SteamUpdateCheck = {
+  local: SteamAppStatus;
+  remote: SteamAppInfo | null;
+  hasUpdate: boolean | null;
 };
 
-function getSteamAcf(steambeta?: string) {
+export function steamcmdCheckUpdate(
+  steambeta?: string,
+): SteamUpdateCheck | null {
   const appId = getAppId();
   const installDir = path.join(getSteamInstallDir(), steambeta ?? 'main');
-  const acfPath = path.join(
-    installDir,
-    'steamapps',
-    `appmanifest_${appId}.acf`,
-  );
-  if (!existsSync(acfPath)) {
-    Logger.verbose(`File not found: ${acfPath}`);
-    return null;
-  }
+  const steamLogin = process.env.STEAM_USERNAME
+    ? `"${process.env.STEAM_USERNAME}"`
+    : 'anonymous';
+
   try {
-    const plaintext = readFileSync(acfPath, 'utf-8');
-    const json = acfParser.decode(plaintext);
-    return json as SteamAcf;
+    const output = execSync(
+      [
+        STEAMCMD_PATH,
+        `+force_install_dir ${installDir}`,
+        `+login ${steamLogin}`,
+        '+app_info_update 1',
+        `+app_info_print ${appId}`,
+        `+app_status ${appId}`,
+        '+quit',
+      ].join(' '),
+      { encoding: 'utf-8', stdio: ['inherit', 'pipe', 'pipe'], timeout: 30000 },
+    );
+
+    const local = parseAppStatus(output);
+    if (!local) return null;
+
+    const remote = parseAppInfo(output, appId);
+
+    const branch = steambeta ?? (local.betaKey || null);
+    const remoteBranch = branch && branch !== 'main' ? branch : 'public';
+    const remoteBuildId = remote?.branches?.[remoteBranch]?.buildid;
+
+    const hasUpdate =
+      remoteBuildId != null ? remoteBuildId !== local.buildId : null;
+
+    return { local, remote, hasUpdate };
   } catch (err) {
-    Logger.error(`Error parsing ACF file ${acfPath}:`, err);
+    Logger.verbose('Failed to check for Steam update via steamcmd:', err);
     return null;
   }
-}
-
-function getSteamDepot(info: SteamInfo, branch?: string) {
-  const appId = getAppId();
-  const depot =
-    info.data[appId]?.depots?.branches?.[
-      !branch || branch === 'main' ? 'public' : branch
-    ];
-  if (
-    !depot ||
-    typeof depot !== 'object' ||
-    !('buildid' in depot) ||
-    !('timeupdated' in depot)
-  )
-    return null;
-  return {
-    buildId: depot.buildid,
-    timeUpdated: Number(depot.timeupdated),
-  };
-}
-
-function getSteamAcfDepot(acf: SteamAcf) {
-  const appId = getAppId();
-  const appState = acf.AppState;
-  if (
-    !appState ||
-    typeof appState !== 'object' ||
-    appState.appid !== appId ||
-    !('buildid' in appState) ||
-    !('lastupdated' in appState)
-  )
-    return null;
-  return {
-    buildId: appState.buildid,
-    timeUpdated: Number(appState.lastupdated),
-  };
-}
-
-export function getLocalSteamDepot(steambeta?: string) {
-  const acf = getSteamAcf(steambeta);
-  if (!acf) return null;
-  const depot = getSteamAcfDepot(acf);
-  if (!depot) return null;
-  return depot;
-}
-
-export async function getRemoteSteamDepot(steambeta?: string) {
-  const info = await fetchSteamInfo();
-  if (!info || !info.data) {
-    return null;
-  }
-  const depot = getSteamDepot(info, steambeta);
-  if (!depot) return null;
-  return depot;
 }
 
 let lastUpdateCheck = 0;
@@ -239,17 +290,16 @@ export const clearLastSteamUpdateCheck = () => {
 
 export async function hasSteamUpdate(steambeta?: string) {
   lastUpdateCheck = Date.now();
-  const localDepot = getLocalSteamDepot(steambeta);
-  if (!localDepot) return false;
 
-  const remoteDepot = await getRemoteSteamDepot(steambeta);
-  if (!remoteDepot) return false;
+  const check = steamcmdCheckUpdate(steambeta);
+  if (!check) return false;
 
   lastUpdateAvailable = Date.now();
-  const res =
-    localDepot.buildId !== remoteDepot.buildId ||
-    localDepot.timeUpdated < remoteDepot.timeUpdated;
-  lastUpdateResult = res;
 
-  return res;
+  if (check.hasUpdate != null) {
+    lastUpdateResult = check.hasUpdate;
+    return check.hasUpdate;
+  }
+
+  return false;
 }

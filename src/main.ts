@@ -23,6 +23,7 @@ import {
   hasSteamUpdate,
   steamcmdDownloadGame,
   steamcmdDownloadSelf,
+  steamcmdInteractiveLogin,
 } from './updater';
 import { PKG, VERSION } from './version';
 
@@ -103,6 +104,10 @@ const program = commander
         Logger.errorp('Error reading config file');
         Logger.verbose(error);
       }
+    }
+
+    if (conf?.terminal?.timestamp) {
+      Logger.setTimestamp(conf.terminal.timestamp);
     }
 
     const overrideBinary = getOverrideGameBinary();
@@ -273,6 +278,35 @@ program
       process.exit(1);
     }
     createDefaultConfig();
+  });
+
+program
+  .command('steamlogin')
+  .description('Interactively log in to Steam (for Steam Guard authentication)')
+  .action(async () => {
+    if (!process.env.STEAM_USERNAME) {
+      Logger.errorp('STEAM_USERNAME environment variable is required.');
+      Logger.errorp('Set it in your .env file or environment.');
+      process.exit(1);
+    }
+
+    if (!fs.existsSync(STEAMCMD_PATH)) {
+      Logger.errorp(
+        'SteamCMD is not installed. Run',
+        'omegga'.yellow,
+        'first to set it up.',
+      );
+      process.exit(1);
+    }
+
+    Logger.logp('Logging in to Steam interactively...');
+    const success = await steamcmdInteractiveLogin();
+    if (success) {
+      Logger.logp('Steam login successful. Credentials are now cached.');
+    } else {
+      Logger.errorp('Steam login failed.');
+      process.exit(1);
+    }
   });
 
 program
@@ -615,7 +649,7 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
 
   Logger.logp('Downloading Brickadia', (steambeta ?? 'main').yellow, '...');
   try {
-    steamcmdDownloadGame({ steambeta, steambetaPassword });
+    await steamcmdDownloadGame({ steambeta, steambetaPassword });
   } catch (err) {
     Logger.errorp('Error downloading Brickadia:', err);
     process.exit(1);

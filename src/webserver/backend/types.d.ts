@@ -1,19 +1,8 @@
-import { Server as SocketIo, DefaultEventsMap } from 'socket.io';
-
 declare module 'express-session' {
   interface SessionData {
     userId: string;
   }
 }
-
-export type OmeggaSocketIo = SocketIo<
-  DefaultEventsMap,
-  DefaultEventsMap,
-  DefaultEventsMap,
-  {
-    user: IStoreUser & { _id: string };
-  }
->;
 
 export interface IPlayer {
   id?: string;
@@ -138,4 +127,16 @@ export interface IPunchcard {
   month: number;
   year: number;
   punchcard: number[][];
+}
+
+export interface SystemUtilization {
+  cpu: number;
+  mem: { used: number; total: number };
+  disk: { used: number; total: number };
+  net: { rxSec: number; txSec: number };
+}
+
+export interface UtilizationWithHistory {
+  current: SystemUtilization | null;
+  history: SystemUtilization[];
 }

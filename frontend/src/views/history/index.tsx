@@ -19,9 +19,14 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { rpcReq } from '../../socket';
 import { useRoute } from 'wouter';
-import type { HistoryRes } from '@omegga/webserver/backend/api';
+import { trpc, type RouterOutputs } from '../../trpc';
+
+type ChatHistoryItem = RouterOutputs['chat']['history'][number];
+type ChatHistoryEntry = ChatHistoryItem & {
+  date: number;
+  newDay?: string;
+};
 
 const MONTHS = [
   'January',
@@ -66,25 +71,22 @@ export const HistoryView = () => {
   const [absMax, setAbsMax] = useState<number | null>(null);
   const minRef = useRef<number | null>(null);
   const maxRef = useRef<number | null>(null);
-  const chatsRef = useRef<
-    (HistoryRes[number] & {
-      date: number;
-      newDay?: string;
-    })[]
-  >([]);
+  const chatsRef = useRef<ChatHistoryEntry[]>([]);
+
+  const utils = trpc.useUtils();
 
   const getCalendar = useCallback(async () => {
     setLoading(true);
-    const calendarData = await rpcReq('chat.calendar');
+    const calendarData = await utils.chat.calendar.fetch();
     setCalendar(calendarData);
     setLoading(false);
   }, []);
 
-  const handleChats = useCallback((chats: any[]) => {
+  const handleChats = useCallback((chats: ChatHistoryItem[]) => {
     if (!chats.length) return;
 
     // add new chats and sort by create time
-    chatsRef.current = chatsRef.current.concat(chats);
+    chatsRef.current = chatsRef.current.concat(chats as ChatHistoryEntry[]);
     chatsRef.current.sort((a, b) => a.created - b.created);
 
     // find the min and max times for message creation
@@ -117,22 +119,36 @@ export const HistoryView = () => {
       dir?: 'top' | 'bottom',
     ) => {
       setLoading(true);
-      const chatData: HistoryRes = await rpcReq('chat.history', {
+      const chatData = await utils.chat.history.fetch({
         before,
         after,
       });
       handleChats(chatData);
 
-      // remove chats that our off screen
-      if (dir === 'bottom' && chatsRef.current.length > 200) {
-        chatsRef.current.splice(0, chatsRef.current.length - 200);
-      }
-      if (dir === 'top' && chatsRef.current.length > 200) {
-        chatsRef.current.splice(200, chatsRef.current.length - 200);
-      }
-
       setFirstLoad(false);
       setLoading(false);
+
+      // Defer trimming to a separate frame so InfiniteScroll's useLayoutEffect
+      // sees the correct scrollHeight delta (prepend only, no truncation).
+      // Reset the absolute boundary for the truncated end so infinite scroll
+      // can re-fetch that direction.
+      const trimDir = dir;
+      if (trimDir && chatsRef.current.length > 200) {
+        requestAnimationFrame(() => {
+          if (trimDir === 'bottom') {
+            chatsRef.current.splice(0, chatsRef.current.length - 200);
+            minRef.current = chatsRef.current[0].created;
+            setAbsMin(null);
+          } else if (trimDir === 'top') {
+            chatsRef.current.splice(200, chatsRef.current.length - 200);
+            maxRef.current =
+              chatsRef.current[chatsRef.current.length - 1].created;
+            setAbsMax(null);
+          }
+          setHistoryKey(prev => prev + 1);
+        });
+      }
+
       return chatData;
     },
     [],

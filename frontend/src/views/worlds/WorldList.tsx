@@ -27,9 +27,9 @@ import {
 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { Link, useRoute } from 'wouter';
-import { rpcReq } from '../../socket';
 import { useServerLiveness } from '../../stores/liveness';
 import { $activeWorld, $nextWorld } from '../../stores/worlds';
+import { trpc } from '../../trpc';
 import { WorldInspector } from './WorldInspector';
 
 const MAP_OPTIONS = ['Plate', 'Space', 'Studio', 'Peaks'];
@@ -48,12 +48,17 @@ export const WorldList = () => {
   const [_location, params] = useRoute('/worlds/*?');
   const selectedWorld = params?.['*'];
 
+  const utils = trpc.useUtils();
+  const useMut = trpc.world.use.useMutation();
+  const saveMut = trpc.world.save.useMutation();
+  const createMut = trpc.world.create.useMutation();
+
   const getWorlds = async () => {
     setLoading(true);
     const [worlds, active, next] = await Promise.all([
-      rpcReq('world.list'),
-      rpcReq('world.active'),
-      rpcReq('world.next'),
+      utils.world.list.fetch(),
+      utils.world.active.fetch(),
+      utils.world.next.fetch(),
     ]);
     setWorlds(worlds);
     $activeWorld.set(active);
@@ -66,10 +71,10 @@ export const WorldList = () => {
 
   const clearActiveWorld = async () => {
     setWaiting(true);
-    const ok = await rpcReq('world.use', null);
+    const ok = await useMut.mutateAsync({});
     if (ok) {
       $activeWorld.set(null);
-      const next = await rpcReq('world.next');
+      const next = await utils.world.next.fetch();
       $nextWorld.set(next);
     }
     setWaiting(false);
@@ -77,20 +82,20 @@ export const WorldList = () => {
 
   const saveWorld = async () => {
     setWaiting(true);
-    await rpcReq('world.save');
+    await saveMut.mutateAsync({});
     setWaiting(false);
   };
 
   const saveWorldAs = async (name: string) => {
     setWaiting(true);
-    await rpcReq('world.save', name);
+    await saveMut.mutateAsync({ name });
     setWaiting(false);
     getWorlds();
   };
 
   const createWorld = async (name: string, map: string) => {
     setWaiting(true);
-    await rpcReq('world.create', name, map);
+    await createMut.mutateAsync({ name, level: map as any });
     setWaiting(false);
     getWorlds();
   };

@@ -1,4 +1,4 @@
-import type { OmeggaSocketData } from '@omegga/webserver/backend/api';
+import type { OmeggaSocketData } from '@backend/api';
 import { atom } from 'nanostores';
 
 export const $showLogout = atom(false);

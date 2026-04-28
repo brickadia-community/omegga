@@ -11,7 +11,6 @@ import {
   SortIcons,
   Toggle,
 } from '@components';
-import type { GetPlayersRes } from '@omegga/webserver/backend/api';
 import {
   IconArrowBarToLeft,
   IconArrowBarToRight,
@@ -23,17 +22,13 @@ import {
   IconRotate,
 } from '@tabler/icons-react';
 import { debounce, duration, heartbeatAgo } from '@utils';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
-import { rpcReq } from '../../socket';
+import { trpc } from '../../trpc';
 import { PlayerInspector } from './PlayerInspector';
 
 export const PlayerList = () => {
-  const [pages, setPages] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const [players, setPlayers] = useState<GetPlayersRes['players']>([]);
 
   const [_location, navigate] = useLocation();
   const [_match, params] = useRoute('/players/:id?');
@@ -46,6 +41,27 @@ export const PlayerList = () => {
     filterBanned: false,
   });
   const { page, search, sort, direction, filterBanned } = query.current;
+
+  // queryInput is a reactive snapshot of query.current used to drive useQuery.
+  // We copy ref values into state whenever we want to trigger a fetch.
+  const [queryInput, setQueryInput] = useState({
+    page: query.current.page,
+    search: query.current.search,
+    sort: query.current.sort,
+    direction: query.current.direction,
+    filter: '',
+  });
+
+  const triggerFetch = () => {
+    setQueryInput({
+      page: query.current.page,
+      search: query.current.search,
+      sort: query.current.sort,
+      direction: query.current.direction,
+      filter: query.current.filterBanned ? 'banned' : '',
+    });
+  };
+
   const [_searchKey, setSearchKey] = useState(0);
   const setSearch = (search: string) => {
     query.current.search = search;
@@ -55,7 +71,7 @@ export const PlayerList = () => {
   const setPage = (page: number | ((old: number) => number)) => {
     if (typeof page === 'function') page = page(query.current.page);
     query.current.page = page;
-    getPlayers();
+    triggerFetch();
   };
   const setDirection = (dir: number | ((old: number) => number)) => {
     if (typeof dir === 'function') dir = dir(query.current.direction);
@@ -66,34 +82,22 @@ export const PlayerList = () => {
     doSearch();
   };
 
-  const getPlayers = useCallback(async () => {
-    setLoading(true);
-    const { page, search, sort, direction, filterBanned } = query.current;
-    const { players, total, pages }: GetPlayersRes = await rpcReq(
-      'players.list',
-      {
-        page,
-        search,
-        sort,
-        direction,
-        filter: filterBanned ? 'banned' : '',
-      },
-    );
-    setPages(pages);
-    setTotal(total);
-    setPlayers(players);
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    getPlayers();
-  }, []);
+  const {
+    data,
+    isLoading: loading,
+    refetch,
+  } = trpc.player.list.useQuery(queryInput, {
+    placeholderData: (prev: any) => prev,
+  });
+  const players = data?.players ?? [];
+  const total = data?.total ?? 0;
+  const pages = data?.pages ?? 0;
 
   const doSearch = useMemo(
     () =>
       debounce(() => {
         query.current.page = 0;
-        getPlayers();
+        triggerFetch();
       }, 500),
     [],
   );
@@ -109,7 +113,7 @@ export const PlayerList = () => {
       // sort only name ascending on first click, all metrics are descending
       setDirection(s === 'name' ? 1 : -1);
     }
-    getPlayers();
+    triggerFetch();
   };
 
   return (
@@ -158,7 +162,7 @@ export const PlayerList = () => {
                 icon
                 normal
                 data-tooltip="Refresh player list"
-                onClick={getPlayers}
+                onClick={() => refetch()}
               >
                 <IconRotate />
               </Button>

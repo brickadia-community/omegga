@@ -1,14 +1,14 @@
 import { Button, Footer, Input, Scroll, UserName } from '@components';
-import type { IStoreChat } from '@omegga/webserver/backend/types';
+import type { IStoreChat } from '@backend/types';
 import { IconSend } from '@tabler/icons-react';
 import Linkify from 'linkify-react';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ioEmit, rpcNotify, rpcReq, socket } from '../../socket';
+import { trpc } from '../../trpc';
 
 type ChatEntry = IStoreChat & {
   _id: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export const ChatWidget = () => {
@@ -16,33 +16,32 @@ export const ChatWidget = () => {
   const [message, setMessage] = useState('');
   const ref = useRef<HTMLDivElement | null>(null);
 
+  const sendMutation = trpc.chat.send.useMutation();
+
   const scrollToBottom = () => {
     if (ref.current) {
       ref.current.scrollTop = ref.current.scrollHeight;
     }
   };
 
+  const { data: recentChats } = trpc.chat.recent.useQuery();
+
   useEffect(() => {
-    const handleChat = (log: ChatEntry) => {
+    if (recentChats) {
+      setChats(recentChats.slice().reverse());
+    }
+  }, [recentChats]);
+
+  trpc.chat.onMessage.useSubscription(undefined, {
+    onData: (log: ChatEntry) => {
       setChats(prevChats => {
         const updatedChats = [...prevChats, log];
         return updatedChats.length > 50
           ? updatedChats.slice(updatedChats.length - 50)
           : updatedChats;
       });
-    };
-
-    socket.on('chat', handleChat);
-    ioEmit('subscribe', 'chat');
-    rpcReq('chat.recent').then((logs: ChatEntry[]) => {
-      setChats(logs.reverse());
-    });
-
-    return () => {
-      socket.off('chat', handleChat);
-      ioEmit('unsubscribe', 'chat');
-    };
-  }, []);
+    },
+  });
 
   useLayoutEffect(() => {
     scrollToBottom();
@@ -53,8 +52,7 @@ export const ChatWidget = () => {
 
     if (message.length > 140 || message.length === 0) return;
 
-    // Mock notification
-    rpcNotify('chat', message);
+    sendMutation.mutate(message);
     setMessage('');
   };
 

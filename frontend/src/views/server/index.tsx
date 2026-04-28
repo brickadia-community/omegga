@@ -1,3 +1,4 @@
+import type { IStoreAutoRestartConfig } from '@backend/types';
 import {
   Button,
   Input,
@@ -10,18 +11,17 @@ import {
 } from '@components';
 import { SavedSpan, SavedStatus, useSaved } from '@hooks';
 import { useStore } from '@nanostores/react';
-import type { IStoreAutoRestartConfig } from '@omegga/webserver/backend/types';
 import {
   IconCloudDownload,
   IconCloudSearch,
   IconDeviceFloppy,
   IconDownload,
+  IconLoader2,
   IconPlayerPlay,
   IconPlayerStop,
   IconRefresh,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
-import { rpcNotify, rpcReq } from '../../socket';
 import {
   restartServer,
   startServer,
@@ -30,6 +30,16 @@ import {
   useServerLiveness,
 } from '../../stores/liveness';
 import { $omeggaData } from '../../stores/user';
+import { trpc } from '../../trpc';
+
+function formatTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
+}
 
 export const ServerView = () => {
   const {
@@ -49,22 +59,35 @@ export const ServerView = () => {
     setHasUpdate(omeggaData?.update?.lastCheck ?? null);
   }, [omeggaData?.update?.lastCheck]);
   const [checkingForUpdate, setCheckingForUpdate] = useState(false);
+  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(null);
 
   const [savingWorld, setSavingWorld] = useState(false);
 
+  const { data: autoRestartData } = trpc.server.autoRestart.get.useQuery();
+
   useEffect(() => {
-    rpcReq('server.autorestart.get').then(setConfig);
-  }, []);
+    if (autoRestartData) {
+      setConfig(autoRestartData);
+    }
+  }, [autoRestartData]);
 
   const canUpdateCheck = omeggaData?.update?.canCheck ?? false;
+
+  const updateCheckQuery = trpc.server.update.check.useQuery(undefined, {
+    enabled: false,
+  });
+
   const checkForUpdate = useCallback(() => {
     if (!canUpdateCheck) return;
     setCheckingForUpdate(true);
-    rpcReq('server.updatecheck').then(res => {
-      setHasUpdate(res);
+    updateCheckQuery.refetch().then(({ data }) => {
+      setHasUpdate(data ?? null);
+      setLastCheckedAt(Date.now());
       setCheckingForUpdate(false);
     });
-  }, [canUpdateCheck]);
+  }, [canUpdateCheck, updateCheckQuery]);
+
+  const autoRestartSetMutation = trpc.server.autoRestart.set.useMutation();
 
   const saveConfig = useCallback(async () => {
     if (!config) return;
@@ -86,12 +109,14 @@ export const ServerView = () => {
       ),
       crashRestartEnabled: config.crashRestartEnabled ?? true,
     } satisfies IStoreAutoRestartConfig;
-    rpcNotify('server.autorestart.set', blob);
-  }, [config]);
+    autoRestartSetMutation.mutate(blob);
+  }, [config, autoRestartSetMutation]);
+
+  const worldSaveMutation = trpc.world.save.useMutation();
 
   const saveWorld = async () => {
     setSavingWorld(true);
-    await rpcReq('world.save');
+    await worldSaveMutation.mutateAsync({});
     setSavingWorld(false);
   };
 
@@ -111,7 +136,7 @@ export const ServerView = () => {
   return (
     <>
       <NavHeader title="Server">
-        {omeggaData?.isSteam && canUpdateCheck !== null && (
+        {canUpdateCheck && (
           <Button
             main={Boolean(hasUpdate)}
             normal={!hasUpdate}
@@ -119,7 +144,12 @@ export const ServerView = () => {
             disabled={checkingForUpdate}
             onClick={checkForUpdate}
           >
-            {hasUpdate === true ? (
+            {checkingForUpdate ? (
+              <>
+                <IconLoader2 className="spinning" />
+                Checking...
+              </>
+            ) : hasUpdate === true ? (
               <>
                 <IconDownload />
                 Update Available
@@ -145,6 +175,13 @@ export const ServerView = () => {
                 : started
                   ? 'started'
                   : 'stopped'}
+            {canUpdateCheck && hasUpdate !== null && (
+              <span style={{ marginLeft: 8, fontSize: '0.75em', opacity: 0.7 }}>
+                {hasUpdate
+                  ? 'Update available'
+                  : `Up to date${lastCheckedAt ? ` (checked ${formatTimeAgo(lastCheckedAt)})` : ''}`}
+              </span>
+            )}
           </NavBar>
           <div className="buttons">
             <Button
@@ -237,7 +274,7 @@ export const ServerView = () => {
               >
                 <label>
                   Auto Update
-                  {canUpdateCheck ? '' : ' (Feature requires SteamCMD)'}
+                  {canUpdateCheck ? '' : ' (SteamCMD Only)'}
                 </label>
                 <div className="inputs">
                   <Toggle

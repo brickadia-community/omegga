@@ -1,7 +1,7 @@
 import { useStore } from '@nanostores/react';
 import { atom } from 'nanostores';
 import { useEffect } from 'react';
-import { ioEmit, rpcReq } from '../socket';
+import { trpc, trpcClient } from '../trpc';
 
 export const $liveness = atom<{
   starting: boolean;
@@ -16,20 +16,37 @@ export const $liveness = atom<{
 });
 
 export const useServerLiveness = () => {
+  const { data } = trpc.server.started.useQuery();
+
   useEffect(() => {
-    ioEmit('subscribe', 'server');
-    getServerStarted();
-    return () => {
-      ioEmit('unsubscribe', 'server');
-    };
-  }, []);
+    if (data) {
+      $liveness.set({
+        started: data.started,
+        starting: data.starting,
+        stopping: data.stopping,
+        loading: false,
+      });
+    }
+  }, [data]);
+
+  trpc.server.onStatus.useSubscription(undefined, {
+    onData(data) {
+      $liveness.set({
+        started: data.started,
+        starting: data.starting,
+        stopping: data.stopping,
+        loading: false,
+      });
+    },
+  });
 
   return useStore($liveness);
 };
 
 export async function getServerStarted() {
   $liveness.set({ ...$liveness.get(), loading: true });
-  const { started, starting, stopping } = await rpcReq('server.started');
+  const { started, starting, stopping } =
+    await trpcClient.server.started.query();
   $liveness.set({
     started,
     stopping,
@@ -40,17 +57,17 @@ export async function getServerStarted() {
 
 export const startServer = () => {
   $liveness.set({ ...$liveness.get(), loading: true });
-  rpcReq('server.start');
+  trpcClient.server.start.mutate();
 };
 export const stopServer = () => {
   $liveness.set({ ...$liveness.get(), loading: true });
-  rpcReq('server.stop');
+  trpcClient.server.stop.mutate();
 };
 export const restartServer = () => {
   $liveness.set({ ...$liveness.get(), loading: true });
-  rpcReq('server.restart');
+  trpcClient.server.restart.mutate();
 };
 export const updateServer = () => {
   $liveness.set({ ...$liveness.get(), loading: true });
-  rpcReq('server.update');
+  trpcClient.server.update.run.mutate();
 };

@@ -253,6 +253,15 @@ server:
   # Specifying a branch will use the old launcher instead of SteamCMD
   # This does not have full auto-updater support yet, though the game will update every time it is restarted
   # branch: release:release-server
+terminal:
+  # prepend timestamps to terminal output using dateformat syntax
+  # see https://www.npmjs.com/package/dateformat for format options
+  # timestamp: "HH:MM:ss"             # 14:05:30
+  # timestamp: "yyyy-mm-dd"           # 2026-03-10
+  # timestamp: "yyyy-mm-dd HH:MM:ss"  # 2026-03-10 14:05:30
+  # timestamp: "HH:MM"                # 14:05
+  # timestamp: "hh:MM:ss TT"          # 02:05:30 PM
+  # timestamp: "[HH:MM:ss]"           # [14:05:30]
 ```
 
 Note: `BRANCH-server` branches download only server data
@@ -1051,8 +1060,8 @@ These can be set in your shell or in a `.env` file the same directory as a `omeg
 - `BRICKADIA_DIR` - Override the need to use steamcmd and point to a Brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
 - `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default `~/.config/omegga/steam_installs`)
 - `STEAM_APP_ID` - Set the Steam App ID for Brickadia (default `3017590`)
-- `STEAM_USERNAME` - Set the Steam username for downloading Brickadia via steamcmd
-- `STEAM_PASSWORD` - Set the Steam password for downloading Brickadia via steamcmd
+- `STEAM_USERNAME` - Set the Steam username for downloading Brickadia via steamcmd. Run `omegga steamlogin` to authenticate with Steam Guard
+- `STEAM_PASSWORD` - (Optional) Steam password; if not set, you will be prompted interactively
 - `VERBOSE` - Set to `true` to enable verbose logging (default `false`)
 - `PACKAGE_NOTIFIER` - When set to `false`, disables the npm update notifier
 - `STEAM_NOTIFIER` - When set to `false`, disables the SteamCMD update notifier
@@ -1076,4 +1085,7 @@ server:
   # When branch is present, steamcmd is not used
   #branch: release:release-server # branch alias:branch name
   steambeta: public # try `unstable`
+terminal:
+  # prepend timestamps to terminal output (see https://www.npmjs.com/package/dateformat)
+  #timestamp: "HH:MM:ss" # e.g. 14:05:30, "[HH:MM:ss]" for [14:05:30]
 ```
