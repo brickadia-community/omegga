@@ -5,6 +5,9 @@
 - Add configurable terminal timestamps via `terminal.timestamp` in config (uses [dateformat](https://www.npmjs.com/package/dateformat) syntax)
 - Refactor config validation to use zod schemas
 - Censor credentials and passwords in verbose config logging
+- (For Staff) Add `omegga steamlogin` command for interactive Steam Guard authentication
+- (For Staff) Steam downloads now use cached credentials (username only); if login fails, automatically prompts for password and Steam Guard code, then retries the download
+- (For Staff) `STEAM_PASSWORD` env var is now optional — password is prompted interactively when needed
 
 ## 1.4.1 - 2026-03-10
 
@@ -17,7 +20,7 @@
 ## 1.4.0 - 2026-02-01
 
 - Added `.env` support for loading env into your server. Put it next to your `omegga-config.yml` to be loaded on startup
-- Env for steamcmd, `STEAM_USERNAME` and `STEAM_PASSWORD`, for devs to run omegga on internal builds
+- Env for steamcmd, `STEAM_USERNAME`, for devs to run omegga on internal builds
 - Added `Player.getLeaderboard(key: string): Promise<number>` and `Player.setLeaderboard(key: string, value: integer)` to interact with player leaderboard values
 - Added missing player functions to JSONRPC plugins
 - Updated vm2 to 3.10.3. This includes **tiny breaking changes**, which is why this is a bump from 1.3.0 to 1.4.0

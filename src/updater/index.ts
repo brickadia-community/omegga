@@ -1,6 +1,7 @@
 export {
   steamcmdDownloadGame,
   steamcmdDownloadSelf,
+  steamcmdInteractiveLogin,
   hasSteamUpdate,
   getLocalSteamDepot,
   getRemoteSteamDepot,

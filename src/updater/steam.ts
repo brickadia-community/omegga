@@ -1,8 +1,9 @@
 import Logger from '@/logger';
 import { getAppId, getSteamInstallDir, STEAMCMD_PATH } from '@/softconfig';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import prompts from 'prompts';
 import acfParser from 'steam-acf2json';
 
 // Steam EAppState flags (bitmask)
@@ -44,17 +45,70 @@ export function steamcmdDownloadSelf() {
   });
 }
 
-export function steamcmdDownloadGame({
+export async function steamcmdInteractiveLogin(): Promise<boolean> {
+  if (!process.env.STEAM_USERNAME) {
+    Logger.error('STEAM_USERNAME environment variable is required.');
+    return false;
+  }
+
+  const password =
+    process.env.STEAM_PASSWORD ??
+    (
+      await prompts({
+        type: 'password',
+        name: 'value',
+        message: `Steam password for ${process.env.STEAM_USERNAME}`,
+      })
+    ).value;
+
+  if (!password) {
+    Logger.error('No password provided.');
+    return false;
+  }
+
+  const result = spawnSync(
+    STEAMCMD_PATH,
+    ['+login', process.env.STEAM_USERNAME, password, '+quit'],
+    { stdio: 'inherit' },
+  );
+
+  return result.status === 0;
+}
+
+function handleSteamError(err: unknown) {
+  if (err instanceof Error && err.message) {
+    const stateMatch = err.message.match(
+      /state is (0x[0-9A-Fa-f]+) after update job/,
+    );
+    if (stateMatch) {
+      const state = parseInt(stateMatch[1], 16);
+      const flags = decodeAppState(state);
+      Logger.error(
+        `Steam app state ${stateMatch[1]} (${state}):`,
+        flags.length > 0 ? flags.join(', ') : 'Unknown',
+      );
+    }
+
+    err.message = err.message
+      .replace(/\+login\s+"[^"]*"\s+"[^"]*"/, '+login <REDACTED>')
+      .replace(/\+login\s+(\S+)\s+\S+/, '+login $1 <REDACTED>')
+      .replace(/-betapassword\s+\S+/, '-betapassword <REDACTED>');
+  }
+}
+
+export async function steamcmdDownloadGame({
   steambeta,
   steambetaPassword,
 }: {
   steambeta?: string;
   steambetaPassword?: string;
 } = {}) {
-  let steamLogin = 'anonymous';
-  if (process.env.STEAM_USERNAME && process.env.STEAM_PASSWORD) {
-    Logger.verbose('Using provided Steam credentials for download.');
-    steamLogin = `"${process.env.STEAM_USERNAME}" "${process.env.STEAM_PASSWORD}"`;
+  const hasCredentials = !!process.env.STEAM_USERNAME;
+  const steamLogin = hasCredentials
+    ? `"${process.env.STEAM_USERNAME}"`
+    : 'anonymous';
+  if (hasCredentials) {
+    Logger.verbose('Using cached Steam credentials for download.');
   }
   const installDir = getSteamInstallDir();
   const appId = getAppId();
@@ -73,29 +127,41 @@ export function steamcmdDownloadGame({
     '+quit',
   ].filter(Boolean);
 
+  const cmd = `${STEAMCMD_PATH} ${args.join(' ')}`;
+
   try {
-    execSync(`${STEAMCMD_PATH} ${args.join(' ')}`, { stdio: 'inherit' });
+    execSync(cmd, { stdio: 'inherit' });
   } catch (err) {
-    if (err instanceof Error && err.message) {
-      // Log decoded app state if present
-      const stateMatch = err.message.match(
-        /state is (0x[0-9A-Fa-f]+) after update job/,
+    if (
+      hasCredentials &&
+      err instanceof Error &&
+      'status' in err &&
+      (err as NodeJS.ErrnoException & { status: number }).status === 5
+    ) {
+      Logger.warnp(
+        'Steam login failed — this may require Steam Guard authentication.',
       );
-      if (stateMatch) {
-        const state = parseInt(stateMatch[1], 16);
-        const flags = decodeAppState(state);
-        Logger.error(
-          `Steam app state ${stateMatch[1]} (${state}):`,
-          flags.length > 0 ? flags.join(', ') : 'Unknown',
-        );
+      Logger.warnp('Attempting interactive login...');
+
+      if (await steamcmdInteractiveLogin()) {
+        Logger.logp('Login successful. Retrying download...');
+        try {
+          execSync(cmd, { stdio: 'inherit' });
+          return;
+        } catch (retryErr) {
+          handleSteamError(retryErr);
+          throw retryErr;
+        }
       }
 
-      // Redact credentials from error messages
-      err.message = err.message
-        .replace(/\+login\s+"[^"]*"\s+"[^"]*"/, '+login <REDACTED>')
-        .replace(/\+login\s+(\S+)\s+\S+/, '+login $1 <REDACTED>')
-        .replace(/-betapassword\s+\S+/, '-betapassword <REDACTED>');
+      Logger.errorp(
+        'Interactive login failed. Run',
+        'omegga steamlogin'.yellow,
+        'to authenticate manually.',
+      );
     }
+
+    handleSteamError(err);
     throw err;
   }
 }
