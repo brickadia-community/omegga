@@ -1,6 +1,6 @@
 import Logger from '@/logger';
 import { OmeggaPlayer } from '@/plugin';
-import { steamcmdDownloadGame } from '@/updater';
+import { steamcmdCheckUpdate, steamcmdDownloadGame } from '@/updater';
 import Omegga from '@omegga/server';
 import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
@@ -141,7 +141,7 @@ const COMMANDS: TerminalCommand[] = [
 
   // Server controls
   {
-    aliases: ['stop'],
+    aliases: ['stop', 'exit', 'quit', 'close'],
     desc: 'stop the server and close Omegga',
     async fn() {
       log('Stopping server...');
@@ -180,7 +180,7 @@ const COMMANDS: TerminalCommand[] = [
       }
       log('Updating server...');
       try {
-        steamcmdDownloadGame({
+        await steamcmdDownloadGame({
           steambeta: this.omegga.config.server?.steambeta,
           steambetaPassword: this.omegga.config.server?.steambetaPassword,
         });
@@ -191,6 +191,51 @@ const COMMANDS: TerminalCommand[] = [
       if (wasStarted) {
         log('Starting server...');
         await this.omegga.start();
+      }
+    },
+  },
+  {
+    aliases: ['updatecheck', 'uc', 'check'],
+    desc: 'check if a Steam update is available. use /uc show for details',
+    fn(subcommand?: string) {
+      if (!this.omegga.config.__STEAM) {
+        err(
+          'This command is only available when the server is installed via SteamCMD',
+        );
+        return;
+      }
+      log('Checking for updates...');
+      const result = steamcmdCheckUpdate(
+        this.omegga.config.server?.steambeta,
+      );
+      if (!result) {
+        err('Failed to check for updates.');
+        return;
+      }
+      const { local, remote, hasUpdate } = result;
+
+      if (hasUpdate === true) log('Update available!'.green);
+      else if (hasUpdate === false) log('Up to date.'.green);
+      else log('Could not determine update status.'.yellow);
+
+      if (subcommand === 'show') {
+        const branch = local.betaKey && local.betaKey !== 'main'
+          ? local.betaKey
+          : 'public';
+        const remoteBuild = remote?.branches?.[branch];
+        const remotePart = remoteBuild
+          ? `BuildID ${remoteBuild.buildid}` +
+            (remoteBuild.timeupdated
+              ? ` (${new Date(Number(remoteBuild.timeupdated) * 1000).toLocaleString()})`
+              : '')
+          : 'unknown (private branch?)';
+        log(
+          [
+            `  Local:  BuildID ${local.buildId} (${local.installState})`,
+            `  Remote: ${remotePart}`,
+            `  Branch: ${local.betaKey ?? 'public'}`,
+          ].join('\n'),
+        );
       }
     },
   },

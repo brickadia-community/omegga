@@ -22,8 +22,7 @@ export const sessionRouter = router({
         },
         isSteam: Boolean(omegga.config.__STEAM),
         update: {
-          canCheck:
-            omegga.config.__STEAM && !omegga.config.server?.steambeta,
+          canCheck: Boolean(omegga.config.__STEAM),
           lastCheck: getLastSteamUpdateCheck()?.result ?? null,
         },
       };

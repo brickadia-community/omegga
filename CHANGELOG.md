@@ -8,6 +8,11 @@
 - (For Staff) Add `omegga steamlogin` command for interactive Steam Guard authentication
 - (For Staff) Steam downloads now use cached credentials (username only); if login fails, automatically prompts for password and Steam Guard code, then retries the download
 - (For Staff) `STEAM_PASSWORD` env var is now optional — password is prompted interactively when needed
+- Replace `api.steamcmd.net` update checker with local SteamCMD-based `app_info_update` + `app_status`
+- Add `/updatecheck` (`/uc`, `/check`) terminal command to check for updates without updating
+- Web UI: show update status subheader on server page, spinner on update check button
+- Web UI: increase default dashboard widget size
+- Add `/exit`, `/quit`, `/close` aliases for `/stop`
 
 ## 1.4.1 - 2026-03-10
 

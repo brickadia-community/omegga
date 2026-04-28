@@ -16,6 +16,7 @@ import {
   IconCloudSearch,
   IconDeviceFloppy,
   IconDownload,
+  IconLoader2,
   IconPlayerPlay,
   IconPlayerStop,
   IconRefresh,
@@ -30,6 +31,15 @@ import {
 } from '../../stores/liveness';
 import { $omeggaData } from '../../stores/user';
 import { trpc } from '../../trpc';
+
+function formatTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
+}
 
 export const ServerView = () => {
   const {
@@ -49,6 +59,7 @@ export const ServerView = () => {
     setHasUpdate(omeggaData?.update?.lastCheck ?? null);
   }, [omeggaData?.update?.lastCheck]);
   const [checkingForUpdate, setCheckingForUpdate] = useState(false);
+  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(null);
 
   const [savingWorld, setSavingWorld] = useState(false);
 
@@ -71,6 +82,7 @@ export const ServerView = () => {
     setCheckingForUpdate(true);
     updateCheckQuery.refetch().then(({ data }) => {
       setHasUpdate(data ?? null);
+      setLastCheckedAt(Date.now());
       setCheckingForUpdate(false);
     });
   }, [canUpdateCheck, updateCheckQuery]);
@@ -124,7 +136,7 @@ export const ServerView = () => {
   return (
     <>
       <NavHeader title="Server">
-        {omeggaData?.isSteam && canUpdateCheck !== null && (
+        {canUpdateCheck && (
           <Button
             main={Boolean(hasUpdate)}
             normal={!hasUpdate}
@@ -132,7 +144,12 @@ export const ServerView = () => {
             disabled={checkingForUpdate}
             onClick={checkForUpdate}
           >
-            {hasUpdate === true ? (
+            {checkingForUpdate ? (
+              <>
+                <IconLoader2 className="spinning" />
+                Checking...
+              </>
+            ) : hasUpdate === true ? (
               <>
                 <IconDownload />
                 Update Available
@@ -158,6 +175,13 @@ export const ServerView = () => {
                 : started
                   ? 'started'
                   : 'stopped'}
+            {canUpdateCheck && hasUpdate !== null && (
+              <span style={{ marginLeft: 8, fontSize: '0.75em', opacity: 0.7 }}>
+                {hasUpdate
+                  ? 'Update available'
+                  : `Up to date${lastCheckedAt ? ` (checked ${formatTimeAgo(lastCheckedAt)})` : ''}`}
+              </span>
+            )}
           </NavBar>
           <div className="buttons">
             <Button
@@ -250,7 +274,7 @@ export const ServerView = () => {
               >
                 <label>
                   Auto Update
-                  {canUpdateCheck ? '' : ' (Feature requires SteamCMD)'}
+                  {canUpdateCheck ? '' : ' (SteamCMD Only)'}
                 </label>
                 <div className="inputs">
                   <Toggle

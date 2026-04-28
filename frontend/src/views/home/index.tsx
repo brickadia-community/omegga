@@ -31,8 +31,8 @@ const WIDGET_LIST = {
   },
 };
 const DEFAULT_LAYOUT = [
-  { x: 0, y: 0, w: 2, h: 2, i: 'chat' },
-  { x: 2, y: 0, w: 2, h: 2, i: 'status' },
+  { x: 0, y: 0, w: 4, h: 4, i: 'chat' },
+  { x: 4, y: 0, w: 4, h: 4, i: 'status' },
 ] satisfies Layout[];
 
 const GRID_DATA = {
@@ -74,8 +74,8 @@ export const HomeView = () => {
       {
         x: 0,
         y: 0,
-        w: 2,
-        h: 2,
+        w: 4,
+        h: 4,
         i: widget,
       },
     ]);
