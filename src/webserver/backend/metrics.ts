@@ -191,16 +191,12 @@ export default function (server: Webserver) {
       omegga.restoreServer();
     });
 
-    if (
-      update &&
-      omegga.config.__STEAM &&
-      !omegga.config.server?.steambetaPassword
-    ) {
+    if (update && omegga.config.__STEAM) {
       Logger.logp('Stopping server for auto-update...');
       await omegga.stop();
       Logger.logp('Downloading update...');
       try {
-        steamcmdDownloadGame({
+        await steamcmdDownloadGame({
           steambeta: omegga.config.server?.steambeta,
         });
       } catch (e) {
@@ -253,21 +249,13 @@ export default function (server: Webserver) {
       return await restartServer(config);
     }
 
-    // Cannot auto-update on steam betas with passwords
     const lastCheck = getLastSteamUpdateCheck();
-    if (
-      omegga.config.__STEAM &&
-      config.autoUpdateEnabled &&
-      !omegga.config.server?.steambetaPassword
-    ) {
+    if (omegga.config.__STEAM && config.autoUpdateEnabled) {
       const now = Date.now();
       if (
-        // If there is no update
-        !lastCheck.available &&
-        // And the last update was too recent
+        !lastCheck.result &&
         now - lastCheck.attempt < config.autoUpdateIntervalMins * 60 * 1000
       ) {
-        // Skip this check
         Logger.verbose(
           `Skipping auto update check, last check was ${Math.floor(
             (now - lastCheck.attempt) / 1000 / 60,
@@ -359,7 +347,7 @@ export default function (server: Webserver) {
       await database.addHeartbeat(data);
     } catch (e) {
       // probably an issue getting server status
-      error('Server Not Responding...');
+      error('Server Not Responding...', e);
     }
   }, soft.METRIC_HEARTBEAT_INTERVAL);
 

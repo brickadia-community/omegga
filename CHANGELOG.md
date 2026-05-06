@@ -4,6 +4,11 @@
 
 Add new changes here as they are implemented
 
+## 1.5.1 - 2026-05-06
+
+- Add `/uc on` and `/uc off` to toggle auto-update from the terminal
+- Fix auto-updater throttle logic using wrong field for skip check
+
 ## 1.5.0 - 2026-04-28
 
 - Add utilization widget to the dashboard view

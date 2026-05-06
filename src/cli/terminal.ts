@@ -196,14 +196,33 @@ const COMMANDS: TerminalCommand[] = [
   },
   {
     aliases: ['updatecheck', 'uc', 'check'],
-    desc: 'check if a Steam update is available. use /uc show for details',
-    fn(subcommand?: string) {
+    desc: 'check for updates. /uc show for details, /uc on|off to toggle auto-update',
+    async fn(subcommand?: string) {
       if (!this.omegga.config.__STEAM) {
         err(
           'This command is only available when the server is installed via SteamCMD',
         );
         return;
       }
+
+      const db = this.omegga.webserver?.database;
+
+      if (subcommand === 'on' || subcommand === 'off') {
+        if (!db) {
+          err('Database not available.');
+          return;
+        }
+        const config = await db.getAutoRestartConfig();
+        config.autoUpdateEnabled = subcommand === 'on';
+        await db.setAutoRestartConfig(config);
+        log(
+          subcommand === 'on'
+            ? 'Auto-update enabled.'.green
+            : 'Auto-update disabled.'.yellow,
+        );
+        return;
+      }
+
       log('Checking for updates...');
       const result = steamcmdCheckUpdate(this.omegga.config.server?.steambeta);
       if (!result) {
@@ -232,6 +251,15 @@ const COMMANDS: TerminalCommand[] = [
             `  Remote: ${remotePart}`,
             `  Branch: ${local.betaKey ?? 'public'}`,
           ].join('\n'),
+        );
+      }
+
+      if (db) {
+        const config = await db.getAutoRestartConfig();
+        log(
+          config.autoUpdateEnabled
+            ? `Auto-update: enabled (every ${config.autoUpdateIntervalMins}m)`
+            : 'Auto-update: disabled',
         );
       }
     },
