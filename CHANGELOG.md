@@ -4,6 +4,10 @@
 
 Add new changes here as they are implemented
 
+## 1.5.2 - 2026-05-06
+
+- Fix server status check regex error handling
+
 ## 1.5.1 - 2026-05-06
 
 - Add `/uc on` and `/uc off` to toggle auto-update from the terminal

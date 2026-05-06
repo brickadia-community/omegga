@@ -101,7 +101,9 @@ const COMMANDS: InjectedCommands = {
       .map(l => l[1].slice(1));
 
     // use the size of each column to build a regex that matches each row
-    const columnRegExp = buildTableHeaderRegex(tableHeader);
+    const columnRegExp = tableHeader
+      ? buildTableHeaderRegex(tableHeader)
+      : null;
 
     const status = {
       // easily extract certain values from the server status
@@ -111,24 +113,26 @@ const COMMANDS: InjectedCommands = {
       components: Number(statusLines[3][1].match(/^Components: (\d+)$/)[1]),
       time: time.parseDuration(statusLines[4][1].match(/^Time: (.*)$/)[1]),
       // extract players using the generated table regex
-      players: tableLines.map(l => {
-        // match the player row with the generated regex
-        const {
-          groups: { name, ping, time: online, roles, address, id },
-        } = l.match(columnRegExp);
-        // trim and parse the matched data
-        return {
-          name: name.trim(),
-          ping: time.parseDuration(ping.trim()),
-          time: time.parseDuration(online.trim()),
-          roles: roles
-            .trim()
-            .split(', ')
-            .filter(r => r.length > 0), // roles are split by ', '
-          address: address.replace('(Owner)', '').trim(),
-          id: id.trim(),
-        };
-      }),
+      players: columnRegExp
+        ? tableLines.map(l => {
+            // match the player row with the generated regex
+            const {
+              groups: { name, ping, time: online, roles, address, id },
+            } = l.match(columnRegExp);
+            // trim and parse the matched data
+            return {
+              name: name.trim(),
+              ping: time.parseDuration(ping.trim()),
+              time: time.parseDuration(online.trim()),
+              roles: roles
+                .trim()
+                .split(', ')
+                .filter(r => r.length > 0), // roles are split by ', '
+              address: address.replace('(Owner)', '').trim(),
+              id: id.trim(),
+            };
+          })
+        : [],
     };
 
     return status;
