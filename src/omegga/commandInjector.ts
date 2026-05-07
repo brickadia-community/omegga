@@ -82,7 +82,7 @@ const COMMANDS: InjectedCommands = {
   /**
    * Get a server status object containing bricks, time, players, player ping, player roles, etc
    */
-  async getServerStatus(): Promise<IServerStatus> {
+  async getServerStatus(): Promise<IServerStatus | null> {
     const statusLines = await (
       this as OmeggaLike
     ).watchLogChunk<RegExpMatchArray>(
@@ -105,13 +105,23 @@ const COMMANDS: InjectedCommands = {
       ? buildTableHeaderRegex(tableHeader)
       : null;
 
+    if (statusLines.length < 5) return null;
+
+    const serverName = statusLines[0][1].match(/^Server Name: (.*)$/);
+    const description = statusLines[1][1].match(/^Description: (.*)$/);
+    const bricks = statusLines[2][1].match(/^Bricks: (\d+)$/);
+    const components = statusLines[3][1].match(/^Components: (\d+)$/);
+    const uptime = statusLines[4][1].match(/^Time: (.*)$/);
+
+    if (!serverName || !description || !bricks || !components || !uptime)
+      return null;
+
     const status = {
-      // easily extract certain values from the server status
-      serverName: statusLines[0][1].match(/^Server Name: (.*)$/)[1],
-      description: statusLines[1][1].match(/^Description: (.*)$/)[1],
-      bricks: Number(statusLines[2][1].match(/^Bricks: (\d+)$/)[1]),
-      components: Number(statusLines[3][1].match(/^Components: (\d+)$/)[1]),
-      time: time.parseDuration(statusLines[4][1].match(/^Time: (.*)$/)[1]),
+      serverName: serverName[1],
+      description: description[1],
+      bricks: Number(bricks[1]),
+      components: Number(components[1]),
+      time: time.parseDuration(uptime[1]),
       // extract players using the generated table regex
       players: columnRegExp
         ? tableLines.map(l => {

@@ -434,7 +434,7 @@ export interface StaticPlayer {
 
 export interface InjectedCommands {
   /** Get server status */
-  getServerStatus(this: OmeggaLike): Promise<IServerStatus>;
+  getServerStatus(this: OmeggaLike): Promise<IServerStatus | null>;
   /** Get a list of minigames and their indices */
   listMinigames(this: OmeggaLike): Promise<IMinigameList>;
   // /** Get all pawn data */
