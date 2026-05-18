@@ -4,7 +4,11 @@
 
 Add new changes here as they are implemented
 
-## 1.5.2 - 2026-05-06
+## 1.5.4 - 2026-05-18
+
+- Fix vm2 error with Player.getRoles
+
+## 1.5.2-1.5.3 - 2026-05-06
 
 - Fix server status check regex error handling
 

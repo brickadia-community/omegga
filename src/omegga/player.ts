@@ -48,7 +48,7 @@ class Player implements OmeggaPlayer {
 
   static getRoles(omegga: OmeggaLike, id: string): readonly string[] {
     const data = omegga.getRoleAssignments().savedPlayerRoles[id];
-    return Object.freeze(data && data.roles ? data.roles : []);
+    return data && data.roles ? [...data.roles] : [];
   }
 
   static getPermissions(
@@ -58,7 +58,7 @@ class Player implements OmeggaPlayer {
     const { roles, defaultRole } = omegga.getRoleSetup();
 
     // if the player is the host, the player has every permission
-    if (omegga.host.id === id) {
+    if (omegga.host?.id === id) {
       return Object.freeze(
         Object.fromEntries(
           [].concat(
