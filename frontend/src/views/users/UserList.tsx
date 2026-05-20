@@ -14,6 +14,7 @@ import {
   Scroll,
   SideNav,
   SortIcons,
+  useConfirm,
 } from '@components';
 import { useStore } from '@nanostores/react';
 import {
@@ -21,9 +22,11 @@ import {
   IconArrowBarToRight,
   IconArrowLeft,
   IconArrowRight,
+  IconBan,
   IconCirclePlus,
   IconLock,
   IconRotate,
+  IconTrash,
   IconUserPlus,
   IconX,
 } from '@tabler/icons-react';
@@ -61,6 +64,10 @@ export const UserList = () => {
   const utils = trpc.useUtils();
   const createMutation = trpc.user.create.useMutation();
   const passwdMutation = trpc.user.passwd.useMutation();
+  const banMutation = trpc.user.ban.useMutation();
+  const deleteMutation = trpc.user.delete.useMutation();
+  const banConfirm = useConfirm();
+  const deleteConfirm = useConfirm();
 
   const query = useRef({
     page: 0,
@@ -189,6 +196,27 @@ export const UserList = () => {
     setError(err);
   };
 
+  const handleBan = async (username: string, currentlyBanned: boolean) => {
+    const action = currentlyBanned ? 're-enable' : 'disable';
+    if (!(await banConfirm.prompt(`${action} user "${username}"`))) return;
+    const err = await banMutation.mutateAsync({
+      username,
+      banned: !currentlyBanned,
+    });
+    if (err) setError(err);
+    else getUsers();
+  };
+
+  const handleDelete = async (username: string) => {
+    if (
+      !(await deleteConfirm.prompt(`permanently delete user "${username}"`))
+    )
+      return;
+    const err = await deleteMutation.mutateAsync({ username });
+    if (err) setError(err);
+    else getUsers();
+  };
+
   const ok = useMemo(() => {
     const nameOk = username.length !== 0 || !(showCredentials && !userless);
     return username.match(/^\w{0,32}$/) && nameOk && password.length !== 0;
@@ -287,6 +315,11 @@ export const UserList = () => {
                           />
                         </span>
                       </th>
+                      {!userless && myUser?.isOwner && (
+                        <th style={{ width: 1 }}>
+                          <span>Actions</span>
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -297,6 +330,11 @@ export const UserList = () => {
                         key={u.username}
                       >
                         <td>
+                          {u.isBanned && (
+                            <span className="ban">
+                              <IconBan size={14} />{' '}
+                            </span>
+                          )}
                           {u.username || 'Admin'}{' '}
                           {(u.username || 'Admin') ===
                             (myUser?.username || 'Admin') && (
@@ -317,6 +355,41 @@ export const UserList = () => {
                         >
                           {duration(u.createdAgo)}
                         </td>
+                        {!userless && myUser?.isOwner && (
+                          <td
+                            style={{ whiteSpace: 'nowrap' }}
+                            onClick={e => e.stopPropagation()}
+                          >
+                            {!u.isOwner &&
+                              u.username !== myUser?.username && (
+                                <>
+                                  <Button
+                                    icon
+                                    normal={!u.isBanned}
+                                    warn={!!u.isBanned}
+                                    data-tooltip={
+                                      u.isBanned
+                                        ? 'Re-enable user'
+                                        : 'Disable user'
+                                    }
+                                    onClick={() =>
+                                      handleBan(u.username, !!u.isBanned)
+                                    }
+                                  >
+                                    <IconBan />
+                                  </Button>
+                                  <Button
+                                    icon
+                                    error
+                                    data-tooltip="Delete user"
+                                    onClick={() => handleDelete(u.username)}
+                                  >
+                                    <IconTrash />
+                                  </Button>
+                                </>
+                              )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -448,6 +521,8 @@ export const UserList = () => {
           </Dimmer>
         </div>
       </PageContent>
+      {banConfirm.children}
+      {deleteConfirm.children}
     </>
   );
 };

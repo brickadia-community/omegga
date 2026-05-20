@@ -103,5 +103,60 @@ export const userRouter = router({
         log(`changed password for "${username.yellow}"`);
         return '';
       }),
+
+    ban: protectedProcedure('user.ban')
+      .input(
+        z.object({
+          username: z.string(),
+          banned: z.boolean(),
+        }),
+      )
+      .mutation(async ({ input, ctx }) => {
+        const { database } = getContextDeps();
+        const { username, banned } = input;
+        const { log } = ctx;
+
+        if (!ctx.user.isOwner) return 'missing permission';
+        if (username === ctx.user.username) return 'cannot disable yourself';
+        if (!(await database.userExists(username)))
+          return 'user does not exist';
+
+        const target = await database.stores.users.findOne<
+          import('../types').IStoreUser & { _id: string }
+        >({ type: 'user', username });
+        if (target?.isOwner) return 'cannot disable the owner';
+
+        await database.banUser(username, banned);
+        log(
+          `${banned ? 'disabled' : 'enabled'} user "${username.yellow}" (by ${ctx.user.username.yellow})`,
+        );
+        return '';
+      }),
+
+    delete: protectedProcedure('user.delete')
+      .input(
+        z.object({
+          username: z.string(),
+        }),
+      )
+      .mutation(async ({ input, ctx }) => {
+        const { database } = getContextDeps();
+        const { username } = input;
+        const { log } = ctx;
+
+        if (!ctx.user.isOwner) return 'missing permission';
+        if (username === ctx.user.username) return 'cannot delete yourself';
+        if (!(await database.userExists(username)))
+          return 'user does not exist';
+
+        const target = await database.stores.users.findOne<
+          import('../types').IStoreUser & { _id: string }
+        >({ type: 'user', username });
+        if (target?.isOwner) return 'cannot delete the owner';
+
+        await database.deleteUser(username);
+        log(`deleted user "${username.yellow}" (by ${ctx.user.username.yellow})`);
+        return '';
+      }),
   }),
 });

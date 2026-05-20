@@ -43,6 +43,8 @@ export const SCOPES = {
   'user.list': { description: 'View web UI users' },
   'user.create': { description: 'Create web UI users' },
   'user.passwd': { description: 'Change user passwords' },
+  'user.ban': { description: 'Disable/enable web UI users' },
+  'user.delete': { description: 'Delete web UI users' },
 
   // World
   'world.list': { description: 'View world list' },

@@ -336,6 +336,17 @@ export default class Database extends EventEmitter {
     );
   }
 
+  async banUser(username: string, banned: boolean) {
+    return await this.stores.users.update(
+      { type: 'user', username },
+      { $set: { isBanned: banned } },
+    );
+  }
+
+  async deleteUser(username: string) {
+    return await this.stores.users.remove({ type: 'user', username }, {});
+  }
+
   // get a user from credentials
   async authUser(username: string, password: string) {
     const user = await this.stores.users.findOne<IStoreUser>({ username });

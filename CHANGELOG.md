@@ -2,7 +2,7 @@
 
 ## Latest
 
-Add new changes here as they are implemented
+- Add owner-only user disable and delete actions to the web UI (hidden in single-user mode)
 
 ## 1.5.4 - 2026-05-18
 
