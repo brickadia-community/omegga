@@ -24,7 +24,7 @@ When checking whether a user has a specific scope, the resolver walks four level
 1. Owner bypass    - isOwner grants everything
 2. Root level      - 'all' grants everything; 'read' grants read-only scopes; 'off' falls through
 3. Domain level    - 'all' grants all scopes in that domain; 'read' grants read-only scopes; absent falls through
-4. Scope level     - true grants; false denies; absent falls through to defaults
+4. Scope level     - true grants; absent falls through to defaults
 5. Default perms   - same root/domain/scope resolution, but with no further fallback
 6. Not granted     - false
 ```
@@ -53,7 +53,7 @@ Domains are purely additive. Setting a domain to "Manual" removes it from the `d
 
 ### Scope
 
-Individual boolean toggles. `true` grants, `false` denies, absent falls through to defaults.
+Permissions are purely additive. `true` grants the scope, absent (or toggled off) falls through to defaults. There is no way to explicitly deny a scope -- toggling a scope off simply removes the user-level override so the default applies.
 
 ## Domains and Scopes
 

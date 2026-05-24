@@ -3,7 +3,7 @@ import { atom } from 'nanostores';
 import { useEffect } from 'react';
 import { useHasScope } from '@hooks';
 import { Permissions } from '../permissions';
-import { trpc, trpcClient } from '../trpc';
+import { handleGlobalError, trpc, trpcClient } from '../trpc';
 
 export const $liveness = atom<{
   starting: boolean;
@@ -36,6 +36,7 @@ export const useServerLiveness = () => {
 
   trpc.server.onStatus.useSubscription(undefined, {
     enabled: canStatus,
+    onError: handleGlobalError,
     onData(data) {
       $liveness.set({
         started: data.started,

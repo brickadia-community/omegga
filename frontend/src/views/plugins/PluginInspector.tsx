@@ -25,7 +25,7 @@ import { debounce } from '@utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute } from 'wouter';
 import { Permissions } from '../../permissions';
-import { trpc } from '../../trpc';
+import { handleGlobalError, trpc } from '../../trpc';
 const jsonEq = (a: any, b: any) => {
   try {
     return JSON.stringify(a) === JSON.stringify(b);
@@ -107,6 +107,7 @@ export const PluginInspector = () => {
 
   trpc.plugin.onStatus.useSubscription(undefined, {
     enabled: canGet,
+    onError: handleGlobalError,
     onData(data) {
       if (data.shortPath !== pluginRef.current?.path) return;
       setPlugin((prev: any) => ({ ...prev!, ...data }));

@@ -3,8 +3,7 @@ import { useHasScope } from '@hooks';
 import { IconArrowDown, IconArrowUp, IconCpu } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Permissions } from '../../permissions';
-import type { RouterOutputs } from '../../trpc';
-import { trpc } from '../../trpc';
+import { handleGlobalError, trpc, type RouterOutputs } from '../../trpc';
 
 type Utilization =
   RouterOutputs['server']['onUtilization'] extends AsyncIterable<infer T>
@@ -161,6 +160,7 @@ export const UtilizationWidget = () => {
 
   trpc.server.onUtilization.useSubscription(undefined, {
     enabled: canUtil,
+    onError: handleGlobalError,
     onData: handleData,
   });
 

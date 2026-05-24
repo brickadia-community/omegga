@@ -82,10 +82,9 @@ export function resolveScope(
   if (domain === DomainLevel.All) return true;
   if (domain === DomainLevel.Read) return scopeDef.readOnly;
 
-  // 3. Scope
+  // 3. Scope (additive only - explicit true grants, false/absent falls through)
   const scopeVal = userPerms.scopes[scopeName];
   if (scopeVal === true) return true;
-  if (scopeVal === false) return false;
 
   // 4. Fall back to defaults
   if (defaultPerms) return resolveScope(defaultPerms, null, scopeName);

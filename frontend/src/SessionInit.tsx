@@ -1,3 +1,4 @@
+import { TRPCClientError } from '@trpc/client';
 import { useEffect } from 'react';
 import { $rpcConnected, $rpcDisconnected } from './stores/connected';
 import {
@@ -11,7 +12,7 @@ import { $version } from './stores/version';
 import { trpc } from './trpc';
 
 export const SessionInit = () => {
-  const { data, status } = trpc.session.info.useQuery();
+  const { data, status, error } = trpc.session.info.useQuery();
 
   useEffect(() => {
     if (status === 'success' && data) {
@@ -26,6 +27,12 @@ export const SessionInit = () => {
     } else if (status === 'error') {
       $rpcConnected.set(false);
       $rpcDisconnected.set(true);
+      if (
+        error instanceof TRPCClientError &&
+        error.data?.code === 'UNAUTHORIZED'
+      ) {
+        location.reload();
+      }
     }
   }, [data, status]);
 

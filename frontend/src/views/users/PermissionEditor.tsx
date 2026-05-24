@@ -111,7 +111,9 @@ export const PermissionEditor = ({
   };
 
   const setScope = (scope: string, value: boolean) => {
-    const scopes = { ...perms.scopes, [scope]: value };
+    const scopes = { ...perms.scopes };
+    if (value) scopes[scope] = true;
+    else delete scopes[scope];
     onChange({ ...perms, scopes });
   };
 

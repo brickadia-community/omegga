@@ -9,6 +9,7 @@ import EventEmitter from 'events';
 import Datastore from 'nedb-promises';
 import path from 'path';
 import Calendar from './calendar';
+import { serverEvents } from './events';
 import {
   EMPTY_PERMISSIONS,
   RootLevel,
@@ -423,14 +424,21 @@ export default class Database extends EventEmitter {
   }
 
   async banUser(username: string, banned: boolean) {
-    return await this.stores.users.update(
+    const result = await this.stores.users.update(
       { type: 'user', username },
       { $set: { isBanned: banned } },
     );
+    if (banned) serverEvents.emit('userInvalidated', username);
+    return result;
   }
 
   async deleteUser(username: string) {
-    return await this.stores.users.remove({ type: 'user', username }, {});
+    const result = await this.stores.users.remove(
+      { type: 'user', username },
+      {},
+    );
+    serverEvents.emit('userInvalidated', username);
+    return result;
   }
 
   async setUserPermissions(username: string, permissions: PermissionSet) {

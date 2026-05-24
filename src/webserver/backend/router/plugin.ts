@@ -171,8 +171,11 @@ export const pluginRouter = router({
       }),
 
     onStatus: protectedProcedure(ScopeName.PluginList).subscription(
-      async function* () {
-        for await (const [payload] of on(serverEvents, 'plugin')) {
+      async function* ({ signal, ctx }) {
+        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
+        for await (const [payload] of on(serverEvents, 'plugin', {
+          signal: combined,
+        })) {
           yield payload as {
             shortPath: string;
             name: string;

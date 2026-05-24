@@ -3,6 +3,7 @@ import type Omegga from '@omegga/server';
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import type Database from './database';
+import { serverEvents } from './events';
 import { userHasScope } from './permissions';
 import type { Scope } from './scopes';
 import type { IStoreUser } from './types';
@@ -26,6 +27,7 @@ export function getContextDeps(): ContextDeps {
 export type Context = {
   user: IStoreUser & { _id: string };
   req: import('express').Request;
+  userAbort: AbortController;
   log: (...args: any[]) => void;
   error: (...args: any[]) => void;
 };
@@ -54,9 +56,28 @@ export async function createContext(
 
   const usernameText = `[${(user.username || 'Admin').brightMagenta}]`;
 
+  let _userAbort: AbortController | null = null;
+  const getUserAbort = () => {
+    if (!_userAbort) {
+      _userAbort = new AbortController();
+      const ac = _userAbort;
+      const onInvalidated = (name: string) => {
+        if (name === user.username) ac.abort();
+      };
+      serverEvents.on('userInvalidated', onInvalidated);
+      ac.signal.addEventListener('abort', () => {
+        serverEvents.off('userInvalidated', onInvalidated);
+      });
+    }
+    return _userAbort;
+  };
+
   return {
     user,
     req,
+    get userAbort() {
+      return getUserAbort();
+    },
     log: (...args: any[]) => Logger.logp(usernameText, ...args),
     error: (...args: any[]) => Logger.errorp(usernameText, ...args),
   };

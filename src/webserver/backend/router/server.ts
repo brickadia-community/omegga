@@ -187,8 +187,11 @@ export const serverRouter = router({
     }),
 
     onStatus: protectedProcedure(ScopeName.ServerStatus).subscription(
-      async function* ({ signal }) {
-        for await (const [_] of on(serverEvents, 'serverStatus', { signal })) {
+      async function* ({ signal, ctx }) {
+        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
+        for await (const [_] of on(serverEvents, 'serverStatus', {
+          signal: combined,
+        })) {
           const { omegga } = getContextDeps();
           yield {
             started: omegga.started,
@@ -200,9 +203,10 @@ export const serverRouter = router({
     ),
 
     onHeartbeat: protectedProcedure(ScopeName.ServerStatus).subscription(
-      async function* ({ signal }) {
+      async function* ({ signal, ctx }) {
+        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
         for await (const [status] of on(serverEvents, 'heartbeat', {
-          signal,
+          signal: combined,
         })) {
           yield status;
         }
@@ -210,9 +214,10 @@ export const serverRouter = router({
     ),
 
     onUtilization: protectedProcedure(ScopeName.ServerUtilization).subscription(
-      async function* ({ signal }) {
+      async function* ({ signal, ctx }) {
+        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
         for await (const [utilization] of on(serverEvents, 'utilization', {
-          signal,
+          signal: combined,
         })) {
           yield utilization as import('../types').SystemUtilization;
         }

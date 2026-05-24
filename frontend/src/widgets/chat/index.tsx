@@ -5,7 +5,7 @@ import { IconSend } from '@tabler/icons-react';
 import Linkify from 'linkify-react';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Permissions } from '../../permissions';
-import { trpc } from '../../trpc';
+import { handleGlobalError, trpc } from '../../trpc';
 
 type ChatEntry = IStoreChat & {
   _id: string;
@@ -40,6 +40,7 @@ export const ChatWidget = () => {
 
   trpc.chat.onMessage.useSubscription(undefined, {
     enabled: canRecent,
+    onError: handleGlobalError,
     onData: (log: ChatEntry) => {
       setChats(prevChats => {
         const updatedChats = [...prevChats, log];

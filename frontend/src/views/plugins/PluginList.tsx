@@ -20,7 +20,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useRoute } from 'wouter';
 import { Permissions } from '../../permissions';
-import { trpc } from '../../trpc';
+import { handleGlobalError, trpc } from '../../trpc';
 import { PluginInspector } from './PluginInspector';
 
 type PluginListItem = {
@@ -94,6 +94,7 @@ export const PluginList = () => {
 
   trpc.plugin.onStatus.useSubscription(undefined, {
     enabled: canAccess,
+    onError: handleGlobalError,
     onData(data) {
       const plugin = pluginStateFromInfo(data);
       setPlugins(prev =>
