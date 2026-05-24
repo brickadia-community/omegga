@@ -55,6 +55,7 @@ export const PlayerInspector = () => {
   const [banUnit, setBanUnit] = useState('Permanent');
   const [actionLoading, setActionLoading] = useState(false);
 
+  const canGet = useHasScope(Permissions.PlayerGet);
   const canBan = useHasScope(Permissions.PlayerBan);
   const canKick = useHasScope(Permissions.PlayerKick);
   const canUnban = useHasScope(Permissions.PlayerUnban);
@@ -64,7 +65,9 @@ export const PlayerInspector = () => {
     data: player,
     isLoading: loading,
     refetch: getPlayer,
-  } = trpc.player.get.useQuery(params?.id ?? '', { enabled: !!params?.id });
+  } = trpc.player.get.useQuery(params?.id ?? '', {
+    enabled: !!params?.id && canGet,
+  });
 
   useEffect(() => {
     if (!loading && !player && params?.id) {

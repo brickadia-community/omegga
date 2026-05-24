@@ -75,10 +75,12 @@ export const PermissionEditor = ({
   perms,
   onChange,
   defaultPerms,
+  disabled,
 }: {
   perms: PermissionSet;
   onChange: (p: PermissionSet) => void;
   defaultPerms?: PermissionSet | null;
+  disabled?: boolean;
 }) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -132,6 +134,7 @@ export const PermissionEditor = ({
           value={perms.root}
           options={ROOT_OPTIONS}
           onChange={setRoot}
+          disabled={disabled}
         />
       </div>
       {DOMAIN_ORDER.map(domain => {
@@ -159,7 +162,7 @@ export const PermissionEditor = ({
                 value={domainLevel ?? 'none'}
                 options={DOMAIN_OPTIONS}
                 onChange={v => setDomain(domain, v)}
-                disabled={rootLocked}
+                disabled={disabled || rootLocked}
               />
             </div>
             {isExpanded &&
@@ -198,7 +201,7 @@ export const PermissionEditor = ({
                       <Toggle
                         value={scopeVal}
                         onChange={v => setScope(scope, v)}
-                        disabled={domainLocked}
+                        disabled={disabled || domainLocked}
                       />
                     </div>
                   </div>

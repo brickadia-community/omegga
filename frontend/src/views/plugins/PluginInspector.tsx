@@ -42,6 +42,7 @@ export const PluginInspector = () => {
   const [waiting, setWaiting] = useState(false);
   const [showSave, setShowSave] = useState<Record<string, boolean>>({});
 
+  const canGet = useHasScope(Permissions.PluginGet);
   const canLoad = useHasScope(Permissions.PluginLoad);
   const canUnload = useHasScope(Permissions.PluginUnload);
   const canToggle = useHasScope(Permissions.PluginToggle);
@@ -49,7 +50,7 @@ export const PluginInspector = () => {
 
   const getQuery = trpc.plugin.get.useQuery(
     { shortPath: params?.id ?? '' },
-    { enabled: !!params?.id },
+    { enabled: !!params?.id && canGet },
   );
 
   useEffect(() => {
@@ -105,6 +106,7 @@ export const PluginInspector = () => {
   pluginRef.current = plugin;
 
   trpc.plugin.onStatus.useSubscription(undefined, {
+    enabled: canGet,
     onData(data) {
       if (data.shortPath !== pluginRef.current?.path) return;
       setPlugin((prev: any) => ({ ...prev!, ...data }));

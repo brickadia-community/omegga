@@ -13,7 +13,7 @@ import {
   SavedSpan,
   SavedStatus,
   useHasScope,
-  useRequireDomain,
+  useRequireScope,
   useSaved,
 } from '@hooks';
 import { useStore } from '@nanostores/react';
@@ -35,7 +35,7 @@ import {
   updateServer,
   useServerLiveness,
 } from '../../stores/liveness';
-import { Domains, Permissions } from '../../permissions';
+import { Permissions } from '../../permissions';
 import { $omeggaData } from '../../stores/user';
 import { trpc } from '../../trpc';
 
@@ -49,7 +49,7 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 export const ServerView = () => {
-  const canAccess = useRequireDomain(Domains.Server);
+  const canAccess = useRequireScope(Permissions.ServerStatus);
   const {
     started,
     stopping,
@@ -62,6 +62,8 @@ export const ServerView = () => {
   const canStop = useHasScope(Permissions.ServerStop);
   const canRestart = useHasScope(Permissions.ServerRestart);
   const canUpdate = useHasScope(Permissions.ServerUpdateRun);
+  const canViewAutoRestart = useHasScope(Permissions.ServerAutorestartGet);
+  const canUpdateCheck = useHasScope(Permissions.ServerUpdateCheck);
   const canAutoRestart = useHasScope(Permissions.ServerAutorestartSet);
   const canSaveWorld = useHasScope(Permissions.WorldSave);
 
@@ -78,7 +80,10 @@ export const ServerView = () => {
 
   const [savingWorld, setSavingWorld] = useState(false);
 
-  const { data: autoRestartData } = trpc.server.autoRestart.get.useQuery();
+  const { data: autoRestartData } = trpc.server.autoRestart.get.useQuery(
+    undefined,
+    { enabled: canViewAutoRestart },
+  );
 
   useEffect(() => {
     if (autoRestartData) {
@@ -86,21 +91,21 @@ export const ServerView = () => {
     }
   }, [autoRestartData]);
 
-  const canUpdateCheck = omeggaData?.update?.canCheck ?? false;
+  const hasSteam = omeggaData?.update?.canCheck ?? false;
 
   const updateCheckQuery = trpc.server.update.check.useQuery(undefined, {
     enabled: false,
   });
 
   const checkForUpdate = useCallback(() => {
-    if (!canUpdateCheck) return;
+    if (!hasSteam || !canUpdateCheck) return;
     setCheckingForUpdate(true);
     updateCheckQuery.refetch().then(({ data }) => {
       setHasUpdate(data ?? null);
       setLastCheckedAt(Date.now());
       setCheckingForUpdate(false);
     });
-  }, [canUpdateCheck, updateCheckQuery]);
+  }, [hasSteam, canUpdateCheck, updateCheckQuery]);
 
   const autoRestartSetMutation = trpc.server.autoRestart.set.useMutation();
 
@@ -153,7 +158,7 @@ export const ServerView = () => {
   return (
     <>
       <NavHeader title="Server">
-        {canUpdateCheck && (
+        {hasSteam && canUpdateCheck && (
           <Button
             main={Boolean(hasUpdate)}
             normal={!hasUpdate}
@@ -183,7 +188,7 @@ export const ServerView = () => {
       <PageContent>
         <SideNav />
         <div className="generic-container server-container">
-          <NavBar>
+          <NavBar className="server-status">
             Server Status:{' '}
             {starting
               ? 'starting'
@@ -192,7 +197,7 @@ export const ServerView = () => {
                 : started
                   ? 'started'
                   : 'stopped'}
-            {canUpdateCheck && hasUpdate !== null && (
+            {hasSteam && canUpdateCheck && hasUpdate !== null && (
               <span style={{ marginLeft: 8, fontSize: '0.75em', opacity: 0.7 }}>
                 {hasUpdate
                   ? 'Update available'
@@ -276,11 +281,13 @@ export const ServerView = () => {
               </Button>
             )}
           </div>
-          <NavBar attached style={{ marginTop: 8 }}>
-            Auto Restart
-            <SavedSpan show={saved.status === SavedStatus.Waiting} />
-          </NavBar>
-          {config && (
+          {canViewAutoRestart && (
+            <NavBar attached style={{ marginTop: 8 }}>
+              Auto Restart
+              <SavedSpan show={saved.status === SavedStatus.Waiting} />
+            </NavBar>
+          )}
+          {canViewAutoRestart && config && (
             <div className="inputs-list">
               <div
                 className="inputs-item"
@@ -302,7 +309,7 @@ export const ServerView = () => {
               >
                 <label>
                   Auto Update
-                  {canUpdateCheck ? '' : ' (SteamCMD Only)'}
+                  {hasSteam ? '' : ' (SteamCMD Only)'}
                 </label>
                 <div className="inputs">
                   <Toggle

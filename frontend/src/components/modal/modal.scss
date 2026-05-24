@@ -7,6 +7,7 @@
   width: 500px;
   opacity: 0;
   border-radius: theme.$br-radius-md;
+  overflow: hidden;
 
   &.visible {
     opacity: 1;

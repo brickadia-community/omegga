@@ -180,6 +180,16 @@
   }
 }
 
+.perm-error {
+  background-color: rgba(theme.$br-error-normal, 0.2);
+  color: theme.$br-error-normal;
+  padding: 8px 12px;
+  margin: 8px;
+  border-radius: theme.$br-radius-sm;
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
 .players-container .players-list {
   border-bottom-left-radius: theme.$br-radius-md;
   border-bottom-right-radius: theme.$br-radius-md;
@@ -193,7 +203,128 @@
   }
 }
 
-@media screen and (max-width: 1024px) {
+.widgets-list-up {
+  bottom: 100%;
+  top: auto !important;
+  right: 0;
+  width: max-content;
+}
+
+.mfa-manager {
+  .mfa-error {
+    background-color: rgba(theme.$br-error-normal, 0.2);
+    color: theme.$br-error-normal;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    border-radius: theme.$br-radius-sm;
+    font-weight: bold;
+    text-transform: capitalize;
+  }
+
+  .note {
+    color: theme.$br-element-fg !important;
+    font-size: 12px;
+  }
+
+  .mfa-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+
+    .input {
+      min-width: 180px;
+      flex: 1;
+    }
+
+    .button {
+      margin-right: 0;
+    }
+  }
+
+  .totp-setup {
+    .qr-code {
+      display: block;
+      width: 200px;
+      height: 200px;
+      margin: 8px 0;
+      border-radius: theme.$br-radius-sm;
+    }
+
+    .manual-secret {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      code {
+        font-family: monospace;
+        color: white;
+        user-select: all;
+        word-break: break-all;
+      }
+
+      .button {
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  .passkey-list {
+    .passkey-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+
+      .passkey-name {
+        color: white;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex: 1;
+      }
+
+      .passkey-meta {
+        color: theme.$br-element-fg;
+        font-size: 13px;
+      }
+    }
+  }
+
+  .recovery-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 120px);
+    gap: 4px;
+    padding: 8px 0;
+
+    code {
+      font-family: monospace;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      padding: 4px 8px;
+      background-color: theme.$br-bg-primary;
+      border-radius: theme.$br-radius-sm;
+      text-align: center;
+      user-select: all;
+    }
+  }
+}
+
+@media screen and (max-width: 800px) {
+  .mfa-manager .mfa-actions {
+    flex-direction: column;
+    align-items: stretch;
+
+    .input {
+      max-width: none;
+    }
+  }
+}
+
+@media screen and (max-width: 1200px) {
   .default-perms-standalone {
     display: none !important;
   }

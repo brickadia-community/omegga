@@ -28,6 +28,7 @@ export const WorldInspector = () => {
   const activeWorld = useStore($activeWorld);
   const liveness = useStore($liveness);
 
+  const canRevisions = useHasScope(Permissions.WorldRevisions);
   const canUse = useHasScope(Permissions.WorldUse);
   const canLoad = useHasScope(Permissions.WorldLoad);
 
@@ -46,7 +47,7 @@ export const WorldInspector = () => {
   // Load the revisions if the world is selected and the server is started
   // TODO: load revisions by parsing the brdb file
   useEffect(() => {
-    if (!selectedWorld || !liveness.started) return;
+    if (!selectedWorld || !liveness.started || !canRevisions) return;
     setLoading(true);
     setRevisions(null);
     Promise.all([
@@ -155,7 +156,11 @@ export const WorldInspector = () => {
               )}
               {revisions === null && !loading && liveness.started && (
                 <div className="revision-item">
-                  <i className="revision-note">World might not exist</i>
+                  <i className="revision-note">
+                    {canRevisions
+                      ? 'World might not exist'
+                      : 'Missing permission to view revisions'}
+                  </i>
                 </div>
               )}
               {revisions?.map(r => (

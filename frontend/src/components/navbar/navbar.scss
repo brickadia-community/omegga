@@ -28,8 +28,18 @@
   }
 }
 
-@media screen and (max-width: 1024px) {
-  .navbar .welcome {
-    display: none !important;
+.user-menu a,
+.user-menu a:visited {
+  text-decoration: none !important;
+  color: inherit !important;
+}
+
+.user-menu-name {
+  margin: 0 4px;
+}
+
+@media screen and (max-width: 600px) {
+  .user-menu-name {
+    display: none;
   }
 }

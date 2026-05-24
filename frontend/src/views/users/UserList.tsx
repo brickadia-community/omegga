@@ -30,26 +30,25 @@ import {
   IconUserPlus,
   IconX,
 } from '@tabler/icons-react';
-import { useHasScope } from '@hooks';
+import { useHasScope, useRequireScope } from '@hooks';
 import { duration, logout } from '@utils';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
 import { UserInspector } from './UserInspector';
 import { DefaultPermissions } from './DefaultPermissions';
-import { Domains, Permissions } from '../../permissions';
+import { Permissions } from '../../permissions';
 import { $omeggaData, $user, $usersRefresh } from '../../stores/user';
 import { trpc } from '../../trpc';
 
-const ACTION_CHANGE_PASSWORD = 'Change Password';
 const ACTION_ENABLE_USERS = 'Enable Users';
 const ACTION_ADD_USER = 'Add User';
 const ACTION_DEFAULT_PERMS = 'Default Permissions';
 
 export const UserList = () => {
+  const canAccess = useRequireScope(Permissions.UserList);
   const userless = useStore($omeggaData)?.userless;
   const myUser = useStore($user);
 
-  const canList = useHasScope(Permissions.UserList);
   const canCreate = useHasScope(Permissions.UserCreate);
   const canEditPerms = useHasScope(Permissions.UserPermissions);
 
@@ -64,8 +63,8 @@ export const UserList = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const [showCredentials, setShowCredentials] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
+  const [showEnableUsers, setShowEnableUsers] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
 
   const [_location, navigate] = useLocation();
@@ -73,22 +72,21 @@ export const UserList = () => {
 
   const utils = trpc.useUtils();
   const createMutation = trpc.user.create.useMutation();
-  const passwdMutation = trpc.user.passwd.useMutation();
 
   const [showActions, setShowActions] = useState(false);
 
-  const openCredentials = () => {
+  const openEnableUsers = () => {
     setShowActions(false);
-    setShowCredentials(true);
+    setShowEnableUsers(true);
     setShowCreateUser(false);
-    if (!userless) setUsername(myUser?.username ?? '');
+    setUsername('');
     setError('');
   };
 
   const openCreateUser = () => {
     setShowActions(false);
     setShowCreateUser(true);
-    setShowCredentials(false);
+    setShowEnableUsers(false);
     setUsername('');
     setError('');
   };
@@ -136,15 +134,11 @@ export const UserList = () => {
     getUsers();
   }, [usersRefresh]);
 
-  // update table sort direction
   const setSort = (s: string) => {
-    // flip direction if it's the same column
     if (s == sort) {
       setDirection(d => d * -1);
     } else {
-      // otherwise, use the new column
       query.current.sort = s;
-      // sort only name ascending on first click, all metrics are descending
       setDirection(s === 'name' ? 1 : -1);
     }
     getUsers();
@@ -158,7 +152,7 @@ export const UserList = () => {
 
   const hideModals = () => {
     setShowCreateUser(false);
-    setShowCredentials(false);
+    setShowEnableUsers(false);
     setUsername('');
     setError('');
     setPassword('');
@@ -171,23 +165,15 @@ export const UserList = () => {
     setModalLoading(true);
     let err = '';
     try {
-      if (showCredentials && !userless) {
-        err = await passwdMutation.mutateAsync({
-          username: myUser?.username ?? '',
-          password,
-        });
-      } else {
-        err = await createMutation.mutateAsync({ username, password });
-      }
+      err = await createMutation.mutateAsync({ username, password });
       setModalLoading(false);
       if (!err) {
-        if (showCredentials && userless) logout();
+        if (showEnableUsers) logout();
         else {
-          const wasCreate = showCreateUser;
           const createdName = username;
           hideModals();
           await getUsers();
-          if (wasCreate) navigate(`/users/${createdName}`);
+          navigate(`/users/${createdName}`);
         }
         return;
       }
@@ -198,80 +184,16 @@ export const UserList = () => {
   };
 
   const ok = useMemo(() => {
-    const nameOk = username.length !== 0 || !(showCredentials && !userless);
-    return username.match(/^\w{0,32}$/) && nameOk && password.length !== 0;
-  }, [username, password, showCredentials, userless]);
-
-  if (!canList) {
     return (
-      <>
-        <NavHeader title="Account">
-          <div className="widgets-container">
-            <Button normal boxy onClick={() => setShowActions(!showActions)}>
-              {showActions ? <IconCaretUp /> : <IconCaretDown />}
-              Actions
-            </Button>
-            <div
-              className="widgets-list"
-              style={{ display: showActions ? 'block' : 'none' }}
-            >
-              <Button info onClick={openCredentials}>
-                <IconLock />
-                {ACTION_CHANGE_PASSWORD}
-              </Button>
-            </div>
-          </div>
-        </NavHeader>
-        <PageContent>
-          <SideNav />
-          <div className="generic-container players-container">
-            <UserInspector selfUser={myUser?.username} />
-          </div>
-          <Dimmer visible={showCredentials}>
-            <Loader active={modalLoading} size="huge">
-              Submitting
-            </Loader>
-            <Modal visible={!modalLoading}>
-              <Header>Update Credentials</Header>
-              <PopoutContent>
-                <p>Updating credentials for user "{username}"</p>
-                {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-              </PopoutContent>
-              <div className="popout-inputs">
-                <Input
-                  placeholder="password"
-                  type="password"
-                  value={password}
-                  onChange={p => setPassword(p)}
-                />
-                <Input
-                  placeholder="confirm password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={p => setConfirmPassword(p)}
-                />
-              </div>
-              <Footer>
-                <Button
-                  main
-                  disabled={!password.length || confirmPassword !== password}
-                  onClick={() => submit()}
-                >
-                  <IconLock />
-                  Update
-                </Button>
-                <div style={{ flex: 1 }} />
-                <Button normal onClick={hideModals}>
-                  <IconX />
-                  Cancel
-                </Button>
-              </Footer>
-            </Modal>
-          </Dimmer>
-        </PageContent>
-      </>
+      username.match(/^\w{0,32}$/) &&
+      username.length !== 0 &&
+      password.length !== 0
     );
-  }
+  }, [username, password]);
+
+  if (!canAccess) return null;
+
+  const hasDropdownActions = userless || (!userless && canCreate);
 
   return (
     <>
@@ -287,37 +209,41 @@ export const UserList = () => {
             {ACTION_DEFAULT_PERMS}
           </Button>
         )}
-        <div className="widgets-container">
-          <Button normal boxy onClick={() => setShowActions(!showActions)}>
-            {showActions ? <IconCaretUp /> : <IconCaretDown />}
-            Actions
-          </Button>
-          <div
-            className="widgets-list"
-            style={{ display: showActions ? 'block' : 'none' }}
-          >
-            {!userless && canEditPerms && (
-              <Button
-                normal
-                className="default-perms-dropdown hidden"
-                onClick={openDefaultPerms}
-              >
-                <IconShield />
-                {ACTION_DEFAULT_PERMS}
-              </Button>
-            )}
-            <Button info onClick={openCredentials}>
-              <IconLock />
-              {userless ? ACTION_ENABLE_USERS : ACTION_CHANGE_PASSWORD}
+        {hasDropdownActions && (
+          <div className="widgets-container">
+            <Button normal boxy onClick={() => setShowActions(!showActions)}>
+              {showActions ? <IconCaretUp /> : <IconCaretDown />}
+              Actions
             </Button>
-            {!userless && canCreate && (
-              <Button main onClick={openCreateUser}>
-                <IconUserPlus />
-                {ACTION_ADD_USER}
-              </Button>
-            )}
+            <div
+              className="widgets-list"
+              style={{ display: showActions ? 'block' : 'none' }}
+            >
+              {!userless && canEditPerms && (
+                <Button
+                  normal
+                  className="default-perms-dropdown hidden"
+                  onClick={openDefaultPerms}
+                >
+                  <IconShield />
+                  {ACTION_DEFAULT_PERMS}
+                </Button>
+              )}
+              {userless && (
+                <Button info onClick={openEnableUsers}>
+                  <IconLock />
+                  {ACTION_ENABLE_USERS}
+                </Button>
+              )}
+              {!userless && canCreate && (
+                <Button main onClick={openCreateUser}>
+                  <IconUserPlus />
+                  {ACTION_ADD_USER}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </NavHeader>
       <PageContent>
         <SideNav />
@@ -429,9 +355,7 @@ export const UserList = () => {
                   icon
                   normal
                   disabled={page === 0}
-                  onClick={() => {
-                    setPage(0);
-                  }}
+                  onClick={() => setPage(0)}
                 >
                   <IconArrowBarToLeft />
                 </Button>
@@ -455,9 +379,7 @@ export const UserList = () => {
                   icon
                   normal
                   disabled={page >= pages - 1}
-                  onClick={() =>
-                    setPage(p => Math.min(users.length - 1, p + 1))
-                  }
+                  onClick={() => setPage(p => Math.min(pages - 1, p + 1))}
                 >
                   <IconArrowRight />
                 </Button>
@@ -465,7 +387,7 @@ export const UserList = () => {
                   icon
                   normal
                   disabled={page >= pages - 1}
-                  onClick={() => setPage(users.length - 1)}
+                  onClick={() => setPage(pages - 1)}
                 >
                   <IconArrowBarToRight />
                 </Button>
@@ -485,16 +407,16 @@ export const UserList = () => {
               </div>
             </Route>
           </Switch>
-          <Dimmer visible={showCredentials || showCreateUser}>
+          <Dimmer visible={showCreateUser || showEnableUsers}>
             <Loader active={modalLoading} size="huge">
               Submitting
             </Loader>
             <Modal visible={!modalLoading}>
               <Header>
-                {showCreateUser ? 'Create New User' : 'Update Credentials'}
+                {showEnableUsers ? 'Enable Users' : 'Create New User'}
               </Header>
               <PopoutContent>
-                {userless && (
+                {showEnableUsers && (
                   <>
                     <p>
                       This will require you to enter a password when you sign
@@ -502,9 +424,6 @@ export const UserList = () => {
                     </p>
                     <p>This action cannot be undone.</p>
                   </>
-                )}
-                {!userless && showCredentials && (
-                  <p>Updating credentials for user "{username}"</p>
                 )}
                 {showCreateUser && (
                   <p>
@@ -515,14 +434,12 @@ export const UserList = () => {
                 {error && <p style={{ color: 'red' }}>Error: {error}</p>}
               </PopoutContent>
               <div className="popout-inputs">
-                {(userless || showCreateUser) && (
-                  <Input
-                    placeholder="username"
-                    type="text"
-                    value={username}
-                    onChange={u => setUsername(u)}
-                  />
-                )}
+                <Input
+                  placeholder="username"
+                  type="text"
+                  value={username}
+                  onChange={u => setUsername(u)}
+                />
                 <Input
                   placeholder="password"
                   type="password"
@@ -534,6 +451,9 @@ export const UserList = () => {
                   type="password"
                   value={confirmPassword}
                   onChange={p => setConfirmPassword(p)}
+                  onSubmit={
+                    ok && confirmPassword === password ? submit : undefined
+                  }
                 />
               </div>
               <Footer>
@@ -542,9 +462,8 @@ export const UserList = () => {
                   disabled={!ok || confirmPassword !== password}
                   onClick={() => submit()}
                 >
-                  {showCreateUser && <IconUserPlus />}
-                  {!showCreateUser && <IconLock />}
-                  {showCreateUser ? 'Add' : 'Update'}
+                  <IconUserPlus />
+                  {showEnableUsers ? 'Enable' : 'Add'}
                 </Button>
                 <div style={{ flex: 1 }} />
                 <Button normal onClick={hideModals}>

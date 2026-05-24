@@ -1,21 +1,43 @@
-import type { GetUsersRes } from '@backend/api';
 import {
   Button,
+  Dimmer,
   Footer,
+  Header,
+  Input,
   Loader,
+  Modal,
   NavBar,
+  PopoutContent,
   Scroll,
   useConfirm,
 } from '@components';
 import { useHasScope } from '@hooks';
 import { useStore } from '@nanostores/react';
-import { IconBan, IconDeviceFloppy, IconTrash } from '@tabler/icons-react';
+import {
+  IconBan,
+  IconCaretDown,
+  IconCaretUp,
+  IconDeviceFloppy,
+  IconKey,
+  IconShieldOff,
+  IconTrash,
+  IconX,
+} from '@tabler/icons-react';
 import { duration } from '@utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
 import { Permissions } from '../../permissions';
 import { $user, $usersRefresh } from '../../stores/user';
-import { trpc } from '../../trpc';
+import { trpc, type RouterOutputs } from '../../trpc';
+
+type UserFromList = RouterOutputs['user']['list']['users'][number];
+type UserFromSelf = RouterOutputs['user']['self'];
+type UserData = (UserFromList | UserFromSelf) & {
+  totpEnabled?: boolean;
+  passkeyCount?: number;
+};
+
+import { MfaManager } from './MfaManager';
 import { PermissionEditor, type PermissionSet } from './PermissionEditor';
 
 export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
@@ -26,6 +48,9 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
   const canEditPerms = useHasScope(Permissions.UserPermissions);
   const canBan = useHasScope(Permissions.UserBan);
   const canDelete = useHasScope(Permissions.UserDelete);
+  const canPasswd = useHasScope(Permissions.UserPasswd);
+  const canReadMfa = useHasScope(Permissions.UserReadMfa);
+  const canResetMfa = useHasScope(Permissions.UserResetMfa);
 
   const isSelfMode = !!selfUser;
   const selectedUsername = selfUser ?? params?.id ?? '';
@@ -37,16 +62,12 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
     enabled: isSelfMode,
   });
 
-  const user = useMemo(() => {
+  const user = useMemo((): UserData | null => {
     if (isSelfMode) {
       return selfQuery.data ?? null;
     }
     if (!users.data) return null;
-    return (
-      users.data.users.find(
-        (u: GetUsersRes['users'][number]) => u.username === selectedUsername,
-      ) ?? null
-    );
+    return users.data.users.find(u => u.username === selectedUsername) ?? null;
   }, [isSelfMode, selfQuery.data, users.data, selectedUsername]);
 
   const loading = isSelfMode ? selfQuery.isLoading : users.isLoading;
@@ -58,11 +79,21 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
   const permsMutation = trpc.user.permissions.useMutation();
   const banMutation = trpc.user.ban.useMutation();
   const deleteMutation = trpc.user.delete.useMutation();
+  const passwdMutation = trpc.user.passwd.useMutation();
+  const resetMfaMutation = trpc.user.resetMfa.useMutation();
   const banConfirm = useConfirm();
   const deleteConfirm = useConfirm();
+  const resetMfaConfirm = useConfirm();
 
   const [editPerms, setEditPerms] = useState<PermissionSet | null>(null);
   const [saving, setSaving] = useState(false);
+  const [permError, setPermError] = useState('');
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const [showPasswd, setShowPasswd] = useState(false);
+  const [passwdLoading, setPasswdLoading] = useState(false);
+  const [passwdError, setPasswdError] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -83,19 +114,24 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
     }
   }, [isSelfMode, loading, user, selectedUsername]);
 
+  const utils = trpc.useUtils();
   const savePerms = useCallback(async () => {
     if (!editPerms || !selectedUsername) return;
     setSaving(true);
+    setPermError('');
     try {
       const err = await permsMutation.mutateAsync({
         username: selectedUsername,
         permissions: editPerms,
       });
-      if (err) console.error('Failed to save permissions:', err);
-      else if (isSelfMode) selfQuery.refetch();
-      else users.refetch();
-    } catch (e) {
-      console.error('Failed to save permissions:', e);
+      if (err) {
+        setPermError(err);
+      } else {
+        await utils.user.list.refetch();
+        if (isSelfMode) await selfQuery.refetch();
+      }
+    } catch (e: any) {
+      setPermError(e?.message || 'Failed to save permissions');
     }
     setSaving(false);
   }, [editPerms, selectedUsername]);
@@ -156,9 +192,56 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
     }
   };
 
+  const handleResetMfa = async () => {
+    if (
+      !(await resetMfaConfirm.prompt(
+        <>
+          <p>
+            Reset MFA for <b>{selectedUsername}</b>?
+          </p>
+          <p>This will clear TOTP, passkeys, and recovery codes.</p>
+        </>,
+      ))
+    )
+      return;
+    const err = await resetMfaMutation.mutateAsync({
+      username: selectedUsername,
+    });
+    if (err) console.error('Failed to reset MFA:', err);
+    else if (isSelfMode) selfQuery.refetch();
+    else users.refetch();
+  };
+
+  const handlePasswd = async () => {
+    setPasswdError('');
+    if (newPassword !== confirmNewPassword) return;
+    setPasswdLoading(true);
+    try {
+      const err = await passwdMutation.mutateAsync({
+        username: selectedUsername,
+        password: newPassword,
+      });
+      setPasswdLoading(false);
+      if (err) {
+        setPasswdError(err);
+      } else {
+        setShowPasswd(false);
+        setNewPassword('');
+        setConfirmNewPassword('');
+      }
+    } catch {
+      setPasswdLoading(false);
+    }
+  };
+
   const isSelf =
     (myUser?.username || 'Admin') === (selectedUsername || 'Admin');
-  const showActions = user && !user.isOwner && !isSelf && (canBan || canDelete);
+  const hasMfa = user && (user.totpEnabled || (user.passkeyCount ?? 0) > 0);
+  const hasAdminActions =
+    user &&
+    !user.isOwner &&
+    !isSelf &&
+    (canBan || canDelete || canPasswd || (canResetMfa && hasMfa));
 
   const defaultPerms = defaultPermsQuery.data
     ? ({
@@ -188,7 +271,7 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
             </Button>
           )}
         </NavBar>
-        <div className={`player-inspector ${showActions ? 'has-footer' : ''}`}>
+        <div className="player-inspector">
           <div className="player-view">
             <Loader active={loading} size="huge">
               Loading User
@@ -215,10 +298,28 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
                     <div className="stat">
                       <b>Created:</b> {duration(now - user.created)} ago
                     </div>
+                    {!isSelf && canReadMfa && (
+                      <div className="stat">
+                        <b>MFA:</b>{' '}
+                        {user.totpEnabled || (user.passkeyCount ?? 0) > 0
+                          ? [
+                              user.totpEnabled && 'TOTP',
+                              (user.passkeyCount ?? 0) > 0 &&
+                                `${user.passkeyCount ?? 0} passkey(s)`,
+                            ]
+                              .filter(Boolean)
+                              .join(' + ')
+                          : 'Not configured'}
+                      </div>
+                    )}
                   </div>
+                  {isSelfMode && <MfaManager />}
                   {canEditPerms && !user.isOwner && editPerms && (
                     <>
                       <div className="section-header">Permissions</div>
+                      {permError && (
+                        <div className="perm-error">{permError}</div>
+                      )}
                       <PermissionEditor
                         perms={editPerms}
                         onChange={setEditPerms}
@@ -229,9 +330,11 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
                   {user.isOwner && (
                     <>
                       <div className="section-header">Permissions</div>
-                      <div className="stats">
-                        <div className="stat">Owner has all permissions.</div>
-                      </div>
+                      <PermissionEditor
+                        perms={{ root: 'all', domains: {}, scopes: {} }}
+                        onChange={() => {}}
+                        disabled
+                      />
                     </>
                   )}
                 </Scroll>
@@ -239,31 +342,139 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
             </div>
           </div>
         </div>
-        {showActions && (
+        {hasAdminActions && (
           <Footer attached>
-            {canBan && (
-              <Button
-                boxy
-                normal={!user.isBanned}
-                warn={!!user.isBanned}
-                onClick={() => handleBan(!user.isBanned)}
-              >
-                <IconBan />
-                {user.isBanned ? 'Re-enable' : 'Disable'}
-              </Button>
-            )}
             <span style={{ flex: 1 }} />
-            {canDelete && (
-              <Button boxy error onClick={handleDelete}>
-                <IconTrash />
-                Delete
+            <div className="widgets-container">
+              <Button
+                normal
+                boxy
+                onClick={() => setShowActionsMenu(!showActionsMenu)}
+              >
+                {showActionsMenu ? <IconCaretDown /> : <IconCaretUp />}
+                Actions
               </Button>
-            )}
+              <div
+                className="widgets-list widgets-list-up"
+                style={{ display: showActionsMenu ? 'block' : 'none' }}
+              >
+                {canPasswd && (
+                  <Button
+                    info
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      setShowPasswd(true);
+                    }}
+                  >
+                    <IconKey />
+                    Change Password
+                  </Button>
+                )}
+                {canBan && (
+                  <Button
+                    normal={!user.isBanned}
+                    warn={!!user.isBanned}
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      handleBan(!user.isBanned);
+                    }}
+                  >
+                    <IconBan />
+                    {user.isBanned ? 'Re-enable' : 'Disable'}
+                  </Button>
+                )}
+                {canResetMfa && hasMfa && (
+                  <Button
+                    warn
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      handleResetMfa();
+                    }}
+                  >
+                    <IconShieldOff />
+                    Reset MFA
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    error
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      handleDelete();
+                    }}
+                  >
+                    <IconTrash />
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </div>
           </Footer>
         )}
       </div>
       {banConfirm.children}
       {deleteConfirm.children}
+      {resetMfaConfirm.children}
+      <Dimmer visible={showPasswd}>
+        <Loader active={passwdLoading} size="huge">
+          Submitting
+        </Loader>
+        <Modal visible={!passwdLoading}>
+          <Header>Change Password</Header>
+          <PopoutContent>
+            <p>
+              Set a new password for <b>{selectedUsername}</b>.
+            </p>
+            {passwdError && (
+              <p style={{ color: 'red' }}>Error: {passwdError}</p>
+            )}
+          </PopoutContent>
+          <div className="popout-inputs">
+            <Input
+              placeholder="new password"
+              type="password"
+              value={newPassword}
+              onChange={setNewPassword}
+            />
+            <Input
+              placeholder="confirm new password"
+              type="password"
+              value={confirmNewPassword}
+              onChange={setConfirmNewPassword}
+              onSubmit={
+                newPassword.length && confirmNewPassword === newPassword
+                  ? handlePasswd
+                  : undefined
+              }
+            />
+          </div>
+          <Footer>
+            <Button
+              main
+              disabled={
+                !newPassword.length || confirmNewPassword !== newPassword
+              }
+              onClick={handlePasswd}
+            >
+              <IconKey />
+              Update
+            </Button>
+            <div style={{ flex: 1 }} />
+            <Button
+              normal
+              onClick={() => {
+                setShowPasswd(false);
+                setNewPassword('');
+                setConfirmNewPassword('');
+                setPasswdError('');
+              }}
+            >
+              <IconX />
+              Cancel
+            </Button>
+          </Footer>
+        </Modal>
+      </Dimmer>
     </>
   );
 };

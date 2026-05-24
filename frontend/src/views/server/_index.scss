@@ -6,7 +6,9 @@
   flex-direction: column;
 
   .navbar {
-    margin-top: 8px;
+    &:not(.server-status) {
+      margin-top: 8px;
+    }
     text-transform: uppercase;
 
     .saved-note {

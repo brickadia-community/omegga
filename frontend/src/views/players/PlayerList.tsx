@@ -21,16 +21,17 @@ import {
   IconMapPin,
   IconRotate,
 } from '@tabler/icons-react';
-import { useRequireDomain } from '@hooks';
+import { useHasScope, useRequireScope } from '@hooks';
 import { debounce, duration, heartbeatAgo } from '@utils';
 import { useMemo, useRef, useState } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
-import { Domains } from '../../permissions';
+import { Permissions } from '../../permissions';
 import { trpc } from '../../trpc';
 import { PlayerInspector } from './PlayerInspector';
 
 export const PlayerList = () => {
-  const canAccess = useRequireDomain(Domains.Player);
+  const canAccess = useRequireScope(Permissions.PlayerList);
+  const canGet = useHasScope(Permissions.PlayerGet);
   const [showFilters, setShowFilters] = useState(false);
 
   const [_location, navigate] = useLocation();
@@ -354,10 +355,7 @@ export const PlayerList = () => {
           <Switch>
             <Route path="/players/:id" component={PlayerInspector} />
             <Route>
-              <div
-                className="player-inspector-container"
-                v-if="!$route.params.id"
-              >
+              <div className="player-inspector-container">
                 <NavBar attached>SELECT A PLAYER</NavBar>
                 <div className="player-inspector" />
               </div>

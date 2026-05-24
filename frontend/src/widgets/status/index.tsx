@@ -1,16 +1,20 @@
 import { Loader, Scroll } from '@components';
+import { useHasScope } from '@hooks';
 import type { IServerStatus } from '@omegga/types';
 import { duration } from '@utils';
 import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
+import { Permissions } from '../../permissions';
 import { trpc } from '../../trpc';
 
 export const StatusWidget = () => {
+  const canStatus = useHasScope(Permissions.ServerStatus);
   const [status, setStatus] = useState<IServerStatus | null>(null);
 
-  const { data: queryStatus } = trpc.server.status.useQuery();
+  const { data: queryStatus } = trpc.server.status.useQuery(undefined, {
+    enabled: canStatus,
+  });
 
-  // Sync query data into state so subscription updates merge seamlessly
   useEffect(() => {
     if (queryStatus && !status) {
       setStatus(queryStatus);
@@ -18,6 +22,7 @@ export const StatusWidget = () => {
   }, [queryStatus]);
 
   trpc.server.onHeartbeat.useSubscription(undefined, {
+    enabled: canStatus,
     onData: setStatus,
   });
 

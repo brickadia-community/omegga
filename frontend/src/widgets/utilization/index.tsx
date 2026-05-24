@@ -1,6 +1,8 @@
 import { Loader } from '@components';
+import { useHasScope } from '@hooks';
 import { IconArrowDown, IconArrowUp, IconCpu } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Permissions } from '../../permissions';
 import type { RouterOutputs } from '../../trpc';
 import { trpc } from '../../trpc';
 
@@ -135,7 +137,10 @@ export const UtilizationWidget = () => {
     tick(n => n + 1);
   }, []);
 
-  const { data: queryUtil } = trpc.server.utilization.useQuery();
+  const canUtil = useHasScope(Permissions.ServerUtilization);
+  const { data: queryUtil } = trpc.server.utilization.useQuery(undefined, {
+    enabled: canUtil,
+  });
 
   useEffect(() => {
     if (!queryUtil) return;
@@ -155,6 +160,7 @@ export const UtilizationWidget = () => {
   }, [queryUtil]);
 
   trpc.server.onUtilization.useSubscription(undefined, {
+    enabled: canUtil,
     onData: handleData,
   });
 

@@ -27,7 +27,10 @@ export const ChatWidget = () => {
     }
   };
 
-  const { data: recentChats } = trpc.chat.recent.useQuery();
+  const canRecent = useHasScope(Permissions.ChatRecent);
+  const { data: recentChats } = trpc.chat.recent.useQuery(undefined, {
+    enabled: canRecent,
+  });
 
   useEffect(() => {
     if (recentChats) {
@@ -36,6 +39,7 @@ export const ChatWidget = () => {
   }, [recentChats]);
 
   trpc.chat.onMessage.useSubscription(undefined, {
+    enabled: canRecent,
     onData: (log: ChatEntry) => {
       setChats(prevChats => {
         const updatedChats = [...prevChats, log];

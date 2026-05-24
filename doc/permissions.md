@@ -62,73 +62,75 @@ Each scope belongs to exactly one domain and is either read-only (R) or read-wri
 ### Chat
 | Scope | R/W | Description |
 |-------|-----|-------------|
-| `chat.send` | W | Send chat messages |
-| `chat.recent` | R | View recent chat messages |
-| `chat.history` | R | View chat history |
-| `chat.calendar` | R | View chat calendar |
+| `chat.send` | W | Send messages in the dashboard chat widget |
+| `chat.recent` | R | View recent chat on the dashboard |
+| `chat.history` | R | Browse past chat logs in the history view |
+| `chat.calendar` | R | Navigate chat by date in the history view |
 
 ### Player
 | Scope | R/W | Description |
 |-------|-----|-------------|
-| `player.list` | R | View player list |
-| `player.get` | R | View player details |
-| `player.ban` | W | Ban players |
-| `player.kick` | W | Kick players |
-| `player.unban` | W | Unban players |
-| `player.clearBricks` | W | Clear player bricks |
+| `player.list` | R | View the player list in the players view |
+| `player.get` | R | Inspect player details and history |
+| `player.ban` | W | Ban players from the player inspector |
+| `player.kick` | W | Kick players from the player inspector |
+| `player.unban` | W | Unban players from the player inspector |
+| `player.clearBricks` | W | Clear a player's bricks from the player inspector |
 
 ### Plugin
 | Scope | R/W | Description |
 |-------|-----|-------------|
-| `plugin.list` | R | View plugin list |
-| `plugin.get` | R | View plugin details |
-| `plugin.config` | W | Change plugin configuration |
-| `plugin.load` | W | Load plugins |
-| `plugin.unload` | W | Unload plugins |
-| `plugin.toggle` | W | Enable/disable plugins |
-| `plugin.reloadAll` | W | Reload all plugins |
+| `plugin.list` | R | View installed plugins in the plugins view |
+| `plugin.get` | R | Inspect plugin details and configuration |
+| `plugin.config` | W | Edit plugin settings in the plugin inspector |
+| `plugin.load` | W | Load plugins from the plugin inspector |
+| `plugin.unload` | W | Unload plugins from the plugin inspector |
+| `plugin.toggle` | W | Enable or disable plugins in the plugins view |
+| `plugin.reloadAll` | W | Reload all plugins from the plugins view |
 
 ### Server
 | Scope | R/W | Description |
 |-------|-----|-------------|
-| `server.status` | R | View server status, receive live status updates and heartbeat |
-| `server.start` | W | Start the server |
-| `server.stop` | W | Stop the server |
-| `server.restart` | W | Restart the server |
-| `server.update.check` | W | Check for server updates (runs SteamCMD) |
-| `server.update.run` | W | Update the server |
-| `server.autorestart.get` | R | View auto-restart config |
-| `server.autorestart.set` | W | Change auto-restart config |
-| `server.utilization` | R | View and receive live CPU, memory, and disk usage |
+| `server.status` | R | View server status on the dashboard and server view |
+| `server.start` | W | Start the server from the server view |
+| `server.stop` | W | Stop the server from the server view |
+| `server.restart` | W | Restart the server from the server view |
+| `server.update.check` | W | Check for server updates in the server view (runs SteamCMD) |
+| `server.update.run` | W | Run server updates from the server view |
+| `server.autorestart.get` | R | View auto-restart settings in the server view |
+| `server.autorestart.set` | W | Change auto-restart settings in the server view |
+| `server.utilization` | R | View CPU, memory, and disk usage on the dashboard |
 
 ### User
 | Scope | R/W | Description |
 |-------|-----|-------------|
-| `user.list` | R | View web UI users |
-| `user.create` | W | Create web UI users |
-| `user.passwd` | W | Change other users' passwords |
-| `user.ban` | W | Disable/enable web UI users |
-| `user.delete` | W | Delete web UI users |
-| `user.permissions` | W | Manage user and default permissions |
+| `user.list` | R | View web UI user accounts in the users view |
+| `user.create` | W | Create new user accounts in the users view |
+| `user.passwd` | W | Change other users' passwords in the user inspector |
+| `user.ban` | W | Disable or re-enable users in the user inspector |
+| `user.delete` | W | Permanently delete user accounts |
+| `user.permissions` | W | Edit user and default permissions in the users view |
+| `user.readMfa` | R | View MFA status of other users in the user inspector |
+| `user.resetMfa` | W | Reset MFA for other users in the user inspector |
 
 ### World
 | Scope | R/W | Description |
 |-------|-----|-------------|
-| `world.list` | R | View world list |
-| `world.active` | R | View active world |
-| `world.next` | R | View next world |
-| `world.revisions` | R | View world revisions |
-| `world.meta` | R | View world metadata |
-| `world.load` | W | Load worlds |
-| `world.use` | W | Set default world |
-| `world.save` | W | Save worlds |
-| `world.create` | W | Create worlds |
+| `world.list` | R | View available worlds in the worlds view |
+| `world.active` | R | See which world is currently loaded |
+| `world.next` | R | See which world will load next |
+| `world.revisions` | R | View world save revisions in the world inspector |
+| `world.meta` | R | View world metadata in the world inspector |
+| `world.load` | W | Load worlds from the world inspector |
+| `world.use` | W | Set the default world in the worlds view |
+| `world.save` | W | Save the current world from the worlds or server view |
+| `world.create` | W | Create new worlds in the worlds view |
 
 ## Self-Service
 
-All authenticated users can access the Users page regardless of permissions. Users without `user.list` see a self-service view showing only their own account, where they can change their own password.
+All authenticated users can access the `/account` page regardless of permissions. This page shows the user's own account info, MFA management (TOTP, passkeys, recovery codes), and password change.
 
-The `user.self` endpoint (scoped to `session.info`) returns the current user's data without requiring `user.list`. The `user.passwd` endpoint allows any user to change their own password; changing another user's password requires the `user.passwd` scope.
+The `user.self` endpoint (scoped to `session.info`) returns the current user's data without requiring `user.list`. The `user.passwd` endpoint allows any user to change their own password (requires current password); changing another user's password requires the `user.passwd` scope. MFA management endpoints (`mfa.*`) are scoped to `session.info` and require password verification for sensitive operations (TOTP setup/disable, passkey removal, recovery code generation).
 
 ## Enforcement
 
@@ -148,10 +150,35 @@ Subscription endpoints (like `server.onStatus`, `chat.onMessage`) share the scop
 On login, the session response includes `resolvedScopes` -- a flat `Record<string, boolean>` with every scope pre-resolved. The frontend stores this in a nanostore (`$resolvedScopes`).
 
 - `useHasScope(...scopes)` -- returns true if the user has all specified scopes
-- `useHasAnyScope(domain?)` -- returns true if the user has any scope in the domain
-- `useRequireDomain(domain)` -- redirects to `/` if the user has no scopes in the domain
+- `useHasAnyScope(...scopes)` -- returns true if the user has any of the specified scopes
+- `useRequireScope(scope)` -- redirects to `/` if the user lacks the scope
 
-Sidenav links are gated by `useHasAnyScope(domain)`, except Users which is always visible for self-service access. Views that require a domain redirect to the dashboard if the user has no scopes in that domain. Individual buttons and controls are conditionally rendered based on specific scopes.
+#### Sidenav Visibility
+
+Each sidenav link is gated by a specific scope:
+
+| Link | Required Scope | Always Visible |
+|------|---------------|----------------|
+| Dashboard | -- | Yes |
+| Worlds | `world.list` | No |
+| History | `chat.history` | No |
+| Plugins | `plugin.list` | No |
+| Players | `player.list` | No |
+| Server | `server.status` | No |
+| Users | `user.list` | No |
+| Account | -- | Yes |
+
+#### View Access
+
+Each view redirects to the dashboard if the user lacks its required scope:
+- Worlds requires `world.list`
+- History requires `chat.history`
+- Plugins requires `plugin.list`
+- Players requires `player.list`
+- Server requires `server.status`
+- Users requires `user.list`
+
+Within a view, individual buttons and controls are conditionally rendered based on their specific scopes. Admin actions in the user inspector (change password, disable, delete, reset MFA) are shown in an actions widget gated by their respective scopes.
 
 The backend remains the source of truth -- frontend checks are for UX only.
 

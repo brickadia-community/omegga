@@ -7,7 +7,7 @@ import {
   PageContent,
   SideNav,
 } from '@components';
-import { useRequireDomain } from '@hooks';
+import { useHasScope, useRequireScope } from '@hooks';
 import {
   IconArrowLeft,
   IconArrowRight,
@@ -21,7 +21,7 @@ import React, {
   useState,
 } from 'react';
 import { useRoute } from 'wouter';
-import { Domains } from '../../permissions';
+import { Permissions } from '../../permissions';
 import { trpc, type RouterOutputs } from '../../trpc';
 
 type ChatHistoryItem = RouterOutputs['chat']['history'][number];
@@ -51,7 +51,8 @@ const sorted = (obj: Record<number, any>, reverse = false) =>
     .sort((a, b) => (reverse ? b - a : a - b));
 
 export const HistoryView = () => {
-  const canAccess = useRequireDomain(Domains.Chat);
+  const canAccess = useRequireScope(Permissions.ChatHistory);
+  const canCalendar = useHasScope(Permissions.ChatCalendar);
   const [_, params] = useRoute('/history/:time?');
   const paramTime = params?.time;
 
@@ -172,7 +173,7 @@ export const HistoryView = () => {
       paramTime &&
       new Date(paramTime.match(/^\d+$/) ? Number(paramTime) : paramTime);
     (async () => {
-      if (firstLoad) await getCalendar();
+      if (firstLoad && canCalendar) await getCalendar();
 
       // ensures time is not nan
       if (time && !Number.isNaN(time.getTime())) {
@@ -280,94 +281,39 @@ export const HistoryView = () => {
   return (
     <>
       <NavHeader title="History">
-        <div className="calendar-container">
-          <Button
-            normal
-            boxy
-            style={{ marginRight: 0 }}
-            data-tooltip="Show a calendar previewing days"
-            onClick={() => setShowCalendar(!showCalendar)}
-          >
-            <IconCalendar /> Calendar
-          </Button>
-          {showCalendar && (
-            <div className="calendar">
-              <div className="year">
-                <Button
-                  icon
-                  normal
-                  disabled={!prevYear}
-                  onClick={() => setDate(prevYear)}
-                >
-                  <IconArrowLeft />
-                </Button>
-                {year}
-                <Button
-                  icon
-                  normal
-                  disabled={!nextYear}
-                  onClick={() => setDate(nextYear)}
-                >
-                  <IconArrowRight />
-                </Button>
-              </div>
-              <div className="month">
-                <Button
-                  icon
-                  normal
-                  disabled={!prevMonth}
-                  onClick={() => setDate(prevMonth)}
-                >
-                  <IconArrowLeft />
-                </Button>
-                {MONTHS[month]}
-                <Button
-                  icon
-                  normal
-                  disabled={!nextMonth}
-                  onClick={() => setDate(nextMonth)}
-                >
-                  <IconArrowRight />
-                </Button>
-              </div>
-              <div className="calendar-days">
-                <div className="week-header days">S</div>
-                <div className="week-header days">M</div>
-                <div className="week-header days">T</div>
-                <div className="week-header days">W</div>
-                <div className="week-header days">T</div>
-                <div className="week-header days">F</div>
-                <div className="week-header days">S</div>
-                {Array.from({ length: startDay }).map((_, i) => (
-                  <div key={`empty-${i}`} />
-                ))}
-                {Array.from({
-                  length: numDays,
-                }).map((_, d) => (
-                  <div
-                    key={d}
-                    className={`days ${
-                      nowMonth === month && nowYear === year && d + 1 === nowDay
-                        ? 'today'
-                        : ''
-                    } ${
-                      !(
-                        nowMonth === month &&
-                        nowYear === year &&
-                        d + 1 > nowDay
-                      ) && calendar[year]?.[month]?.[d]
-                        ? 'available'
-                        : ''
-                    }`}
-                    onClick={() => focusDay(year, month, d + 1)}
-                  >
-                    {d + 1}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        {canCalendar && (
+          <div className="calendar-container">
+            <Button
+              normal
+              boxy
+              style={{ marginRight: 0 }}
+              data-tooltip="Show a calendar previewing days"
+              onClick={() => setShowCalendar(!showCalendar)}
+            >
+              <IconCalendar /> Calendar
+            </Button>
+            {showCalendar && (
+              <Calendar
+                {...{
+                  prevYear,
+                  setDate,
+                  year,
+                  nextYear,
+                  prevMonth,
+                  month,
+                  nextMonth,
+                  startDay,
+                  numDays,
+                  nowMonth,
+                  nowYear,
+                  nowDay,
+                  calendar,
+                  focusDay,
+                }}
+              />
+            )}
+          </div>
+        )}
       </NavHeader>
       <PageContent>
         <SideNav />
@@ -401,3 +347,108 @@ export const HistoryView = () => {
     </>
   );
 };
+
+const Calendar = ({
+  prevYear,
+  setDate,
+  year,
+  nextYear,
+  prevMonth,
+  month,
+  nextMonth,
+  startDay,
+  numDays,
+  nowMonth,
+  nowYear,
+  nowDay,
+  calendar,
+  focusDay,
+}: {
+  prevYear: [number, number] | null;
+  setDate: (date: [number, number] | null) => void;
+  year: number;
+  nextYear: [number, number] | null;
+  prevMonth: [number, number] | null;
+  month: number;
+  nextMonth: [number, number] | null;
+  startDay: number;
+  numDays: number;
+  nowMonth: number;
+  nowYear: number;
+  nowDay: number;
+  calendar: Record<number, Record<number, Record<number, boolean>>>;
+  focusDay: (year: number, month: number, day: number) => Promise<void>;
+}) => (
+  <div className="calendar">
+    <div className="year">
+      <Button
+        icon
+        normal
+        disabled={!prevYear}
+        onClick={() => setDate(prevYear)}
+      >
+        <IconArrowLeft />
+      </Button>
+      {year}
+      <Button
+        icon
+        normal
+        disabled={!nextYear}
+        onClick={() => setDate(nextYear)}
+      >
+        <IconArrowRight />
+      </Button>
+    </div>
+    <div className="month">
+      <Button
+        icon
+        normal
+        disabled={!prevMonth}
+        onClick={() => setDate(prevMonth)}
+      >
+        <IconArrowLeft />
+      </Button>
+      {MONTHS[month]}
+      <Button
+        icon
+        normal
+        disabled={!nextMonth}
+        onClick={() => setDate(nextMonth)}
+      >
+        <IconArrowRight />
+      </Button>
+    </div>
+    <div className="calendar-days">
+      <div className="week-header days">S</div>
+      <div className="week-header days">M</div>
+      <div className="week-header days">T</div>
+      <div className="week-header days">W</div>
+      <div className="week-header days">T</div>
+      <div className="week-header days">F</div>
+      <div className="week-header days">S</div>
+      {Array.from({ length: startDay }).map((_, i) => (
+        <div key={`empty-${i}`} />
+      ))}
+      {Array.from({
+        length: numDays,
+      }).map((_, d) => (
+        <div
+          key={d}
+          className={`days ${
+            nowMonth === month && nowYear === year && d + 1 === nowDay
+              ? 'today'
+              : ''
+          } ${
+            !(nowMonth === month && nowYear === year && d + 1 > nowDay) &&
+            calendar[year]?.[month]?.[d]
+              ? 'available'
+              : ''
+          }`}
+          onClick={() => focusDay(year, month, d + 1)}
+        >
+          {d + 1}
+        </div>
+      ))}
+    </div>
+  </div>
+);

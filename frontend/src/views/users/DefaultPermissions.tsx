@@ -47,12 +47,7 @@ export const DefaultPermissions = () => {
       <NavBar attached>
         Default Permissions
         <span style={{ flex: 1 }} />
-        <Button
-          normal
-          boxy
-          disabled={saving || !dirty}
-          onClick={save}
-        >
+        <Button normal disabled={saving || !dirty} onClick={save}>
           <IconDeviceFloppy />
           Save
         </Button>

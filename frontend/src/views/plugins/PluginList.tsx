@@ -8,7 +8,7 @@ import {
   Scroll,
   SideNav,
 } from '@components';
-import { useHasScope, useRequireDomain } from '@hooks';
+import { useHasScope, useRequireScope } from '@hooks';
 import {
   IconAlertCircle,
   IconBug,
@@ -19,7 +19,7 @@ import {
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useRoute } from 'wouter';
-import { Domains, Permissions } from '../../permissions';
+import { Permissions } from '../../permissions';
 import { trpc } from '../../trpc';
 import { PluginInspector } from './PluginInspector';
 
@@ -51,7 +51,8 @@ const pluginStateFromInfo = (info: PluginInfo) => {
 type PluginRenderInfo = ReturnType<typeof pluginStateFromInfo>;
 
 export const PluginList = () => {
-  const canAccess = useRequireDomain(Domains.Plugin);
+  const canAccess = useRequireScope(Permissions.PluginList);
+  const canGet = useHasScope(Permissions.PluginGet);
   const [search, setSearch] = useState('');
   const [reloading, setReloading] = useState(false);
   const [plugins, setPlugins] = useState<any[]>([]);
@@ -92,6 +93,7 @@ export const PluginList = () => {
     plugin.name.toLowerCase().includes(search.toLowerCase());
 
   trpc.plugin.onStatus.useSubscription(undefined, {
+    enabled: canAccess,
     onData(data) {
       const plugin = pluginStateFromInfo(data);
       setPlugins(prev =>

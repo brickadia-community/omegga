@@ -1,6 +1,8 @@
 import { useStore } from '@nanostores/react';
 import { atom } from 'nanostores';
 import { useEffect } from 'react';
+import { useHasScope } from '@hooks';
+import { Permissions } from '../permissions';
 import { trpc, trpcClient } from '../trpc';
 
 export const $liveness = atom<{
@@ -16,7 +18,10 @@ export const $liveness = atom<{
 });
 
 export const useServerLiveness = () => {
-  const { data } = trpc.server.started.useQuery();
+  const canStatus = useHasScope(Permissions.ServerStatus);
+  const { data } = trpc.server.started.useQuery(undefined, {
+    enabled: canStatus,
+  });
 
   useEffect(() => {
     if (data) {
@@ -30,6 +35,7 @@ export const useServerLiveness = () => {
   }, [data]);
 
   trpc.server.onStatus.useSubscription(undefined, {
+    enabled: canStatus,
     onData(data) {
       $liveness.set({
         started: data.started,
