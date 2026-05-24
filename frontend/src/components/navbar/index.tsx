@@ -27,9 +27,10 @@ export const NavHeader = ({
     <div className={`main-nav ${className ?? ''}`}>
       <header className="nav-header">{title}</header>
       <NavBar>
-        <span style={{ flex: 1, marginLeft: 8 }}>
+        <span className="welcome" style={{ marginLeft: 8 }}>
           Welcome, {user?.username ?? '...'}
         </span>
+        <span style={{ flex: 1 }} />
         {children}
         {showLogout && (
           <Button

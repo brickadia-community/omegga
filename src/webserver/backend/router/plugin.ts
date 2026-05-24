@@ -2,12 +2,13 @@ import { z } from 'zod/v4';
 import _ from 'lodash';
 import { Plugin } from '@omegga/plugin/interface';
 import { router, protectedProcedure, getContextDeps } from '../trpc';
+import { ScopeName } from '../scopes';
 import { serverEvents } from '../events';
 import { on } from 'events';
 
 export const pluginRouter = router({
   plugin: router({
-    list: protectedProcedure('plugin.list').query(() => {
+    list: protectedProcedure(ScopeName.PluginList).query(() => {
       const { omegga } = getContextDeps();
       return _.sortBy(
         omegga.pluginLoader.plugins.map(p => ({
@@ -21,7 +22,7 @@ export const pluginRouter = router({
       );
     }),
 
-    get: protectedProcedure('plugin.get')
+    get: protectedProcedure(ScopeName.PluginGet)
       .input(z.object({ shortPath: z.string() }))
       .query(async ({ input }) => {
         const { omegga } = getContextDeps();
@@ -50,7 +51,7 @@ export const pluginRouter = router({
         };
       }),
 
-    config: protectedProcedure('plugin.config')
+    config: protectedProcedure(ScopeName.PluginConfig)
       .input(
         z.object({
           shortPath: z.string(),
@@ -68,7 +69,7 @@ export const pluginRouter = router({
         return true;
       }),
 
-    reloadAll: protectedProcedure('plugin.reloadAll').mutation(
+    reloadAll: protectedProcedure(ScopeName.PluginReloadAll).mutation(
       async ({ ctx }) => {
         const { omegga } = getContextDeps();
         const { log, error } = ctx;
@@ -107,7 +108,7 @@ export const pluginRouter = router({
       },
     ),
 
-    unload: protectedProcedure('plugin.unload')
+    unload: protectedProcedure(ScopeName.PluginUnload)
       .input(z.object({ shortPath: z.string() }))
       .mutation(async ({ input, ctx }) => {
         const { omegga } = getContextDeps();
@@ -123,7 +124,7 @@ export const pluginRouter = router({
         return await plugin.unload();
       }),
 
-    load: protectedProcedure('plugin.load')
+    load: protectedProcedure(ScopeName.PluginLoad)
       .input(z.object({ shortPath: z.string() }))
       .mutation(async ({ input, ctx }) => {
         const { omegga } = getContextDeps();
@@ -139,7 +140,7 @@ export const pluginRouter = router({
         return await plugin.load();
       }),
 
-    toggle: protectedProcedure('plugin.toggle')
+    toggle: protectedProcedure(ScopeName.PluginToggle)
       .input(z.object({ shortPath: z.string(), enabled: z.boolean() }))
       .mutation(({ input, ctx }) => {
         const { omegga } = getContextDeps();
@@ -169,7 +170,7 @@ export const pluginRouter = router({
         }
       }),
 
-    onStatus: protectedProcedure('plugin.onStatus').subscription(
+    onStatus: protectedProcedure(ScopeName.PluginList).subscription(
       async function* () {
         for await (const [payload] of on(serverEvents, 'plugin')) {
           yield payload as {

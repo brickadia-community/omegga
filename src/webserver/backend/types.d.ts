@@ -117,6 +117,16 @@ export interface IStoreUser {
   roles: string[];
   playerId: string;
   isBanned?: boolean;
+  permissions?: import('./permissions').PermissionSet;
+}
+
+export interface IStoreDefaultPermissions {
+  type: 'defaultPermissions';
+  root: import('./permissions').RootLevel;
+  domains: Partial<
+    Record<import('./scopes').Domain, import('./permissions').DomainLevel>
+  >;
+  scopes: Partial<Record<import('./scopes').Scope, boolean>>;
 }
 
 export interface IPunchcard {

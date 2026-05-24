@@ -12,6 +12,18 @@
   z-index: 10;
 }
 
+.no-permissions-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  color: theme.$br-element-fg;
+  font-size: 24px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
 .react-grid-layout {
   position: absolute;
   left: 0;

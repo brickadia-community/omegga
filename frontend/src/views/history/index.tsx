@@ -7,6 +7,7 @@ import {
   PageContent,
   SideNav,
 } from '@components';
+import { useRequireDomain } from '@hooks';
 import {
   IconArrowLeft,
   IconArrowRight,
@@ -20,6 +21,7 @@ import React, {
   useState,
 } from 'react';
 import { useRoute } from 'wouter';
+import { Domains } from '../../permissions';
 import { trpc, type RouterOutputs } from '../../trpc';
 
 type ChatHistoryItem = RouterOutputs['chat']['history'][number];
@@ -49,6 +51,7 @@ const sorted = (obj: Record<number, any>, reverse = false) =>
     .sort((a, b) => (reverse ? b - a : a - b));
 
 export const HistoryView = () => {
+  const canAccess = useRequireDomain(Domains.Chat);
   const [_, params] = useRoute('/history/:time?');
   const paramTime = params?.time;
 
@@ -271,6 +274,8 @@ export const HistoryView = () => {
 
   const numDays = new Date(year, month + 1, 0).getDate();
   const startDay = new Date(year, month, 1).getDay();
+
+  if (!canAccess) return null;
 
   return (
     <>

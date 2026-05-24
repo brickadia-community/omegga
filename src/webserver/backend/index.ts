@@ -41,7 +41,7 @@ export default class Webserver {
   created: Promise<boolean>;
 
   serverStatusInterval: ReturnType<typeof setInterval>;
-  lastReportedStatus: IServerStatus;
+  lastReportedStatus: IServerStatus | null = null;
 
   dataPath: string;
 

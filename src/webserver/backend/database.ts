@@ -10,11 +10,17 @@ import Datastore from 'nedb-promises';
 import path from 'path';
 import Calendar from './calendar';
 import {
+  EMPTY_PERMISSIONS,
+  RootLevel,
+  type PermissionSet,
+} from './permissions';
+import {
   IPlayer,
   IPunchcard,
   IStoreAutoRestartConfig,
   IStoreBanHistory,
   IStoreChat,
+  IStoreDefaultPermissions,
   IStoreKickHistory,
   IStoreServerInstance,
   IStoreUser,
@@ -52,6 +58,7 @@ export default class Database extends EventEmitter {
     status: Datastore;
     server: Datastore;
   };
+  defaultPermissionsCache: IStoreDefaultPermissions | null = null;
   calendar: Calendar;
 
   constructor(options: IServerConfig, omegga: Omegga) {
@@ -97,11 +104,11 @@ export default class Database extends EventEmitter {
   async doMigrations() {
     // current store versions
     const storeVersions: { [key: keyof typeof this.stores]: number } = {
-      users: 1,
+      users: 2,
       chat: 1,
       players: 1,
       status: 1,
-      server: 1,
+      server: 2,
 
       // example version
       dummy: 10,
@@ -114,11 +121,66 @@ export default class Database extends EventEmitter {
         upgrade: (store: Datastore) => Promise<void>;
       }[];
     } = {
-      users: [],
+      users: [
+        {
+          version: 1,
+          upgrade: async (store: Datastore) => {
+            const users = await store.find<IStoreUser & { _id: string }>({
+              type: 'user',
+            });
+            for (const user of users) {
+              const p = (user.permissions as any) ?? EMPTY_PERMISSIONS;
+              const root =
+                p.root === 'all' || p.root === 'read' ? p.root : 'off';
+              const domains: Record<string, string> = {};
+              for (const [k, v] of Object.entries(p.domains ?? {})) {
+                if (v !== 'unset' && v !== 'none') domains[k] = v as string;
+              }
+              const scopes: Record<string, boolean> = {};
+              for (const [k, v] of Object.entries(p.scopes ?? {})) {
+                if (v === 'enabled' || v === true) scopes[k] = true;
+                else if (v === 'disabled' || v === false) scopes[k] = false;
+              }
+              await store.update(
+                { _id: user._id },
+                {
+                  $set: {
+                    permissions: { root, domains, scopes },
+                  },
+                },
+              );
+            }
+          },
+        },
+      ],
       chat: [],
       players: [],
       status: [],
-      server: [],
+      server: [
+        {
+          version: 1,
+          upgrade: async (store: Datastore) => {
+            const doc = await store.findOne<any>({
+              type: 'defaultPermissions',
+            });
+            if (!doc) return;
+            const root = doc.root === 'unset' ? 'off' : doc.root;
+            const domains: Record<string, string> = {};
+            for (const [k, v] of Object.entries(doc.domains ?? {})) {
+              if (v !== 'unset') domains[k] = v as string;
+            }
+            const scopes: Record<string, boolean> = {};
+            for (const [k, v] of Object.entries(doc.scopes ?? {})) {
+              if (v === 'enabled') scopes[k] = true;
+              else if (v === 'disabled') scopes[k] = false;
+            }
+            await store.update(
+              { _id: doc._id },
+              { $set: { root, domains, scopes } },
+            );
+          },
+        },
+      ],
 
       // example migration list (all version upgrades go up by 1)
       dummy: [
@@ -140,8 +202,8 @@ export default class Database extends EventEmitter {
         if (!versionEntry) {
           store.insert({ type: 'storeVersion', version: expected });
 
-          // if the version was not what was expected
-        } else if (expected !== versionEntry.version) {
+          // if the version is below the expected version
+        } else if (versionEntry.version < expected) {
           // while the version is below the expected version
           let { version } = versionEntry;
           for (; version < expected; version++) {
@@ -286,6 +348,7 @@ export default class Database extends EventEmitter {
       // permissions
       isOwner: true,
       roles: [],
+      permissions: EMPTY_PERMISSIONS,
 
       // brickadia player uuid
       playerId: '',
@@ -303,7 +366,7 @@ export default class Database extends EventEmitter {
     if (await this.userExists(username)) throw new Error('user already exists');
 
     const hash = await this.hash(password);
-    // create an owner user
+    // create a regular user
     const user = this.stores.users.insert<IStoreUser>({
       // this is a user
       type: 'user',
@@ -317,6 +380,7 @@ export default class Database extends EventEmitter {
       // permissions
       isOwner: false,
       roles: [],
+      permissions: EMPTY_PERMISSIONS,
 
       // brickadia player uuid
       playerId: '',
@@ -347,6 +411,41 @@ export default class Database extends EventEmitter {
     return await this.stores.users.remove({ type: 'user', username }, {});
   }
 
+  async setUserPermissions(username: string, permissions: PermissionSet) {
+    return await this.stores.users.update(
+      { type: 'user', username },
+      { $set: { permissions } },
+    );
+  }
+
+  async getDefaultPermissions(): Promise<IStoreDefaultPermissions> {
+    if (this.defaultPermissionsCache) return this.defaultPermissionsCache;
+    let doc = await this.stores.server.findOne<IStoreDefaultPermissions>({
+      type: 'defaultPermissions',
+    });
+    if (!doc) {
+      doc = await this.stores.server.insert<IStoreDefaultPermissions>({
+        type: 'defaultPermissions',
+        root: RootLevel.Read,
+        domains: {},
+        scopes: {},
+      });
+    }
+    this.defaultPermissionsCache = doc;
+    return doc;
+  }
+
+  async setDefaultPermissions(
+    permissions: Omit<IStoreDefaultPermissions, 'type'>,
+  ) {
+    await this.stores.server.update(
+      { type: 'defaultPermissions' },
+      { $set: { ...permissions } },
+      { upsert: true },
+    );
+    this.defaultPermissionsCache = null;
+  }
+
   // get a user from credentials
   async authUser(username: string, password: string) {
     const user = await this.stores.users.findOne<IStoreUser>({ username });
@@ -369,7 +468,7 @@ export default class Database extends EventEmitter {
 
   // find a user by object id
   async findUserById(id: string) {
-    return await this.stores.users.findOne<IStoreUser>({
+    const user = await this.stores.users.findOne<IStoreUser>({
       $or: [
         // the owner has no username, so everyone is the owner
         { type: 'user', username: '', isOwner: true },
@@ -378,6 +477,10 @@ export default class Database extends EventEmitter {
         { type: 'user', _id: id },
       ],
     });
+    if (user && !user.permissions) {
+      user.permissions = EMPTY_PERMISSIONS;
+    }
+    return user;
   }
 
   // get a list of roles
@@ -604,7 +707,7 @@ export default class Database extends EventEmitter {
   }
 
   // add a user to the visit history, returns true if this is a first visit
-  async addVisit(user: IPlayer) {
+  async addVisit(user: Required<IPlayer>) {
     const existing = await this.stores.players.findOne<IUserHistory>({
       type: 'userHistory',
       id: user.id,

@@ -1,0 +1,204 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.permission-editor {
+  .perm-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 10px;
+    min-height: 40px;
+
+    &.root-row {
+      background-color: theme.$br-bg-header;
+    }
+
+    &.domain-row {
+      background-color: theme.$br-bg-header;
+      position: sticky;
+      top: 32px;
+      z-index: 5;
+    }
+
+    &.scope-row {
+      padding-left: 16px;
+
+      &.even {
+        background-color: theme.$br-bg-secondary;
+      }
+      &.odd {
+        background-color: theme.$br-bg-secondary-alt;
+      }
+    }
+  }
+
+  .perm-label {
+    color: theme.$br-element-fg;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &.root-label {
+      color: white;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    &.domain-label {
+      cursor: pointer;
+      color: white;
+      font-weight: bold;
+      user-select: none;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+
+  .scope-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    margin-right: 8px;
+  }
+
+  .scope-name {
+    color: white;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+  }
+
+  .scope-desc {
+    color: theme.$br-element-fg;
+    font-size: 13px;
+    font-weight: bold;
+  }
+
+  .scope-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    margin-right: 6px;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 3px;
+    flex-shrink: 0;
+
+    &.read {
+      background-color: rgba(theme.$br-info-normal, 0.3);
+      color: theme.$br-info-normal;
+    }
+    &.write {
+      background-color: rgba(theme.$br-warn-normal, 0.3);
+      color: theme.$br-warn-normal;
+    }
+  }
+
+  .inherited {
+    display: inline-flex;
+    align-items: center;
+
+    &.on {
+      color: theme.$br-main-normal;
+    }
+  }
+
+  .scope-controls {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+  }
+
+  .level-picker {
+    display: flex;
+    flex-shrink: 0;
+
+    &.dimmed {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .level-option {
+      border: none;
+      padding: 0 8px;
+      height: 28px;
+      line-height: 28px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: bold;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 0;
+      color: theme.$br-boring-button-fg;
+      @include mixins.br-button(
+        theme.$br-bg-primary,
+        theme.$br-element-hover,
+        theme.$br-element-pressed
+      );
+
+      &.first {
+        border-radius: theme.$br-radius-sm 0 0 theme.$br-radius-sm;
+      }
+
+      &.last {
+        border-radius: 0 theme.$br-radius-sm theme.$br-radius-sm 0;
+      }
+
+      &.active {
+        color: white;
+
+        &.level-all,
+        &.level-everything {
+          @include mixins.br-button(
+            theme.$br-main-normal,
+            theme.$br-main-hover,
+            theme.$br-main-pressed
+          );
+        }
+        &.level-read {
+          @include mixins.br-button(
+            theme.$br-info-normal,
+            theme.$br-info-hover,
+            theme.$br-info-pressed
+          );
+        }
+        &.level-none,
+        &.level-off,
+        &.level-manual {
+          @include mixins.br-button(#2a9d8f, #3dbdad, #1e7268);
+        }
+      }
+    }
+  }
+}
+
+.players-container .players-list {
+  border-bottom-left-radius: theme.$br-radius-md;
+  border-bottom-right-radius: theme.$br-radius-md;
+  overflow: hidden;
+}
+
+.player-inspector-container {
+  .player-inspector.has-footer {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+}
+
+@media screen and (max-width: 1024px) {
+  .default-perms-standalone {
+    display: none !important;
+  }
+
+  .default-perms-dropdown.hidden {
+    display: flex !important;
+  }
+}

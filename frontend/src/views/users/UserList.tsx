@@ -14,7 +14,6 @@ import {
   Scroll,
   SideNav,
   SortIcons,
-  useConfirm,
 } from '@components';
 import { useStore } from '@nanostores/react';
 import {
@@ -23,27 +22,42 @@ import {
   IconArrowLeft,
   IconArrowRight,
   IconBan,
-  IconCirclePlus,
+  IconCaretDown,
+  IconCaretUp,
   IconLock,
   IconRotate,
-  IconTrash,
+  IconShield,
   IconUserPlus,
   IconX,
 } from '@tabler/icons-react';
-import { debounce, duration, logout } from '@utils';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useRoute } from 'wouter';
-import { $omeggaData, $user } from '../../stores/user';
+import { useHasScope } from '@hooks';
+import { duration, logout } from '@utils';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { Route, Switch, useLocation, useRoute } from 'wouter';
+import { UserInspector } from './UserInspector';
+import { DefaultPermissions } from './DefaultPermissions';
+import { Domains, Permissions } from '../../permissions';
+import { $omeggaData, $user, $usersRefresh } from '../../stores/user';
 import { trpc } from '../../trpc';
+
+const ACTION_CHANGE_PASSWORD = 'Change Password';
+const ACTION_ENABLE_USERS = 'Enable Users';
+const ACTION_ADD_USER = 'Add User';
+const ACTION_DEFAULT_PERMS = 'Default Permissions';
 
 export const UserList = () => {
   const userless = useStore($omeggaData)?.userless;
   const myUser = useStore($user);
 
+  const canList = useHasScope(Permissions.UserList);
+  const canCreate = useHasScope(Permissions.UserCreate);
+  const canEditPerms = useHasScope(Permissions.UserPermissions);
+
   const [pages, setPages] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<GetUsersRes['users']>([]);
+  const [search, setSearch] = useState('');
 
   const [error, setError] = useState('');
   const [username, setUsername] = useState('');
@@ -54,34 +68,42 @@ export const UserList = () => {
   const [showCreateUser, setShowCreateUser] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
 
-  // const [userLookup, setUserLookup] = useState<
-  //   Record<string, GetUsersRes['users'][number]>
-  // >({});
-
   const [_location, navigate] = useLocation();
   const [_match, params] = useRoute('/users/:id?');
 
   const utils = trpc.useUtils();
   const createMutation = trpc.user.create.useMutation();
   const passwdMutation = trpc.user.passwd.useMutation();
-  const banMutation = trpc.user.ban.useMutation();
-  const deleteMutation = trpc.user.delete.useMutation();
-  const banConfirm = useConfirm();
-  const deleteConfirm = useConfirm();
+
+  const [showActions, setShowActions] = useState(false);
+
+  const openCredentials = () => {
+    setShowActions(false);
+    setShowCredentials(true);
+    setShowCreateUser(false);
+    if (!userless) setUsername(myUser?.username ?? '');
+    setError('');
+  };
+
+  const openCreateUser = () => {
+    setShowActions(false);
+    setShowCreateUser(true);
+    setShowCredentials(false);
+    setUsername('');
+    setError('');
+  };
+
+  const openDefaultPerms = () => {
+    setShowActions(false);
+    navigate('/users/_defaults');
+  };
 
   const query = useRef({
     page: 0,
-    search: '',
     sort: 'lastSeen',
     direction: -1,
   });
-  const { page, search, sort, direction } = query.current;
-  const [_searchKey, setSearchKey] = useState(0);
-  const setSearch = (search: string) => {
-    query.current.search = search;
-    doSearch();
-    setSearchKey(k => k + 1);
-  };
+  const { page, sort, direction } = query.current;
   const setPage = (page: number | ((old: number) => number)) => {
     if (typeof page === 'function') page = page(query.current.page);
     query.current.page = page;
@@ -94,37 +116,25 @@ export const UserList = () => {
 
   const getUsers = async () => {
     setLoading(true);
-    const { page, search, sort, direction } = query.current;
+    const { page, sort, direction } = query.current;
     const { users, total, pages } = await utils.user.list.fetch({
       page,
-      search,
+      search: '',
       sort,
       direction,
     });
     setPages(pages);
     setTotal(total);
     setUsers(users);
-    // setUserLookup(prev => ({
-    //   ...prev,
-    //   ...Object.fromEntries(users.map(u => [u.username, u])),
-    // }));
     setLoading(false);
   };
   const getUsersRef = useRef<() => Promise<void>>(getUsers);
   getUsersRef.current = getUsers;
 
+  const usersRefresh = useStore($usersRefresh);
   useEffect(() => {
     getUsers();
-  }, []);
-
-  const doSearch = useMemo(
-    () =>
-      debounce(() => {
-        query.current.page = 0;
-        getUsersRef.current?.();
-      }, 500),
-    [],
-  );
+  }, [usersRefresh]);
 
   // update table sort direction
   const setSort = (s: string) => {
@@ -140,26 +150,11 @@ export const UserList = () => {
     getUsers();
   };
 
-  // const selectedUser = useMemo(() => {
-  //   if (!params?.id) return null;
-  //   const user =
-  //     userLookup[params.id] ?? users.find(u => u.username === params.id);
-  //   return user ?? null;
-  // }, [params?.id, userLookup, users]);
-
-  const toggleAddUser = () => {
-    setShowCreateUser(!showCreateUser);
-    setShowCredentials(false);
-    setUsername('');
-    setError('');
-  };
-
-  const toggleCredentials = () => {
-    setShowCredentials(!showCredentials);
-    setShowCreateUser(false);
-    if (!userless) setUsername(myUser?.username ?? '');
-    setError('');
-  };
+  const filteredUsers = useMemo(() => {
+    if (!search) return users;
+    const q = search.toLowerCase();
+    return users.filter(u => (u.username || 'Admin').toLowerCase().includes(q));
+  }, [users, search]);
 
   const hideModals = () => {
     setShowCreateUser(false);
@@ -187,7 +182,13 @@ export const UserList = () => {
       setModalLoading(false);
       if (!err) {
         if (showCredentials && userless) logout();
-        else hideModals();
+        else {
+          const wasCreate = showCreateUser;
+          const createdName = username;
+          hideModals();
+          await getUsers();
+          if (wasCreate) navigate(`/users/${createdName}`);
+        }
         return;
       }
     } catch (e) {
@@ -196,59 +197,127 @@ export const UserList = () => {
     setError(err);
   };
 
-  const handleBan = async (username: string, currentlyBanned: boolean) => {
-    const action = currentlyBanned ? 're-enable' : 'disable';
-    if (!(await banConfirm.prompt(`${action} user "${username}"`))) return;
-    const err = await banMutation.mutateAsync({
-      username,
-      banned: !currentlyBanned,
-    });
-    if (err) setError(err);
-    else getUsers();
-  };
-
-  const handleDelete = async (username: string) => {
-    if (
-      !(await deleteConfirm.prompt(`permanently delete user "${username}"`))
-    )
-      return;
-    const err = await deleteMutation.mutateAsync({ username });
-    if (err) setError(err);
-    else getUsers();
-  };
-
   const ok = useMemo(() => {
     const nameOk = username.length !== 0 || !(showCredentials && !userless);
     return username.match(/^\w{0,32}$/) && nameOk && password.length !== 0;
   }, [username, password, showCredentials, userless]);
 
+  if (!canList) {
+    return (
+      <>
+        <NavHeader title="Account">
+          <div className="widgets-container">
+            <Button normal boxy onClick={() => setShowActions(!showActions)}>
+              {showActions ? <IconCaretUp /> : <IconCaretDown />}
+              Actions
+            </Button>
+            <div
+              className="widgets-list"
+              style={{ display: showActions ? 'block' : 'none' }}
+            >
+              <Button info onClick={openCredentials}>
+                <IconLock />
+                {ACTION_CHANGE_PASSWORD}
+              </Button>
+            </div>
+          </div>
+        </NavHeader>
+        <PageContent>
+          <SideNav />
+          <div className="generic-container players-container">
+            <UserInspector selfUser={myUser?.username} />
+          </div>
+          <Dimmer visible={showCredentials}>
+            <Loader active={modalLoading} size="huge">
+              Submitting
+            </Loader>
+            <Modal visible={!modalLoading}>
+              <Header>Update Credentials</Header>
+              <PopoutContent>
+                <p>Updating credentials for user "{username}"</p>
+                {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+              </PopoutContent>
+              <div className="popout-inputs">
+                <Input
+                  placeholder="password"
+                  type="password"
+                  value={password}
+                  onChange={p => setPassword(p)}
+                />
+                <Input
+                  placeholder="confirm password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={p => setConfirmPassword(p)}
+                />
+              </div>
+              <Footer>
+                <Button
+                  main
+                  disabled={!password.length || confirmPassword !== password}
+                  onClick={() => submit()}
+                >
+                  <IconLock />
+                  Update
+                </Button>
+                <div style={{ flex: 1 }} />
+                <Button normal onClick={hideModals}>
+                  <IconX />
+                  Cancel
+                </Button>
+              </Footer>
+            </Modal>
+          </Dimmer>
+        </PageContent>
+      </>
+    );
+  }
+
   return (
     <>
       <NavHeader title="Users">
-        <span style={{ flex: 1 }} />
-        <Button
-          normal
-          data-tooltip={userless ? 'Enable user sign-in' : 'Change password'}
-          onClick={toggleCredentials}
-        >
-          {userless ? (
-            <>
-              <IconCirclePlus />
-              Enable Users
-            </>
-          ) : (
-            <>
-              <IconLock />
-              Change Password
-            </>
-          )}
-        </Button>
-        {!userless && myUser?.isOwner && (
-          <Button normal onClick={toggleAddUser} data-tooltip="Add a new user">
-            <IconUserPlus />
-            Add User
+        {!userless && canEditPerms && (
+          <Button
+            normal
+            boxy
+            className="default-perms-standalone"
+            onClick={openDefaultPerms}
+          >
+            <IconShield />
+            {ACTION_DEFAULT_PERMS}
           </Button>
         )}
+        <div className="widgets-container">
+          <Button normal boxy onClick={() => setShowActions(!showActions)}>
+            {showActions ? <IconCaretUp /> : <IconCaretDown />}
+            Actions
+          </Button>
+          <div
+            className="widgets-list"
+            style={{ display: showActions ? 'block' : 'none' }}
+          >
+            {!userless && canEditPerms && (
+              <Button
+                normal
+                className="default-perms-dropdown hidden"
+                onClick={openDefaultPerms}
+              >
+                <IconShield />
+                {ACTION_DEFAULT_PERMS}
+              </Button>
+            )}
+            <Button info onClick={openCredentials}>
+              <IconLock />
+              {userless ? ACTION_ENABLE_USERS : ACTION_CHANGE_PASSWORD}
+            </Button>
+            {!userless && canCreate && (
+              <Button main onClick={openCreateUser}>
+                <IconUserPlus />
+                {ACTION_ADD_USER}
+              </Button>
+            )}
+          </div>
+        </div>
       </NavHeader>
       <PageContent>
         <SideNav />
@@ -259,7 +328,7 @@ export const UserList = () => {
                 type="text"
                 placeholder="Search Users..."
                 value={search}
-                onChange={setSearch}
+                onChange={s => setSearch(s)}
               />
               <span style={{ flex: 1 }} />
               <Button
@@ -315,15 +384,10 @@ export const UserList = () => {
                           />
                         </span>
                       </th>
-                      {!userless && myUser?.isOwner && (
-                        <th style={{ width: 1 }}>
-                          <span>Actions</span>
-                        </th>
-                      )}
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map(u => (
+                    {filteredUsers.map(u => (
                       <tr
                         onClick={() => navigate(`/users/${u.username}`)}
                         className={u.username === params?.id ? 'active' : ''}
@@ -355,47 +419,12 @@ export const UserList = () => {
                         >
                           {duration(u.createdAgo)}
                         </td>
-                        {!userless && myUser?.isOwner && (
-                          <td
-                            style={{ whiteSpace: 'nowrap' }}
-                            onClick={e => e.stopPropagation()}
-                          >
-                            {!u.isOwner &&
-                              u.username !== myUser?.username && (
-                                <>
-                                  <Button
-                                    icon
-                                    normal={!u.isBanned}
-                                    warn={!!u.isBanned}
-                                    data-tooltip={
-                                      u.isBanned
-                                        ? 'Re-enable user'
-                                        : 'Disable user'
-                                    }
-                                    onClick={() =>
-                                      handleBan(u.username, !!u.isBanned)
-                                    }
-                                  >
-                                    <IconBan />
-                                  </Button>
-                                  <Button
-                                    icon
-                                    error
-                                    data-tooltip="Delete user"
-                                    onClick={() => handleDelete(u.username)}
-                                  >
-                                    <IconTrash />
-                                  </Button>
-                                </>
-                              )}
-                          </td>
-                        )}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </Scroll>
-              <Footer className="pagination-footer">
+              <Footer className="pagination-footer" attached>
                 <Button
                   icon
                   normal
@@ -419,7 +448,7 @@ export const UserList = () => {
                     Page {page + 1} of {pages}
                   </div>
                   <div>
-                    Showing {users.length} of {total}
+                    Showing {filteredUsers.length} of {total}
                   </div>
                 </div>
                 <Button
@@ -446,10 +475,16 @@ export const UserList = () => {
               </Loader>
             </div>
           </div>
-          {/* <div className="player-inspector-container">
-            <NavBar>{selectedUserName}</NavBar>
-            <div className="player-inspector"></div>
-          </div> */}
+          <Switch>
+            <Route path="/users/_defaults" component={DefaultPermissions} />
+            <Route path="/users/:id" component={UserInspector} />
+            <Route>
+              <div className="player-inspector-container">
+                <NavBar attached>SELECT A USER</NavBar>
+                <div className="player-inspector" />
+              </div>
+            </Route>
+          </Switch>
           <Dimmer visible={showCredentials || showCreateUser}>
             <Loader active={modalLoading} size="huge">
               Submitting
@@ -469,7 +504,7 @@ export const UserList = () => {
                   </>
                 )}
                 {!userless && showCredentials && (
-                  <p>Updating credentials for user "{username}""</p>
+                  <p>Updating credentials for user "{username}"</p>
                 )}
                 {showCreateUser && (
                   <p>
@@ -521,8 +556,6 @@ export const UserList = () => {
           </Dimmer>
         </div>
       </PageContent>
-      {banConfirm.children}
-      {deleteConfirm.children}
     </>
   );
 };

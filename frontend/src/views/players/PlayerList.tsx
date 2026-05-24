@@ -21,13 +21,16 @@ import {
   IconMapPin,
   IconRotate,
 } from '@tabler/icons-react';
+import { useRequireDomain } from '@hooks';
 import { debounce, duration, heartbeatAgo } from '@utils';
 import { useMemo, useRef, useState } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
+import { Domains } from '../../permissions';
 import { trpc } from '../../trpc';
 import { PlayerInspector } from './PlayerInspector';
 
 export const PlayerList = () => {
+  const canAccess = useRequireDomain(Domains.Player);
   const [showFilters, setShowFilters] = useState(false);
 
   const [_location, navigate] = useLocation();
@@ -115,6 +118,8 @@ export const PlayerList = () => {
     }
     triggerFetch();
   };
+
+  if (!canAccess) return null;
 
   return (
     <>

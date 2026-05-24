@@ -11,6 +11,7 @@ import {
   PopoutContent,
   Scroll,
 } from '@components';
+import { useHasScope } from '@hooks';
 import {
   IconBackspace,
   IconBan,
@@ -23,6 +24,7 @@ import {
 import { duration, heartbeatAgo, isoDate, isoTime } from '@utils';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useRoute } from 'wouter';
+import { Permissions } from '../../permissions';
 import { trpc } from '../../trpc';
 
 const UNIT_SCALARS = {
@@ -52,6 +54,11 @@ export const PlayerInspector = () => {
   const [banDuration, setBanDuration] = useState(10);
   const [banUnit, setBanUnit] = useState('Permanent');
   const [actionLoading, setActionLoading] = useState(false);
+
+  const canBan = useHasScope(Permissions.PlayerBan);
+  const canKick = useHasScope(Permissions.PlayerKick);
+  const canUnban = useHasScope(Permissions.PlayerUnban);
+  const canClearBricks = useHasScope(Permissions.PlayerClearBricks);
 
   const {
     data: player,
@@ -147,19 +154,21 @@ export const PlayerInspector = () => {
               className="widgets-list"
               style={{ display: showActions ? 'block' : 'none' }}
             >
-              <Button
-                boxy
-                warn
-                disabled={actionLoading}
-                onClick={() => {
-                  setModal('clear');
-                  setShowActions(false);
-                }}
-              >
-                <IconEraser />
-                Clear Bricks
-              </Button>
-              {!player.isHost && player.isOnline && (
+              {canClearBricks && (
+                <Button
+                  boxy
+                  warn
+                  disabled={actionLoading}
+                  onClick={() => {
+                    setModal('clear');
+                    setShowActions(false);
+                  }}
+                >
+                  <IconEraser />
+                  Clear Bricks
+                </Button>
+              )}
+              {canKick && !player.isHost && player.isOnline && (
                 <Button
                   boxy
                   error
@@ -173,7 +182,7 @@ export const PlayerInspector = () => {
                   Kick
                 </Button>
               )}
-              {player.currentBan && (
+              {canUnban && player.currentBan && (
                 <Button
                   boxy
                   warn
@@ -187,7 +196,7 @@ export const PlayerInspector = () => {
                   Unban
                 </Button>
               )}
-              {!player.isHost && (
+              {canBan && !player.isHost && (
                 <Button
                   boxy
                   error

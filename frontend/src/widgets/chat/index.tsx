@@ -1,8 +1,10 @@
 import { Button, Footer, Input, Scroll, UserName } from '@components';
 import type { IStoreChat } from '@backend/types';
+import { useHasScope } from '@hooks';
 import { IconSend } from '@tabler/icons-react';
 import Linkify from 'linkify-react';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Permissions } from '../../permissions';
 import { trpc } from '../../trpc';
 
 type ChatEntry = IStoreChat & {
@@ -12,6 +14,7 @@ type ChatEntry = IStoreChat & {
 };
 
 export const ChatWidget = () => {
+  const canSend = useHasScope(Permissions.ChatSend);
   const [chats, setChats] = useState<ChatEntry[]>([]);
   const [message, setMessage] = useState('');
   const ref = useRef<HTMLDivElement | null>(null);
@@ -90,25 +93,27 @@ export const ChatWidget = () => {
           ))}
         </div>
       </Scroll>
-      <form onSubmit={sendMessage}>
-        <Footer>
-          <Input
-            roboto
-            type="text"
-            placeholder="Message"
-            value={message}
-            onChange={v => setMessage(v)}
-          />
-          <Button
-            normal
-            icon
-            style={{ marginLeft: '10px' }}
-            onClick={sendMessage}
-          >
-            <IconSend />
-          </Button>
-        </Footer>
-      </form>
+      {canSend && (
+        <form onSubmit={sendMessage}>
+          <Footer>
+            <Input
+              roboto
+              type="text"
+              placeholder="Message"
+              value={message}
+              onChange={v => setMessage(v)}
+            />
+            <Button
+              normal
+              icon
+              style={{ marginLeft: '10px' }}
+              onClick={sendMessage}
+            >
+              <IconSend />
+            </Button>
+          </Footer>
+        </form>
+      )}
     </div>
   );
 };

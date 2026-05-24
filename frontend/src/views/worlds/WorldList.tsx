@@ -10,6 +10,7 @@ import {
   SideNav,
   useConfirm,
 } from '@components';
+import { useHasScope, useRequireDomain } from '@hooks';
 import { useStore } from '@nanostores/react';
 import {
   IconCaretDown,
@@ -27,6 +28,7 @@ import {
 } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { Link, useRoute } from 'wouter';
+import { Domains, Permissions } from '../../permissions';
 import { useServerLiveness } from '../../stores/liveness';
 import { $activeWorld, $nextWorld } from '../../stores/worlds';
 import { trpc } from '../../trpc';
@@ -35,6 +37,7 @@ import { WorldInspector } from './WorldInspector';
 const MAP_OPTIONS = ['Plate', 'Space', 'Studio', 'Peaks'];
 
 export const WorldList = () => {
+  const canAccess = useRequireDomain(Domains.World);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [worlds, setWorlds] = useState<string[]>([]);
@@ -42,6 +45,10 @@ export const WorldList = () => {
   const nextWorld = useStore($nextWorld);
   const activeWorld = useStore($activeWorld);
   const [showWidgets, setShowWidgets] = useState(false);
+
+  const canSave = useHasScope(Permissions.WorldSave);
+  const canCreate = useHasScope(Permissions.WorldCreate);
+  const canUse = useHasScope(Permissions.WorldUse);
 
   const liveness = useServerLiveness();
 
@@ -171,10 +178,12 @@ export const WorldList = () => {
     ),
   });
 
+  if (!canAccess) return null;
+
   return (
     <>
       <NavHeader title="Worlds">
-        <div className="widgets-container worlds">
+        {(canSave || canCreate || canUse) && <div className="widgets-container worlds">
           <Button
             normal
             boxy
@@ -188,66 +197,74 @@ export const WorldList = () => {
             className="widgets-list"
             style={{ display: showWidgets ? 'block' : 'none' }}
           >
-            <Button
-              info
-              disabled={waiting || !liveness.started}
-              data-tooltip="Save the currently loaded world"
-              onClick={() => {
-                setShowWidgets(false);
-                saveWorld();
-              }}
-            >
-              <IconDeviceFloppy />
-              Save World
-            </Button>
-            <Button
-              normal
-              disabled={waiting || !liveness.started}
-              data-tooltip="Save a copy of the currently loaded world"
-              onClick={() => {
-                setShowWidgets(false);
-                setWorldName(null);
-                saveAsConfirm.prompt().then(name => {
-                  name && saveWorldAs(name);
-                });
-              }}
-            >
-              <IconClipboardPlus />
-              Save As
-            </Button>
-            <Button
-              main
-              disabled={waiting || !liveness.started}
-              data-tooltip="Create a new world"
-              onClick={() => {
-                setShowWidgets(false);
-                setWorldName(null);
-                setNewMap('Plate');
-                newMapConfirm.prompt().then(data => {
-                  if (data) {
-                    createWorld(data.name, data.map);
-                  }
-                });
-              }}
-            >
-              <IconWorldPlus />
-              New World
-            </Button>
-            <Button
-              normal={activeWorld === null}
-              warn={activeWorld !== null}
-              disabled={waiting || !activeWorld}
-              data-tooltip="Remove the default world for the server (on startup)"
-              onClick={() => {
-                setShowWidgets(false);
-                clearActiveWorld();
-              }}
-            >
-              <IconStarOff />
-              Clear Default
-            </Button>
+            {canSave && (
+              <Button
+                info
+                disabled={waiting || !liveness.started}
+                data-tooltip="Save the currently loaded world"
+                onClick={() => {
+                  setShowWidgets(false);
+                  saveWorld();
+                }}
+              >
+                <IconDeviceFloppy />
+                Save World
+              </Button>
+            )}
+            {canSave && (
+              <Button
+                normal
+                disabled={waiting || !liveness.started}
+                data-tooltip="Save a copy of the currently loaded world"
+                onClick={() => {
+                  setShowWidgets(false);
+                  setWorldName(null);
+                  saveAsConfirm.prompt().then(name => {
+                    name && saveWorldAs(name);
+                  });
+                }}
+              >
+                <IconClipboardPlus />
+                Save As
+              </Button>
+            )}
+            {canCreate && (
+              <Button
+                main
+                disabled={waiting || !liveness.started}
+                data-tooltip="Create a new world"
+                onClick={() => {
+                  setShowWidgets(false);
+                  setWorldName(null);
+                  setNewMap('Plate');
+                  newMapConfirm.prompt().then(data => {
+                    if (data) {
+                      createWorld(data.name, data.map);
+                    }
+                  });
+                }}
+              >
+                <IconWorldPlus />
+                New World
+              </Button>
+            )}
+            {canUse && (
+              <Button
+                normal={activeWorld === null}
+                warn={activeWorld !== null}
+                disabled={waiting || !activeWorld}
+                data-tooltip="Remove the default world for the server (on startup)"
+                onClick={() => {
+                  setShowWidgets(false);
+                  clearActiveWorld();
+                }}
+              >
+                <IconStarOff />
+                Clear Default
+              </Button>
+            )}
           </div>
-        </div>
+        </div>}
       </NavHeader>
       <PageContent>
         <SideNav />

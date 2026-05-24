@@ -8,6 +8,7 @@ import {
   Scroll,
   SideNav,
 } from '@components';
+import { useHasScope, useRequireDomain } from '@hooks';
 import {
   IconAlertCircle,
   IconBug,
@@ -18,6 +19,7 @@ import {
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useRoute } from 'wouter';
+import { Domains, Permissions } from '../../permissions';
 import { trpc } from '../../trpc';
 import { PluginInspector } from './PluginInspector';
 
@@ -49,9 +51,12 @@ const pluginStateFromInfo = (info: PluginInfo) => {
 type PluginRenderInfo = ReturnType<typeof pluginStateFromInfo>;
 
 export const PluginList = () => {
+  const canAccess = useRequireDomain(Domains.Plugin);
   const [search, setSearch] = useState('');
   const [reloading, setReloading] = useState(false);
   const [plugins, setPlugins] = useState<any[]>([]);
+
+  const canReloadAll = useHasScope(Permissions.PluginReloadAll);
 
   const [_location, params] = useRoute('/plugins/:id?');
   const selectedPluginName = useMemo(
@@ -80,6 +85,7 @@ export const PluginList = () => {
     setReloading(true);
     await reloadAllMutation.mutateAsync();
     setReloading(false);
+    getPlugins();
   };
 
   const matches = (plugin: PluginRenderInfo) =>
@@ -94,19 +100,23 @@ export const PluginList = () => {
     },
   });
 
+  if (!canAccess) return null;
+
   return (
     <>
       <NavHeader title="Plugins">
         <span style={{ flex: 1 }} />
-        <Button
-          warn
-          disabled={reloading}
-          onClick={reloadPlugins}
-          data-tooltip="Reload all plugins, this may clear current plugin progress"
-        >
-          <IconRefreshAlert />
-          Reload Plugins
-        </Button>
+        {canReloadAll && (
+          <Button
+            warn
+            disabled={reloading}
+            onClick={reloadPlugins}
+            data-tooltip="Reload all plugins, this may clear current plugin progress"
+          >
+            <IconRefreshAlert />
+            Reload Plugins
+          </Button>
+        )}
       </NavHeader>
       <PageContent>
         <SideNav />

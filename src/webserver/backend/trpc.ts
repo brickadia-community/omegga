@@ -3,6 +3,7 @@ import type Omegga from '@omegga/server';
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import type Database from './database';
+import { userHasScope } from './permissions';
 import type { Scope } from './scopes';
 import type { IStoreUser } from './types';
 
@@ -62,10 +63,14 @@ export const publicProcedure = t.procedure;
 export const mergeRouters = t.mergeRouters;
 
 export const requireScope = (scope: Scope) =>
-  t.middleware(({ ctx, next }) => {
+  t.middleware(async ({ ctx, next }) => {
     if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-    // TODO: check ctx.user.roles against scope
-    // For now, all authenticated users pass
+    if (ctx.user.isOwner) return next({ ctx });
+    const { database } = getContextDeps();
+    const defaults = await database.getDefaultPermissions();
+    if (!userHasScope(ctx.user, scope, defaults)) {
+      throw new TRPCError({ code: 'FORBIDDEN' });
+    }
     return next({ ctx });
   });
 

@@ -1,7 +1,11 @@
-import type { OmeggaSocketData } from '@backend/api';
+import type { RouterOutputs } from '../trpc';
 import { atom } from 'nanostores';
 
+type SessionInfo = RouterOutputs['session']['info'];
+
 export const $showLogout = atom(false);
-export const $user = atom<OmeggaSocketData['user'] | null>(null);
-export const $roles = atom<OmeggaSocketData['roles']>([]);
-export const $omeggaData = atom<OmeggaSocketData | null>(null);
+export const $user = atom<SessionInfo['user'] | null>(null);
+export const $roles = atom<SessionInfo['roles']>([]);
+export const $omeggaData = atom<SessionInfo | null>(null);
+export const $resolvedScopes = atom<Record<string, boolean>>({});
+export const $usersRefresh = atom(0);

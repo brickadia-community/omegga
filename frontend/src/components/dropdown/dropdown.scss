@@ -8,10 +8,9 @@
   cursor: pointer;
   user-select: none;
   position: relative;
-  width: 100%;
 
   &:not(:last-child) {
-    margin-bottom: 0;
+    margin-right: 8px;
   }
 
   &.disabled {
@@ -23,11 +22,11 @@
   .options {
     position: absolute;
     bottom: 100%;
-    left: 0;
-    width: 100%;
+    right: 0;
+    width: max-content;
+    min-width: 100%;
     max-height: 200px;
     overflow-y: auto;
-    overflow-x: hidden;
     z-index: 10;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     border-radius: theme.$br-radius-sm;
@@ -53,11 +52,19 @@
     background: theme.$br-element-normal;
     color: theme.$br-inverted-fg;
     height: theme.$br-element-height;
-    padding: 2px 12px;
-    padding-right: 0;
+    padding: 0 12px;
     box-sizing: border-box;
     font-weight: bold;
     font-size: theme.$br-element-font;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    white-space: nowrap;
+
+    .tabler-icon {
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
 
     &:hover {
       background: theme.$br-element-overlay;
@@ -71,17 +78,11 @@
   }
 
   .selected {
-    display: flex;
     border: none;
-    align-items: center;
     border-radius: theme.$br-radius-sm;
 
     .value {
       flex: 1;
     }
-  }
-
-  .icon {
-    margin-right: 8px;
   }
 }

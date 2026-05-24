@@ -1,13 +1,14 @@
 import { z } from 'zod/v4';
 import { on } from 'events';
 import { router, protectedProcedure, getContextDeps } from '../trpc';
+import { ScopeName } from '../scopes';
 import { serverEvents } from '../events';
 import Logger from '@/logger';
 import { parseLinks, sanitize } from '@util/chat';
 
 export const chatRouter = router({
   chat: router({
-    send: protectedProcedure('chat.send')
+    send: protectedProcedure(ScopeName.ChatSend)
       .input(z.string())
       .mutation(async ({ input: message, ctx }) => {
         const { database, omegga } = getContextDeps();
@@ -33,12 +34,12 @@ export const chatRouter = router({
         return 'ok';
       }),
 
-    recent: protectedProcedure('chat.recent').query(() => {
+    recent: protectedProcedure(ScopeName.ChatRecent).query(() => {
       const { database } = getContextDeps();
       return database.getChats({ sameServer: true });
     }),
 
-    history: protectedProcedure('chat.history')
+    history: protectedProcedure(ScopeName.ChatHistory)
       .input(
         z.object({
           after: z.number().optional(),
@@ -50,12 +51,12 @@ export const chatRouter = router({
         return database.getChats({ after: input.after, before: input.before });
       }),
 
-    calendar: protectedProcedure('chat.calendar').query(() => {
+    calendar: protectedProcedure(ScopeName.ChatCalendar).query(() => {
       const { database } = getContextDeps();
       return database.calendar.years;
     }),
 
-    onMessage: protectedProcedure('chat.onMessage').subscription(
+    onMessage: protectedProcedure(ScopeName.ChatRecent).subscription(
       async function* ({ signal }) {
         for await (const [chatLog] of on(serverEvents, 'chat', {
           signal,

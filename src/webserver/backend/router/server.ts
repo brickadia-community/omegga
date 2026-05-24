@@ -6,6 +6,7 @@ import { z } from 'zod/v4';
 import { serverEvents } from '../events';
 import type Webserver from '../index';
 import { getLastUtilization } from '../metrics';
+import { ScopeName } from '../scopes';
 import { getContextDeps, protectedProcedure, router } from '../trpc';
 
 let _server: Webserver | null = null;
@@ -32,12 +33,14 @@ const autoRestartConfigSchema = z.object({
 export const serverRouter = router({
   server: router({
     autoRestart: router({
-      get: protectedProcedure('server.autorestart.get').query(async () => {
-        const { database } = getContextDeps();
-        return await database.getAutoRestartConfig();
-      }),
+      get: protectedProcedure(ScopeName.ServerAutorestartGet).query(
+        async () => {
+          const { database } = getContextDeps();
+          return await database.getAutoRestartConfig();
+        },
+      ),
 
-      set: protectedProcedure('server.autorestart.set')
+      set: protectedProcedure(ScopeName.ServerAutorestartSet)
         .input(autoRestartConfigSchema)
         .mutation(async ({ input: config }) => {
           const { database } = getContextDeps();
@@ -73,15 +76,15 @@ export const serverRouter = router({
         }),
     }),
 
-    status: protectedProcedure('server.status').query(() => {
+    status: protectedProcedure(ScopeName.ServerStatus).query(() => {
       return _server?.lastReportedStatus ?? null;
     }),
 
-    utilization: protectedProcedure('server.utilization').query(() => {
+    utilization: protectedProcedure(ScopeName.ServerUtilization).query(() => {
       return getLastUtilization();
     }),
 
-    started: protectedProcedure('server.started').query(() => {
+    started: protectedProcedure(ScopeName.ServerStatus).query(() => {
       const { omegga } = getContextDeps();
       return {
         started: omegga.started,
@@ -90,47 +93,51 @@ export const serverRouter = router({
       };
     }),
 
-    start: protectedProcedure('server.start').mutation(async ({ ctx }) => {
-      const { omegga } = getContextDeps();
-      if (omegga.starting || omegga.stopping || omegga.started) return;
-      ctx.log('Starting server...');
-      await omegga.start();
-    }),
+    start: protectedProcedure(ScopeName.ServerStart).mutation(
+      async ({ ctx }) => {
+        const { omegga } = getContextDeps();
+        if (omegga.starting || omegga.stopping || omegga.started) return;
+        ctx.log('Starting server...');
+        await omegga.start();
+      },
+    ),
 
-    stop: protectedProcedure('server.stop').mutation(async ({ ctx }) => {
+    stop: protectedProcedure(ScopeName.ServerStop).mutation(async ({ ctx }) => {
       const { omegga } = getContextDeps();
       if (omegga.starting || omegga.stopping || !omegga.started) return;
       ctx.log('Stopping server...');
       await omegga.stop();
     }),
 
-    restart: protectedProcedure('server.restart').mutation(async ({ ctx }) => {
-      const { database, omegga } = getContextDeps();
-      if (omegga.starting || omegga.stopping) return;
+    restart: protectedProcedure(ScopeName.ServerRestart).mutation(
+      async ({ ctx }) => {
+        const { database, omegga } = getContextDeps();
+        if (omegga.starting || omegga.stopping) return;
 
-      try {
-        const config = await database.getAutoRestartConfig();
-        await omegga.saveServer({
-          players: config.playersEnabled,
-          saveWorld: config.saveWorld ?? true,
-          announcement: config.announcementEnabled,
-        });
-      } catch (err) {
-        ctx.error('Error while saving server setup', err);
-      }
+        try {
+          const config = await database.getAutoRestartConfig();
+          await omegga.saveServer({
+            players: config.playersEnabled,
+            saveWorld: config.saveWorld ?? true,
+            announcement: config.announcementEnabled,
+          });
+        } catch (err) {
+          ctx.error('Error while saving server setup', err);
+        }
 
-      database.addChatLog('server', {}, 'Restarting in 5 seconds...');
-      Logger.logp('Restarting in 5 seconds...');
-      omegga.broadcast(
-        `<size="20">Server restart in <b><color="ffffbb">${5} seconds</></></>`,
-      );
+        database.addChatLog('server', {}, 'Restarting in 5 seconds...');
+        Logger.logp('Restarting in 5 seconds...');
+        omegga.broadcast(
+          `<size="20">Server restart in <b><color="ffffbb">${5} seconds</></></>`,
+        );
 
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      await omegga.restartServer();
-    }),
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        await omegga.restartServer();
+      },
+    ),
 
     update: router({
-      check: protectedProcedure('server.update.check').query(async () => {
+      check: protectedProcedure(ScopeName.ServerUpdateCheck).query(async () => {
         const { omegga } = getContextDeps();
         if (!omegga.config.__STEAM) return null;
 
@@ -144,40 +151,42 @@ export const serverRouter = router({
         return await hasSteamUpdate(omegga.config.server?.steambeta);
       }),
 
-      run: protectedProcedure('server.update.run').mutation(async ({ ctx }) => {
-        const { omegga } = getContextDeps();
-        if (!omegga.config.__STEAM) return false;
-        if (omegga.stopping || omegga.starting) return false;
+      run: protectedProcedure(ScopeName.ServerUpdateRun).mutation(
+        async ({ ctx }) => {
+          const { omegga } = getContextDeps();
+          if (!omegga.config.__STEAM) return false;
+          if (omegga.stopping || omegga.starting) return false;
 
-        const wasStarted = omegga.started;
-        if (wasStarted) {
-          ctx.log('Stopping server to update...');
-          await omegga.stop();
-        }
+          const wasStarted = omegga.started;
+          if (wasStarted) {
+            ctx.log('Stopping server to update...');
+            await omegga.stop();
+          }
 
-        ctx.log('Updating server...');
-        let ok = false;
-        try {
-          steamcmdDownloadGame({
-            steambeta: omegga.config.server?.steambeta,
-            steambetaPassword: omegga.config.server?.steambetaPassword,
-          });
-          ok = true;
-          ctx.log('Server updated successfully');
-        } catch (err) {
-          ctx.error('Error updating server', err);
-        }
+          ctx.log('Updating server...');
+          let ok = false;
+          try {
+            steamcmdDownloadGame({
+              steambeta: omegga.config.server?.steambeta,
+              steambetaPassword: omegga.config.server?.steambetaPassword,
+            });
+            ok = true;
+            ctx.log('Server updated successfully');
+          } catch (err) {
+            ctx.error('Error updating server', err);
+          }
 
-        if (wasStarted) {
-          ctx.log('Starting server...');
-          await omegga.start();
-        }
+          if (wasStarted) {
+            ctx.log('Starting server...');
+            await omegga.start();
+          }
 
-        return ok;
-      }),
+          return ok;
+        },
+      ),
     }),
 
-    onStatus: protectedProcedure('server.onStatus').subscription(
+    onStatus: protectedProcedure(ScopeName.ServerStatus).subscription(
       async function* ({ signal }) {
         for await (const [_] of on(serverEvents, 'serverStatus', { signal })) {
           const { omegga } = getContextDeps();
@@ -190,7 +199,7 @@ export const serverRouter = router({
       },
     ),
 
-    onHeartbeat: protectedProcedure('server.onHeartbeat').subscription(
+    onHeartbeat: protectedProcedure(ScopeName.ServerStatus).subscription(
       async function* ({ signal }) {
         for await (const [status] of on(serverEvents, 'heartbeat', {
           signal,
@@ -200,7 +209,7 @@ export const serverRouter = router({
       },
     ),
 
-    onUtilization: protectedProcedure('server.onUtilization').subscription(
+    onUtilization: protectedProcedure(ScopeName.ServerUtilization).subscription(
       async function* ({ signal }) {
         for await (const [utilization] of on(serverEvents, 'utilization', {
           signal,

@@ -8,12 +8,14 @@ import {
   SortIcons,
   useConfirm,
 } from '@components';
+import { useHasScope } from '@hooks';
 import { useStore } from '@nanostores/react';
 import { IconPlayerPlay, IconStar, IconStarOff } from '@tabler/icons-react';
 import range from 'lodash/range';
 import sortBy from 'lodash/sortBy';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
+import { Permissions } from '../../permissions';
 import { $liveness } from '../../stores/liveness';
 import { $activeWorld, $nextWorld } from '../../stores/worlds';
 import { trpc } from '../../trpc';
@@ -25,6 +27,9 @@ export const WorldInspector = () => {
   const nextWorld = useStore($nextWorld);
   const activeWorld = useStore($activeWorld);
   const liveness = useStore($liveness);
+
+  const canUse = useHasScope(Permissions.WorldUse);
+  const canLoad = useHasScope(Permissions.WorldLoad);
 
   const [loading, setLoading] = useState(false);
   const [revisions, setRevisions] = useState<WorldRevisionsRes | null>(null);
@@ -162,27 +167,30 @@ export const WorldInspector = () => {
                       {new Date(r.date).toLocaleString()}
                     </div>
                   </div>
-                  <Button
-                    icon
-                    main
-                    disabled={waiting || !liveness.started}
-                    onClick={() =>
-                      confirm
-                        .prompt(
-                          <p>
-                            Are you sure you want to load revision {r.index} of{' '}
-                            <b style={{ color: 'white' }}>{selectedWorld}</b>?
-                            Unsaved work will be lost.
-                          </p>,
-                        )
-                        .then(ok => {
-                          ok && loadWorld(r.index);
-                        })
-                    }
-                    data-tooltip={`Load revision ${r.index}`}
-                  >
-                    <IconPlayerPlay />
-                  </Button>
+                  {canLoad && (
+                    <Button
+                      icon
+                      main
+                      disabled={waiting || !liveness.started}
+                      onClick={() =>
+                        confirm
+                          .prompt(
+                            <p>
+                              Are you sure you want to load revision {r.index}{' '}
+                              of{' '}
+                              <b style={{ color: 'white' }}>{selectedWorld}</b>?
+                              Unsaved work will be lost.
+                            </p>,
+                          )
+                          .then(ok => {
+                            ok && loadWorld(r.index);
+                          })
+                      }
+                      data-tooltip={`Load revision ${r.index}`}
+                    >
+                      <IconPlayerPlay />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -190,7 +198,7 @@ export const WorldInspector = () => {
         )}
       </div>
       <Footer attached>
-        {activeWorld !== selectedWorld && (
+        {canUse && activeWorld !== selectedWorld && (
           <Button
             normal
             disabled={waiting || !selectedWorld}
@@ -201,7 +209,7 @@ export const WorldInspector = () => {
             Make Default
           </Button>
         )}
-        {activeWorld === selectedWorld && (
+        {canUse && activeWorld === selectedWorld && (
           <Button
             warn
             disabled={waiting || !selectedWorld}
@@ -214,27 +222,29 @@ export const WorldInspector = () => {
         )}
         <span style={{ flex: 1 }} />
 
-        <Button
-          main
-          data-tooltip="Load this world immediately"
-          disabled={waiting || !liveness.started || !selectedWorld}
-          onClick={() =>
-            confirm
-              .prompt(
-                <p>
-                  Are you sure you want to load{' '}
-                  <b style={{ color: 'white' }}>{selectedWorld}</b>? Unsaved
-                  work will be lost.
-                </p>,
-              )
-              .then(ok => {
-                ok && loadWorld();
-              })
-          }
-        >
-          <IconPlayerPlay />
-          Load
-        </Button>
+        {canLoad && (
+          <Button
+            main
+            data-tooltip="Load this world immediately"
+            disabled={waiting || !liveness.started || !selectedWorld}
+            onClick={() =>
+              confirm
+                .prompt(
+                  <p>
+                    Are you sure you want to load{' '}
+                    <b style={{ color: 'white' }}>{selectedWorld}</b>? Unsaved
+                    work will be lost.
+                  </p>,
+                )
+                .then(ok => {
+                  ok && loadWorld();
+                })
+            }
+          >
+            <IconPlayerPlay />
+            Load
+          </Button>
+        )}
       </Footer>
       {confirm.children}
     </div>

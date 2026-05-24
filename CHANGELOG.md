@@ -4,6 +4,15 @@
 
 - Add owner-only user disable and delete actions to the web UI (hidden in single-user mode)
 
+## 1.6.0 - TBD
+
+- Add granular permission system with scopes, domains, and role-based access control
+- Web UI: user inspector with permission editor, default permissions editor, user disable/delete actions
+- Web UI: responsive tablet layout for players, plugins, worlds, and server views
+- Self-service password change for all authenticated users
+- Privilege escalation protection - non-owners cannot grant permissions they don't have
+
+
 ## 1.5.4 - 2026-05-18
 
 - Fix vm2 error with Player.getRoles

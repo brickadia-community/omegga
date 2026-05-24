@@ -31,14 +31,15 @@
 }
 
 .calendar-container {
-  @include mixins.column;
+  position: relative;
   margin-right: 8px;
   z-index: 100;
-  min-height: 32px;
-  align-items: flex-end;
 }
 
 .calendar {
+  position: absolute;
+  top: 100%;
+  right: 0;
   background-color: theme.$br-element-footer-bg;
   border-radius: theme.$br-radius-md;
   min-width: 200px;

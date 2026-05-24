@@ -58,3 +58,14 @@
   border-bottom-right-radius: theme.$br-radius-md;
   overflow: hidden;
 }
+
+@media screen and (max-width: 1024px) {
+  .players-container {
+    flex-direction: column;
+  }
+
+  .player-table-container {
+    margin-right: 0;
+    margin-bottom: 16px;
+  }
+}
