@@ -40,6 +40,8 @@ export const Permissions = {
   UserBan: 'user.ban',
   UserDelete: 'user.delete',
   UserPermissions: 'user.permissions',
+  UserReadMfa: 'user.readMfa',
+  UserResetMfa: 'user.resetMfa',
 
   // World
   WorldList: 'world.list',
@@ -250,6 +252,16 @@ export const SCOPE_INFO: Partial<
   },
   [Permissions.UserPermissions]: {
     description: 'Edit user and default permissions in the users view',
+    readOnly: false,
+    domain: Domains.User,
+  },
+  [Permissions.UserReadMfa]: {
+    description: 'View MFA status of other users in the user inspector',
+    readOnly: true,
+    domain: Domains.User,
+  },
+  [Permissions.UserResetMfa]: {
+    description: 'Reset MFA for other users in the user inspector',
     readOnly: false,
     domain: Domains.User,
   },

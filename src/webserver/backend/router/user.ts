@@ -1,5 +1,6 @@
 import { z } from 'zod/v4';
 import {
+  decodePermissions,
   resolveAllScopes,
   userHasScope,
   type PermissionSet,
@@ -33,12 +34,24 @@ export const userRouter = router({
         const { page, search, sort, direction } = input;
         const resp = await database.getUsers({ page, search, sort, direction });
         const now = Date.now();
-        resp.users = resp.users.map(({ hash: _, ...user }) => ({
-          ...user,
-          hash: '',
-          seenAgo: user.lastOnline ? now - user.lastOnline : Infinity,
-          createdAgo: now - user.created,
-        }));
+        resp.users = resp.users.map(
+          ({
+            hash: _h,
+            totpSecret: _ts,
+            recoveryCodes: _rc,
+            passkeys: _pk,
+            permissions: _perms,
+            ...user
+          }) => ({
+            ...user,
+            hash: '',
+            permissions: decodePermissions(_perms as any),
+            totpEnabled: user.totpEnabled ?? false,
+            passkeyCount: _pk?.length ?? 0,
+            seenAgo: user.lastOnline ? now - user.lastOnline : Infinity,
+            createdAgo: now - user.created,
+          }),
+        );
         return resp;
       }),
 
@@ -53,6 +66,8 @@ export const userRouter = router({
         seenAgo: ctx.user.lastOnline ? now - ctx.user.lastOnline : Infinity,
         createdAgo: now - (ctx.user.created ?? now),
         permissions: ctx.user.permissions,
+        totpEnabled: ctx.user.totpEnabled ?? false,
+        passkeyCount: ctx.user.passkeys?.length ?? 0,
       };
     }),
 
@@ -107,6 +122,7 @@ export const userRouter = router({
         z.object({
           username: z.string(),
           password: z.string(),
+          currentPassword: z.string().optional(),
         }),
       )
       .mutation(async ({ input, ctx }) => {
@@ -115,7 +131,12 @@ export const userRouter = router({
         const { log, error } = ctx;
 
         const isSelf = username === ctx.user.username;
-        if (!isSelf) {
+        if (isSelf) {
+          if (!input.currentPassword) return 'current password required';
+          const bcryptLib = await import('bcryptjs');
+          if (!(await bcryptLib.compare(input.currentPassword, ctx.user.hash)))
+            return 'incorrect current password';
+        } else {
           const defaults = await database.getDefaultPermissions();
           if (!userHasScope(ctx.user, ScopeName.UserPasswd, defaults))
             return 'missing permission';
@@ -159,9 +180,7 @@ export const userRouter = router({
         if (target?.isOwner) return 'cannot disable the owner';
 
         await database.banUser(username, banned);
-        log(
-          `${banned ? 'disabled' : 'enabled'} user "${username.yellow}" (by ${ctx.user.username.yellow})`,
-        );
+        log(`${banned ? 'disabled' : 'enabled'} user "${username.yellow}"`);
         return '';
       }),
 
@@ -186,9 +205,7 @@ export const userRouter = router({
         if (target?.isOwner) return 'cannot delete the owner';
 
         await database.deleteUser(username);
-        log(
-          `deleted user "${username.yellow}" (by ${ctx.user.username.yellow})`,
-        );
+        log(`deleted user "${username.yellow}"`);
         return '';
       }),
 
@@ -226,9 +243,7 @@ export const userRouter = router({
         }
 
         await database.setUserPermissions(username, permissions);
-        log(
-          `updated permissions for "${username.yellow}" (by ${ctx.user.username.yellow})`,
-        );
+        log(`updated permissions for "${username.yellow}"`);
         return '';
       }),
 
@@ -251,9 +266,29 @@ export const userRouter = router({
           await database.setDefaultPermissions(
             input as unknown as PermissionSet,
           );
-          log(`updated default permissions (by ${ctx.user.username.yellow})`);
+          log(`updated default permissions`);
           return '';
         }),
     }),
+
+    resetMfa: protectedProcedure(ScopeName.UserResetMfa)
+      .input(z.object({ username: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const { database } = getContextDeps();
+        const { username } = input;
+        const { log } = ctx;
+
+        if (username === ctx.user.username) return 'cannot reset own MFA';
+
+        const target = await database.stores.users.findOne<
+          IStoreUser & { _id: string }
+        >({ type: 'user', username });
+        if (!target) return 'user does not exist';
+        if (target.isOwner) return 'cannot reset the owner';
+
+        await database.resetUserMfa(username);
+        log(`reset MFA for "${username.yellow}"`);
+        return '';
+      }),
   }),
 });

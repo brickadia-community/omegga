@@ -24,6 +24,44 @@ export const EMPTY_PERMISSIONS: PermissionSet = {
   scopes: {},
 };
 
+// NeDB rejects field names containing dots, so we encode/decode
+// scope keys (e.g. "server.status") for storage
+const DOT_ENCODE = /\./g;
+const DOT_DECODE = /:/g;
+
+function encodeKeys<V>(obj: Record<string, V>): Record<string, V> {
+  const out: Record<string, V> = {};
+  for (const [k, v] of Object.entries(obj)) out[k.replace(DOT_ENCODE, ':')] = v;
+  return out;
+}
+
+function decodeKeys<V>(obj: Record<string, V>): Record<string, V> {
+  const out: Record<string, V> = {};
+  for (const [k, v] of Object.entries(obj)) out[k.replace(DOT_DECODE, '.')] = v;
+  return out;
+}
+
+export interface StoredPermissionSet {
+  root: RootLevel;
+  domains: Partial<Record<string, DomainLevel>>;
+  scopes: Record<string, boolean>;
+}
+
+export function encodePermissions(p: PermissionSet): StoredPermissionSet {
+  return { root: p.root, domains: p.domains, scopes: encodeKeys(p.scopes) };
+}
+
+export function decodePermissions(
+  p: StoredPermissionSet | null | undefined,
+): PermissionSet {
+  if (!p) return EMPTY_PERMISSIONS;
+  return {
+    root: p.root ?? RootLevel.Off,
+    domains: p.domains ?? {},
+    scopes: decodeKeys(p.scopes ?? {}),
+  };
+}
+
 const ALL_SCOPES = Object.keys(SCOPES) as Scope[];
 
 export function resolveScope(

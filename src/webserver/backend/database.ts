@@ -12,6 +12,8 @@ import Calendar from './calendar';
 import {
   EMPTY_PERMISSIONS,
   RootLevel,
+  decodePermissions,
+  encodePermissions,
   type PermissionSet,
 } from './permissions';
 import {
@@ -27,6 +29,7 @@ import {
   IStoreVersion,
   IUserHistory,
   IUserNote,
+  IWebAuthnCredential,
 } from './types';
 
 // TODO: online users graph
@@ -141,13 +144,10 @@ export default class Database extends EventEmitter {
                 if (v === 'enabled' || v === true) scopes[k] = true;
                 else if (v === 'disabled' || v === false) scopes[k] = false;
               }
+              const encoded = encodePermissions({ root, domains, scopes });
               await store.update(
                 { _id: user._id },
-                {
-                  $set: {
-                    permissions: { root, domains, scopes },
-                  },
-                },
+                { $set: { permissions: encoded } },
               );
             }
           },
@@ -174,9 +174,20 @@ export default class Database extends EventEmitter {
               if (v === 'enabled') scopes[k] = true;
               else if (v === 'disabled') scopes[k] = false;
             }
+            const encoded = encodePermissions({
+              root,
+              domains,
+              scopes,
+            } as PermissionSet);
             await store.update(
               { _id: doc._id },
-              { $set: { root, domains, scopes } },
+              {
+                $set: {
+                  root: encoded.root,
+                  domains: encoded.domains,
+                  scopes: encoded.scopes,
+                },
+              },
             );
           },
         },
@@ -350,6 +361,11 @@ export default class Database extends EventEmitter {
       roles: [],
       permissions: EMPTY_PERMISSIONS,
 
+      // mfa
+      totpEnabled: false,
+      passkeys: [],
+      recoveryCodes: [],
+
       // brickadia player uuid
       playerId: '',
     });
@@ -382,6 +398,11 @@ export default class Database extends EventEmitter {
       roles: [],
       permissions: EMPTY_PERMISSIONS,
 
+      // mfa
+      totpEnabled: false,
+      passkeys: [],
+      recoveryCodes: [],
+
       // brickadia player uuid
       playerId: '',
     });
@@ -392,7 +413,8 @@ export default class Database extends EventEmitter {
   async userPasswd(username: string, password: string) {
     const hash = await this.hash(password);
 
-    if (!this.userExists(username)) throw new Error('user does not exist');
+    if (!(await this.userExists(username)))
+      throw new Error('user does not exist');
 
     await this.stores.users.update(
       { type: 'user', username },
@@ -414,7 +436,7 @@ export default class Database extends EventEmitter {
   async setUserPermissions(username: string, permissions: PermissionSet) {
     return await this.stores.users.update(
       { type: 'user', username },
-      { $set: { permissions } },
+      { $set: { permissions: encodePermissions(permissions) } },
     );
   }
 
@@ -431,16 +453,25 @@ export default class Database extends EventEmitter {
         scopes: {},
       });
     }
-    this.defaultPermissionsCache = doc;
-    return doc;
+    const decoded = decodePermissions(doc);
+    const result = { ...doc, ...decoded };
+    this.defaultPermissionsCache = result;
+    return result;
   }
 
   async setDefaultPermissions(
     permissions: Omit<IStoreDefaultPermissions, 'type'>,
   ) {
+    const encoded = encodePermissions(permissions as PermissionSet);
     await this.stores.server.update(
       { type: 'defaultPermissions' },
-      { $set: { ...permissions } },
+      {
+        $set: {
+          root: encoded.root,
+          domains: encoded.domains,
+          scopes: encoded.scopes,
+        },
+      },
       { upsert: true },
     );
     this.defaultPermissionsCache = null;
@@ -477,10 +508,100 @@ export default class Database extends EventEmitter {
         { type: 'user', _id: id },
       ],
     });
-    if (user && !user.permissions) {
-      user.permissions = EMPTY_PERMISSIONS;
+    if (user) {
+      user.permissions = decodePermissions(user.permissions);
+      if (!user.totpEnabled) user.totpEnabled = false;
+      if (!user.passkeys) user.passkeys = [];
     }
     return user;
+  }
+
+  async setUserTotp(username: string, secret: string, enabled: boolean) {
+    await this.stores.users.update(
+      { type: 'user', username },
+      { $set: { totpSecret: secret, totpEnabled: enabled } },
+    );
+  }
+
+  async disableUserTotp(username: string) {
+    await this.stores.users.update(
+      { type: 'user', username },
+      { $set: { totpEnabled: false }, $unset: { totpSecret: true } },
+    );
+  }
+
+  async addPasskey(username: string, credential: IWebAuthnCredential) {
+    await this.stores.users.update(
+      { type: 'user', username },
+      { $push: { passkeys: credential } },
+    );
+  }
+
+  async removePasskey(username: string, credentialId: string) {
+    const user = await this.stores.users.findOne<IStoreUser & { _id: string }>({
+      type: 'user',
+      username,
+    });
+    if (!user) return;
+    const passkeys = (user.passkeys ?? []).filter(p => p.id !== credentialId);
+    await this.stores.users.update({ _id: user._id }, { $set: { passkeys } });
+  }
+
+  async updatePasskeyCounter(
+    username: string,
+    credentialId: string,
+    counter: number,
+  ) {
+    const user = await this.stores.users.findOne<IStoreUser & { _id: string }>({
+      type: 'user',
+      username,
+    });
+    if (!user) return;
+    const passkeys = (user.passkeys ?? []).map(p =>
+      p.id === credentialId ? { ...p, counter, lastUsed: Date.now() } : p,
+    );
+    await this.stores.users.update({ _id: user._id }, { $set: { passkeys } });
+  }
+
+  async setRecoveryCodes(username: string, hashedCodes: string[]) {
+    await this.stores.users.update(
+      { type: 'user', username },
+      { $set: { recoveryCodes: hashedCodes } },
+    );
+  }
+
+  async removeRecoveryCode(username: string, hashedCode: string) {
+    const user = await this.stores.users.findOne<IStoreUser & { _id: string }>({
+      type: 'user',
+      username,
+    });
+    if (!user) return;
+    const codes = (user.recoveryCodes ?? []).filter(c => c !== hashedCode);
+    await this.stores.users.update(
+      { _id: user._id },
+      { $set: { recoveryCodes: codes } },
+    );
+  }
+
+  async resetUserMfa(username: string) {
+    await this.stores.users.update(
+      { type: 'user', username },
+      {
+        $set: {
+          totpEnabled: false,
+          passkeys: [],
+          recoveryCodes: [],
+        },
+        $unset: { totpSecret: true },
+      },
+    );
+  }
+
+  async findUserByPasskeyId(credentialId: string) {
+    return await this.stores.users.findOne<IStoreUser & { _id: string }>({
+      type: 'user',
+      'passkeys.id': credentialId,
+    });
   }
 
   // get a list of roles

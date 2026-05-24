@@ -820,6 +820,52 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
       }
     },
   },
+  {
+    aliases: ['user'],
+    desc: 'manage web UI users',
+    descLines: () => [
+      "/user passwd <username>   - Reset a user's password",
+      '/user resetmfa <username> - Clear TOTP and passkeys',
+    ],
+    async fn(subcommand?: string, username?: string) {
+      const db = this.omegga.webserver?.database;
+      if (!db) {
+        err('Database not available.');
+        return;
+      }
+      if (!subcommand || !username) {
+        err('Usage: /user <passwd|resetmfa> <username>');
+        return;
+      }
+      if (!(await db.userExists(username))) {
+        err(`User "${username}" does not exist.`);
+        return;
+      }
+      switch (subcommand) {
+        case 'passwd': {
+          const password = await new Promise<string>(resolve =>
+            this.rl.question('New password: ', resolve),
+          );
+          if (!password) {
+            err('Password cannot be empty.');
+            return;
+          }
+          await db.userPasswd(username, password);
+          log(`Password updated for "${username.yellow}".`);
+          break;
+        }
+        case 'resetmfa': {
+          await db.resetUserMfa(username);
+          log(
+            `MFA cleared for "${username.yellow}" (TOTP, passkeys, recovery codes).`,
+          );
+          break;
+        }
+        default:
+          err(`Unknown subcommand "${subcommand}". Use passwd or resetmfa.`);
+      }
+    },
+  },
 ];
 
 // the terminal wraps omegga and displays console output and handles console input

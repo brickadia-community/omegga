@@ -1,7 +1,20 @@
 declare module 'express-session' {
   interface SessionData {
     userId: string;
+    mfaPending?: boolean;
+    mfaChallenge?: string;
+    pendingTotpSecret?: string;
   }
+}
+
+export interface IWebAuthnCredential {
+  id: string;
+  publicKey: string;
+  counter: number;
+  name: string;
+  created: number;
+  lastUsed: number;
+  transports?: string[];
 }
 
 export interface IPlayer {
@@ -118,6 +131,10 @@ export interface IStoreUser {
   playerId: string;
   isBanned?: boolean;
   permissions?: import('./permissions').PermissionSet;
+  totpSecret?: string;
+  totpEnabled?: boolean;
+  passkeys?: IWebAuthnCredential[];
+  recoveryCodes?: string[];
 }
 
 export interface IStoreDefaultPermissions {

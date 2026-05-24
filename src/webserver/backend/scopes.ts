@@ -46,6 +46,8 @@ export const ScopeName = {
   UserBan: 'user.ban',
   UserDelete: 'user.delete',
   UserPermissions: 'user.permissions',
+  UserReadMfa: 'user.readMfa',
+  UserResetMfa: 'user.resetMfa',
 
   WorldList: 'world.list',
   WorldActive: 'world.active',
@@ -232,6 +234,16 @@ export const SCOPES = {
   },
   [S.UserPermissions]: {
     description: 'Manage user permissions',
+    readOnly: false,
+    domain: D.User,
+  },
+  [S.UserReadMfa]: {
+    description: 'View MFA status of other users',
+    readOnly: true,
+    domain: D.User,
+  },
+  [S.UserResetMfa]: {
+    description: 'Reset MFA for other users',
     readOnly: false,
     domain: D.User,
   },
