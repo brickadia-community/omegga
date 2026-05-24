@@ -9,6 +9,7 @@ export function Input<T extends 'text' | 'number' | 'password'>({
   roboto,
   onBlur,
   onFocus,
+  onSubmit,
   onChange,
   ...props
 }: {
@@ -18,8 +19,9 @@ export function Input<T extends 'text' | 'number' | 'password'>({
   roboto?: boolean;
   type?: T;
   value: T extends 'number' ? number : string;
+  onSubmit?: () => void;
   onChange?: (v: T extends 'number' ? number : string) => void;
-} & Omit<HTMLAttributes<HTMLInputElement>, 'onChange'>) {
+} & Omit<HTMLAttributes<HTMLInputElement>, 'onChange' | 'onSubmit'>) {
   return (
     <div
       className={`input ${disabled ? 'disabled' : ''} ${roboto ? 'roboto' : ''}`}
@@ -37,6 +39,16 @@ export function Input<T extends 'text' | 'number' | 'password'>({
           if (onChange)
             onChange(newValue as T extends 'number' ? number : string);
         }}
+        onKeyDown={
+          onSubmit
+            ? e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  onSubmit();
+                }
+              }
+            : undefined
+        }
         {...props}
       />
     </div>

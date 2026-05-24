@@ -7,6 +7,7 @@ import './tooltip';
 import { trpc, trpcClient, queryClient } from './trpc';
 import { SessionInit } from './SessionInit';
 import { NotFound } from './views/NotFound';
+import { AccountView } from './views/account/AccountView';
 import { HistoryView } from './views/history';
 import { HomeView } from './views/home';
 import { PlayerList } from './views/players/PlayerList';
@@ -31,6 +32,7 @@ const App = () => (
       <Router hook={useBrowserLocation}>
         <Switch>
           <Route path="/" component={HomeView} />
+          <Route path="/account" component={AccountView} />
           <Route path="/history/:time?" component={HistoryView} />
           <Route path="/players/:id?" component={PlayerList} />
           <Route path="/plugins/:id?" component={PluginList} />

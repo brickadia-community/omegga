@@ -1,16 +1,21 @@
 import { Loader, Scroll } from '@components';
+import { useHasScope } from '@hooks';
 import type { IServerStatus } from '@omegga/types';
 import { duration } from '@utils';
 import { useEffect, useState } from 'react';
 import { Link } from 'wouter';
-import { trpc } from '../../trpc';
+import { Permissions } from '../../permissions';
+import { handleGlobalError, trpc } from '../../trpc';
 
 export const StatusWidget = () => {
+  const canStatus = useHasScope(Permissions.ServerStatus);
+  const canPlayerList = useHasScope(Permissions.PlayerList);
   const [status, setStatus] = useState<IServerStatus | null>(null);
 
-  const { data: queryStatus } = trpc.server.status.useQuery();
+  const { data: queryStatus } = trpc.server.status.useQuery(undefined, {
+    enabled: canStatus,
+  });
 
-  // Sync query data into state so subscription updates merge seamlessly
   useEffect(() => {
     if (queryStatus && !status) {
       setStatus(queryStatus);
@@ -18,6 +23,8 @@ export const StatusWidget = () => {
   }, [queryStatus]);
 
   trpc.server.onHeartbeat.useSubscription(undefined, {
+    enabled: canStatus,
+    onError: handleGlobalError,
     onData: setStatus,
   });
 
@@ -52,9 +59,13 @@ export const StatusWidget = () => {
                 {status.players.map(player => (
                   <tr key={player.address + player.id}>
                     <td>
-                      <Link className="user" to={'/players/' + player.id}>
-                        {player.name}
-                      </Link>
+                      {canPlayerList ? (
+                        <Link className="user" to={'/players/' + player.id}>
+                          {player.name}
+                        </Link>
+                      ) : (
+                        <span className="user">{player.name}</span>
+                      )}
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       {duration(player.time)}

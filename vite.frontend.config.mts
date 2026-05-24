@@ -43,6 +43,9 @@ export default defineConfig({
   assetsInclude: ['**/*.webp'],
   build: {
     sourcemap: true,
+    watch: process.argv.includes('--watch')
+      ? { include: 'frontend/src/**' }
+      : null,
     rollupOptions: {
       input: {
         auth: resolve(__dirname, 'frontend/auth.html'),

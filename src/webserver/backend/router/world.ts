@@ -1,10 +1,11 @@
 import { readBrdbMeta } from '@util/brdb';
 import { z } from 'zod/v4';
+import { ScopeName } from '../scopes';
 import { getContextDeps, protectedProcedure, router } from '../trpc';
 
 export const worldRouter = router({
   world: router({
-    list: protectedProcedure('world.list').query(() => {
+    list: protectedProcedure(ScopeName.WorldList).query(() => {
       const { omegga } = getContextDeps();
       const prefix = omegga.worldPath + '/';
       return omegga
@@ -12,7 +13,7 @@ export const worldRouter = router({
         .map(world => world.replace(prefix, '').replace(/\.brdb$/, ''));
     }),
 
-    revisions: protectedProcedure('world.revisions')
+    revisions: protectedProcedure(ScopeName.WorldRevisions)
       .input(z.object({ world: z.string() }))
       .query(async ({ input }) => {
         const { omegga } = getContextDeps();
@@ -27,7 +28,7 @@ export const worldRouter = router({
         }
       }),
 
-    meta: protectedProcedure('world.meta')
+    meta: protectedProcedure(ScopeName.WorldMeta)
       .input(z.object({ world: z.string() }))
       .query(async ({ input, ctx }) => {
         const { omegga } = getContextDeps();
@@ -41,17 +42,17 @@ export const worldRouter = router({
         }
       }),
 
-    next: protectedProcedure('world.next').query(() => {
+    next: protectedProcedure(ScopeName.WorldNext).query(() => {
       const { omegga } = getContextDeps();
       return omegga.getNextWorld();
     }),
 
-    active: protectedProcedure('world.active').query(() => {
+    active: protectedProcedure(ScopeName.WorldActive).query(() => {
       const { omegga } = getContextDeps();
       return omegga.getActiveWorld();
     }),
 
-    load: protectedProcedure('world.load')
+    load: protectedProcedure(ScopeName.WorldLoad)
       .input(
         z.object({
           world: z.string(),
@@ -84,7 +85,7 @@ export const worldRouter = router({
         }
       }),
 
-    use: protectedProcedure('world.use')
+    use: protectedProcedure(ScopeName.WorldUse)
       .input(
         z.object({
           world: z.string().optional(),
@@ -103,7 +104,7 @@ export const worldRouter = router({
         }
       }),
 
-    create: protectedProcedure('world.create')
+    create: protectedProcedure(ScopeName.WorldCreate)
       .input(
         z.object({
           name: z.string(),
@@ -130,7 +131,7 @@ export const worldRouter = router({
         }
       }),
 
-    save: protectedProcedure('world.save')
+    save: protectedProcedure(ScopeName.WorldSave)
       .input(
         z
           .object({

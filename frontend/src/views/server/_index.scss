@@ -6,7 +6,9 @@
   flex-direction: column;
 
   .navbar {
-    margin-top: 8px;
+    &:not(.server-status) {
+      margin-top: 8px;
+    }
     text-transform: uppercase;
 
     .saved-note {
@@ -35,5 +37,7 @@
 .buttons {
   flex-direction: row;
   display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   margin-top: 8px;
 }

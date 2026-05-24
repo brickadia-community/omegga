@@ -5,7 +5,10 @@
   .button {
     border-radius: 0;
     margin-right: 0;
-    text-align: left;
+    justify-content: flex-start;
+    white-space: nowrap;
+    width: 100%;
+    box-sizing: border-box;
   }
   .button:first-child {
     border-top-left-radius: theme.$br-radius-md;
@@ -113,4 +116,15 @@
   position: relative;
   border-bottom-left-radius: theme.$br-radius-md;
   border-bottom-right-radius: theme.$br-radius-md;
+}
+
+@media screen and (max-width: 1200px) {
+  .worlds-container {
+    flex-direction: column;
+  }
+
+  .worlds-list-container {
+    margin-right: 0;
+    margin-bottom: 16px;
+  }
 }

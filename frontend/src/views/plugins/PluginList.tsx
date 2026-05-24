@@ -8,6 +8,7 @@ import {
   Scroll,
   SideNav,
 } from '@components';
+import { useHasScope, useRequireScope } from '@hooks';
 import {
   IconAlertCircle,
   IconBug,
@@ -18,7 +19,8 @@ import {
 } from '@tabler/icons-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useRoute } from 'wouter';
-import { trpc } from '../../trpc';
+import { Permissions } from '../../permissions';
+import { handleGlobalError, trpc } from '../../trpc';
 import { PluginInspector } from './PluginInspector';
 
 type PluginListItem = {
@@ -49,9 +51,13 @@ const pluginStateFromInfo = (info: PluginInfo) => {
 type PluginRenderInfo = ReturnType<typeof pluginStateFromInfo>;
 
 export const PluginList = () => {
+  const canAccess = useRequireScope(Permissions.PluginList);
+  const canGet = useHasScope(Permissions.PluginGet);
   const [search, setSearch] = useState('');
   const [reloading, setReloading] = useState(false);
   const [plugins, setPlugins] = useState<any[]>([]);
+
+  const canReloadAll = useHasScope(Permissions.PluginReloadAll);
 
   const [_location, params] = useRoute('/plugins/:id?');
   const selectedPluginName = useMemo(
@@ -80,12 +86,15 @@ export const PluginList = () => {
     setReloading(true);
     await reloadAllMutation.mutateAsync();
     setReloading(false);
+    getPlugins();
   };
 
   const matches = (plugin: PluginRenderInfo) =>
     plugin.name.toLowerCase().includes(search.toLowerCase());
 
   trpc.plugin.onStatus.useSubscription(undefined, {
+    enabled: canAccess,
+    onError: handleGlobalError,
     onData(data) {
       const plugin = pluginStateFromInfo(data);
       setPlugins(prev =>
@@ -94,19 +103,23 @@ export const PluginList = () => {
     },
   });
 
+  if (!canAccess) return null;
+
   return (
     <>
       <NavHeader title="Plugins">
         <span style={{ flex: 1 }} />
-        <Button
-          warn
-          disabled={reloading}
-          onClick={reloadPlugins}
-          data-tooltip="Reload all plugins, this may clear current plugin progress"
-        >
-          <IconRefreshAlert />
-          Reload Plugins
-        </Button>
+        {canReloadAll && (
+          <Button
+            warn
+            disabled={reloading}
+            onClick={reloadPlugins}
+            data-tooltip="Reload all plugins, this may clear current plugin progress"
+          >
+            <IconRefreshAlert />
+            Reload Plugins
+          </Button>
+        )}
       </NavHeader>
       <PageContent>
         <SideNav />

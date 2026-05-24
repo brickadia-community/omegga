@@ -48,8 +48,9 @@
   color: theme.$br-boring-button-fg;
 
   .revision-note {
-    color: theme.$br-button-fg;
+    color: theme.$br-element-fg;
     flex: 1;
+    padding: 8px;
   }
 
   .revision-index {

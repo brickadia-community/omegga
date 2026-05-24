@@ -1,4 +1,5 @@
 import { Button, Header, NavHeader, PageContent, SideNav } from '@components';
+import { useHasScope } from '@hooks';
 import {
   IconApps,
   IconChevronDownRight,
@@ -9,25 +10,29 @@ import {
   IconPlus,
   IconX,
 } from '@tabler/icons-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import GridLayout, { type Layout } from 'react-grid-layout';
+import { Permissions } from '../../permissions';
 import { ChatWidget, StatusWidget, UtilizationWidget } from '../../widgets';
 
-const WIDGET_LIST = {
+const WIDGET_DEFS = {
   chat: {
     component: ChatWidget,
     icon: IconMessageDots,
     tooltip: 'Chat with online players',
+    scope: Permissions.ChatRecent,
   },
   status: {
     component: StatusWidget,
     icon: IconList,
     tooltip: 'View current online players and server status',
+    scope: Permissions.ServerStatus,
   },
   utilization: {
     component: UtilizationWidget,
     icon: IconGauge,
     tooltip: 'View CPU, memory, disk, and network usage',
+    scope: Permissions.ServerUtilization,
   },
 };
 const DEFAULT_LAYOUT = [
@@ -44,6 +49,29 @@ const GRID_DATA = {
 const GRID_MARGIN = [8, 8] as [number, number];
 
 export const HomeView = () => {
+  const canChat = useHasScope(Permissions.ChatRecent);
+  const canStatus = useHasScope(Permissions.ServerStatus);
+  const canUtil = useHasScope(Permissions.ServerUtilization);
+
+  const allowedWidgets = useMemo(() => {
+    const allowed: Record<string, boolean> = {};
+    if (canChat) allowed.chat = true;
+    if (canStatus) allowed.status = true;
+    if (canUtil) allowed.utilization = true;
+    return allowed;
+  }, [canChat, canStatus, canUtil]);
+
+  const hasAnyPermission = canChat || canStatus || canUtil;
+
+  const WIDGET_LIST = useMemo(() => {
+    const list: Record<string, (typeof WIDGET_DEFS)[keyof typeof WIDGET_DEFS]> =
+      {};
+    for (const [k, v] of Object.entries(WIDGET_DEFS)) {
+      if (allowedWidgets[k]) list[k] = v;
+    }
+    return list;
+  }, [allowedWidgets]);
+
   const [layout, setLayout] = useState<Layout[]>(() => {
     if (localStorage.omeggaDashLayout2) {
       try {
@@ -59,6 +87,12 @@ export const HomeView = () => {
     }
     return DEFAULT_LAYOUT;
   });
+
+  const filteredLayout = useMemo(
+    () => layout.filter(w => allowedWidgets[w.i]),
+    [layout, allowedWidgets],
+  );
+
   useEffect(() => {
     localStorage.omeggaDashLayout2 = JSON.stringify(layout);
   }, [layout]);
@@ -112,56 +146,63 @@ export const HomeView = () => {
   return (
     <>
       <NavHeader title="Dashboard">
-        <div className="widgets-container">
-          <Button
-            normal
-            boxy
-            data-tooltip="Add more widgets to the dashboard"
-            onClick={() => setShowWidgets(!showWidgets)}
-          >
-            <IconApps />
-            Widgets
-          </Button>
-          <div
-            className="widgets-list"
-            style={{ display: showWidgets ? 'block' : 'none' }}
-          >
-            {Object.entries(WIDGET_LIST).map(([k, widget]) => (
-              <div key={k} className="widget-item">
-                <div className="name" data-tooltip={widget.tooltip}>
-                  <widget.icon />
-                  {k}
+        {hasAnyPermission && (
+          <div className="widgets-container">
+            <Button
+              normal
+              boxy
+              data-tooltip="Add more widgets to the dashboard"
+              onClick={() => setShowWidgets(!showWidgets)}
+            >
+              <IconApps />
+              Widgets
+            </Button>
+            <div
+              className="widgets-list"
+              style={{ display: showWidgets ? 'block' : 'none' }}
+            >
+              {Object.entries(WIDGET_LIST).map(([k, widget]) => (
+                <div key={k} className="widget-item">
+                  <div className="name" data-tooltip={widget.tooltip}>
+                    <widget.icon />
+                    {k}
+                  </div>
+                  {hasWidget[k] ? (
+                    <Button
+                      warn
+                      icon
+                      data-tooltip={`Remove ${k} widget`}
+                      onClick={() => removeWidget(k)}
+                    >
+                      <IconMinus />
+                    </Button>
+                  ) : (
+                    <Button
+                      main
+                      icon
+                      data-tooltip={`Add ${k} widget`}
+                      onClick={() => addWidget(k)}
+                    >
+                      <IconPlus />
+                    </Button>
+                  )}
                 </div>
-                {hasWidget[k] ? (
-                  <Button
-                    warn
-                    icon
-                    data-tooltip={`Remove ${k} widget`}
-                    onClick={() => removeWidget(k)}
-                  >
-                    <IconMinus />
-                  </Button>
-                ) : (
-                  <Button
-                    main
-                    icon
-                    data-tooltip={`Add ${k} widget`}
-                    onClick={() => addWidget(k)}
-                  >
-                    <IconPlus />
-                  </Button>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </NavHeader>
       <PageContent>
         <SideNav />
         <div className="grid-container" ref={containerRef}>
-          {width !== null && (
+          {!hasAnyPermission && (
+            <div className="no-permissions-message">
+              Contact your admin for support
+            </div>
+          )}
+          {hasAnyPermission && width !== null && (
             <GridLayout
-              layout={layout.map(l => ({ ...l, ...GRID_DATA }))}
+              layout={filteredLayout.map(l => ({ ...l, ...GRID_DATA }))}
               width={width}
               cols={10}
               autoSize
@@ -182,9 +223,10 @@ export const HomeView = () => {
                 />
               }
             >
-              {layout.map(item => {
+              {filteredLayout.map(item => {
                 const Component =
-                  WIDGET_LIST[item.i as keyof typeof WIDGET_LIST]!.component;
+                  WIDGET_LIST[item.i as keyof typeof WIDGET_LIST]?.component;
+                if (!Component) return null;
                 return (
                   <div key={item.i} className="grid-item">
                     <Header className="drag-handle">

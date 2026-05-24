@@ -1,4 +1,5 @@
 import { IconCaretDown } from '@tabler/icons-react';
+import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 
 export const Dropdown = ({
@@ -6,11 +7,13 @@ export const Dropdown = ({
   options = [],
   value,
   onChange,
+  icons,
 }: {
   disabled?: boolean;
   options: (string | number)[];
   value: string | number;
   onChange: (value: string | number) => void;
+  icons?: Record<string | number, React.ReactNode>;
 }) => {
   const [open, setOpen] = useState(false);
   const selfRef = useRef<HTMLDivElement>(null);
@@ -41,6 +44,7 @@ export const Dropdown = ({
                 onChange(o);
               }}
             >
+              {icons?.[o]}
               {o}
             </div>
           ))}

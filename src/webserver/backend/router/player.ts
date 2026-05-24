@@ -4,13 +4,14 @@ import { parseBrickadiaTime } from '@util/time';
 import * as uuid from '@util/uuid';
 import _ from 'lodash';
 import { z } from 'zod/v4';
+import { ScopeName } from '../scopes';
 import { getContextDeps, protectedProcedure, router } from '../trpc';
 import type { IStoreBanHistory, IStoreKickHistory } from '../types';
 import { waitForEvent } from '../util';
 
 export const playerRouter = router({
   player: router({
-    list: protectedProcedure('player.list')
+    list: protectedProcedure(ScopeName.PlayerList)
       .input(
         z.object({
           page: z.number().optional().default(0),
@@ -81,7 +82,7 @@ export const playerRouter = router({
         return { ...resp, players };
       }),
 
-    get: protectedProcedure('player.get')
+    get: protectedProcedure(ScopeName.PlayerGet)
       .input(z.string())
       .query(async ({ input: id }) => {
         const { database, omegga } = getContextDeps();
@@ -162,7 +163,7 @@ export const playerRouter = router({
         };
       }),
 
-    ban: protectedProcedure('player.ban')
+    ban: protectedProcedure(ScopeName.PlayerBan)
       .input(
         z.object({
           id: z.string(),
@@ -206,7 +207,7 @@ export const playerRouter = router({
         return !!ban;
       }),
 
-    kick: protectedProcedure('player.kick')
+    kick: protectedProcedure(ScopeName.PlayerKick)
       .input(
         z.object({
           id: z.string(),
@@ -245,7 +246,7 @@ export const playerRouter = router({
         return ok;
       }),
 
-    unban: protectedProcedure('player.unban')
+    unban: protectedProcedure(ScopeName.PlayerUnban)
       .input(z.object({ id: z.string() }))
       .mutation(async ({ input, ctx }) => {
         const { database, omegga } = getContextDeps();
@@ -268,7 +269,7 @@ export const playerRouter = router({
         return ok;
       }),
 
-    clearBricks: protectedProcedure('player.clearBricks')
+    clearBricks: protectedProcedure(ScopeName.PlayerClearBricks)
       .input(z.object({ id: z.string() }))
       .mutation(async ({ input, ctx }) => {
         const { omegga } = getContextDeps();

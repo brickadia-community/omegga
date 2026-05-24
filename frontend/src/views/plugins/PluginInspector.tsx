@@ -11,6 +11,7 @@ import {
   Scroll,
   Toggle,
 } from '@components';
+import { useHasScope } from '@hooks';
 import {
   IconArrowBackUp,
   IconCheck,
@@ -23,7 +24,8 @@ import {
 import { debounce } from '@utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRoute } from 'wouter';
-import { trpc } from '../../trpc';
+import { Permissions } from '../../permissions';
+import { handleGlobalError, trpc } from '../../trpc';
 const jsonEq = (a: any, b: any) => {
   try {
     return JSON.stringify(a) === JSON.stringify(b);
@@ -40,9 +42,15 @@ export const PluginInspector = () => {
   const [waiting, setWaiting] = useState(false);
   const [showSave, setShowSave] = useState<Record<string, boolean>>({});
 
+  const canGet = useHasScope(Permissions.PluginGet);
+  const canLoad = useHasScope(Permissions.PluginLoad);
+  const canUnload = useHasScope(Permissions.PluginUnload);
+  const canToggle = useHasScope(Permissions.PluginToggle);
+  const canConfig = useHasScope(Permissions.PluginConfig);
+
   const getQuery = trpc.plugin.get.useQuery(
     { shortPath: params?.id ?? '' },
-    { enabled: !!params?.id },
+    { enabled: !!params?.id && canGet },
   );
 
   useEffect(() => {
@@ -98,6 +106,8 @@ export const PluginInspector = () => {
   pluginRef.current = plugin;
 
   trpc.plugin.onStatus.useSubscription(undefined, {
+    enabled: canGet,
+    onError: handleGlobalError,
     onData(data) {
       if (data.shortPath !== pluginRef.current?.path) return;
       setPlugin((prev: any) => ({ ...prev!, ...data }));
@@ -220,6 +230,7 @@ export const PluginInspector = () => {
                               ? 'text'
                               : (conf.type as 'password' | 'number')
                           }
+                          disabled={!canConfig}
                           value={config[c] as string | number}
                           onChange={value => updateConfig(c, value)}
                         />
@@ -228,18 +239,21 @@ export const PluginInspector = () => {
                         <ListInput
                           options={'options' in conf ? conf.options : undefined}
                           type={conf.itemType}
+                          disabled={!canConfig}
                           value={config[c] as (string | number)[]}
                           onChange={value => updateConfig(c, value)}
                         />
                       )}
                       {conf.type === 'players' && (
                         <PlayerDropdown
+                          disabled={!canConfig}
                           value={config[c] as { id: string; name: string }[]}
                           onChange={value => updateConfig(c, value)}
                         />
                       )}
                       {conf.type === 'role' && (
                         <RoleDropdown
+                          disabled={!canConfig}
                           value={config[c] as string}
                           onChange={value => updateConfig(c, value)}
                         />
@@ -247,17 +261,19 @@ export const PluginInspector = () => {
                       {conf.type === 'enum' && (
                         <Dropdown
                           options={conf.options}
+                          disabled={!canConfig}
                           value={config[c] as string}
                           onChange={value => updateConfig(c, value)}
                         />
                       )}
                       {conf.type === 'boolean' && (
                         <Toggle
+                          disabled={!canConfig}
                           value={config[c] as boolean}
                           onChange={value => updateConfig(c, value)}
                         />
                       )}
-                      {!jsonEq(conf.default, config[c]) && (
+                      {canConfig && !jsonEq(conf.default, config[c]) && (
                         <IconArrowBackUp
                           onClick={() => updateConfig(c, conf.default)}
                           className="reset-button"
@@ -310,7 +326,7 @@ export const PluginInspector = () => {
         )}
       </div>
       <Footer attached>
-        {plugin?.isEnabled && !plugin.isLoaded && (
+        {canLoad && plugin?.isEnabled && !plugin.isLoaded && (
           <Button
             main
             disabled={waiting}
@@ -321,7 +337,7 @@ export const PluginInspector = () => {
             Load
           </Button>
         )}
-        {plugin?.isEnabled && plugin.isLoaded && (
+        {canLoad && canUnload && plugin?.isEnabled && plugin.isLoaded && (
           <Button
             warn
             data-tooltip="Stop, then start the plugin"
@@ -333,7 +349,7 @@ export const PluginInspector = () => {
           </Button>
         )}
         <span style={{ flex: 1 }} />
-        {plugin?.isEnabled && plugin.isLoaded && (
+        {canUnload && plugin?.isEnabled && plugin.isLoaded && (
           <Button
             error
             disabled={waiting}
@@ -344,7 +360,7 @@ export const PluginInspector = () => {
             Unload
           </Button>
         )}
-        {plugin && !plugin?.isEnabled && (
+        {canToggle && plugin && !plugin?.isEnabled && (
           <Button
             main
             data-tooltip="Allow the plugin to be started"
@@ -355,7 +371,7 @@ export const PluginInspector = () => {
             Enable
           </Button>
         )}
-        {plugin?.isEnabled && !plugin.isLoaded && (
+        {canToggle && plugin?.isEnabled && !plugin.isLoaded && (
           <Button
             error
             data-tooltip="Prevent the plugin from being started"

@@ -4,6 +4,8 @@
 
 import { IPluginDocumentation } from '@/plugin';
 import Database from './database';
+import type { PermissionSet } from './permissions';
+import type { Scope } from './scopes';
 import {
   IFrontendBanEntry,
   IStoreBanHistory,
@@ -30,6 +32,8 @@ export type OmeggaSocketData = {
     username: string;
     isOwner: boolean;
     roles: string[];
+    permissions: PermissionSet;
+    resolvedScopes: Record<Scope, boolean>;
   };
 };
 

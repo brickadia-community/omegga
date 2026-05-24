@@ -12,7 +12,13 @@ import http from 'http';
 import https from 'https';
 import NedbStore from 'nedb-promises-session-store';
 import path from 'path';
+import bcrypt from 'bcryptjs';
+import {
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} from '@simplewebauthn/server';
 import Database from './database';
+import { verifyToken as verifyTOTP } from './totp';
 import setupMetrics from './metrics';
 import { appRouter } from './router';
 import { setWebserver } from './router/server';
@@ -41,7 +47,7 @@ export default class Webserver {
   created: Promise<boolean>;
 
   serverStatusInterval: ReturnType<typeof setInterval>;
-  lastReportedStatus: IServerStatus;
+  lastReportedStatus: IServerStatus | null = null;
 
   dataPath: string;
 
@@ -192,16 +198,151 @@ export default class Webserver {
 
       if (user) {
         req.session.userId = user._id;
-        req.session.save();
-        res.status(200).json({});
+        if (user.totpEnabled) {
+          req.session.mfaPending = true;
+          req.session.save();
+          res.status(200).json({ mfaRequired: true });
+        } else {
+          req.session.save();
+          res.status(200).json({});
+        }
       } else {
         res.status(404).json({ message: 'no user found' });
+      }
+    });
+
+    // rate limiting for MFA verification (per session)
+    const mfaAttempts = new Map<
+      string,
+      { count: number; lockedUntil: number }
+    >();
+
+    // TOTP verification during MFA challenge
+    openApi.post('/auth/mfa/totp', async (req, res) => {
+      if (!req.session.mfaPending || !req.session.userId) {
+        return res.status(400).json({ message: 'no pending MFA challenge' });
+      }
+
+      // rate limit: 5 attempts, then 60s lockout
+      const sid = req.sessionID;
+      const attempt = mfaAttempts.get(sid) ?? { count: 0, lockedUntil: 0 };
+      if (Date.now() < attempt.lockedUntil) {
+        return res
+          .status(429)
+          .json({ message: 'too many attempts, try again later' });
+      }
+
+      const { code } = req.body ?? {};
+      if (typeof code !== 'string') {
+        return res.status(422).json({ message: 'code required' });
+      }
+      const user = await this.database.findUserById(req.session.userId);
+      if (!user || !user.totpSecret) {
+        return res.status(400).json({ message: 'MFA not configured' });
+      }
+
+      let verified = false;
+
+      if (verifyTOTP(code, user.totpSecret)) {
+        verified = true;
+      }
+
+      // try recovery codes
+      if (!verified && user.recoveryCodes?.length) {
+        for (const hashedCode of user.recoveryCodes) {
+          if (await bcrypt.compare(code, hashedCode)) {
+            await this.database.removeRecoveryCode(user.username, hashedCode);
+            verified = true;
+            break;
+          }
+        }
+      }
+
+      if (verified) {
+        mfaAttempts.delete(sid);
+        delete req.session.mfaPending;
+        req.session.save();
+        return res.status(200).json({});
+      }
+
+      attempt.count++;
+      if (attempt.count >= 5) {
+        attempt.lockedUntil = Date.now() + 60_000;
+        attempt.count = 0;
+      }
+      mfaAttempts.set(sid, attempt);
+      res.status(401).json({ message: 'invalid code' });
+    });
+
+    const getRpID = (req: express.Request) => {
+      const origin = req.headers.origin;
+      if (origin) {
+        try {
+          return new URL(origin as string).hostname;
+        } catch {}
+      }
+      return req.hostname;
+    };
+
+    // WebAuthn authentication options (passwordless login)
+    openApi.get('/auth/webauthn/options', async (req, res) => {
+      const rpID = getRpID(req);
+      const options = await generateAuthenticationOptions({ rpID });
+      req.session.mfaChallenge = options.challenge;
+      req.session.save();
+      res.json(options);
+    });
+
+    // WebAuthn authentication verification
+    openApi.post('/auth/webauthn/verify', async (req, res) => {
+      const challenge = req.session.mfaChallenge;
+      if (!challenge) {
+        return res.status(400).json({ message: 'no pending challenge' });
+      }
+      // clear challenge immediately to prevent replay
+      delete req.session.mfaChallenge;
+      req.session.save();
+      try {
+        const { credential } = req.body;
+        const user = await this.database.findUserByPasskeyId(credential?.id);
+        if (!user || user.isBanned) {
+          return res.status(401).json({ message: 'unknown credential' });
+        }
+        const passkey = user.passkeys!.find(p => p.id === credential.id)!;
+        const verification = await verifyAuthenticationResponse({
+          response: credential,
+          expectedChallenge: challenge,
+          expectedOrigin:
+            req.headers.origin ?? `${req.protocol}://${req.get('host')}`,
+          expectedRPID: getRpID(req),
+          credential: {
+            id: passkey.id,
+            publicKey: Buffer.from(passkey.publicKey, 'base64url'),
+            counter: passkey.counter,
+            transports: passkey.transports as any,
+          },
+        });
+        if (!verification.verified) {
+          return res.status(401).json({ message: 'verification failed' });
+        }
+        await this.database.updatePasskeyCounter(
+          user.username,
+          passkey.id,
+          verification.authenticationInfo.newCounter,
+        );
+        req.session.userId = (user as any)._id;
+        delete req.session.mfaPending;
+        req.session.save();
+        res.status(200).json({});
+      } catch (e) {
+        res.status(400).json({ message: 'verification error' });
       }
     });
 
     // authentication middleware for protected api routes
     api.all('*', (req, _res, next) => {
       (async () => {
+        if (req.session.mfaPending) return next(new Error('unauthorized'));
         const user = await this.database.findUserById(req.session.userId);
         if (!user || user.isBanned) return next(new Error('unauthorized'));
         next();
@@ -232,6 +373,9 @@ export default class Webserver {
 
     // every request goes through the index file (frontend handles 404s)
     this.app.use(async (req, res) => {
+      if (req.session.mfaPending) {
+        return res.sendFile(path.join(PUBLIC_PATH, 'auth.html'));
+      }
       const user = await this.database.findUserById(req.session.userId);
       const isAuth = user && !user.isBanned;
       if (isAuth) {

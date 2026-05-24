@@ -3,6 +3,8 @@ import type Omegga from '@omegga/server';
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import type Database from './database';
+import { serverEvents } from './events';
+import { userHasScope } from './permissions';
 import type { Scope } from './scopes';
 import type { IStoreUser } from './types';
 
@@ -24,6 +26,8 @@ export function getContextDeps(): ContextDeps {
 
 export type Context = {
   user: IStoreUser & { _id: string };
+  req: import('express').Request;
+  userAbort: AbortController;
   log: (...args: any[]) => void;
   error: (...args: any[]) => void;
 };
@@ -34,7 +38,11 @@ export async function createContext(
   const { database } = getContextDeps();
   const req = opts.req;
 
-  const userId = (req as any).session?.userId;
+  const session = (req as any).session;
+  if (session?.mfaPending) {
+    throw new TRPCError({ code: 'UNAUTHORIZED' });
+  }
+  const userId = session?.userId;
   const user = await database.findUserById(userId);
   if (!user || user.isBanned) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
@@ -48,24 +56,60 @@ export async function createContext(
 
   const usernameText = `[${(user.username || 'Admin').brightMagenta}]`;
 
+  let _userAbort: AbortController | null = null;
+  const getUserAbort = () => {
+    if (!_userAbort) {
+      _userAbort = new AbortController();
+      const ac = _userAbort;
+      const onInvalidated = (name: string) => {
+        if (name === user.username) ac.abort();
+      };
+      serverEvents.on('userInvalidated', onInvalidated);
+      ac.signal.addEventListener('abort', () => {
+        serverEvents.off('userInvalidated', onInvalidated);
+      });
+    }
+    return _userAbort;
+  };
+
   return {
     user,
+    req,
+    get userAbort() {
+      return getUserAbort();
+    },
     log: (...args: any[]) => Logger.logp(usernameText, ...args),
     error: (...args: any[]) => Logger.errorp(usernameText, ...args),
   };
 }
 
-const t = initTRPC.context<Context>().create();
+const t = initTRPC.context<Context>().create({
+  errorFormatter({ shape, error, path, ctx }) {
+    const user = (ctx as Context | undefined)?.user?.username || '?';
+    Logger.errorp(
+      `[${user.brightMagenta}]`,
+      `${error.code} ${path ?? '?'}: ${error.message}`,
+    );
+    return shape;
+  },
+});
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
 export const mergeRouters = t.mergeRouters;
 
 export const requireScope = (scope: Scope) =>
-  t.middleware(({ ctx, next }) => {
+  t.middleware(async ({ ctx, next }) => {
     if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-    // TODO: check ctx.user.roles against scope
-    // For now, all authenticated users pass
+    if (ctx.user.isOwner) return next({ ctx });
+    const { database } = getContextDeps();
+    const defaults = await database.getDefaultPermissions();
+    if (!userHasScope(ctx.user, scope, defaults)) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: `missing scope: ${scope}`,
+      });
+    }
     return next({ ctx });
   });
 

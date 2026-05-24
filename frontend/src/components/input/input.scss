@@ -1,4 +1,5 @@
 @use '../../css/theme';
+@use 'sass:color';
 
 .input {
   display: flex;
@@ -37,7 +38,7 @@
     border-radius: theme.$br-radius-sm;
 
     &::placeholder {
-      color: theme.$br-element-bg;
+      color: color.adjust(theme.$br-element-bg, $lightness: -5%);
     }
 
     &:focus {

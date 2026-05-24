@@ -2,7 +2,20 @@
 
 ## Latest
 
-Add new changes here as they are implemented
+- Future features go here
+
+## 1.6.0 - 2026-05-24
+
+- Add owner-only user disable and delete actions to the web UI
+- Add granular permission system with scopes and domains for access control
+- Add TOTP two-factor authentication, WebAuthn passkeys (passwordless), and recovery codes
+- Add self-service account management (password change, MFA setup) for all users in the Account view
+- Add `/user passwd` and `/user resetmfa` terminal commands
+- Web UI: scope-aware enforcement -- buttons, views, queries, and subscriptions gated by user permissions
+- Web UI: user inspector with permission editor, default permissions, user disable/delete
+- Web UI: slightly improved responsive tablet layout for all views
+- Deleted or banned users are immediately disconnected from active sessions and live subscriptions
+
 
 ## 1.5.4 - 2026-05-18
 
