@@ -1,10 +1,10 @@
-import { Toggle } from '@components';
+import { Input, Toggle } from '@components';
 import {
   IconCheck,
   IconChevronDown,
   IconChevronRight,
 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   DOMAIN_LABELS,
   DOMAIN_ORDER,
@@ -83,6 +83,10 @@ export const PermissionEditor = ({
   disabled?: boolean;
 }) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [search, setSearch] = useState('');
+
+  const searchLower = search.toLowerCase();
+  const hasSearch = searchLower.length > 0;
 
   const rootLocked = perms.root !== 'off';
 
@@ -126,23 +130,55 @@ export const PermissionEditor = ({
     return defaultPerms.scopes[scope] ?? false;
   };
 
+  const matchingDomains = useMemo(() => {
+    if (!hasSearch) return null;
+    const result: Record<string, Permission[]> = {};
+    for (const domain of DOMAIN_ORDER) {
+      const scopes = SCOPES_BY_DOMAIN[domain] ?? [];
+      const matches = scopes.filter(scope => {
+        const info = SCOPE_INFO[scope];
+        return (
+          scope.toLowerCase().includes(searchLower) ||
+          DOMAIN_LABELS[domain]?.toLowerCase().includes(searchLower) ||
+          info?.description?.toLowerCase().includes(searchLower)
+        );
+      });
+      if (matches.length > 0) result[domain] = matches;
+    }
+    return result;
+  }, [searchLower, hasSearch]);
+
   return (
     <div className="permission-editor">
-      <div className="perm-row root-row">
-        <span className="perm-label root-label">Everything</span>
-        <LevelPicker
-          value={perms.root}
-          options={ROOT_OPTIONS}
-          onChange={setRoot}
-          disabled={disabled}
+      <div className="perm-search">
+        <Input
+          type="text"
+          placeholder="Search Permissions..."
+          value={search}
+          onChange={setSearch}
         />
       </div>
+      {!hasSearch && (
+        <div className="perm-row root-row">
+          <span className="perm-label root-label">Everything</span>
+          <LevelPicker
+            value={perms.root}
+            options={ROOT_OPTIONS}
+            onChange={setRoot}
+            disabled={disabled}
+          />
+        </div>
+      )}
       {DOMAIN_ORDER.map(domain => {
         const domainLevel = perms.domains[domain];
         const domainLocked =
           rootLocked || domainLevel === 'all' || domainLevel === 'read';
-        const scopes = SCOPES_BY_DOMAIN[domain] ?? [];
-        const isExpanded = expanded[domain];
+        const allScopes = SCOPES_BY_DOMAIN[domain] ?? [];
+        const scopes = hasSearch
+          ? (matchingDomains?.[domain] ?? [])
+          : allScopes;
+        if (hasSearch && scopes.length === 0) return null;
+        const isExpanded = hasSearch || expanded[domain] !== false;
 
         return (
           <div className="perm-domain" key={domain}>

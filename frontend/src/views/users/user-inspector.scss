@@ -32,6 +32,15 @@
     }
   }
 
+  .perm-search {
+    padding: 4px 10px;
+    background-color: theme.$br-bg-header;
+
+    .input {
+      width: 100%;
+    }
+  }
+
   .perm-label {
     color: theme.$br-element-fg;
     flex: 1;
@@ -204,10 +213,10 @@
 }
 
 .widgets-list-up {
-  bottom: 100%;
+  bottom: 100% !important;
   top: auto !important;
   right: 0;
-  width: max-content;
+  min-width: max-content !important;
 }
 
 .mfa-manager {
