@@ -9,6 +9,7 @@ import { getContextDeps, protectedProcedure, router } from '../trpc';
 import type { IStoreBanHistory, IStoreKickHistory } from '../types';
 import { waitForEvent } from '../util';
 
+
 export const playerRouter = router({
   player: router({
     list: protectedProcedure(ScopeName.PlayerList)
@@ -283,5 +284,14 @@ export const playerRouter = router({
         omegga.writeln(`Bricks.Clear "${id}"`);
         return true;
       }),
+
+    roles: router({
+      list: protectedProcedure(ScopeName.PlayerList).query(() => {
+        const { omegga } = getContextDeps();
+        return _.sortBy(omegga.getRoleSetup()?.roles ?? [], p =>
+          p.name.toLowerCase(),
+        );
+      }),
+    }),
   }),
 });

@@ -4,6 +4,15 @@
 
 - Future features go here
 
+## 1.6.1 - 2026-05-25
+
+- Add role-based access control (RBAC) with hierarchical role management
+- Roles view with create, edit, delete, and drag-reorder (with toggle)
+- Role hierarchy enforcement: users can only manage roles below their own level
+- Default permissions editor moved to the Roles view as the "Everyone" entry
+- Permission editor: scope counts per domain and total, read-only mode when lacking permissions
+- Animated dropdown menus (fade + slide) across all views using motion
+
 ## 1.6.0 - 2026-05-24
 
 - Add owner-only user disable and delete actions to the web UI

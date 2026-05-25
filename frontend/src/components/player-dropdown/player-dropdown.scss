@@ -30,6 +30,10 @@
   .player-search {
     position: relative;
 
+    > .button {
+      margin-right: 0;
+    }
+
     .options {
       position: absolute;
       bottom: 100%;

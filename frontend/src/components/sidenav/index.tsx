@@ -4,13 +4,14 @@ import {
   IconMessages,
   IconPlug,
   IconServer,
+  IconShield,
   IconUser,
   IconUserCog,
   IconWorld,
 } from '@tabler/icons-react';
 import type React from 'react';
 import { memo, type AnchorHTMLAttributes } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useHasScope } from '@hooks';
 import { Permissions, type Permission } from '../../permissions';
 
@@ -19,20 +20,28 @@ export const MenuButton = ({
   disabled,
   to,
   scope,
+  alsoActive,
   ...props
 }: React.PropsWithChildren<{
   disabled?: boolean;
   to: string;
   scope?: Permission;
+  alsoActive?: string;
 }> &
   AnchorHTMLAttributes<HTMLAnchorElement>) => {
   const hasScope = useHasScope(...(scope ? [scope] : []));
+  const [location] = useLocation();
   if (scope && !hasScope) return null;
+  const isActive =
+    to === '/'
+      ? location === '/'
+      : location === to || location.startsWith(to + '/') ||
+        (alsoActive != null && location.startsWith(alsoActive));
   return (
     <Link
       href={to}
-      className={active =>
-        `menu-button ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}`
+      className={() =>
+        `menu-button ${disabled ? 'disabled' : ''} ${isActive ? 'active' : ''}`
       }
       {...props}
     >
@@ -41,7 +50,11 @@ export const MenuButton = ({
   );
 };
 
-export const SideNav = memo(() => (
+export const SideNav = memo(() => {
+  const hasUserList = useHasScope(Permissions.UserList);
+  const hasRoleList = useHasScope(Permissions.RoleList);
+
+  return (
   <div className="main-menu-buttons">
     <MenuButton
       to="/"
@@ -90,17 +103,28 @@ export const SideNav = memo(() => (
       <IconServer style={{ background: '#453d9c' }} />
       Server
     </MenuButton>
-    <MenuButton
-      to="/users"
-      scope={Permissions.UserList}
-      data-tooltip="Server users"
-    >
-      <IconUser style={{ background: '#7f0b8a' }} />
-      Users
-    </MenuButton>
+    {hasUserList ? (
+      <MenuButton
+        to="/users"
+        alsoActive="/roles"
+        data-tooltip="Server users and roles"
+      >
+        <IconUser style={{ background: '#7f0b8a' }} />
+        Users
+      </MenuButton>
+    ) : hasRoleList ? (
+      <MenuButton
+        to="/roles"
+        data-tooltip="Server roles"
+      >
+        <IconShield style={{ background: '#7f0b8a' }} />
+        Roles
+      </MenuButton>
+    ) : null}
     <MenuButton to="/account" data-tooltip="Your account settings">
       <IconUserCog style={{ background: '#5a5a5a' }} />
       Account
     </MenuButton>
   </div>
-));
+  );
+});

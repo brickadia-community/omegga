@@ -1,13 +1,21 @@
 import { Button, Loader, NavBar, Scroll } from '@components';
+import { useHasScope } from '@hooks';
 import { IconDeviceFloppy } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Permissions } from '../../permissions';
 import { trpc } from '../../trpc';
 import { PermissionEditor, type PermissionSet } from './PermissionEditor';
 
 export const DefaultPermissions = () => {
-  const defaultPermsQuery = trpc.user.defaultPermissions.get.useQuery();
+  const canView = useHasScope(Permissions.RoleList);
+  const canEdit = useHasScope(Permissions.RoleDefaultPermissions);
+
+  const defaultPermsQuery = trpc.role.defaultPermissions.get.useQuery(
+    undefined,
+    { enabled: canView },
+  );
   const setDefaultPermsMutation =
-    trpc.user.defaultPermissions.set.useMutation();
+    trpc.role.defaultPermissions.set.useMutation();
 
   const [editPerms, setEditPerms] = useState<PermissionSet | null>(null);
   const [saving, setSaving] = useState(false);
@@ -47,10 +55,12 @@ export const DefaultPermissions = () => {
       <NavBar attached>
         Default Permissions
         <span style={{ flex: 1 }} />
-        <Button normal disabled={saving || !dirty} onClick={save}>
-          <IconDeviceFloppy />
-          Save
-        </Button>
+        {canEdit && (
+          <Button normal disabled={saving || !dirty} onClick={save}>
+            <IconDeviceFloppy />
+            Save
+          </Button>
+        )}
       </NavBar>
       <div className="player-inspector">
         <div className="player-view">
@@ -67,7 +77,10 @@ export const DefaultPermissions = () => {
                   </div>
                 </div>
                 <div className="section-header">Permissions</div>
-                <PermissionEditor perms={editPerms} onChange={setEditPerms} />
+                <PermissionEditor
+                  perms={editPerms}
+                  onChange={canEdit ? setEditPerms : undefined}
+                />
               </Scroll>
             )}
           </div>

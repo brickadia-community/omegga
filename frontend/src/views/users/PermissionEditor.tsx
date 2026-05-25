@@ -78,7 +78,7 @@ export const PermissionEditor = ({
   disabled,
 }: {
   perms: PermissionSet;
-  onChange: (p: PermissionSet) => void;
+  onChange?: (p: PermissionSet) => void;
   defaultPerms?: PermissionSet | null;
   disabled?: boolean;
 }) => {
@@ -88,13 +88,42 @@ export const PermissionEditor = ({
   const searchLower = search.toLowerCase();
   const hasSearch = searchLower.length > 0;
 
+  const readOnly = !onChange;
   const rootLocked = perms.root !== 'off';
+
+  const allScopeKeys = Object.keys(SCOPE_INFO) as Permission[];
+  const totalScopes = allScopeKeys.length;
+  const totalEnabled = useMemo(() => {
+    if (perms.root === 'all') return totalScopes;
+    let count = 0;
+    for (const scope of allScopeKeys) {
+      const info = SCOPE_INFO[scope];
+      if (!info) continue;
+      if (perms.root === 'read' && info.readOnly) {
+        count++;
+        continue;
+      }
+      const dl = perms.domains[info.domain];
+      if (dl === 'all') {
+        count++;
+        continue;
+      }
+      if (dl === 'read' && info.readOnly) {
+        count++;
+        continue;
+      }
+      if (perms.scopes[scope]) {
+        count++;
+      }
+    }
+    return count;
+  }, [perms]);
 
   const setRoot = (root: RootLevel) => {
     if (root !== 'off') {
-      onChange({ ...perms, root, domains: {}, scopes: {} });
+      onChange?.({ ...perms, root, domains: {}, scopes: {} });
     } else {
-      onChange({ ...perms, root });
+      onChange?.({ ...perms, root });
     }
   };
 
@@ -107,18 +136,18 @@ export const PermissionEditor = ({
     } else {
       delete domains[domain];
     }
-    onChange({ ...perms, domains, scopes });
+    onChange?.({ ...perms, domains, scopes });
   };
 
   const setScope = (scope: string, value: boolean) => {
     const scopes = { ...perms.scopes };
     if (value) scopes[scope] = true;
     else delete scopes[scope];
-    onChange({ ...perms, scopes });
+    onChange?.({ ...perms, scopes });
   };
 
   const toggleExpanded = (domain: string) =>
-    setExpanded(e => ({ ...e, [domain]: !e[domain] }));
+    setExpanded(e => ({ ...e, [domain]: e[domain] === false }));
 
   const effectiveForScope = (scope: Permission): boolean | null => {
     if (!defaultPerms) return null;
@@ -134,15 +163,24 @@ export const PermissionEditor = ({
 
   const matchingDomains = useMemo(() => {
     if (!hasSearch) return null;
+    const pattern = new RegExp(
+      searchLower
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(w => `(?=.*${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`)
+        .join(''),
+      'i',
+    );
+    const matchesSearch = (text: string) => pattern.test(text);
     const result: Record<string, Permission[]> = {};
     for (const domain of DOMAIN_ORDER) {
       const scopes = SCOPES_BY_DOMAIN[domain] ?? [];
       const matches = scopes.filter(scope => {
         const info = SCOPE_INFO[scope];
         return (
-          scope.toLowerCase().includes(searchLower) ||
-          DOMAIN_LABELS[domain]?.toLowerCase().includes(searchLower) ||
-          info?.description?.toLowerCase().includes(searchLower)
+          matchesSearch(scope) ||
+          matchesSearch(DOMAIN_LABELS[domain] ?? '') ||
+          matchesSearch(info?.description ?? '')
         );
       });
       if (matches.length > 0) result[domain] = matches;
@@ -163,11 +201,14 @@ export const PermissionEditor = ({
       {!hasSearch && (
         <div className="perm-row root-row">
           <span className="perm-label root-label">Everything</span>
+          <span className="scope-count">
+            {totalEnabled}/{totalScopes}
+          </span>
           <LevelPicker
             value={perms.root}
             options={ROOT_OPTIONS}
             onChange={setRoot}
-            disabled={disabled}
+            disabled={disabled || readOnly}
           />
         </div>
       )}
@@ -181,6 +222,14 @@ export const PermissionEditor = ({
           : allScopes;
         if (hasSearch && scopes.length === 0) return null;
         const isExpanded = hasSearch || expanded[domain] !== false;
+        const enabledCount =
+          perms.root === 'all' || domainLevel === 'all'
+            ? allScopes.length
+            : perms.root === 'read' || domainLevel === 'read'
+              ? allScopes.filter(
+                  s => SCOPE_INFO[s]?.readOnly || perms.scopes[s],
+                ).length
+              : allScopes.filter(s => perms.scopes[s]).length;
 
         return (
           <div className="perm-domain" key={domain}>
@@ -196,11 +245,14 @@ export const PermissionEditor = ({
                 )}{' '}
                 {DOMAIN_LABELS[domain]}
               </span>
+              <span className="scope-count">
+                {enabledCount}/{allScopes.length}
+              </span>
               <LevelPicker
                 value={domainLevel ?? 'none'}
                 options={DOMAIN_OPTIONS}
                 onChange={v => setDomain(domain, v)}
-                disabled={disabled || rootLocked}
+                disabled={disabled || readOnly || rootLocked}
               />
             </div>
             {isExpanded &&
@@ -239,7 +291,7 @@ export const PermissionEditor = ({
                       <Toggle
                         value={scopeVal}
                         onChange={v => setScope(scope, v)}
-                        disabled={disabled || domainLocked}
+                        disabled={disabled || readOnly || domainLocked}
                       />
                     </div>
                   </div>

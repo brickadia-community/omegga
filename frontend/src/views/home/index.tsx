@@ -1,4 +1,4 @@
-import { Button, Header, NavHeader, PageContent, SideNav } from '@components';
+import { AnimatedDropdown, Button, Header, NavHeader, PageContent, SideNav } from '@components';
 import { useHasScope } from '@hooks';
 import {
   IconApps,
@@ -157,10 +157,7 @@ export const HomeView = () => {
               <IconApps />
               Widgets
             </Button>
-            <div
-              className="widgets-list"
-              style={{ display: showWidgets ? 'block' : 'none' }}
-            >
+            <AnimatedDropdown visible={showWidgets}>
               {Object.entries(WIDGET_LIST).map(([k, widget]) => (
                 <div key={k} className="widget-item">
                   <div className="name" data-tooltip={widget.tooltip}>
@@ -188,7 +185,7 @@ export const HomeView = () => {
                   )}
                 </div>
               ))}
-            </div>
+            </AnimatedDropdown>
           </div>
         )}
       </NavHeader>

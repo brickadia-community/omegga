@@ -5,6 +5,7 @@ import {
   userHasScope,
   type PermissionSet,
 } from '../permissions';
+import { checkRoleHierarchy } from '../roleHierarchy';
 import { ScopeName } from '../scopes';
 import { router, protectedProcedure, getContextDeps } from '../trpc';
 import type { IStoreUser } from '../types';
@@ -137,8 +138,8 @@ export const userRouter = router({
           if (!(await bcryptLib.compare(input.currentPassword, ctx.user.hash)))
             return 'incorrect current password';
         } else {
-          const defaults = await database.getDefaultPermissions();
-          if (!userHasScope(ctx.user, ScopeName.UserPasswd, defaults))
+          const rolePerms = await database.getUserRolePermissions(ctx.user);
+          if (!userHasScope(ctx.user, ScopeName.UserPasswd, rolePerms))
             return 'missing permission';
         }
 
@@ -233,9 +234,9 @@ export const userRouter = router({
 
         // privilege escalation check: non-owner can't grant scopes they don't have
         if (!ctx.user.isOwner) {
-          const defaults = await database.getDefaultPermissions();
-          const myScopes = resolveAllScopes(ctx.user.permissions!, defaults);
-          const grantedScopes = resolveAllScopes(permissions, defaults);
+          const rolePerms = await database.getUserRolePermissions(ctx.user);
+          const myScopes = resolveAllScopes(ctx.user.permissions!, rolePerms);
+          const grantedScopes = resolveAllScopes(permissions, rolePerms);
           for (const [scope, granted] of Object.entries(grantedScopes)) {
             if (granted && !myScopes[scope as keyof typeof myScopes])
               return `cannot grant permission you do not have: ${scope}`;
@@ -247,29 +248,66 @@ export const userRouter = router({
         return '';
       }),
 
-    defaultPermissions: router({
-      get: protectedProcedure(ScopeName.UserPermissions).query(async () => {
+    grantRole: protectedProcedure(ScopeName.UserGrantRole)
+      .input(z.object({ username: z.string(), roleId: z.string() }))
+      .mutation(async ({ input, ctx }) => {
         const { database } = getContextDeps();
-        const defaults = await database.getDefaultPermissions();
-        return {
-          root: defaults.root,
-          domains: defaults.domains,
-          scopes: defaults.scopes,
-        };
+        const { username, roleId } = input;
+        const { log } = ctx;
+
+        const target = await database.stores.users.findOne<
+          IStoreUser & { _id: string }
+        >({ type: 'user', username });
+        if (!target) return 'user does not exist';
+
+        const role = await database.getRole(roleId);
+        if (!role) return 'role not found';
+
+        const err = await checkRoleHierarchy(
+          ctx.user,
+          role,
+          ScopeName.UserGrantRole,
+        );
+        if (err) return err;
+
+        if (target.roles.includes(roleId)) return '';
+        await database.stores.users.update(
+          { _id: target._id },
+          { $addToSet: { roles: roleId } },
+        );
+        log(`granted role "${role.name.yellow}" to "${username.yellow}"`);
+        return '';
       }),
 
-      set: protectedProcedure(ScopeName.UserPermissions)
-        .input(PermissionSetSchema)
-        .mutation(async ({ input, ctx }) => {
-          const { database } = getContextDeps();
-          const { log } = ctx;
-          await database.setDefaultPermissions(
-            input as unknown as PermissionSet,
-          );
-          log(`updated default permissions`);
-          return '';
-        }),
-    }),
+    revokeRole: protectedProcedure(ScopeName.UserGrantRole)
+      .input(z.object({ username: z.string(), roleId: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const { database } = getContextDeps();
+        const { username, roleId } = input;
+        const { log } = ctx;
+
+        const target = await database.stores.users.findOne<
+          IStoreUser & { _id: string }
+        >({ type: 'user', username });
+        if (!target) return 'user does not exist';
+
+        const role = await database.getRole(roleId);
+        if (!role) return 'role not found';
+
+        const err = await checkRoleHierarchy(
+          ctx.user,
+          role,
+          ScopeName.UserGrantRole,
+        );
+        if (err) return err;
+
+        await database.stores.users.update(
+          { _id: target._id },
+          { $pull: { roles: roleId } },
+        );
+        log(`revoked role "${role.name.yellow}" from "${username.yellow}"`);
+        return '';
+      }),
 
     resetMfa: protectedProcedure(ScopeName.UserResetMfa)
       .input(z.object({ username: z.string() }))

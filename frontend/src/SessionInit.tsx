@@ -4,7 +4,6 @@ import { $rpcConnected, $rpcDisconnected } from './stores/connected';
 import {
   $omeggaData,
   $resolvedScopes,
-  $roles,
   $showLogout,
   $user,
 } from './stores/user';
@@ -19,7 +18,6 @@ export const SessionInit = () => {
       $omeggaData.set(data);
       $version.set(data.version);
       $user.set(data.user);
-      $roles.set(data.roles);
       $resolvedScopes.set(data.user.resolvedScopes ?? {});
       $showLogout.set(data.canLogOut);
       $rpcConnected.set(true);

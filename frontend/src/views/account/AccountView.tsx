@@ -1,4 +1,5 @@
 import {
+  AnimatedDropdown,
   Button,
   Dimmer,
   Footer,
@@ -83,10 +84,7 @@ export const AccountView = () => {
             {showActions ? <IconCaretUp /> : <IconCaretDown />}
             Actions
           </Button>
-          <div
-            className="widgets-list"
-            style={{ display: showActions ? 'block' : 'none' }}
-          >
+          <AnimatedDropdown visible={showActions}>
             <Button
               info
               onClick={() => {
@@ -97,7 +95,7 @@ export const AccountView = () => {
               <IconLock />
               Change Password
             </Button>
-          </div>
+          </AnimatedDropdown>
         </div>
       </NavHeader>
       <PageContent>

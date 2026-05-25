@@ -25,6 +25,7 @@ import {
   IStoreChat,
   IStoreDefaultPermissions,
   IStoreKickHistory,
+  IStoreRole,
   IStoreServerInstance,
   IStoreUser,
   IStoreVersion,
@@ -63,6 +64,7 @@ export default class Database extends EventEmitter {
     server: Datastore;
   };
   defaultPermissionsCache: IStoreDefaultPermissions | null = null;
+  rolesCache: (IStoreRole & { _id: string })[] | null = null;
   calendar: Calendar;
 
   constructor(options: IServerConfig, omegga: Omegga) {
@@ -145,7 +147,11 @@ export default class Database extends EventEmitter {
                 if (v === 'enabled' || v === true) scopes[k] = true;
                 else if (v === 'disabled' || v === false) scopes[k] = false;
               }
-              const encoded = encodePermissions({ root, domains, scopes });
+              const encoded = encodePermissions({
+                root,
+                domains,
+                scopes,
+              } as PermissionSet);
               await store.update(
                 { _id: user._id },
                 { $set: { permissions: encoded } },
@@ -612,10 +618,110 @@ export default class Database extends EventEmitter {
     });
   }
 
-  // get a list of roles
-  // TODO: actually implement roles
-  getRoles(): Promise<{ type: 'role'; name: 'string' }[]> {
-    return this.stores.server.find({ type: 'role' });
+  async getAllRoles(): Promise<(IStoreRole & { _id: string })[]> {
+    if (this.rolesCache) return this.rolesCache;
+    const roles = await this.stores.server.find<IStoreRole & { _id: string }>({
+      type: 'webRole',
+    });
+    roles.sort((a, b) => b.order - a.order);
+    this.rolesCache = roles;
+    return roles;
+  }
+
+  invalidateRolesCache() {
+    this.rolesCache = null;
+    this.defaultPermissionsCache = null;
+  }
+
+  async getRole(id: string): Promise<(IStoreRole & { _id: string }) | null> {
+    return await this.stores.server.findOne<IStoreRole & { _id: string }>({
+      _id: id,
+      type: 'webRole',
+    });
+  }
+
+  async createRole(
+    name: string,
+    description: string,
+    permissions: PermissionSet,
+  ): Promise<IStoreRole & { _id: string }> {
+    await this.stores.server.update(
+      { type: 'webRole' },
+      { $inc: { order: 1 } },
+      { multi: true },
+    );
+    const role = await this.stores.server.insert<IStoreRole>({
+      type: 'webRole',
+      name,
+      description,
+      order: 1,
+      permissions: encodePermissions(permissions),
+    });
+    this.invalidateRolesCache();
+    return role;
+  }
+
+  async updateRole(
+    id: string,
+    updates: Partial<Pick<IStoreRole, 'name' | 'description' | 'order'>> & {
+      permissions?: PermissionSet;
+    },
+  ): Promise<void> {
+    const $set: Record<string, any> = {};
+    if (updates.name !== undefined) $set.name = updates.name;
+    if (updates.description !== undefined)
+      $set.description = updates.description;
+    if (updates.order !== undefined) $set.order = updates.order;
+    if (updates.permissions !== undefined)
+      $set.permissions = encodePermissions(updates.permissions);
+    await this.stores.server.update({ _id: id, type: 'webRole' }, { $set });
+    this.invalidateRolesCache();
+  }
+
+  async deleteRole(id: string): Promise<string> {
+    const role = await this.getRole(id);
+    if (!role) return 'role not found';
+    await this.stores.server.remove({ _id: id }, {});
+    await this.stores.users.update(
+      { type: 'user', roles: id },
+      { $pull: { roles: id } },
+      { multi: true },
+    );
+    this.invalidateRolesCache();
+    return '';
+  }
+
+  async reorderRoles(orderedIds: string[]): Promise<void> {
+    const len = orderedIds.length;
+    for (let i = 0; i < len; i++) {
+      await this.stores.server.update(
+        { _id: orderedIds[i], type: 'webRole' },
+        { $set: { order: len - i } },
+      );
+    }
+    this.invalidateRolesCache();
+  }
+
+  async getUserRolePermissions(user: IStoreUser): Promise<PermissionSet[]> {
+    const defaults = await this.getDefaultPermissions();
+    const defaultPerms: PermissionSet = {
+      root: defaults.root,
+      domains: defaults.domains,
+      scopes: defaults.scopes,
+    };
+    const allRoles = await this.getAllRoles();
+    const userRoles = allRoles.filter(r => user.roles.includes(r._id));
+    return [
+      defaultPerms,
+      ...userRoles.map(r => decodePermissions(r.permissions)),
+    ];
+  }
+
+  async getUserAssignedRoles(
+    user: IStoreUser,
+  ): Promise<(IStoreRole & { _id: string })[]> {
+    const allRoles = await this.getAllRoles();
+    return allRoles.filter(r => user.roles.includes(r._id));
   }
 
   // add a chat message to the chat log store

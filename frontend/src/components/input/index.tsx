@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 export function Input<T extends 'text' | 'number' | 'password'>({
   placeholder,
@@ -49,6 +49,35 @@ export function Input<T extends 'text' | 'number' | 'password'>({
               }
             : undefined
         }
+        {...props}
+      />
+    </div>
+  );
+}
+
+export function TextArea({
+  placeholder,
+  disabled,
+  value,
+  rows = 3,
+  onChange,
+  ...props
+}: {
+  placeholder?: string;
+  disabled?: boolean;
+  value: string;
+  rows?: number;
+  onChange?: (v: string) => void;
+} & Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'>) {
+  return (
+    <div className={`input ${disabled ? 'disabled' : ''}`}>
+      <textarea
+        spellCheck="false"
+        placeholder={placeholder}
+        disabled={disabled}
+        value={value}
+        rows={rows}
+        onChange={e => onChange?.(e.target.value)}
         {...props}
       />
     </div>

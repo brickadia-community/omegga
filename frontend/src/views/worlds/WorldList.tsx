@@ -1,4 +1,5 @@
 import {
+  AnimatedDropdown,
   Button,
   Dropdown,
   Input,
@@ -46,7 +47,6 @@ export const WorldList = () => {
   const activeWorld = useStore($activeWorld);
   const [showWidgets, setShowWidgets] = useState(false);
 
-  const canRevisions = useHasScope(Permissions.WorldRevisions);
   const canSave = useHasScope(Permissions.WorldSave);
   const canCreate = useHasScope(Permissions.WorldCreate);
   const canUse = useHasScope(Permissions.WorldUse);
@@ -199,10 +199,7 @@ export const WorldList = () => {
               {showWidgets ? <IconCaretUp /> : <IconCaretDown />}
               Actions
             </Button>
-            <div
-              className="widgets-list"
-              style={{ display: showWidgets ? 'block' : 'none' }}
-            >
+            <AnimatedDropdown visible={showWidgets}>
               {canSave && (
                 <Button
                   info
@@ -269,7 +266,7 @@ export const WorldList = () => {
                   Clear Default
                 </Button>
               )}
-            </div>
+            </AnimatedDropdown>
           </div>
         )}
       </NavHeader>

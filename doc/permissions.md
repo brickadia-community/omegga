@@ -14,22 +14,43 @@ interface PermissionSet {
 }
 ```
 
-A server-wide **default** `PermissionSet` serves as a fallback for all users.
+A server-wide **default** `PermissionSet` serves as a fallback for all users. Roles are additive collections of permissions that can be assigned to users.
 
 ## Resolution
 
-When checking whether a user has a specific scope, the resolver walks four levels in order. The first level that produces a definite answer wins.
+When checking whether a user has a specific scope, the resolver walks these levels in order. The first level that produces a definite answer wins.
 
 ```
 1. Owner bypass    - isOwner grants everything
 2. Root level      - 'all' grants everything; 'read' grants read-only scopes; 'off' falls through
 3. Domain level    - 'all' grants all scopes in that domain; 'read' grants read-only scopes; absent falls through
-4. Scope level     - true grants; absent falls through to defaults
-5. Default perms   - same root/domain/scope resolution, but with no further fallback
+4. Scope level     - true grants; absent falls through to role permissions
+5. Role perms      - union of all assigned role permissions + default permissions, resolved with the same root/domain/scope logic
 6. Not granted     - false
 ```
 
 The `readOnly` flag on each scope definition determines whether "Read Only" mode at root or domain level grants that scope.
+
+## Roles
+
+Roles are named, ordered collections of permissions stored as `PermissionSet` values. A user's effective permissions are the union of their direct permissions, all assigned role permissions, and the default permissions.
+
+### Ordering and Hierarchy
+
+Each role has a numeric `order` value. Higher order = more powerful. The order is used solely for hierarchy enforcement (preventing privilege escalation), not for permission resolution (which is purely additive/union).
+
+Hierarchy rules for non-owner users:
+- A user can only manage (edit, delete, reorder) roles with order **strictly less than** their highest role that grants the relevant permission
+- A user cannot grant or revoke roles at or above their own level
+- A user cannot grant permissions they do not possess to a role
+- Reorder requires `role.edit` from an **assigned role** (not from default permissions)
+- New roles are created at order 1 (weakest), with existing roles bumped up
+
+The display sorts roles descending by order (most powerful at top).
+
+### Default Permissions
+
+Default permissions apply to all users as a baseline fallback. They are edited separately from roles via the `role.defaultPermissions` scope and appear as the "Everyone" entry at the bottom of the roles list.
 
 ## Levels
 
@@ -53,7 +74,7 @@ Domains are purely additive. Setting a domain to "Manual" removes it from the `d
 
 ### Scope
 
-Permissions are purely additive. `true` grants the scope, absent (or toggled off) falls through to defaults. There is no way to explicitly deny a scope -- toggling a scope off simply removes the user-level override so the default applies.
+Permissions are purely additive. `true` grants the scope, absent (or toggled off) falls through to role/default permissions. There is no way to explicitly deny a scope -- toggling a scope off simply removes the user-level override so the role/default permissions apply.
 
 ## Domains and Scopes
 
@@ -109,7 +130,8 @@ Each scope belongs to exactly one domain and is either read-only (R) or read-wri
 | `user.passwd` | W | Change other users' passwords in the user inspector |
 | `user.ban` | W | Disable or re-enable users in the user inspector |
 | `user.delete` | W | Permanently delete user accounts |
-| `user.permissions` | W | Edit user and default permissions in the users view |
+| `user.permissions` | W | Edit user permissions in the users view |
+| `user.grantRole` | W | Assign and revoke roles to/from users |
 | `user.readMfa` | R | View MFA status of other users in the user inspector |
 | `user.resetMfa` | W | Reset MFA for other users in the user inspector |
 
@@ -126,6 +148,14 @@ Each scope belongs to exactly one domain and is either read-only (R) or read-wri
 | `world.save` | W | Save the current world from the worlds or server view |
 | `world.create` | W | Create new worlds in the worlds view |
 
+### Role
+| Scope | R/W | Description |
+|-------|-----|-------------|
+| `role.list` | R | View roles in the roles view |
+| `role.edit` | W | Create, edit, delete, and reorder roles |
+| `role.defaultPermissions` | W | Edit the default permissions that apply to all users |
+| `role.grantPermission` | W | Add or remove permissions within roles |
+
 ## Self-Service
 
 All authenticated users can access the `/account` page regardless of permissions. This page shows the user's own account info, MFA management (TOTP, passkeys, recovery codes), and password change.
@@ -140,18 +170,22 @@ Every tRPC endpoint is wrapped with `protectedProcedure(scope)`, which runs `req
 
 1. Rejects unauthenticated requests (`UNAUTHORIZED`)
 2. Allows owners unconditionally
-3. Resolves the scope against the user's permissions + server defaults
+3. Resolves the scope against the user's permissions + role permissions + server defaults
 4. Rejects with `FORBIDDEN` if not granted
 
 Subscription endpoints (like `server.onStatus`, `chat.onMessage`) share the scope of their corresponding query endpoint rather than having separate scopes.
 
+Role management endpoints additionally enforce hierarchy checks via `checkRoleHierarchy`, which verifies the actor's highest role granting the required scope has an order strictly greater than the target role's order.
+
 ### Frontend
 
-On login, the session response includes `resolvedScopes` -- a flat `Record<string, boolean>` with every scope pre-resolved. The frontend stores this in a nanostore (`$resolvedScopes`).
+On login, the session response includes `resolvedScopes` -- a flat `Record<string, boolean>` with every scope pre-resolved (including role and default permissions). The frontend stores this in a nanostore (`$resolvedScopes`).
 
 - `useHasScope(...scopes)` -- returns true if the user has all specified scopes
 - `useHasAnyScope(...scopes)` -- returns true if the user has any of the specified scopes
 - `useRequireScope(scope)` -- redirects to `/` if the user lacks the scope
+
+The permission and scope definitions are shared between frontend and backend via `@backend/scopes`.
 
 #### Sidenav Visibility
 
@@ -166,7 +200,10 @@ Each sidenav link is gated by a specific scope:
 | Players | `player.list` | No |
 | Server | `server.status` | No |
 | Users | `user.list` | No |
+| Roles | `role.list` (shown when user lacks `user.list`) | No |
 | Account | -- | Yes |
+
+The Users sidenav item also highlights when on `/roles`. If a user has `role.list` but not `user.list`, a Roles-only sidenav item appears instead.
 
 #### View Access
 
@@ -177,17 +214,30 @@ Each view redirects to the dashboard if the user lacks its required scope:
 - Players requires `player.list`
 - Server requires `server.status`
 - Users requires `user.list`
+- Roles requires `role.list`
 
-Within a view, individual buttons and controls are conditionally rendered based on their specific scopes. Admin actions in the user inspector (change password, disable, delete, reset MFA) are shown in an actions widget gated by their respective scopes.
+The Users and Roles views share a tab bar when the user has both `user.list` and `role.list`. The tab bar is hidden when only one permission is held.
+
+Within a view, individual buttons and controls are conditionally rendered based on their specific scopes. The role inspector shows read-only mode for roles at or above the user's hierarchy level. Admin actions in the user inspector (change password, disable, delete, reset MFA) are shown in an actions widget gated by their respective scopes.
 
 The backend remains the source of truth -- frontend checks are for UX only.
 
 ## Privilege Escalation Prevention
 
-When a non-owner user edits another user's permissions, the backend checks that the editor is not granting scopes they don't have themselves. The mutation resolves all scopes in the proposed `PermissionSet` against defaults and rejects any scope the editor lacks.
+### User Permissions
+When a non-owner user edits another user's permissions, the backend checks that the editor is not granting scopes they don't have themselves. The mutation resolves all scopes in the proposed `PermissionSet` against the editor's effective permissions (direct + roles + defaults) and rejects any scope the editor lacks.
+
+### Role Permissions
+When editing a role's permissions, the user must have both `role.edit` and `role.grantPermission`. The hierarchy check ensures the target role is below the user's level. The escalation check ensures the user has every permission they are granting to the role.
+
+### Default Permissions
+Editing default permissions requires `role.defaultPermissions`. The same escalation check applies -- users cannot add permissions to the defaults that they don't have themselves.
+
+### Role Assignment
+Granting or revoking a role requires `user.grantRole`. The hierarchy check ensures the role being assigned/revoked is below the user's highest role that grants `user.grantRole`.
 
 ## Storage
 
-User permissions are stored in the `users` NeDB store as part of each user document. Default permissions are stored in the `server` NeDB store as a `{ type: 'defaultPermissions' }` document.
+User permissions are stored in the `users` NeDB store as part of each user document. Default permissions are stored in the `server` NeDB store as a `{ type: 'defaultPermissions' }` document. Roles are stored in the `server` NeDB store as `{ type: 'webRole' }` documents.
 
-New users are created with `EMPTY_PERMISSIONS` (`root: 'off', domains: {}, scopes: {}`), which means all access is determined by server defaults until explicitly configured.
+New users are created with `EMPTY_PERMISSIONS` (`root: 'off', domains: {}, scopes: {}`) and an empty `roles: []` array, which means all access is determined by server defaults until explicitly configured.

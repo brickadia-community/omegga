@@ -1,4 +1,5 @@
 import {
+  AnimatedDropdown,
   Button,
   Dimmer,
   Dropdown,
@@ -153,10 +154,7 @@ export const PlayerInspector = () => {
               {showActions ? <IconCaretUp /> : <IconCaretDown />}
               User Actions
             </Button>
-            <div
-              className="widgets-list"
-              style={{ display: showActions ? 'block' : 'none' }}
-            >
+            <AnimatedDropdown visible={showActions}>
               {canClearBricks && (
                 <Button
                   boxy
@@ -213,7 +211,7 @@ export const PlayerInspector = () => {
                   Ban
                 </Button>
               )}
-            </div>
+            </AnimatedDropdown>
           </div>
         )}
       </NavBar>

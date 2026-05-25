@@ -197,6 +197,26 @@ table.br-table {
       white-space: nowrap;
     }
   }
+
+  tfoot tr {
+    background-color: theme.$br-bg-primary;
+    cursor: pointer;
+    user-select: none;
+    td {
+      font-size: 20px;
+      color: theme.$br-boring-button-fg;
+      height: 50px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    &:hover td,
+    &.active td {
+      background-color: theme.$br-element-hover;
+      &.muted-text {
+        color: theme.$br-boring-button-fg !important;
+      }
+    }
+  }
 }
 
 a,
@@ -254,6 +274,11 @@ a,
 .widgets-container {
   z-index: 100;
   position: relative;
+  margin-right: 8px;
+
+  &:last-child {
+    margin-right: 0;
+  }
 
   .widgets-list {
     position: absolute;

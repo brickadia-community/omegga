@@ -1,6 +1,37 @@
 @use '../../css/theme';
 @use '../../css/mixins';
 
+.muted-text {
+  color: theme.$br-element-fg;
+}
+
+.role-inspector-stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  align-items: start;
+  padding: 12px;
+  font-size: 24px;
+  word-break: break-word;
+  background-color: theme.$br-element-popout-bg;
+
+  label {
+    color: theme.$br-boring-button-fg;
+    font-weight: bold;
+    padding-top: 6px;
+  }
+
+  > span {
+    color: white;
+    font-weight: bold;
+    padding-top: 6px;
+  }
+
+  .input {
+    width: 100%;
+  }
+}
+
 .permission-editor {
   .perm-row {
     display: flex;
@@ -65,6 +96,14 @@
       align-items: center;
       gap: 4px;
     }
+  }
+
+  .scope-count {
+    font-size: 12px;
+    font-weight: bold;
+    color: theme.$br-boring-button-fg;
+    margin-right: 8px;
+    flex-shrink: 0;
   }
 
   .scope-info {
@@ -333,12 +372,3 @@
   }
 }
 
-@media screen and (max-width: 1200px) {
-  .default-perms-standalone {
-    display: none !important;
-  }
-
-  .default-perms-dropdown.hidden {
-    display: flex !important;
-  }
-}

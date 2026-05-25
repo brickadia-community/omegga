@@ -1,5 +1,6 @@
 import type { GetUsersRes } from '@backend/api';
 import {
+  AnimatedDropdown,
   Button,
   Dimmer,
   Footer,
@@ -28,6 +29,7 @@ import {
   IconRotate,
   IconShield,
   IconUserPlus,
+  IconUsers,
   IconX,
 } from '@tabler/icons-react';
 import { useHasScope, useRequireScope } from '@hooks';
@@ -35,14 +37,12 @@ import { duration, logout } from '@utils';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
 import { UserInspector } from './UserInspector';
-import { DefaultPermissions } from './DefaultPermissions';
 import { Permissions } from '../../permissions';
 import { $omeggaData, $user, $usersRefresh } from '../../stores/user';
 import { trpc } from '../../trpc';
 
 const ACTION_ENABLE_USERS = 'Enable Users';
 const ACTION_ADD_USER = 'Add User';
-const ACTION_DEFAULT_PERMS = 'Default Permissions';
 
 export const UserList = () => {
   const canAccess = useRequireScope(Permissions.UserList);
@@ -50,7 +50,16 @@ export const UserList = () => {
   const myUser = useStore($user);
 
   const canCreate = useHasScope(Permissions.UserCreate);
-  const canEditPerms = useHasScope(Permissions.UserPermissions);
+  const canViewRoles = useHasScope(Permissions.RoleList);
+
+  const rolesQuery = trpc.role.list.useQuery(undefined, {
+    enabled: canViewRoles,
+  });
+  const rolesById = useMemo(() => {
+    const map: Record<string, { name: string; order: number }> = {};
+    for (const r of rolesQuery.data ?? []) map[r.id] = r;
+    return map;
+  }, [rolesQuery.data]);
 
   const [pages, setPages] = useState(0);
   const [total, setTotal] = useState(0);
@@ -91,10 +100,6 @@ export const UserList = () => {
     setError('');
   };
 
-  const openDefaultPerms = () => {
-    setShowActions(false);
-    navigate('/users/_defaults');
-  };
 
   const query = useRef({
     page: 0,
@@ -198,37 +203,13 @@ export const UserList = () => {
   return (
     <>
       <NavHeader title="Users">
-        {!userless && canEditPerms && (
-          <Button
-            normal
-            boxy
-            className="default-perms-standalone"
-            onClick={openDefaultPerms}
-          >
-            <IconShield />
-            {ACTION_DEFAULT_PERMS}
-          </Button>
-        )}
         {hasDropdownActions && (
           <div className="widgets-container">
             <Button normal boxy onClick={() => setShowActions(!showActions)}>
               {showActions ? <IconCaretUp /> : <IconCaretDown />}
               Actions
             </Button>
-            <div
-              className="widgets-list"
-              style={{ display: showActions ? 'block' : 'none' }}
-            >
-              {!userless && canEditPerms && (
-                <Button
-                  normal
-                  className="default-perms-dropdown hidden"
-                  onClick={openDefaultPerms}
-                >
-                  <IconShield />
-                  {ACTION_DEFAULT_PERMS}
-                </Button>
-              )}
+            <AnimatedDropdown visible={showActions}>
               {userless && (
                 <Button info onClick={openEnableUsers}>
                   <IconLock />
@@ -241,7 +222,7 @@ export const UserList = () => {
                   {ACTION_ADD_USER}
                 </Button>
               )}
-            </div>
+            </AnimatedDropdown>
           </div>
         )}
       </NavHeader>
@@ -249,6 +230,24 @@ export const UserList = () => {
         <SideNav />
         <div className="generic-container players-container">
           <div className="player-table-container">
+            {canViewRoles && (
+              <NavBar attached>
+                <Button main boxy className="tab-button active">
+                  <IconUsers />
+                  Users
+                </Button>
+                <Button
+                  normal
+                  boxy
+                  className="tab-button"
+                  onClick={() => navigate('/roles')}
+                >
+                  <IconShield />
+                  Roles
+                </Button>
+                <span style={{ flex: 1 }} />
+              </NavBar>
+            )}
             <NavBar attached>
               <Input
                 type="text"
@@ -320,15 +319,27 @@ export const UserList = () => {
                         key={u.username}
                       >
                         <td>
-                          {u.isBanned && (
-                            <span className="ban">
-                              <IconBan size={14} />{' '}
-                            </span>
-                          )}
-                          {u.username || 'Admin'}{' '}
-                          {(u.username || 'Admin') ===
-                            (myUser?.username || 'Admin') && (
-                            <span style={{ fontSize: 12 }}>(You)</span>
+                          <div>
+                            {u.isBanned && (
+                              <span className="ban">
+                                <IconBan size={14} />{' '}
+                              </span>
+                            )}
+                            {u.username || 'Admin'}{' '}
+                            {(u.username || 'Admin') ===
+                              (myUser?.username || 'Admin') && (
+                              <span style={{ fontSize: 12 }}>(You)</span>
+                            )}
+                          </div>
+                          {(u as any).roles?.length > 0 && (
+                            <div className="muted-text" style={{ fontSize: 12 }}>
+                              {((u as any).roles as string[])
+                                .map(id => rolesById[id])
+                                .filter(Boolean)
+                                .sort((a, b) => a.order - b.order)
+                                .map(r => r.name)
+                                .join(', ')}
+                            </div>
                           )}
                         </td>
                         <td
@@ -398,7 +409,6 @@ export const UserList = () => {
             </div>
           </div>
           <Switch>
-            <Route path="/users/_defaults" component={DefaultPermissions} />
             <Route path="/users/:id" component={UserInspector} />
             <Route>
               <div className="player-inspector-container">

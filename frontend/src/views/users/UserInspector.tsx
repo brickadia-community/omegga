@@ -1,4 +1,5 @@
 import {
+  AnimatedDropdown,
   Button,
   Dimmer,
   Footer,
@@ -39,8 +40,14 @@ type UserData = (UserFromList | UserFromSelf) & {
 
 import { MfaManager } from './MfaManager';
 import { PermissionEditor, type PermissionSet } from './PermissionEditor';
+import { UserRoleSection } from './UserRoleSection';
 
-export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
+export const UserInspector = ({
+  selfUser,
+}: {
+  selfUser?: string;
+  params?: any;
+}) => {
   const [_match, params] = useRoute('/users/:id');
   const [_loc, navigate] = useLocation();
   const myUser = useStore($user);
@@ -72,7 +79,7 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
 
   const loading = isSelfMode ? selfQuery.isLoading : users.isLoading;
 
-  const defaultPermsQuery = trpc.user.defaultPermissions.get.useQuery(
+  const defaultPermsQuery = trpc.role.defaultPermissions.get.useQuery(
     undefined,
     { enabled: canEditPerms },
   );
@@ -314,6 +321,12 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
                     )}
                   </div>
                   {isSelfMode && <MfaManager />}
+                  {!user.isOwner && (
+                    <UserRoleSection
+                      username={selectedUsername}
+                      isSelf={isSelfMode}
+                    />
+                  )}
                   {canEditPerms && !user.isOwner && editPerms && (
                     <>
                       <div className="section-header">Permissions</div>
@@ -354,9 +367,10 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
                 {showActionsMenu ? <IconCaretDown /> : <IconCaretUp />}
                 Actions
               </Button>
-              <div
+              <AnimatedDropdown
+                visible={showActionsMenu}
+                direction="up"
                 className="widgets-list widgets-list-up"
-                style={{ display: showActionsMenu ? 'block' : 'none' }}
               >
                 {canPasswd && (
                   <Button
@@ -407,7 +421,7 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
                     Delete
                   </Button>
                 )}
-              </div>
+              </AnimatedDropdown>
             </div>
           </Footer>
         )}
