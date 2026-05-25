@@ -94,9 +94,15 @@ describe('getActorHighestOrder', () => {
   it('returns Infinity when scope comes from default perms (via allRolePermissions)', () => {
     const user = makeUser(false);
     const defaultPerms: PermissionSet[] = [
-      { root: RootLevel.Off, domains: {}, scopes: { [ScopeName.RoleEdit]: true } },
+      {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.RoleEdit]: true },
+      },
     ];
-    expect(getActorHighestOrder(user, [], ScopeName.RoleEdit, defaultPerms)).toBe(Infinity);
+    expect(
+      getActorHighestOrder(user, [], ScopeName.RoleEdit, defaultPerms),
+    ).toBe(Infinity);
   });
 
   it('role-based order takes precedence over Infinity fallback', () => {
@@ -167,7 +173,11 @@ describe('actorHasAllPermissions', () => {
   });
 
   it('actor with root All covers all permissions', () => {
-    const actor: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
+    const actor: PermissionSet = {
+      root: RootLevel.All,
+      domains: {},
+      scopes: {},
+    };
     const granting: PermissionSet = {
       root: RootLevel.Off,
       domains: { server: DomainLevel.All },
@@ -215,7 +225,11 @@ describe('getActorEffectivePermissions', () => {
       scopes: { [ScopeName.ChatSend]: true },
     });
     const rolePerms: PermissionSet[] = [
-      { root: RootLevel.Off, domains: {}, scopes: { [ScopeName.PlayerList]: true } },
+      {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.PlayerList]: true },
+      },
     ];
     const effective = getActorEffectivePermissions(user, rolePerms);
     expect(effective.scopes[ScopeName.ChatSend]).toBe(true);
@@ -238,8 +252,16 @@ describe('getActorEffectivePermissions', () => {
   it('merges multiple role permission sets', () => {
     const user = makeUser(false);
     const rolePerms: PermissionSet[] = [
-      { root: RootLevel.Off, domains: {}, scopes: { [ScopeName.ChatSend]: true } },
-      { root: RootLevel.Off, domains: {}, scopes: { [ScopeName.PlayerList]: true } },
+      {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.ChatSend]: true },
+      },
+      {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.PlayerList]: true },
+      },
       { root: RootLevel.Read, domains: {}, scopes: {} },
     ];
     const effective = getActorEffectivePermissions(user, rolePerms);
@@ -261,27 +283,39 @@ describe('validateHierarchy', () => {
   it('returns error when actor has no roles granting required scope', () => {
     const user = makeUser(false);
     const target = makeRole(1);
-    expect(validateHierarchy(user, [], target, ScopeName.RoleEdit)).toContain('missing permission');
+    expect(validateHierarchy(user, [], target, ScopeName.RoleEdit)).toContain(
+      'missing permission',
+    );
   });
 
   it('rejects when target order >= actor order', () => {
     const user = makeUser(false);
     const actorRoles = [makeRole(5, { [ScopeName.RoleEdit]: true })];
-    expect(validateHierarchy(user, actorRoles, makeRole(5), ScopeName.RoleEdit)).toContain('cannot manage');
-    expect(validateHierarchy(user, actorRoles, makeRole(6), ScopeName.RoleEdit)).toContain('cannot manage');
+    expect(
+      validateHierarchy(user, actorRoles, makeRole(5), ScopeName.RoleEdit),
+    ).toContain('cannot manage');
+    expect(
+      validateHierarchy(user, actorRoles, makeRole(6), ScopeName.RoleEdit),
+    ).toContain('cannot manage');
   });
 
   it('allows when target order < actor order', () => {
     const user = makeUser(false);
     const actorRoles = [makeRole(5, { [ScopeName.RoleEdit]: true })];
-    expect(validateHierarchy(user, actorRoles, makeRole(4), ScopeName.RoleEdit)).toBeNull();
-    expect(validateHierarchy(user, actorRoles, makeRole(1), ScopeName.RoleEdit)).toBeNull();
+    expect(
+      validateHierarchy(user, actorRoles, makeRole(4), ScopeName.RoleEdit),
+    ).toBeNull();
+    expect(
+      validateHierarchy(user, actorRoles, makeRole(1), ScopeName.RoleEdit),
+    ).toBeNull();
   });
 
   it('user cannot edit the role that grants them the scope', () => {
     const user = makeUser(false);
     const myRole = makeRole(3, { [ScopeName.RoleEdit]: true });
-    expect(validateHierarchy(user, [myRole], myRole, ScopeName.RoleEdit)).toContain('cannot manage');
+    expect(
+      validateHierarchy(user, [myRole], myRole, ScopeName.RoleEdit),
+    ).toContain('cannot manage');
   });
 
   it('uses the correct scope for hierarchy check (grantRole vs roleEdit)', () => {
@@ -289,8 +323,12 @@ describe('validateHierarchy', () => {
     const editRole = makeRole(5, { [ScopeName.RoleEdit]: true });
     const grantRole = makeRole(3, { [ScopeName.UserGrantRole]: true });
     const target = makeRole(4);
-    expect(validateHierarchy(user, [editRole], target, ScopeName.RoleEdit)).toBeNull();
-    expect(validateHierarchy(user, [grantRole], target, ScopeName.UserGrantRole)).toContain('cannot manage');
+    expect(
+      validateHierarchy(user, [editRole], target, ScopeName.RoleEdit),
+    ).toBeNull();
+    expect(
+      validateHierarchy(user, [grantRole], target, ScopeName.UserGrantRole),
+    ).toContain('cannot manage');
   });
 });
 
@@ -299,7 +337,11 @@ describe('validateHierarchy', () => {
 describe('checkPermissionEscalation', () => {
   it('owner bypasses all escalation checks', () => {
     const owner = makeUser(true);
-    const proposed: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
+    const proposed: PermissionSet = {
+      root: RootLevel.All,
+      domains: {},
+      scopes: {},
+    };
     expect(checkPermissionEscalation(owner, [], proposed)).toBeNull();
   });
 
@@ -336,7 +378,11 @@ describe('checkPermissionEscalation', () => {
   it('actor can grant permissions they have from roles', () => {
     const user = makeUser(false);
     const rolePerms: PermissionSet[] = [
-      { root: RootLevel.Off, domains: {}, scopes: { [ScopeName.ServerStart]: true } },
+      {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.ServerStart]: true },
+      },
     ];
     const proposed: PermissionSet = {
       root: RootLevel.Off,
@@ -353,7 +399,11 @@ describe('checkPermissionEscalation', () => {
       scopes: { [ScopeName.ChatSend]: true },
     });
     const rolePerms: PermissionSet[] = [
-      { root: RootLevel.Off, domains: {}, scopes: { [ScopeName.ServerStart]: true } },
+      {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.ServerStart]: true },
+      },
     ];
     const proposed: PermissionSet = {
       root: RootLevel.Off,
@@ -371,7 +421,11 @@ describe('checkPermissionEscalation', () => {
       domains: {},
       scopes: { [ScopeName.ChatSend]: true },
     });
-    const proposed: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
+    const proposed: PermissionSet = {
+      root: RootLevel.All,
+      domains: {},
+      scopes: {},
+    };
     expect(checkPermissionEscalation(user, [], proposed)).not.toBeNull();
   });
 
@@ -450,14 +504,30 @@ describe('checkPermissionRevocation', () => {
   });
 
   it('blocks downgrading root from all to read (loses write scopes)', () => {
-    const current: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
-    const proposed: PermissionSet = { root: RootLevel.Read, domains: {}, scopes: {} };
+    const current: PermissionSet = {
+      root: RootLevel.All,
+      domains: {},
+      scopes: {},
+    };
+    const proposed: PermissionSet = {
+      root: RootLevel.Read,
+      domains: {},
+      scopes: {},
+    };
     expect(checkPermissionRevocation(current, proposed)).not.toBeNull();
   });
 
   it('blocks downgrading root from all to off', () => {
-    const current: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
-    const proposed: PermissionSet = { root: RootLevel.Off, domains: {}, scopes: {} };
+    const current: PermissionSet = {
+      root: RootLevel.All,
+      domains: {},
+      scopes: {},
+    };
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: {},
+    };
     expect(checkPermissionRevocation(current, proposed)).not.toBeNull();
   });
 
@@ -476,13 +546,23 @@ describe('checkPermissionRevocation', () => {
   });
 
   it('allows upgrading root from off to all', () => {
-    const current: PermissionSet = { root: RootLevel.Off, domains: {}, scopes: {} };
-    const proposed: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
+    const current: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: {},
+    };
+    const proposed: PermissionSet = {
+      root: RootLevel.All,
+      domains: {},
+      scopes: {},
+    };
     expect(checkPermissionRevocation(current, proposed)).toBeNull();
   });
 
   it('allows empty to empty', () => {
-    expect(checkPermissionRevocation(EMPTY_PERMISSIONS, EMPTY_PERMISSIONS)).toBeNull();
+    expect(
+      checkPermissionRevocation(EMPTY_PERMISSIONS, EMPTY_PERMISSIONS),
+    ).toBeNull();
   });
 });
 
@@ -525,7 +605,11 @@ describe('regression: privilege escalation vectors', () => {
       scopes: { [ScopeName.ChatSend]: true },
     });
     const rolePerms: PermissionSet[] = [
-      { root: RootLevel.Off, domains: {}, scopes: { [ScopeName.ServerStart]: true } },
+      {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.ServerStart]: true },
+      },
     ];
     // granting both should succeed
     const proposed: PermissionSet = {
@@ -564,7 +648,11 @@ describe('regression: privilege escalation vectors', () => {
       domains: {},
       scopes: {},
     });
-    const proposed: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
+    const proposed: PermissionSet = {
+      root: RootLevel.All,
+      domains: {},
+      scopes: {},
+    };
     expect(checkPermissionEscalation(user, [], proposed)).not.toBeNull();
   });
 });

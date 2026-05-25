@@ -1,4 +1,11 @@
-import { AnimatedDropdown, Button, Header, NavHeader, PageContent, SideNav } from '@components';
+import {
+  AnimatedDropdown,
+  Button,
+  Header,
+  NavHeader,
+  PageContent,
+  SideNav,
+} from '@components';
 import { useHasScope } from '@hooks';
 import {
   IconApps,

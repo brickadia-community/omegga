@@ -253,7 +253,11 @@ export const userRouter = router({
 
         if (!ctx.user.isOwner) {
           const rolePerms = await database.getUserRolePermissions(ctx.user);
-          const escErr = checkPermissionEscalation(ctx.user, rolePerms, permissions);
+          const escErr = checkPermissionEscalation(
+            ctx.user,
+            rolePerms,
+            permissions,
+          );
           if (escErr) return escErr;
 
           const currentPerms = decodePermissions(target.permissions);
@@ -273,7 +277,8 @@ export const userRouter = router({
         const { username, roleId } = input;
         const { log } = ctx;
 
-        if (username === ctx.user.username) return 'cannot grant roles to yourself';
+        if (username === ctx.user.username)
+          return 'cannot grant roles to yourself';
 
         const target = await database.stores.users.findOne<
           IStoreUser & { _id: string }
@@ -294,7 +299,12 @@ export const userRouter = router({
         if (!ctx.user.isOwner) {
           const assignedRoles = await database.getUserAssignedRoles(ctx.user);
           const grantable = getGrantablePermissions(assignedRoles, role.order);
-          if (!actorHasAllPermissions(grantable, decodePermissions(role.permissions)))
+          if (
+            !actorHasAllPermissions(
+              grantable,
+              decodePermissions(role.permissions),
+            )
+          )
             return 'cannot grant a role with permissions you do not have';
         }
 
@@ -314,7 +324,8 @@ export const userRouter = router({
         const { username, roleId } = input;
         const { log } = ctx;
 
-        if (username === ctx.user.username) return 'cannot revoke roles from yourself';
+        if (username === ctx.user.username)
+          return 'cannot revoke roles from yourself';
 
         const target = await database.stores.users.findOne<
           IStoreUser & { _id: string }

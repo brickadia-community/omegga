@@ -22,9 +22,7 @@ export interface PermissionSet {
   scopes: Record<string, boolean>;
 }
 
-export function mergePermissionSets(
-  ...sets: PermissionSet[]
-): PermissionSet {
+export function mergePermissionSets(...sets: PermissionSet[]): PermissionSet {
   let root: RootLevel = 'off';
   const domains: Record<string, DomainLevel> = {};
   const scopes: Record<string, boolean> = {};
@@ -46,11 +44,23 @@ export function mergePermissionSets(
 export function resolveEffective(p: PermissionSet): Record<string, boolean> {
   const result: Record<string, boolean> = {};
   for (const [scope, info] of Object.entries(SCOPE_INFO)) {
-    if (p.root === 'all') { result[scope] = true; continue; }
-    if (p.root === 'read' && info.readOnly) { result[scope] = true; continue; }
+    if (p.root === 'all') {
+      result[scope] = true;
+      continue;
+    }
+    if (p.root === 'read' && info.readOnly) {
+      result[scope] = true;
+      continue;
+    }
     const dl = p.domains[info.domain];
-    if (dl === 'all') { result[scope] = true; continue; }
-    if (dl === 'read' && info.readOnly) { result[scope] = true; continue; }
+    if (dl === 'all') {
+      result[scope] = true;
+      continue;
+    }
+    if (dl === 'read' && info.readOnly) {
+      result[scope] = true;
+      continue;
+    }
     result[scope] = p.scopes[scope] ?? false;
   }
   return result;
@@ -180,7 +190,8 @@ export const PermissionEditor = ({
         }
         const proposed: PermissionSet = { ...perms, domains, scopes };
         if (
-          wouldEscalate(proposed, actorScopes) || wouldRevoke(perms, proposed)
+          wouldEscalate(proposed, actorScopes) ||
+          wouldRevoke(perms, proposed)
         )
           set.add(opt);
       }
@@ -396,8 +407,7 @@ export const PermissionEditor = ({
                           disabled ||
                           readOnly ||
                           domainLocked ||
-                          (actorScopes &&
-                            (scopeVal || !actorScopes[scope]))
+                          (actorScopes && (scopeVal || !actorScopes[scope]))
                         }
                       />
                     </div>

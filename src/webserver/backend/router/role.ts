@@ -64,7 +64,9 @@ export const roleRouter = router({
 
           if (input.permissions) {
             const rolePerms = await database.getUserRolePermissions(ctx.user);
-            if (!userHasScope(ctx.user, ScopeName.RoleGrantPermission, rolePerms))
+            if (
+              !userHasScope(ctx.user, ScopeName.RoleGrantPermission, rolePerms)
+            )
               return 'missing permission: role.grantPermission';
 
             const assignedRoles = await database.getUserAssignedRoles(ctx.user);

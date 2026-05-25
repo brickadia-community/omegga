@@ -76,7 +76,11 @@ const DOMAIN_RANK: Record<DomainLevel, number> = {
   [DomainLevel.All]: 2,
 };
 
-const ROOT_BY_RANK: RootLevel[] = [RootLevel.Off, RootLevel.Read, RootLevel.All];
+const ROOT_BY_RANK: RootLevel[] = [
+  RootLevel.Off,
+  RootLevel.Read,
+  RootLevel.All,
+];
 const DOMAIN_BY_RANK: DomainLevel[] = [
   DomainLevel.None,
   DomainLevel.Read,
@@ -90,7 +94,10 @@ export function mergePermissionSets(...sets: PermissionSet[]): PermissionSet {
 
   for (const s of sets) {
     rootRank = Math.max(rootRank, ROOT_RANK[s.root] ?? 0);
-    for (const [d, level] of Object.entries(s.domains) as [Domain, DomainLevel][]) {
+    for (const [d, level] of Object.entries(s.domains) as [
+      Domain,
+      DomainLevel,
+    ][]) {
       const cur = domains[d];
       const curRank = cur ? DOMAIN_RANK[cur] : 0;
       const newRank = DOMAIN_RANK[level] ?? 0;

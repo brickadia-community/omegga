@@ -100,7 +100,6 @@ export const UserList = () => {
     setError('');
   };
 
-
   const query = useRef({
     page: 0,
     sort: 'lastSeen',
@@ -332,7 +331,10 @@ export const UserList = () => {
                             )}
                           </div>
                           {(u as any).roles?.length > 0 && (
-                            <div className="muted-text" style={{ fontSize: 12 }}>
+                            <div
+                              className="muted-text"
+                              style={{ fontSize: 12 }}
+                            >
                               {((u as any).roles as string[])
                                 .map(id => rolesById[id])
                                 .filter(Boolean)

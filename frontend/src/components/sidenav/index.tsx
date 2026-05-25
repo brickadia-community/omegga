@@ -35,7 +35,8 @@ export const MenuButton = ({
   const isActive =
     to === '/'
       ? location === '/'
-      : location === to || location.startsWith(to + '/') ||
+      : location === to ||
+        location.startsWith(to + '/') ||
         (alsoActive != null && location.startsWith(alsoActive));
   return (
     <Link
@@ -55,76 +56,73 @@ export const SideNav = memo(() => {
   const hasRoleList = useHasScope(Permissions.RoleList);
 
   return (
-  <div className="main-menu-buttons">
-    <MenuButton
-      to="/"
-      data-tooltip="Chat with players, view server status. Main Dashboard"
-    >
-      <IconDashboard style={{ background: '#de4f43' }} />
-      Dashboard
-    </MenuButton>
-    <MenuButton
-      to="/worlds"
-      scope={Permissions.WorldList}
-      data-tooltip="Manage worlds"
-    >
-      <IconWorld style={{ background: '#f0a500' }} />
-      Worlds
-    </MenuButton>
-    <MenuButton
-      to="/history"
-      scope={Permissions.ChatHistory}
-      data-tooltip="Browse chat history"
-    >
-      <IconMessages style={{ background: '#008bd6' }} />
-      History
-    </MenuButton>
-    <MenuButton
-      to="/plugins"
-      scope={Permissions.PluginList}
-      data-tooltip="Manage, reload, and configure plugins"
-    >
-      <IconPlug style={{ background: '#00b35f' }} />
-      Plugins
-    </MenuButton>
-    <MenuButton
-      to="/players"
-      scope={Permissions.PlayerList}
-      data-tooltip="Browse player info and play time"
-    >
-      <IconList style={{ background: '#b3006b' }} />
-      Players
-    </MenuButton>
-    <MenuButton
-      to="/server"
-      scope={Permissions.ServerStatus}
-      data-tooltip="Server management"
-    >
-      <IconServer style={{ background: '#453d9c' }} />
-      Server
-    </MenuButton>
-    {hasUserList ? (
+    <div className="main-menu-buttons">
       <MenuButton
-        to="/users"
-        alsoActive="/roles"
-        data-tooltip="Server users and roles"
+        to="/"
+        data-tooltip="Chat with players, view server status. Main Dashboard"
       >
-        <IconUser style={{ background: '#7f0b8a' }} />
-        Users
+        <IconDashboard style={{ background: '#de4f43' }} />
+        Dashboard
       </MenuButton>
-    ) : hasRoleList ? (
       <MenuButton
-        to="/roles"
-        data-tooltip="Server roles"
+        to="/worlds"
+        scope={Permissions.WorldList}
+        data-tooltip="Manage worlds"
       >
-        <IconShield style={{ background: '#7f0b8a' }} />
-        Roles
+        <IconWorld style={{ background: '#f0a500' }} />
+        Worlds
       </MenuButton>
-    ) : null}
-    <MenuButton to="/account" data-tooltip="Your account settings">
-      <IconUserCog style={{ background: '#5a5a5a' }} />
-      Account
-    </MenuButton>
-  </div>
+      <MenuButton
+        to="/history"
+        scope={Permissions.ChatHistory}
+        data-tooltip="Browse chat history"
+      >
+        <IconMessages style={{ background: '#008bd6' }} />
+        History
+      </MenuButton>
+      <MenuButton
+        to="/plugins"
+        scope={Permissions.PluginList}
+        data-tooltip="Manage, reload, and configure plugins"
+      >
+        <IconPlug style={{ background: '#00b35f' }} />
+        Plugins
+      </MenuButton>
+      <MenuButton
+        to="/players"
+        scope={Permissions.PlayerList}
+        data-tooltip="Browse player info and play time"
+      >
+        <IconList style={{ background: '#b3006b' }} />
+        Players
+      </MenuButton>
+      <MenuButton
+        to="/server"
+        scope={Permissions.ServerStatus}
+        data-tooltip="Server management"
+      >
+        <IconServer style={{ background: '#453d9c' }} />
+        Server
+      </MenuButton>
+      {hasUserList ? (
+        <MenuButton
+          to="/users"
+          alsoActive="/roles"
+          data-tooltip="Server users and roles"
+        >
+          <IconUser style={{ background: '#7f0b8a' }} />
+          Users
+        </MenuButton>
+      ) : hasRoleList ? (
+        <MenuButton to="/roles" data-tooltip="Server roles">
+          <IconShield style={{ background: '#7f0b8a' }} />
+          Roles
+        </MenuButton>
+      ) : null}
+      <MenuButton to="/account" data-tooltip="Your account settings">
+        <IconUserCog style={{ background: '#5a5a5a' }} />
+        Account
+      </MenuButton>
+    </div>
   );
 });

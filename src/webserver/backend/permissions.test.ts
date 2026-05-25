@@ -64,17 +64,27 @@ describe('mergePermissionSets', () => {
 
 describe('resolveScope', () => {
   it('always grants SessionInfo', () => {
-    expect(resolveScope(EMPTY_PERMISSIONS, [], ScopeName.SessionInfo)).toBe(true);
+    expect(resolveScope(EMPTY_PERMISSIONS, [], ScopeName.SessionInfo)).toBe(
+      true,
+    );
   });
 
   it('grants all scopes with root All', () => {
-    const perms: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
+    const perms: PermissionSet = {
+      root: RootLevel.All,
+      domains: {},
+      scopes: {},
+    };
     expect(resolveScope(perms, [], ScopeName.ServerStart)).toBe(true);
     expect(resolveScope(perms, [], ScopeName.ChatSend)).toBe(true);
   });
 
   it('grants only readOnly scopes with root Read', () => {
-    const perms: PermissionSet = { root: RootLevel.Read, domains: {}, scopes: {} };
+    const perms: PermissionSet = {
+      root: RootLevel.Read,
+      domains: {},
+      scopes: {},
+    };
     expect(resolveScope(perms, [], ScopeName.ChatRecent)).toBe(true);
     expect(resolveScope(perms, [], ScopeName.ChatSend)).toBe(false);
   });
@@ -103,21 +113,35 @@ describe('resolveScope', () => {
   it('falls back to role permissions', () => {
     const userPerms = EMPTY_PERMISSIONS;
     const rolePerms: PermissionSet[] = [
-      { root: RootLevel.Off, domains: {}, scopes: { [ScopeName.ChatSend]: true } },
+      {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.ChatSend]: true },
+      },
     ];
     expect(resolveScope(userPerms, rolePerms, ScopeName.ChatSend)).toBe(true);
-    expect(resolveScope(userPerms, rolePerms, ScopeName.ServerStart)).toBe(false);
+    expect(resolveScope(userPerms, rolePerms, ScopeName.ServerStart)).toBe(
+      false,
+    );
   });
 
   it('merges multiple role permission sets for fallback', () => {
     const userPerms = EMPTY_PERMISSIONS;
     const rolePerms: PermissionSet[] = [
-      { root: RootLevel.Off, domains: {}, scopes: { [ScopeName.ChatSend]: true } },
+      {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.ChatSend]: true },
+      },
       { root: RootLevel.Off, domains: { server: DomainLevel.All }, scopes: {} },
     ];
     expect(resolveScope(userPerms, rolePerms, ScopeName.ChatSend)).toBe(true);
-    expect(resolveScope(userPerms, rolePerms, ScopeName.ServerStart)).toBe(true);
-    expect(resolveScope(userPerms, rolePerms, ScopeName.PlayerList)).toBe(false);
+    expect(resolveScope(userPerms, rolePerms, ScopeName.ServerStart)).toBe(
+      true,
+    );
+    expect(resolveScope(userPerms, rolePerms, ScopeName.PlayerList)).toBe(
+      false,
+    );
   });
 
   it('user permissions take priority over role permissions', () => {

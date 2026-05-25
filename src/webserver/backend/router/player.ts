@@ -9,7 +9,6 @@ import { getContextDeps, protectedProcedure, router } from '../trpc';
 import type { IStoreBanHistory, IStoreKickHistory } from '../types';
 import { waitForEvent } from '../util';
 
-
 export const playerRouter = router({
   player: router({
     list: protectedProcedure(ScopeName.PlayerList)
