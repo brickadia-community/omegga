@@ -1,11 +1,16 @@
 import { z } from 'zod/v4';
 import {
   decodePermissions,
-  resolveAllScopes,
   userHasScope,
   type PermissionSet,
 } from '../permissions';
-import { checkRoleHierarchy } from '../roleHierarchy';
+import {
+  actorHasAllPermissions,
+  checkPermissionEscalation,
+  checkRoleHierarchy,
+  checkUserHierarchy,
+  getActorEffectivePermissions,
+} from '../roleHierarchy';
 import { ScopeName } from '../scopes';
 import { router, protectedProcedure, getContextDeps } from '../trpc';
 import type { IStoreUser } from '../types';
@@ -86,7 +91,7 @@ export const userRouter = router({
 
         if (typeof username !== 'string' || typeof password !== 'string')
           return 'username/password not a string';
-        if (!username.match(/^\w{0,32}$/)) return 'username is not allowed';
+        if (!username.match(/^\w{1,32}$/)) return 'username is not allowed';
         if (password.length === 0 || password.length > 128)
           return 'invalid password size';
 
@@ -141,11 +146,18 @@ export const userRouter = router({
           const rolePerms = await database.getUserRolePermissions(ctx.user);
           if (!userHasScope(ctx.user, ScopeName.UserPasswd, rolePerms))
             return 'missing permission';
+
+          const target = await database.stores.users.findOne<
+            IStoreUser & { _id: string }
+          >({ type: 'user', username });
+          if (!target) return 'user does not exist';
+          const hierErr = await checkUserHierarchy(ctx.user, target);
+          if (hierErr) return hierErr;
         }
 
         if (typeof username !== 'string' || typeof password !== 'string')
           return 'username/password not a string';
-        if (!username.match(/^\w{0,32}$/)) return 'username is not allowed';
+        if (!username.match(/^\w{1,32}$/)) return 'username is not allowed';
         if (!(await database.userExists(username)))
           return 'user does not exist';
 
@@ -178,7 +190,9 @@ export const userRouter = router({
         const target = await database.stores.users.findOne<
           IStoreUser & { _id: string }
         >({ type: 'user', username });
-        if (target?.isOwner) return 'cannot disable the owner';
+        if (!target) return 'user does not exist';
+        const hierErr = await checkUserHierarchy(ctx.user, target);
+        if (hierErr) return hierErr;
 
         await database.banUser(username, banned);
         log(`${banned ? 'disabled' : 'enabled'} user "${username.yellow}"`);
@@ -203,7 +217,9 @@ export const userRouter = router({
         const target = await database.stores.users.findOne<
           IStoreUser & { _id: string }
         >({ type: 'user', username });
-        if (target?.isOwner) return 'cannot delete the owner';
+        if (!target) return 'user does not exist';
+        const hierErr = await checkUserHierarchy(ctx.user, target);
+        if (hierErr) return hierErr;
 
         await database.deleteUser(username);
         log(`deleted user "${username.yellow}"`);
@@ -230,17 +246,13 @@ export const userRouter = router({
           IStoreUser & { _id: string }
         >({ type: 'user', username });
         if (!target) return 'user does not exist';
-        if (target.isOwner) return 'cannot edit the owner';
+        const hierErr = await checkUserHierarchy(ctx.user, target);
+        if (hierErr) return hierErr;
 
-        // privilege escalation check: non-owner can't grant scopes they don't have
         if (!ctx.user.isOwner) {
           const rolePerms = await database.getUserRolePermissions(ctx.user);
-          const myScopes = resolveAllScopes(ctx.user.permissions!, rolePerms);
-          const grantedScopes = resolveAllScopes(permissions, rolePerms);
-          for (const [scope, granted] of Object.entries(grantedScopes)) {
-            if (granted && !myScopes[scope as keyof typeof myScopes])
-              return `cannot grant permission you do not have: ${scope}`;
-          }
+          const escErr = checkPermissionEscalation(ctx.user, rolePerms, permissions);
+          if (escErr) return escErr;
         }
 
         await database.setUserPermissions(username, permissions);
@@ -255,10 +267,13 @@ export const userRouter = router({
         const { username, roleId } = input;
         const { log } = ctx;
 
+        if (username === ctx.user.username) return 'cannot grant roles to yourself';
+
         const target = await database.stores.users.findOne<
           IStoreUser & { _id: string }
         >({ type: 'user', username });
         if (!target) return 'user does not exist';
+        if (target.isOwner) return 'cannot modify the owner';
 
         const role = await database.getRole(roleId);
         if (!role) return 'role not found';
@@ -269,6 +284,13 @@ export const userRouter = router({
           ScopeName.UserGrantRole,
         );
         if (err) return err;
+
+        if (!ctx.user.isOwner) {
+          const rolePerms = await database.getUserRolePermissions(ctx.user);
+          const effective = getActorEffectivePermissions(ctx.user, rolePerms);
+          if (!actorHasAllPermissions(effective, decodePermissions(role.permissions)))
+            return 'cannot grant a role with permissions you do not have';
+        }
 
         if (target.roles.includes(roleId)) return '';
         await database.stores.users.update(
@@ -286,10 +308,13 @@ export const userRouter = router({
         const { username, roleId } = input;
         const { log } = ctx;
 
+        if (username === ctx.user.username) return 'cannot revoke roles from yourself';
+
         const target = await database.stores.users.findOne<
           IStoreUser & { _id: string }
         >({ type: 'user', username });
         if (!target) return 'user does not exist';
+        if (target.isOwner) return 'cannot modify the owner';
 
         const role = await database.getRole(roleId);
         if (!role) return 'role not found';
@@ -322,7 +347,8 @@ export const userRouter = router({
           IStoreUser & { _id: string }
         >({ type: 'user', username });
         if (!target) return 'user does not exist';
-        if (target.isOwner) return 'cannot reset the owner';
+        const hierErr = await checkUserHierarchy(ctx.user, target);
+        if (hierErr) return hierErr;
 
         await database.resetUserMfa(username);
         log(`reset MFA for "${username.yellow}"`);

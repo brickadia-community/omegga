@@ -224,17 +224,38 @@ The backend remains the source of truth -- frontend checks are for UX only.
 
 ## Privilege Escalation Prevention
 
+All user-management mutations (`passwd`, `ban`, `delete`, `permissions`, `grantRole`, `revokeRole`, `resetMfa`) enforce user hierarchy checks via `checkUserHierarchy`. The actor's highest role order must be strictly greater than the target's highest role order. The owner is always protected and cannot be targeted by non-owners.
+
+### Self-Action Prevention
+Users cannot: change their own permissions, grant/revoke roles to/from themselves, disable themselves, or delete themselves. Self-service password change is allowed but requires the current password.
+
 ### User Permissions
-When a non-owner user edits another user's permissions, the backend checks that the editor is not granting scopes they don't have themselves. The mutation resolves all scopes in the proposed `PermissionSet` against the editor's effective permissions (direct + roles + defaults) and rejects any scope the editor lacks.
+When a non-owner user edits another user's permissions, the backend checks that the editor is not granting scopes they don't have themselves. The mutation resolves all scopes in the proposed `PermissionSet` against the editor's effective permissions (direct + roles + defaults) and rejects any scope the editor lacks. The target user must also be below the editor in the role hierarchy.
 
 ### Role Permissions
-When editing a role's permissions, the user must have both `role.edit` and `role.grantPermission`. The hierarchy check ensures the target role is below the user's level. The escalation check ensures the user has every permission they are granting to the role.
+When editing or creating a role's permissions, the user must have both `role.edit` and `role.grantPermission`. The hierarchy check ensures the target role is below the user's level. The escalation check ensures the user has every permission they are granting to the role, using their full effective permissions (direct + roles + defaults).
 
 ### Default Permissions
-Editing default permissions requires `role.defaultPermissions`. The same escalation check applies -- users cannot add permissions to the defaults that they don't have themselves.
+Editing default permissions requires `role.defaultPermissions`. The same escalation check applies -- users cannot add permissions to the defaults that they don't have themselves. Note that removing default permissions is allowed (this can affect all users who rely on defaults).
 
 ### Role Assignment
-Granting or revoking a role requires `user.grantRole`. The hierarchy check ensures the role being assigned/revoked is below the user's highest role that grants `user.grantRole`.
+Granting a role requires `user.grantRole`. Three checks are enforced:
+1. **Hierarchy**: the role being granted must be below the actor's highest role that grants `user.grantRole`
+2. **Containment**: the actor must possess every permission contained in the role being granted (prevents indirect privilege escalation through role assignment)
+3. **Target protection**: the target must be below the actor in the role hierarchy
+
+Revoking a role requires the same hierarchy check on the role being revoked, plus the target must be below the actor.
+
+### Role Reordering
+Reorder requires `role.edit` from an **assigned role** (not from default/direct permissions, which return `Infinity` and would bypass all hierarchy). Non-owners must submit all roles below their level (no partial reorders). The reorder preserves the order slots of unmanaged roles, preventing collisions with roles above the actor's level.
+
+### Direct Permissions and Hierarchy
+When a user has a scope from direct or default permissions (but not from any assigned role), `getActorHighestOrder` returns `Infinity` for that scope. This allows the user to manage any role for create/edit/delete operations but does NOT allow reorder (which explicitly requires a role-based order). Owners should be aware that granting `role.edit` as a direct permission is equivalent to owner-level role management.
+
+### Race Conditions
+- `createRole` uses a single atomic `$inc` multi-update to bump all existing role orders before inserting at order 1. The uniform bump preserves relative ordering, so concurrent operations see consistent hierarchy.
+- Reorder assigns orders inline within the endpoint handler. NeDB operations are individually atomic but there are no multi-document transactions. Under concurrent reorder requests, the last write wins, but hierarchy checks prevent escalation because they validate against the current database state at check time.
+- The roles cache is invalidated after every mutation. Between a mutation and cache invalidation, concurrent reads may see stale data, but stale data is always MORE restrictive (lower actor orders), never less.
 
 ## Storage
 

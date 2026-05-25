@@ -51,14 +51,29 @@ export function actorHasAllPermissions(
   return true;
 }
 
+export function checkPermissionEscalation(
+  actor: IStoreUser,
+  actorRolePermissions: PermissionSet[],
+  proposed: PermissionSet,
+): string | null {
+  if (actor.isOwner) return null;
+  const effective = getActorEffectivePermissions(actor, actorRolePermissions);
+  const myScopes = resolveAllScopes(effective, []);
+  const grantedScopes = resolveAllScopes(proposed, []);
+  for (const [scope, granted] of Object.entries(grantedScopes)) {
+    if (granted && !myScopes[scope as Scope])
+      return `cannot grant permission you do not have: ${scope}`;
+  }
+  return null;
+}
+
 export function getActorEffectivePermissions(
   user: IStoreUser,
-  userRoles: IStoreRole[],
+  rolePermissions: PermissionSet[],
 ): PermissionSet {
-  const rolePerms = userRoles.map(r => decodePermissions(r.permissions));
   return mergePermissionSets(
     user.permissions ?? EMPTY_PERMISSIONS,
-    ...rolePerms,
+    ...rolePermissions,
   );
 }
 
@@ -79,6 +94,23 @@ export function validateHierarchy(
   if (order < 0) return `missing permission: ${requiredScope}`;
   if (!canManageRole(order, targetRole))
     return `cannot manage role "${targetRole.name}" (order ${targetRole.order}) from order ${order}`;
+  return null;
+}
+
+export async function checkUserHierarchy(
+  actor: IStoreUser,
+  target: IStoreUser,
+): Promise<string | null> {
+  if (actor.isOwner) return null;
+  if (target.isOwner) return 'cannot modify the owner';
+  const { database } = getContextDeps();
+  const targetRoles = await database.getUserAssignedRoles(target);
+  if (targetRoles.length === 0) return null;
+  const targetMaxOrder = Math.max(...targetRoles.map(r => r.order));
+  const actorRoles = await database.getUserAssignedRoles(actor);
+  const actorMaxOrder = Math.max(0, ...actorRoles.map(r => r.order));
+  if (actorMaxOrder <= targetMaxOrder)
+    return 'cannot modify a user with equal or higher role';
   return null;
 }
 

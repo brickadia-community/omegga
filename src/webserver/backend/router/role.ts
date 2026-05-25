@@ -1,12 +1,12 @@
 import { z } from 'zod/v4';
 import {
   decodePermissions,
-  resolveAllScopes,
   userHasScope,
   type PermissionSet,
 } from '../permissions';
 import {
   actorHasAllPermissions,
+  checkPermissionEscalation,
   checkRoleHierarchy,
   getActorEffectivePermissions,
   getActorHighestOrder,
@@ -63,11 +63,11 @@ export const roleRouter = router({
           if (err) return err;
 
           if (input.permissions) {
-            const actorRoles = await database.getUserAssignedRoles(ctx.user);
-            const effective = getActorEffectivePermissions(
-              ctx.user,
-              actorRoles,
-            );
+            const rolePerms = await database.getUserRolePermissions(ctx.user);
+            if (!userHasScope(ctx.user, ScopeName.RoleGrantPermission, rolePerms))
+              return 'missing permission: role.grantPermission';
+
+            const effective = getActorEffectivePermissions(ctx.user, rolePerms);
             if (
               !actorHasAllPermissions(
                 effective,
@@ -123,11 +123,7 @@ export const roleRouter = router({
             )
               return 'missing permission: role.grantPermission';
 
-            const actorRoles = await database.getUserAssignedRoles(ctx.user);
-            const effective = getActorEffectivePermissions(
-              ctx.user,
-              actorRoles,
-            );
+            const effective = getActorEffectivePermissions(ctx.user, rolePerms);
             if (
               !actorHasAllPermissions(
                 effective,
@@ -178,9 +174,11 @@ export const roleRouter = router({
         const { database } = getContextDeps();
         const { log } = ctx;
 
+        const allRoles = await database.getAllRoles();
+        const dedupedIds = [...new Set(input.orderedIds)];
+
         if (!ctx.user.isOwner) {
           const actorRoles = await database.getUserAssignedRoles(ctx.user);
-          const allRoles = await database.getAllRoles();
           const actorOrder = getActorHighestOrder(
             ctx.user,
             actorRoles,
@@ -189,14 +187,39 @@ export const roleRouter = router({
           if (actorOrder < 0)
             return 'reorder requires role.edit from an assigned role';
 
-          for (const id of input.orderedIds) {
+          for (const id of dedupedIds) {
             const role = allRoles.find(r => r._id === id);
-            if (role && role.order >= actorOrder)
+            if (!role) return `role not found: ${id}`;
+            if (role.order >= actorOrder)
               return `cannot reorder role "${role.name}" at or above your level`;
+          }
+
+          const manageable = allRoles.filter(r => r.order < actorOrder);
+          if (dedupedIds.length !== manageable.length)
+            return 'must include all roles below your level';
+          for (const r of manageable) {
+            if (!dedupedIds.includes(r._id))
+              return `missing role "${r.name}" from reorder list`;
           }
         }
 
-        await database.reorderRoles(input.orderedIds);
+        const unmanagedOrders = allRoles
+          .filter(r => !dedupedIds.includes(r._id))
+          .map(r => r.order)
+          .sort((a, b) => b - a);
+        const managedSlots = allRoles
+          .map(r => r.order)
+          .filter(o => !unmanagedOrders.includes(o))
+          .sort((a, b) => b - a);
+
+        for (let i = 0; i < dedupedIds.length; i++) {
+          const newOrder = managedSlots[i] ?? i + 1;
+          await database.stores.server.update(
+            { _id: dedupedIds[i], type: 'webRole' },
+            { $set: { order: newOrder } },
+          );
+        }
+        database.invalidateRolesCache();
         log('reordered roles');
         return '';
       }),
@@ -221,12 +244,8 @@ export const roleRouter = router({
 
           if (!ctx.user.isOwner) {
             const rolePerms = await database.getUserRolePermissions(ctx.user);
-            const myScopes = resolveAllScopes(ctx.user.permissions!, rolePerms);
-            const grantedScopes = resolveAllScopes(permissions, []);
-            for (const [scope, granted] of Object.entries(grantedScopes)) {
-              if (granted && !myScopes[scope as keyof typeof myScopes])
-                return `cannot grant permission you do not have: ${scope}`;
-            }
+            const escErr = checkPermissionEscalation(ctx.user, rolePerms, permissions);
+            if (escErr) return escErr;
           }
 
           await database.setDefaultPermissions(permissions);
