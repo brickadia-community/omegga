@@ -23,7 +23,9 @@ import { Permissions } from '../../permissions';
 import { $user } from '../../stores/user';
 import { trpc } from '../../trpc';
 import {
+  mergePermissionSets,
   PermissionEditor,
+  resolveEffective,
   type PermissionSet,
 } from '../users/PermissionEditor';
 
@@ -67,6 +69,19 @@ export const RoleInspector = () => {
   const canManage = role ? myUser?.isOwner || role.order < myMaxOrder : false;
   const canEdit = hasEdit && canManage;
   const canGrantPerm = hasGrantPerm && canManage;
+
+  const grantableScopes = useMemo(() => {
+    if (myUser?.isOwner) return undefined;
+    if (!rolesQuery.data || !role)
+      return resolveEffective({ root: 'off', domains: {}, scopes: {} });
+    const myRoleIds = myUser?.roles ?? [];
+    const qualifyingPerms = rolesQuery.data
+      .filter(r => myRoleIds.includes(r.id) && r.order > role.order)
+      .map(r => r.permissions as PermissionSet);
+    if (qualifyingPerms.length === 0)
+      return resolveEffective({ root: 'off', domains: {}, scopes: {} });
+    return resolveEffective(mergePermissionSets(...qualifyingPerms));
+  }, [myUser, rolesQuery.data, role]);
 
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
@@ -202,6 +217,7 @@ export const RoleInspector = () => {
                   <PermissionEditor
                     perms={editPerms}
                     onChange={canGrantPerm ? setEditPerms : undefined}
+                    actorScopes={grantableScopes}
                   />
                 )}
               </div>

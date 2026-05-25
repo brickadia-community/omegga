@@ -28,7 +28,7 @@ import { duration } from '@utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
 import { Permissions } from '../../permissions';
-import { $user, $usersRefresh } from '../../stores/user';
+import { $resolvedScopes, $user, $usersRefresh } from '../../stores/user';
 import { trpc, type RouterOutputs } from '../../trpc';
 
 type UserFromList = RouterOutputs['user']['list']['users'][number];
@@ -51,6 +51,7 @@ export const UserInspector = ({
   const [_match, params] = useRoute('/users/:id');
   const [_loc, navigate] = useLocation();
   const myUser = useStore($user);
+  const resolvedScopes = useStore($resolvedScopes);
 
   const canEditPerms = useHasScope(Permissions.UserPermissions);
   const canBan = useHasScope(Permissions.UserBan);
@@ -325,6 +326,7 @@ export const UserInspector = ({
                     <UserRoleSection
                       username={selectedUsername}
                       isSelf={isSelfMode}
+                      roleIds={(user as any).roles ?? []}
                     />
                   )}
                   {canEditPerms && !user.isOwner && editPerms && (
@@ -337,6 +339,9 @@ export const UserInspector = ({
                         perms={editPerms}
                         onChange={setEditPerms}
                         defaultPerms={defaultPerms}
+                        actorScopes={
+                          !myUser?.isOwner ? resolvedScopes : undefined
+                        }
                       />
                     </>
                   )}

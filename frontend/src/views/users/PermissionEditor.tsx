@@ -22,6 +22,54 @@ export interface PermissionSet {
   scopes: Record<string, boolean>;
 }
 
+export function mergePermissionSets(
+  ...sets: PermissionSet[]
+): PermissionSet {
+  let root: RootLevel = 'off';
+  const domains: Record<string, DomainLevel> = {};
+  const scopes: Record<string, boolean> = {};
+  const ROOT_RANK: Record<string, number> = { off: 0, read: 1, all: 2 };
+  const DOMAIN_RANK: Record<string, number> = { none: 0, read: 1, all: 2 };
+  for (const s of sets) {
+    if ((ROOT_RANK[s.root] ?? 0) > (ROOT_RANK[root] ?? 0)) root = s.root;
+    for (const [d, l] of Object.entries(s.domains ?? {})) {
+      if ((DOMAIN_RANK[l] ?? 0) > (DOMAIN_RANK[domains[d]] ?? 0))
+        domains[d] = l;
+    }
+    for (const [sc, v] of Object.entries(s.scopes ?? {})) {
+      if (v) scopes[sc] = true;
+    }
+  }
+  return { root, domains, scopes };
+}
+
+export function resolveEffective(p: PermissionSet): Record<string, boolean> {
+  const result: Record<string, boolean> = {};
+  for (const [scope, info] of Object.entries(SCOPE_INFO)) {
+    if (p.root === 'all') { result[scope] = true; continue; }
+    if (p.root === 'read' && info.readOnly) { result[scope] = true; continue; }
+    const dl = p.domains[info.domain];
+    if (dl === 'all') { result[scope] = true; continue; }
+    if (dl === 'read' && info.readOnly) { result[scope] = true; continue; }
+    result[scope] = p.scopes[scope] ?? false;
+  }
+  return result;
+}
+
+function wouldRevoke(current: PermissionSet, proposed: PermissionSet): boolean {
+  const cur = resolveEffective(current);
+  const next = resolveEffective(proposed);
+  return Object.keys(cur).some(s => cur[s] && !next[s]);
+}
+
+function wouldEscalate(
+  proposed: PermissionSet,
+  actor: Record<string, boolean>,
+): boolean {
+  const next = resolveEffective(proposed);
+  return Object.keys(next).some(s => next[s] && !actor[s]);
+}
+
 const ROOT_OPTIONS: { value: RootLevel; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'read', label: 'Read Only' },
@@ -38,35 +86,40 @@ function LevelPicker<T extends string>({
   options,
   onChange,
   disabled,
+  disabledOptions,
 }: {
   value: T;
   options: { value: T; label: string }[];
   onChange: (v: T) => void;
   disabled?: boolean;
+  disabledOptions?: Set<T>;
 }) {
   return (
     <div className={`level-picker ${disabled ? 'dimmed' : ''}`}>
-      {options.map((o, i) => (
-        <button
-          key={o.value}
-          className={[
-            'level-option',
-            value === o.value ? 'active' : '',
-            `level-${o.value}`,
-            i === 0 ? 'first' : '',
-            i === options.length - 1 ? 'last' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')}
-          onClick={() => {
-            if (disabled || value === o.value) return;
-            onChange(o.value);
-          }}
-          disabled={disabled}
-        >
-          {o.label}
-        </button>
-      ))}
+      {options.map((o, i) => {
+        const optDisabled = disabled || disabledOptions?.has(o.value);
+        return (
+          <button
+            key={o.value}
+            className={[
+              'level-option',
+              value === o.value ? 'active' : '',
+              `level-${o.value}`,
+              i === 0 ? 'first' : '',
+              i === options.length - 1 ? 'last' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => {
+              if (optDisabled || value === o.value) return;
+              onChange(o.value);
+            }}
+            disabled={!!optDisabled}
+          >
+            {o.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -76,11 +129,13 @@ export const PermissionEditor = ({
   onChange,
   defaultPerms,
   disabled,
+  actorScopes,
 }: {
   perms: PermissionSet;
   onChange?: (p: PermissionSet) => void;
   defaultPerms?: PermissionSet | null;
   disabled?: boolean;
+  actorScopes?: Record<string, boolean>;
 }) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [search, setSearch] = useState('');
@@ -90,6 +145,50 @@ export const PermissionEditor = ({
 
   const readOnly = !onChange;
   const rootLocked = perms.root !== 'off';
+
+  const disabledRootOptions = useMemo(() => {
+    if (!actorScopes) return undefined;
+    const set = new Set<RootLevel>();
+    for (const opt of ['all', 'read', 'off'] as RootLevel[]) {
+      if (opt === perms.root) continue;
+      const proposed: PermissionSet =
+        opt !== 'off'
+          ? { root: opt, domains: {}, scopes: {} }
+          : { ...perms, root: opt };
+      if (wouldEscalate(proposed, actorScopes) || wouldRevoke(perms, proposed))
+        set.add(opt);
+    }
+    if (set.size >= 2) set.add(perms.root);
+    return set.size > 0 ? set : undefined;
+  }, [actorScopes, perms]);
+
+  const disabledDomainOptions = useMemo(() => {
+    if (!actorScopes) return {};
+    const result: Record<string, Set<DomainLevel>> = {};
+    for (const domain of DOMAIN_ORDER) {
+      const currentDl = perms.domains[domain] ?? 'none';
+      const set = new Set<DomainLevel>();
+      for (const opt of ['all', 'read', 'none'] as DomainLevel[]) {
+        if (opt === currentDl) continue;
+        const domains = { ...perms.domains };
+        const scopes = { ...perms.scopes };
+        if (opt !== 'none') {
+          domains[domain] = opt;
+          for (const s of SCOPES_BY_DOMAIN[domain] ?? []) delete scopes[s];
+        } else {
+          delete domains[domain];
+        }
+        const proposed: PermissionSet = { ...perms, domains, scopes };
+        if (
+          wouldEscalate(proposed, actorScopes) || wouldRevoke(perms, proposed)
+        )
+          set.add(opt);
+      }
+      if (set.size >= 2) set.add(currentDl);
+      if (set.size > 0) result[domain] = set;
+    }
+    return result;
+  }, [actorScopes, perms]);
 
   const allScopeKeys = Object.keys(SCOPE_INFO) as Permission[];
   const totalScopes = allScopeKeys.length;
@@ -209,6 +308,7 @@ export const PermissionEditor = ({
             options={ROOT_OPTIONS}
             onChange={setRoot}
             disabled={disabled || readOnly}
+            disabledOptions={disabledRootOptions}
           />
         </div>
       )}
@@ -253,6 +353,7 @@ export const PermissionEditor = ({
                 options={DOMAIN_OPTIONS}
                 onChange={v => setDomain(domain, v)}
                 disabled={disabled || readOnly || rootLocked}
+                disabledOptions={disabledDomainOptions[domain]}
               />
             </div>
             {isExpanded &&
@@ -291,7 +392,13 @@ export const PermissionEditor = ({
                       <Toggle
                         value={scopeVal}
                         onChange={v => setScope(scope, v)}
-                        disabled={disabled || readOnly || domainLocked}
+                        disabled={
+                          disabled ||
+                          readOnly ||
+                          domainLocked ||
+                          (actorScopes &&
+                            (scopeVal || !actorScopes[scope]))
+                        }
                       />
                     </div>
                   </div>

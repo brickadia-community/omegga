@@ -200,6 +200,12 @@
         border-radius: 0 theme.$br-radius-sm theme.$br-radius-sm 0;
       }
 
+      &:disabled {
+        opacity: 0.3;
+        pointer-events: none;
+        cursor: default;
+      }
+
       &.active {
         color: white;
 

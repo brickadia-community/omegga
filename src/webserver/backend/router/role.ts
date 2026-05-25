@@ -6,10 +6,10 @@ import {
 } from '../permissions';
 import {
   actorHasAllPermissions,
-  checkPermissionEscalation,
+  checkPermissionRevocation,
   checkRoleHierarchy,
-  getActorEffectivePermissions,
   getActorHighestOrder,
+  getGrantablePermissions,
 } from '../roleHierarchy';
 import { ScopeName } from '../scopes';
 import { getContextDeps, protectedProcedure, router } from '../trpc';
@@ -67,10 +67,11 @@ export const roleRouter = router({
             if (!userHasScope(ctx.user, ScopeName.RoleGrantPermission, rolePerms))
               return 'missing permission: role.grantPermission';
 
-            const effective = getActorEffectivePermissions(ctx.user, rolePerms);
+            const assignedRoles = await database.getUserAssignedRoles(ctx.user);
+            const grantable = getGrantablePermissions(assignedRoles, 1);
             if (
               !actorHasAllPermissions(
-                effective,
+                grantable,
                 input.permissions as PermissionSet,
               )
             )
@@ -123,14 +124,25 @@ export const roleRouter = router({
             )
               return 'missing permission: role.grantPermission';
 
-            const effective = getActorEffectivePermissions(ctx.user, rolePerms);
+            const assignedRoles = await database.getUserAssignedRoles(ctx.user);
+            const grantable = getGrantablePermissions(
+              assignedRoles,
+              role.order,
+            );
             if (
               !actorHasAllPermissions(
-                effective,
+                grantable,
                 input.permissions as PermissionSet,
               )
             )
               return 'cannot grant permissions you do not have';
+
+            const currentPerms = decodePermissions(role.permissions);
+            const revErr = checkPermissionRevocation(
+              currentPerms,
+              input.permissions as PermissionSet,
+            );
+            if (revErr) return revErr;
           }
         }
 
@@ -243,9 +255,14 @@ export const roleRouter = router({
           const permissions = input as unknown as PermissionSet;
 
           if (!ctx.user.isOwner) {
-            const rolePerms = await database.getUserRolePermissions(ctx.user);
-            const escErr = checkPermissionEscalation(ctx.user, rolePerms, permissions);
-            if (escErr) return escErr;
+            const assignedRoles = await database.getUserAssignedRoles(ctx.user);
+            const grantable = getGrantablePermissions(assignedRoles);
+            if (!actorHasAllPermissions(grantable, permissions))
+              return 'cannot grant permissions you do not have';
+
+            const current = await database.getDefaultPermissions();
+            const revErr = checkPermissionRevocation(current, permissions);
+            if (revErr) return revErr;
           }
 
           await database.setDefaultPermissions(permissions);

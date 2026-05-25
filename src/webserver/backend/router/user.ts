@@ -7,9 +7,10 @@ import {
 import {
   actorHasAllPermissions,
   checkPermissionEscalation,
+  checkPermissionRevocation,
   checkRoleHierarchy,
   checkUserHierarchy,
-  getActorEffectivePermissions,
+  getGrantablePermissions,
 } from '../roleHierarchy';
 import { ScopeName } from '../scopes';
 import { router, protectedProcedure, getContextDeps } from '../trpc';
@@ -72,6 +73,7 @@ export const userRouter = router({
         seenAgo: ctx.user.lastOnline ? now - ctx.user.lastOnline : Infinity,
         createdAgo: now - (ctx.user.created ?? now),
         permissions: ctx.user.permissions,
+        roles: ctx.user.roles ?? [],
         totpEnabled: ctx.user.totpEnabled ?? false,
         passkeyCount: ctx.user.passkeys?.length ?? 0,
       };
@@ -253,6 +255,10 @@ export const userRouter = router({
           const rolePerms = await database.getUserRolePermissions(ctx.user);
           const escErr = checkPermissionEscalation(ctx.user, rolePerms, permissions);
           if (escErr) return escErr;
+
+          const currentPerms = decodePermissions(target.permissions);
+          const revErr = checkPermissionRevocation(currentPerms, permissions);
+          if (revErr) return revErr;
         }
 
         await database.setUserPermissions(username, permissions);
@@ -286,9 +292,9 @@ export const userRouter = router({
         if (err) return err;
 
         if (!ctx.user.isOwner) {
-          const rolePerms = await database.getUserRolePermissions(ctx.user);
-          const effective = getActorEffectivePermissions(ctx.user, rolePerms);
-          if (!actorHasAllPermissions(effective, decodePermissions(role.permissions)))
+          const assignedRoles = await database.getUserAssignedRoles(ctx.user);
+          const grantable = getGrantablePermissions(assignedRoles, role.order);
+          if (!actorHasAllPermissions(grantable, decodePermissions(role.permissions)))
             return 'cannot grant a role with permissions you do not have';
         }
 

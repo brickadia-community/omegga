@@ -9,19 +9,17 @@ import { trpc } from '../../trpc';
 export const UserRoleSection = ({
   username,
   isSelf,
+  roleIds,
 }: {
   username: string;
   isSelf: boolean;
+  roleIds: string[];
 }) => {
   const canGrantRole = useHasScope(Permissions.UserGrantRole);
   const canViewRoles = useHasScope(Permissions.RoleList);
-  const canViewUsers = useHasScope(Permissions.UserList);
 
   const rolesQuery = trpc.role.list.useQuery(undefined, {
     enabled: canViewRoles,
-  });
-  const userQuery = trpc.user.list.useQuery(undefined, {
-    enabled: !isSelf && canViewUsers,
   });
 
   const grantMutation = trpc.user.grantRole.useMutation();
@@ -33,23 +31,17 @@ export const UserRoleSection = ({
 
   const allRoles = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data]);
 
-  const userRoleIds = useMemo(() => {
-    if (!userQuery.data) return [];
-    const u = userQuery.data.users.find(u => u.username === username);
-    return (u as any)?.roles ?? [];
-  }, [userQuery.data, username]);
-
   const assignedRoles = useMemo(
     () =>
       allRoles
-        .filter(r => userRoleIds.includes(r.id))
+        .filter(r => roleIds.includes(r.id))
         .sort((a, b) => a.order - b.order),
-    [allRoles, userRoleIds],
+    [allRoles, roleIds],
   );
 
   const availableRoles = useMemo(
-    () => allRoles.filter(r => !userRoleIds.includes(r.id)),
-    [allRoles, userRoleIds],
+    () => allRoles.filter(r => !roleIds.includes(r.id)),
+    [allRoles, roleIds],
   );
 
   useEffect(() => {
@@ -63,13 +55,15 @@ export const UserRoleSection = ({
 
   const handleGrant = async (roleId: string) => {
     await grantMutation.mutateAsync({ username, roleId });
-    utils.user.list.invalidate();
+    if (isSelf) utils.user.self.invalidate();
+    else utils.user.list.invalidate();
     setOpen(false);
   };
 
   const handleRevoke = async (roleId: string) => {
     await revokeMutation.mutateAsync({ username, roleId });
-    utils.user.list.invalidate();
+    if (isSelf) utils.user.self.invalidate();
+    else utils.user.list.invalidate();
   };
 
   if (!canViewRoles) return null;
@@ -106,8 +100,8 @@ export const UserRoleSection = ({
         ))}
         {assignedRoles.length === 0 && (
           <div
-            className="br-player-item"
-            style={{ opacity: 0.5, fontWeight: 'bold' }}
+            className="br-player-item muted-text"
+            style={{ fontWeight: 'bold' }}
           >
             No roles assigned
           </div>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DomainLevel,
   EMPTY_PERMISSIONS,
+  resolveAllScopes,
   RootLevel,
   encodePermissions,
   type PermissionSet,
@@ -10,8 +11,10 @@ import {
   actorHasAllPermissions,
   canManageRole,
   checkPermissionEscalation,
+  checkPermissionRevocation,
   getActorEffectivePermissions,
   getActorHighestOrder,
+  getGrantablePermissions,
   validateHierarchy,
 } from './roleHierarchy';
 import { ScopeName } from './scopes';
@@ -406,6 +409,83 @@ describe('checkPermissionEscalation', () => {
   });
 });
 
+describe('checkPermissionRevocation', () => {
+  it('allows identical permissions', () => {
+    const perms: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true },
+    };
+    expect(checkPermissionRevocation(perms, perms)).toBeNull();
+  });
+
+  it('allows adding new scopes', () => {
+    const current: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true },
+    };
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true, [ScopeName.PlayerList]: true },
+    };
+    expect(checkPermissionRevocation(current, proposed)).toBeNull();
+  });
+
+  it('blocks removing an individual scope', () => {
+    const current: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true, [ScopeName.RoleEdit]: true },
+    };
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true },
+    };
+    const err = checkPermissionRevocation(current, proposed);
+    expect(err).toContain('cannot revoke');
+    expect(err).toContain('role.edit');
+  });
+
+  it('blocks downgrading root from all to read (loses write scopes)', () => {
+    const current: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
+    const proposed: PermissionSet = { root: RootLevel.Read, domains: {}, scopes: {} };
+    expect(checkPermissionRevocation(current, proposed)).not.toBeNull();
+  });
+
+  it('blocks downgrading root from all to off', () => {
+    const current: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
+    const proposed: PermissionSet = { root: RootLevel.Off, domains: {}, scopes: {} };
+    expect(checkPermissionRevocation(current, proposed)).not.toBeNull();
+  });
+
+  it('blocks downgrading domain from all to read', () => {
+    const current: PermissionSet = {
+      root: RootLevel.Off,
+      domains: { server: DomainLevel.All },
+      scopes: {},
+    };
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: { server: DomainLevel.Read },
+      scopes: {},
+    };
+    expect(checkPermissionRevocation(current, proposed)).not.toBeNull();
+  });
+
+  it('allows upgrading root from off to all', () => {
+    const current: PermissionSet = { root: RootLevel.Off, domains: {}, scopes: {} };
+    const proposed: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
+    expect(checkPermissionRevocation(current, proposed)).toBeNull();
+  });
+
+  it('allows empty to empty', () => {
+    expect(checkPermissionRevocation(EMPTY_PERMISSIONS, EMPTY_PERMISSIONS)).toBeNull();
+  });
+});
+
 // --- regression tests for specific escalation vectors ---
 
 describe('regression: privilege escalation vectors', () => {
@@ -486,5 +566,204 @@ describe('regression: privilege escalation vectors', () => {
     });
     const proposed: PermissionSet = { root: RootLevel.All, domains: {}, scopes: {} };
     expect(checkPermissionEscalation(user, [], proposed)).not.toBeNull();
+  });
+});
+
+// --- source-level permission granting hierarchy ---
+
+describe('getGrantablePermissions', () => {
+  it('merges all role permissions when no minOrder', () => {
+    const roles = [
+      makeRole(5, { [ScopeName.ChatSend]: true }),
+      makeRole(2, { [ScopeName.PlayerList]: true }),
+    ];
+    const result = getGrantablePermissions(roles);
+    const resolved = resolveAllScopes(result, []);
+    expect(resolved[ScopeName.ChatSend]).toBe(true);
+    expect(resolved[ScopeName.PlayerList]).toBe(true);
+  });
+
+  it('only includes roles above minOrder', () => {
+    const roles = [
+      makeRole(5, { [ScopeName.ChatSend]: true }),
+      makeRole(2, { [ScopeName.PlayerList]: true }),
+    ];
+    const result = getGrantablePermissions(roles, 3);
+    const resolved = resolveAllScopes(result, []);
+    expect(resolved[ScopeName.ChatSend]).toBe(true);
+    expect(resolved[ScopeName.PlayerList]).toBe(false);
+  });
+
+  it('returns empty when no qualifying roles', () => {
+    const roles = [makeRole(2, { [ScopeName.ChatSend]: true })];
+    const result = getGrantablePermissions(roles, 5);
+    const resolved = resolveAllScopes(result, []);
+    expect(resolved[ScopeName.ChatSend]).toBe(false);
+  });
+
+  it('returns empty for empty role list', () => {
+    const result = getGrantablePermissions([]);
+    expect(result).toEqual(EMPTY_PERMISSIONS);
+  });
+
+  it('merges domain-level permissions from qualifying roles', () => {
+    const roles = [
+      makeRole(5, {}, RootLevel.Off),
+      makeRole(3, {}, RootLevel.Off),
+    ];
+    // Manually set domain on role 5
+    roles[0].permissions = encodePermissions({
+      root: RootLevel.Off,
+      domains: { server: DomainLevel.All },
+      scopes: {},
+    });
+    const result = getGrantablePermissions(roles, 2);
+    const resolved = resolveAllScopes(result, []);
+    expect(resolved[ScopeName.ServerStart]).toBe(true);
+  });
+});
+
+describe('regression: source-level escalation prevention', () => {
+  it('user with scope from direct permissions only cannot grant to defaults', () => {
+    // User has role.edit directly but no assigned role grants it
+    const assignedRoles: (IStoreRole & { _id: string })[] = [];
+    const grantable = getGrantablePermissions(assignedRoles);
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.RoleEdit]: true },
+    };
+    expect(actorHasAllPermissions(grantable, proposed)).toBe(false);
+  });
+
+  it('user with scope from default permissions only cannot grant to a role', () => {
+    // Defaults give the user chat.send, but no assigned role does
+    const assignedRoles: (IStoreRole & { _id: string })[] = [];
+    const grantable = getGrantablePermissions(assignedRoles, 1);
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true },
+    };
+    expect(actorHasAllPermissions(grantable, proposed)).toBe(false);
+  });
+
+  it('user with scope from assigned role can grant to defaults', () => {
+    const assignedRoles = [makeRole(3, { [ScopeName.ChatSend]: true })];
+    const grantable = getGrantablePermissions(assignedRoles);
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true },
+    };
+    expect(actorHasAllPermissions(grantable, proposed)).toBe(true);
+  });
+
+  it('user with scope from lower-order role cannot grant to higher-order role', () => {
+    const assignedRoles = [makeRole(2, { [ScopeName.ChatSend]: true })];
+    // Target role is at order 3 — actor's role at order 2 doesn't qualify
+    const grantable = getGrantablePermissions(assignedRoles, 3);
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true },
+    };
+    expect(actorHasAllPermissions(grantable, proposed)).toBe(false);
+  });
+
+  it('user with scope from equal-order role cannot grant to that role', () => {
+    const assignedRoles = [makeRole(3, { [ScopeName.ChatSend]: true })];
+    // Target role is at order 3 — must be strictly greater
+    const grantable = getGrantablePermissions(assignedRoles, 3);
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true },
+    };
+    expect(actorHasAllPermissions(grantable, proposed)).toBe(false);
+  });
+
+  it('user with scope from higher-order role can grant to lower-order role', () => {
+    const assignedRoles = [makeRole(5, { [ScopeName.ChatSend]: true })];
+    const grantable = getGrantablePermissions(assignedRoles, 2);
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true },
+    };
+    expect(actorHasAllPermissions(grantable, proposed)).toBe(true);
+  });
+
+  it('user with scope from direct + defaults still cannot grant to a role', () => {
+    // Both direct and defaults give user the scope, but neither is a role
+    const assignedRoles: (IStoreRole & { _id: string })[] = [];
+    const grantable = getGrantablePermissions(assignedRoles, 1);
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ServerStart]: true },
+    };
+    expect(actorHasAllPermissions(grantable, proposed)).toBe(false);
+  });
+
+  it('user with scope from role + direct can grant (role source counts)', () => {
+    const assignedRoles = [makeRole(5, { [ScopeName.ChatSend]: true })];
+    // Actor also has chat.send from direct, but that doesn't matter —
+    // the assigned role at order 5 qualifies for target at order 2
+    const grantable = getGrantablePermissions(assignedRoles, 2);
+    const proposed: PermissionSet = {
+      root: RootLevel.Off,
+      domains: {},
+      scopes: { [ScopeName.ChatSend]: true },
+    };
+    expect(actorHasAllPermissions(grantable, proposed)).toBe(true);
+  });
+
+  it('granting role at order N requires containment from roles above N', () => {
+    // Actor has role at order 5 with chat.send, role at order 2 with player.list
+    // Granting a role at order 3: only role at order 5 qualifies
+    const assignedRoles = [
+      makeRole(5, { [ScopeName.ChatSend]: true }),
+      makeRole(2, { [ScopeName.PlayerList]: true }),
+    ];
+    const grantable = getGrantablePermissions(assignedRoles, 3);
+    // Can grant chat.send (from role at 5)
+    expect(
+      actorHasAllPermissions(grantable, {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.ChatSend]: true },
+      }),
+    ).toBe(true);
+    // Cannot grant player.list (only from role at 2, which is below target 3)
+    expect(
+      actorHasAllPermissions(grantable, {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.PlayerList]: true },
+      }),
+    ).toBe(false);
+  });
+
+  it('adding permissions to default requires role source, not direct', () => {
+    // Actor has a role with chat.send but direct permissions with server.start
+    const assignedRoles = [makeRole(3, { [ScopeName.ChatSend]: true })];
+    const grantable = getGrantablePermissions(assignedRoles);
+    // Can grant chat.send (from role)
+    expect(
+      actorHasAllPermissions(grantable, {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.ChatSend]: true },
+      }),
+    ).toBe(true);
+    // Cannot grant server.start (only from direct, not in any role)
+    expect(
+      actorHasAllPermissions(grantable, {
+        root: RootLevel.Off,
+        domains: {},
+        scopes: { [ScopeName.ServerStart]: true },
+      }),
+    ).toBe(false);
   });
 });

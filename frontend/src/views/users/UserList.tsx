@@ -136,8 +136,8 @@ export const UserList = () => {
 
   const usersRefresh = useStore($usersRefresh);
   useEffect(() => {
-    getUsers();
-  }, [usersRefresh]);
+    if (canAccess) getUsers();
+  }, [usersRefresh, canAccess]);
 
   const setSort = (s: string) => {
     if (s == sort) {

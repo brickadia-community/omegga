@@ -67,6 +67,33 @@ export function checkPermissionEscalation(
   return null;
 }
 
+export function checkPermissionRevocation(
+  current: PermissionSet,
+  proposed: PermissionSet,
+): string | null {
+  const currentScopes = resolveAllScopes(current, []);
+  const proposedScopes = resolveAllScopes(proposed, []);
+  for (const [scope, granted] of Object.entries(currentScopes)) {
+    if (granted && !proposedScopes[scope as Scope])
+      return `cannot revoke permission: ${scope}`;
+  }
+  return null;
+}
+
+export function getGrantablePermissions(
+  actorRoles: IStoreRole[],
+  minOrder?: number,
+): PermissionSet {
+  const qualifying =
+    minOrder !== undefined
+      ? actorRoles.filter(r => r.order > minOrder)
+      : actorRoles;
+  if (qualifying.length === 0) return EMPTY_PERMISSIONS;
+  return mergePermissionSets(
+    ...qualifying.map(r => decodePermissions(r.permissions)),
+  );
+}
+
 export function getActorEffectivePermissions(
   user: IStoreUser,
   rolePermissions: PermissionSet[],
