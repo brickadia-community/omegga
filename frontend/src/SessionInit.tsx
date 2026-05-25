@@ -7,7 +7,7 @@ import {
   $showLogout,
   $user,
 } from './stores/user';
-import { $version } from './stores/version';
+import { $brickadiaVersion, $version } from './stores/version';
 import { trpc } from './trpc';
 
 export const SessionInit = () => {
@@ -17,6 +17,7 @@ export const SessionInit = () => {
     if (status === 'success' && data) {
       $omeggaData.set(data);
       $version.set(data.version);
+      $brickadiaVersion.set(data.brickadiaVersion);
       $user.set(data.user);
       $resolvedScopes.set(data.user.resolvedScopes ?? {});
       $showLogout.set(data.canLogOut);

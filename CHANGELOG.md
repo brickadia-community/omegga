@@ -11,7 +11,8 @@
 - Role hierarchy enforcement: users can only manage roles below their own level
 - Default permissions editor moved to the Roles view as the "Everyone" entry
 - Permission editor: scope counts per domain and total, read-only mode when lacking permissions
-- Animated dropdown menus (fade + slide) across all views using motion
+- Animated dropdown menus (fade + slide) across all views
+- Show game version on the top right of the web-ui
 
 ## 1.6.0 - 2026-05-24
 
