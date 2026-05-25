@@ -1,16 +1,49 @@
 import { Button, Loader, NavBar, Scroll } from '@components';
+import { useHasScope } from '@hooks';
+import { useStore } from '@nanostores/react';
 import { IconDeviceFloppy } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Permissions } from '../../permissions';
+import { $user } from '../../stores/user';
 import { trpc } from '../../trpc';
-import { PermissionEditor, type PermissionSet } from './PermissionEditor';
+import {
+  mergePermissionSets,
+  PermissionEditor,
+  resolveEffective,
+  type PermissionSet,
+} from './PermissionEditor';
 
 export const DefaultPermissions = () => {
-  const defaultPermsQuery = trpc.user.defaultPermissions.get.useQuery();
+  const canView = useHasScope(Permissions.RoleList);
+  const canEdit = useHasScope(Permissions.RoleDefaultPermissions);
+  const myUser = useStore($user);
+
+  const defaultPermsQuery = trpc.role.defaultPermissions.get.useQuery(
+    undefined,
+    { enabled: canView },
+  );
+  const rolesQuery = trpc.role.list.useQuery(undefined, {
+    enabled: canEdit && !myUser?.isOwner,
+  });
   const setDefaultPermsMutation =
-    trpc.user.defaultPermissions.set.useMutation();
+    trpc.role.defaultPermissions.set.useMutation();
+
+  const grantableScopes = useMemo(() => {
+    if (myUser?.isOwner) return undefined;
+    if (!rolesQuery.data)
+      return resolveEffective({ root: 'off', domains: {}, scopes: {} });
+    const myRoleIds = myUser?.roles ?? [];
+    const myRolePerms = rolesQuery.data
+      .filter(r => myRoleIds.includes(r.id))
+      .map(r => r.permissions as PermissionSet);
+    if (myRolePerms.length === 0)
+      return resolveEffective({ root: 'off', domains: {}, scopes: {} });
+    return resolveEffective(mergePermissionSets(...myRolePerms));
+  }, [myUser, rolesQuery.data]);
 
   const [editPerms, setEditPerms] = useState<PermissionSet | null>(null);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (defaultPermsQuery.data) {
@@ -32,12 +65,13 @@ export const DefaultPermissions = () => {
   const save = useCallback(async () => {
     if (!editPerms) return;
     setSaving(true);
+    setError('');
     try {
       const err = await setDefaultPermsMutation.mutateAsync(editPerms);
-      if (err) console.error('Failed to save default permissions:', err);
+      if (err) setError(err);
       else defaultPermsQuery.refetch();
-    } catch (e) {
-      console.error('Failed to save default permissions:', e);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to save');
     }
     setSaving(false);
   }, [editPerms]);
@@ -47,10 +81,12 @@ export const DefaultPermissions = () => {
       <NavBar attached>
         Default Permissions
         <span style={{ flex: 1 }} />
-        <Button normal disabled={saving || !dirty} onClick={save}>
-          <IconDeviceFloppy />
-          Save
-        </Button>
+        {canEdit && (
+          <Button normal disabled={saving || !dirty} onClick={save}>
+            <IconDeviceFloppy />
+            Save
+          </Button>
+        )}
       </NavBar>
       <div className="player-inspector">
         <div className="player-view">
@@ -66,8 +102,13 @@ export const DefaultPermissions = () => {
                     explicit override set.
                   </div>
                 </div>
+                {error && <div className="perm-error">{error}</div>}
                 <div className="section-header">Permissions</div>
-                <PermissionEditor perms={editPerms} onChange={setEditPerms} />
+                <PermissionEditor
+                  perms={editPerms}
+                  onChange={canEdit ? setEditPerms : undefined}
+                  actorScopes={grantableScopes}
+                />
               </Scroll>
             )}
           </div>

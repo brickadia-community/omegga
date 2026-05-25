@@ -64,9 +64,60 @@ export function decodePermissions(
 
 const ALL_SCOPES = Object.keys(SCOPES) as Scope[];
 
+const ROOT_RANK: Record<RootLevel, number> = {
+  [RootLevel.Off]: 0,
+  [RootLevel.Read]: 1,
+  [RootLevel.All]: 2,
+};
+
+const DOMAIN_RANK: Record<DomainLevel, number> = {
+  [DomainLevel.None]: 0,
+  [DomainLevel.Read]: 1,
+  [DomainLevel.All]: 2,
+};
+
+const ROOT_BY_RANK: RootLevel[] = [
+  RootLevel.Off,
+  RootLevel.Read,
+  RootLevel.All,
+];
+const DOMAIN_BY_RANK: DomainLevel[] = [
+  DomainLevel.None,
+  DomainLevel.Read,
+  DomainLevel.All,
+];
+
+export function mergePermissionSets(...sets: PermissionSet[]): PermissionSet {
+  let rootRank = 0;
+  const domains: Partial<Record<Domain, DomainLevel>> = {};
+  const scopes: Partial<Record<Scope, boolean>> = {};
+
+  for (const s of sets) {
+    rootRank = Math.max(rootRank, ROOT_RANK[s.root] ?? 0);
+    for (const [d, level] of Object.entries(s.domains) as [
+      Domain,
+      DomainLevel,
+    ][]) {
+      const cur = domains[d];
+      const curRank = cur ? DOMAIN_RANK[cur] : 0;
+      const newRank = DOMAIN_RANK[level] ?? 0;
+      if (newRank > curRank) domains[d] = level;
+    }
+    for (const [sc, val] of Object.entries(s.scopes) as [Scope, boolean][]) {
+      if (val) scopes[sc] = true;
+    }
+  }
+
+  return {
+    root: ROOT_BY_RANK[rootRank],
+    domains,
+    scopes,
+  };
+}
+
 export function resolveScope(
   userPerms: PermissionSet,
-  defaultPerms: PermissionSet | null,
+  rolePermissions: PermissionSet[],
   scopeName: Scope,
 ): boolean {
   if (scopeName === ScopeName.SessionInfo) return true;
@@ -75,30 +126,32 @@ export function resolveScope(
 
   // 1. Root
   if (userPerms.root === RootLevel.All) return true;
-  if (userPerms.root === RootLevel.Read) return scopeDef.readOnly;
+  if (userPerms.root === RootLevel.Read && scopeDef.readOnly) return true;
 
   // 2. Domain
   const domain = userPerms.domains[scopeDef.domain as Domain];
   if (domain === DomainLevel.All) return true;
-  if (domain === DomainLevel.Read) return scopeDef.readOnly;
+  if (domain === DomainLevel.Read && scopeDef.readOnly) return true;
 
   // 3. Scope (additive only - explicit true grants, false/absent falls through)
-  const scopeVal = userPerms.scopes[scopeName];
-  if (scopeVal === true) return true;
+  if (userPerms.scopes[scopeName] === true) return true;
 
-  // 4. Fall back to defaults
-  if (defaultPerms) return resolveScope(defaultPerms, null, scopeName);
+  // 4. Fall back to merged role permissions
+  if (rolePermissions.length > 0) {
+    const merged = mergePermissionSets(...rolePermissions);
+    return resolveScope(merged, [], scopeName);
+  }
 
   return false;
 }
 
 export function resolveAllScopes(
   userPerms: PermissionSet,
-  defaultPerms: PermissionSet | null,
+  rolePermissions: PermissionSet[],
 ): Record<Scope, boolean> {
   const result = {} as Record<Scope, boolean>;
   for (const scope of ALL_SCOPES) {
-    result[scope] = resolveScope(userPerms, defaultPerms, scope);
+    result[scope] = resolveScope(userPerms, rolePermissions, scope);
   }
   return result;
 }
@@ -106,12 +159,12 @@ export function resolveAllScopes(
 export function userHasScope(
   user: { isOwner: boolean; permissions?: PermissionSet },
   scope: Scope,
-  defaultPerms: PermissionSet | null,
+  rolePermissions: PermissionSet[],
 ): boolean {
   if (user.isOwner) return true;
   return resolveScope(
     user.permissions ?? EMPTY_PERMISSIONS,
-    defaultPerms,
+    rolePermissions,
     scope,
   );
 }

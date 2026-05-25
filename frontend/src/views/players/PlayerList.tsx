@@ -1,4 +1,5 @@
 import {
+  AnimatedDropdown,
   Button,
   Footer,
   Input,
@@ -135,10 +136,7 @@ export const PlayerList = () => {
             <IconFilter />
             Filters
           </Button>
-          <div
-            className="widgets-list"
-            style={{ display: showFilters ? 'block' : 'none' }}
-          >
+          <AnimatedDropdown visible={showFilters}>
             <div
               className="widget-item"
               data-tooltip="Filter by banned players"
@@ -149,7 +147,7 @@ export const PlayerList = () => {
               </div>
               <Toggle onChange={setFilterBanned} value={filterBanned} />
             </div>
-          </div>
+          </AnimatedDropdown>
         </div>
       </NavHeader>
       <PageContent>

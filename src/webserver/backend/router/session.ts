@@ -8,12 +8,10 @@ export const sessionRouter = router({
   session: router({
     info: protectedProcedure(ScopeName.SessionInfo).query(async ({ ctx }) => {
       const { database, omegga } = getContextDeps();
-      const roles = await database.getRoles();
-      const defaults = await database.getDefaultPermissions();
+      const rolePermissions = await database.getUserRolePermissions(ctx.user);
       const userPerms = ctx.user.permissions ?? EMPTY_PERMISSIONS;
 
       return {
-        roles,
         version: VERSION,
         brickadiaVersion: omegga.version ?? null,
         canLogOut: ctx.user.username !== '',
@@ -27,9 +25,9 @@ export const sessionRouter = router({
           resolvedScopes: ctx.user.isOwner
             ? resolveAllScopes(
                 { root: RootLevel.All, domains: {}, scopes: {} },
-                null,
+                [],
               )
-            : resolveAllScopes(userPerms, defaults),
+            : resolveAllScopes(userPerms, rolePermissions),
         },
         isSteam: Boolean(omegga.config.__STEAM),
         update: {

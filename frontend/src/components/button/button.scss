@@ -25,6 +25,10 @@
     margin-right: 8px;
   }
 
+  .widgets-container > & {
+    margin-right: 0;
+  }
+
   &:not(.icon) .tabler-icon {
     margin-right: 8px;
   }

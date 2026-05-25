@@ -7,6 +7,7 @@ import {
   PageContent,
   SideNav,
 } from '@components';
+import { AnimatePresence, motion } from 'motion/react';
 import { useHasScope, useRequireScope } from '@hooks';
 import {
   IconArrowLeft,
@@ -292,26 +293,35 @@ export const HistoryView = () => {
             >
               <IconCalendar /> Calendar
             </Button>
-            {showCalendar && (
-              <Calendar
-                {...{
-                  prevYear,
-                  setDate,
-                  year,
-                  nextYear,
-                  prevMonth,
-                  month,
-                  nextMonth,
-                  startDay,
-                  numDays,
-                  nowMonth,
-                  nowYear,
-                  nowDay,
-                  calendar,
-                  focusDay,
-                }}
-              />
-            )}
+            <AnimatePresence>
+              {showCalendar && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <Calendar
+                    {...{
+                      prevYear,
+                      setDate,
+                      year,
+                      nextYear,
+                      prevMonth,
+                      month,
+                      nextMonth,
+                      startDay,
+                      numDays,
+                      nowMonth,
+                      nowYear,
+                      nowDay,
+                      calendar,
+                      focusDay,
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </NavHeader>

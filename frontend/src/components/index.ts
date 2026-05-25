@@ -1,3 +1,4 @@
+export { AnimatedDropdown } from './animated-dropdown';
 export { Background } from './background';
 export { Button } from './button';
 export { ChatEntry, UserName } from './chat-entry';
@@ -7,7 +8,7 @@ export { Dropdown } from './dropdown';
 export { Footer } from './footer';
 export { Header } from './header';
 export { InfiniteScroll } from './infinite-scroll';
-export { Input } from './input';
+export { Input, TextArea } from './input';
 export { ListInput, type ListInputType } from './list-input';
 export { Loader } from './loader';
 export { Modal, useConfirm } from './modal';

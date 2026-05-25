@@ -26,7 +26,7 @@ export const RoleDropdown = ({
   async function fetchRoles() {
     setLoading(true);
     setOptions([]);
-    const roles: BRRoleSetupEntry[] = await utils.role.list.fetch();
+    const roles: BRRoleSetupEntry[] = await utils.player.roles.list.fetch();
     setOptions(roles.map(role => role.name));
     setLoading(false);
   }

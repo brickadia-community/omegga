@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Brickadia server installer, updater, manager, wrapper, configurator, and automator",
   "engines": {
     "node": ">=23.0.0"
@@ -36,6 +36,7 @@
     "js-yaml": "^4.1.0",
     "json-rpc-2.0": "^1.7.1",
     "lodash": "^4.17.21",
+    "motion": "^12.40.0",
     "nedb-promises": "^5.0.1",
     "nedb-promises-session-store": "1.0.0",
     "otpauth": "^9.5.1",

@@ -38,6 +38,7 @@ export default defineConfig({
       '@components': resolve(__dirname, 'frontend/src/components'),
       '@utils': resolve(__dirname, 'frontend/src/utils'),
       '@hooks': resolve(__dirname, 'frontend/src/hooks'),
+      '@backend': resolve(__dirname, 'src/webserver/backend'),
     },
   },
   assetsInclude: ['**/*.webp'],

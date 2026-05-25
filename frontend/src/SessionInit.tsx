@@ -4,11 +4,10 @@ import { $rpcConnected, $rpcDisconnected } from './stores/connected';
 import {
   $omeggaData,
   $resolvedScopes,
-  $roles,
   $showLogout,
   $user,
 } from './stores/user';
-import { $version } from './stores/version';
+import { $brickadiaVersion, $version } from './stores/version';
 import { trpc } from './trpc';
 
 export const SessionInit = () => {
@@ -18,8 +17,8 @@ export const SessionInit = () => {
     if (status === 'success' && data) {
       $omeggaData.set(data);
       $version.set(data.version);
+      $brickadiaVersion.set(data.brickadiaVersion);
       $user.set(data.user);
-      $roles.set(data.roles);
       $resolvedScopes.set(data.user.resolvedScopes ?? {});
       $showLogout.set(data.canLogOut);
       $rpcConnected.set(true);

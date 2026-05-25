@@ -146,6 +146,14 @@ export interface IStoreDefaultPermissions {
   scopes: Partial<Record<import('./scopes').Scope, boolean>>;
 }
 
+export interface IStoreRole {
+  type: 'webRole';
+  name: string;
+  description: string;
+  order: number;
+  permissions: import('./permissions').StoredPermissionSet;
+}
+
 export interface IPunchcard {
   type: 'punchcard';
   kind: 'playerCount';

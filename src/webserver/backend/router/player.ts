@@ -283,5 +283,14 @@ export const playerRouter = router({
         omegga.writeln(`Bricks.Clear "${id}"`);
         return true;
       }),
+
+    roles: router({
+      list: protectedProcedure(ScopeName.PlayerList).query(() => {
+        const { omegga } = getContextDeps();
+        return _.sortBy(omegga.getRoleSetup()?.roles ?? [], p =>
+          p.name.toLowerCase(),
+        );
+      }),
+    }),
   }),
 });

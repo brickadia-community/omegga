@@ -1,4 +1,5 @@
 import {
+  AnimatedDropdown,
   Button,
   Dimmer,
   Footer,
@@ -27,7 +28,7 @@ import { duration } from '@utils';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
 import { Permissions } from '../../permissions';
-import { $user, $usersRefresh } from '../../stores/user';
+import { $resolvedScopes, $user, $usersRefresh } from '../../stores/user';
 import { trpc, type RouterOutputs } from '../../trpc';
 
 type UserFromList = RouterOutputs['user']['list']['users'][number];
@@ -39,11 +40,18 @@ type UserData = (UserFromList | UserFromSelf) & {
 
 import { MfaManager } from './MfaManager';
 import { PermissionEditor, type PermissionSet } from './PermissionEditor';
+import { UserRoleSection } from './UserRoleSection';
 
-export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
+export const UserInspector = ({
+  selfUser,
+}: {
+  selfUser?: string;
+  params?: any;
+}) => {
   const [_match, params] = useRoute('/users/:id');
   const [_loc, navigate] = useLocation();
   const myUser = useStore($user);
+  const resolvedScopes = useStore($resolvedScopes);
 
   const canEditPerms = useHasScope(Permissions.UserPermissions);
   const canBan = useHasScope(Permissions.UserBan);
@@ -72,7 +80,7 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
 
   const loading = isSelfMode ? selfQuery.isLoading : users.isLoading;
 
-  const defaultPermsQuery = trpc.user.defaultPermissions.get.useQuery(
+  const defaultPermsQuery = trpc.role.defaultPermissions.get.useQuery(
     undefined,
     { enabled: canEditPerms },
   );
@@ -314,6 +322,13 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
                     )}
                   </div>
                   {isSelfMode && <MfaManager />}
+                  {!user.isOwner && (
+                    <UserRoleSection
+                      username={selectedUsername}
+                      isSelf={isSelfMode}
+                      roleIds={(user as any).roles ?? []}
+                    />
+                  )}
                   {canEditPerms && !user.isOwner && editPerms && (
                     <>
                       <div className="section-header">Permissions</div>
@@ -324,6 +339,9 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
                         perms={editPerms}
                         onChange={setEditPerms}
                         defaultPerms={defaultPerms}
+                        actorScopes={
+                          !myUser?.isOwner ? resolvedScopes : undefined
+                        }
                       />
                     </>
                   )}
@@ -354,9 +372,10 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
                 {showActionsMenu ? <IconCaretDown /> : <IconCaretUp />}
                 Actions
               </Button>
-              <div
+              <AnimatedDropdown
+                visible={showActionsMenu}
+                direction="up"
                 className="widgets-list widgets-list-up"
-                style={{ display: showActionsMenu ? 'block' : 'none' }}
               >
                 {canPasswd && (
                   <Button
@@ -407,7 +426,7 @@ export const UserInspector = ({ selfUser }: { selfUser?: string }) => {
                     Delete
                   </Button>
                 )}
-              </div>
+              </AnimatedDropdown>
             </div>
           </Footer>
         )}

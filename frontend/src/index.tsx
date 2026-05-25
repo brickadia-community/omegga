@@ -13,6 +13,7 @@ import { HomeView } from './views/home';
 import { PlayerList } from './views/players/PlayerList';
 import { PluginList } from './views/plugins';
 import { ServerView } from './views/server';
+import { RoleList } from './views/roles';
 import { UserList } from './views/users';
 import { WorldList } from './views/worlds/WorldList';
 import type React from 'react';
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/players/:id?" component={PlayerList} />
           <Route path="/plugins/:id?" component={PluginList} />
           <Route path="/server" component={ServerView} />
+          <Route path="/roles/:id?" component={RoleList} />
           <Route path="/users/:id?" component={UserList} />
           <Route path="/worlds/*?" component={WorldList} />
           <Route component={NotFound} />

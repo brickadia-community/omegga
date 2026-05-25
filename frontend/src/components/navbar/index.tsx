@@ -2,6 +2,7 @@ import { useStore } from '@nanostores/react';
 import type { HTMLAttributes, PropsWithChildren } from 'react';
 import { useState } from 'react';
 import { Link } from 'wouter';
+import { AnimatedDropdown } from '../animated-dropdown';
 import { Button } from '../button';
 import { logout } from '../../utils';
 import {
@@ -47,10 +48,7 @@ export const NavHeader = ({
               </span>
               {menuOpen ? <IconCaretUp /> : <IconCaretDown />}
             </Button>
-            <div
-              className="widgets-list"
-              style={{ display: menuOpen ? 'block' : 'none' }}
-            >
+            <AnimatedDropdown visible={menuOpen}>
               <Link
                 href="/account"
                 className="button normal"
@@ -65,7 +63,7 @@ export const NavHeader = ({
                 <IconLogout />
                 Logout
               </Button>
-            </div>
+            </AnimatedDropdown>
           </div>
         )}
       </NavBar>

@@ -6,11 +6,11 @@
   flex: 1;
 
   thead th {
-    &:hover {
+    &:not(.no-sort):hover {
       background-color: theme.$br-element-hover;
     }
 
-    &:active {
+    &:not(.no-sort):active {
       background-color: theme.$br-element-pressed;
     }
 
@@ -53,7 +53,11 @@
     &:hover td,
     &.active td {
       background-color: theme.$br-element-hover;
-      .username {
+      .username,
+      .muted-text {
+        color: theme.$br-boring-button-fg !important;
+      }
+      &.muted-text {
         color: theme.$br-boring-button-fg !important;
       }
     }

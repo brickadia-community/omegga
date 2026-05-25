@@ -103,8 +103,8 @@ export const requireScope = (scope: Scope) =>
     if (!ctx.user) throw new TRPCError({ code: 'UNAUTHORIZED' });
     if (ctx.user.isOwner) return next({ ctx });
     const { database } = getContextDeps();
-    const defaults = await database.getDefaultPermissions();
-    if (!userHasScope(ctx.user, scope, defaults)) {
+    const rolePermissions = await database.getUserRolePermissions(ctx.user);
+    if (!userHasScope(ctx.user, scope, rolePermissions)) {
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: `missing scope: ${scope}`,
