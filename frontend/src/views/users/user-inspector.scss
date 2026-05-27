@@ -200,6 +200,10 @@
         border-radius: 0 theme.$br-radius-sm theme.$br-radius-sm 0;
       }
 
+      &:not(:disabled):active {
+        line-height: 32px;
+      }
+
       &:disabled {
         opacity: 0.3;
         pointer-events: none;
