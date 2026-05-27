@@ -1,16 +1,20 @@
 import Logger from '@/logger';
 import soft from '@/softconfig';
+import { openDb } from '@/db/connection';
+import { runMigrations } from '@/db/migrate';
+import { importNedbIfNeeded } from '@/db/nedbImport';
 import { IServerConfig } from '@config/types';
 import type Omegga from '@omegga/server';
 import { IServerStatus } from '@omegga/types';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import bodyParser from 'body-parser';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 import express from 'express';
 import expressSession from 'express-session';
 import hasbin from 'hasbin';
 import http from 'http';
 import https from 'https';
-import NedbStore from 'nedb-promises-session-store';
+import BetterSqlite3SessionStore from 'better-sqlite3-session-store';
 import path from 'path';
 import bcrypt from 'bcryptjs';
 import {
@@ -60,9 +64,14 @@ export default class Webserver {
     this.omegga = omegga;
     this.dataPath = path.join(omegga.path, soft.DATA_PATH);
 
+    const mainSqlite = openDb(path.join(this.dataPath, soft.MAIN_DB));
+    const mainDb = drizzle(mainSqlite);
+
+    runMigrations(mainDb);
+
     // the database provides omegga with metrics, chat logs, and more
     // to help administrators keep track of their users and server
-    this.database = new Database(options, omegga);
+    this.database = new Database(options, omegga, mainSqlite, mainDb);
 
     // https status of the server
     this.https = false;
@@ -75,8 +84,11 @@ export default class Webserver {
   async createServer() {
     const hasOpenSSL = hasbin.sync('openssl');
 
-    // let the database do migrations
-    await this.database.doMigrations();
+    await importNedbIfNeeded(
+      this.dataPath,
+      this.database.sqlite,
+      this.database.db,
+    );
 
     // create express app
     this.app = express();
@@ -123,6 +135,10 @@ export default class Webserver {
     this.server = await pickProtocol();
 
     this.app.set('trust proxy', 1);
+    const SqliteStore = (
+      BetterSqlite3SessionStore['default'] ?? BetterSqlite3SessionStore
+    )(expressSession);
+    const sessionSqlite = openDb(path.join(this.dataPath, soft.SESSIONS_DB));
     const session = expressSession({
       secret: util.getSessionSecret(this.dataPath),
       resave: false,
@@ -132,11 +148,9 @@ export default class Webserver {
         secure: this.https,
         maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
       },
-      // use a nedb database for session store
-      // For some reason vite is not importing the default export properly without this...
-      store: (NedbStore['default'] as typeof NedbStore)({
-        filename: path.join(this.dataPath, soft.SESSION_STORE),
-        connect: expressSession,
+      store: new SqliteStore({
+        client: sessionSqlite,
+        expired: { clear: true, intervalMs: 900000 },
       }),
     });
     this.app.use(session);

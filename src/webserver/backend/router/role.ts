@@ -1,9 +1,5 @@
 import { z } from 'zod/v4';
-import {
-  decodePermissions,
-  userHasScope,
-  type PermissionSet,
-} from '../permissions';
+import { userHasScope, type PermissionSet } from '../permissions';
 import {
   actorHasAllPermissions,
   checkPermissionRevocation,
@@ -25,10 +21,9 @@ export const roleRouter = router({
     list: protectedProcedure(ScopeName.RoleList).query(async () => {
       const { database } = getContextDeps();
       const roles = await database.getAllRoles();
-      return roles.map(({ _id, type: _t, permissions, ...r }) => ({
-        id: _id,
+      return roles.map(({ type: _t, permissions, ...r }) => ({
         ...r,
-        permissions: decodePermissions(permissions),
+        permissions,
       }));
     }),
 
@@ -38,8 +33,8 @@ export const roleRouter = router({
         const { database } = getContextDeps();
         const role = await database.getRole(input.id);
         if (!role) return null;
-        const { _id, type: _t, permissions, ...r } = role;
-        return { id: _id, ...r, permissions: decodePermissions(permissions) };
+        const { type: _t, permissions, ...r } = role;
+        return { ...r, permissions: permissions };
       }),
 
     create: protectedProcedure(ScopeName.RoleEdit)
@@ -92,7 +87,7 @@ export const roleRouter = router({
           perms,
         );
         log(`created role "${input.name.yellow}"`);
-        return { id: role._id };
+        return { id: role.id };
       }),
 
     update: protectedProcedure(ScopeName.RoleEdit)
@@ -139,7 +134,7 @@ export const roleRouter = router({
             )
               return 'cannot grant permissions you do not have';
 
-            const currentPerms = decodePermissions(role.permissions);
+            const currentPerms = role.permissions;
             const revErr = checkPermissionRevocation(
               currentPerms,
               input.permissions as PermissionSet,
@@ -202,7 +197,7 @@ export const roleRouter = router({
             return 'reorder requires role.edit from an assigned role';
 
           for (const id of dedupedIds) {
-            const role = allRoles.find(r => r._id === id);
+            const role = allRoles.find(r => r.id === id);
             if (!role) return `role not found: ${id}`;
             if (role.order >= actorOrder)
               return `cannot reorder role "${role.name}" at or above your level`;
@@ -212,13 +207,13 @@ export const roleRouter = router({
           if (dedupedIds.length !== manageable.length)
             return 'must include all roles below your level';
           for (const r of manageable) {
-            if (!dedupedIds.includes(r._id))
+            if (!dedupedIds.includes(r.id))
               return `missing role "${r.name}" from reorder list`;
           }
         }
 
         const unmanagedOrders = allRoles
-          .filter(r => !dedupedIds.includes(r._id))
+          .filter(r => !dedupedIds.includes(r.id))
           .map(r => r.order)
           .sort((a, b) => b - a);
         const managedSlots = allRoles
@@ -228,12 +223,8 @@ export const roleRouter = router({
 
         for (let i = 0; i < dedupedIds.length; i++) {
           const newOrder = managedSlots[i] ?? i + 1;
-          await database.stores.server.update(
-            { _id: dedupedIds[i], type: 'webRole' },
-            { $set: { order: newOrder } },
-          );
+          await database.updateRole(dedupedIds[i], { order: newOrder });
         }
-        database.invalidateRolesCache();
         log('reordered roles');
         return '';
       }),

@@ -1,5 +1,4 @@
 import {
-  decodePermissions,
   EMPTY_PERMISSIONS,
   mergePermissionSets,
   resolveAllScopes,
@@ -18,7 +17,7 @@ export function getActorHighestOrder(
 ): number {
   let highest = -1;
   for (const role of actorRoles) {
-    const perms = decodePermissions(role.permissions);
+    const perms = role.permissions;
     const resolved = resolveAllScopes(perms, []);
     if (resolved[scope]) {
       highest = Math.max(highest, role.order);
@@ -89,9 +88,7 @@ export function getGrantablePermissions(
       ? actorRoles.filter(r => r.order > minOrder)
       : actorRoles;
   if (qualifying.length === 0) return EMPTY_PERMISSIONS;
-  return mergePermissionSets(
-    ...qualifying.map(r => decodePermissions(r.permissions)),
-  );
+  return mergePermissionSets(...qualifying.map(r => r.permissions));
 }
 
 export function getActorEffectivePermissions(
@@ -143,7 +140,7 @@ export async function checkUserHierarchy(
 
 export async function checkRoleHierarchy(
   user: IStoreUser,
-  role: IStoreRole & { _id: string },
+  role: IStoreRole & { id: string },
   scope: Scope,
 ): Promise<string | null> {
   if (user.isOwner) return null;

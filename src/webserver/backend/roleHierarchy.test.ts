@@ -4,7 +4,6 @@ import {
   EMPTY_PERMISSIONS,
   resolveAllScopes,
   RootLevel,
-  encodePermissions,
   type PermissionSet,
 } from './permissions';
 import {
@@ -25,18 +24,18 @@ function makeRole(
   order: number,
   scopes: Partial<Record<string, boolean>> = {},
   root: RootLevel = RootLevel.Off,
-): IStoreRole & { _id: string } {
+): IStoreRole & { id: string } {
   return {
-    _id: `role-${++roleIdCounter}`,
+    id: `role-${++roleIdCounter}`,
     type: 'webRole',
     name: `Role ${order}`,
     description: '',
     order,
-    permissions: encodePermissions({
+    permissions: {
       root,
       domains: {},
       scopes,
-    } as PermissionSet),
+    },
   };
 }
 
@@ -410,7 +409,7 @@ describe('checkPermissionEscalation', () => {
       domains: {},
       scopes: { [ScopeName.ChatSend]: true },
     };
-    // proposed only grants chat.send — should pass even though rolePerms has server.start
+    // proposed only grants chat.send - should pass even though rolePerms has server.start
     // (proving proposed is not merged with rolePerms for evaluation)
     expect(checkPermissionEscalation(user, rolePerms, proposed)).toBeNull();
   });
@@ -700,11 +699,11 @@ describe('getGrantablePermissions', () => {
       makeRole(3, {}, RootLevel.Off),
     ];
     // Manually set domain on role 5
-    roles[0].permissions = encodePermissions({
+    roles[0].permissions = {
       root: RootLevel.Off,
       domains: { server: DomainLevel.All },
       scopes: {},
-    });
+    };
     const result = getGrantablePermissions(roles, 2);
     const resolved = resolveAllScopes(result, []);
     expect(resolved[ScopeName.ServerStart]).toBe(true);
@@ -749,7 +748,7 @@ describe('regression: source-level escalation prevention', () => {
 
   it('user with scope from lower-order role cannot grant to higher-order role', () => {
     const assignedRoles = [makeRole(2, { [ScopeName.ChatSend]: true })];
-    // Target role is at order 3 — actor's role at order 2 doesn't qualify
+    // Target role is at order 3. Actor's role at order 2 doesn't qualify
     const grantable = getGrantablePermissions(assignedRoles, 3);
     const proposed: PermissionSet = {
       root: RootLevel.Off,
@@ -761,7 +760,7 @@ describe('regression: source-level escalation prevention', () => {
 
   it('user with scope from equal-order role cannot grant to that role', () => {
     const assignedRoles = [makeRole(3, { [ScopeName.ChatSend]: true })];
-    // Target role is at order 3 — must be strictly greater
+    // Target role is at order 3. Aust be strictly greater
     const grantable = getGrantablePermissions(assignedRoles, 3);
     const proposed: PermissionSet = {
       root: RootLevel.Off,
@@ -796,8 +795,8 @@ describe('regression: source-level escalation prevention', () => {
 
   it('user with scope from role + direct can grant (role source counts)', () => {
     const assignedRoles = [makeRole(5, { [ScopeName.ChatSend]: true })];
-    // Actor also has chat.send from direct, but that doesn't matter —
-    // the assigned role at order 5 qualifies for target at order 2
+    // Actor also has chat.send from direct, but that doesn't matter.
+    // The assigned role at order 5 qualifies for target at order 2
     const grantable = getGrantablePermissions(assignedRoles, 2);
     const proposed: PermissionSet = {
       root: RootLevel.Off,

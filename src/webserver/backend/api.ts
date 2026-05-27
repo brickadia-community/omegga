@@ -1,4 +1,4 @@
-// Legacy type exports — these are kept for backward compatibility with frontend
+// Legacy type exports. These are kept for backward compatibility with frontend
 // imports during the tRPC migration. Once the frontend is fully migrated to
 // tRPC (where types are inferred from AppRouter), this file can be deleted.
 

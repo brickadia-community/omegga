@@ -1,8 +1,29 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import path, { resolve } from 'path';
+import { cpSync } from 'fs';
+
+function copyMigrations(): Plugin {
+  return {
+    name: 'copy-drizzle-migrations',
+    closeBundle() {
+      const dist = resolve(__dirname, 'dist/db');
+      cpSync(
+        resolve(__dirname, 'src/db/migrations'),
+        path.join(dist, 'migrations'),
+        { recursive: true },
+      );
+      cpSync(
+        resolve(__dirname, 'src/db/plugin-migrations'),
+        path.join(dist, 'plugin-migrations'),
+        { recursive: true },
+      );
+    },
+  };
+}
 
 export default defineConfig({
   root: 'src',
+  plugins: [copyMigrations()],
   build: {
     outDir: resolve(__dirname, 'dist'),
     emptyOutDir: true,

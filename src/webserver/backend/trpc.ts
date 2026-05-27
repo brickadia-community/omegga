@@ -25,7 +25,7 @@ export function getContextDeps(): ContextDeps {
 }
 
 export type Context = {
-  user: IStoreUser & { _id: string };
+  user: IStoreUser & { id: string; _id: string };
   req: import('express').Request;
   userAbort: AbortController;
   log: (...args: any[]) => void;
@@ -48,11 +48,7 @@ export async function createContext(
     throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
 
-  // Update lastOnline (migrated from Socket.IO connect handler)
-  await database.stores.users.update<IStoreUser>(
-    { _id: user._id },
-    { $set: { lastOnline: Date.now() } },
-  );
+  database.updateUserLastOnline(user._id);
 
   const usernameText = `[${(user.username || 'Admin').brightMagenta}]`;
 

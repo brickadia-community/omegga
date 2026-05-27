@@ -38,7 +38,7 @@
       "@backend/*": [
         "../src/webserver/backend/*"
       ],
-      /* Backend path aliases — mirrored here so tRPC can resolve backend types */
+      /* Backend path aliases - mirrored here so tRPC can resolve backend types */
       "@omegga/*": [
         "../src/omegga/*"
       ],

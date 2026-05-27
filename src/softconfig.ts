@@ -74,13 +74,25 @@ export const PLUGIN_FILE = './plugin.json';
 // post install file
 export const PLUGIN_POSTINSTALL = './setup.sh';
 
-// databases
+// sqlite databases
+export const MAIN_DB = 'omegga.db';
+export const PLUGINS_DB = 'omegga-plugins.db';
+export const SESSIONS_DB = 'omegga-sessions.db';
+
+// legacy nedb databases (used for import only)
+/** @deprecated NeDB store - use MAIN_DB instead */
 export const CHAT_STORE = 'chat.db';
+/** @deprecated NeDB store - use MAIN_DB instead */
 export const PLAYER_STORE = 'players.db';
+/** @deprecated NeDB store - use PLUGINS_DB instead */
 export const PLUGIN_STORE = 'plugins.db';
+/** @deprecated NeDB store - use MAIN_DB instead */
 export const STATUS_STORE = 'status.db';
+/** @deprecated NeDB store - use MAIN_DB instead */
 export const USER_STORE = 'users.db';
+/** @deprecated NeDB store - use MAIN_DB instead */
 export const SERVER_STORE = 'store.db';
+/** @deprecated NeDB store - use SESSIONS_DB instead */
 export const SESSION_STORE = 'session.db';
 export const ACTIVE_WORLD_FILE = 'active_world';
 
@@ -109,13 +121,16 @@ export default {
   PLUGIN_PATH,
   PLUGIN_FILE,
   PLUGIN_POSTINSTALL,
-  CHAT_STORE,
-  PLAYER_STORE,
-  PLUGIN_STORE,
-  STATUS_STORE,
-  USER_STORE,
-  SERVER_STORE,
-  SESSION_STORE,
+  MAIN_DB,
+  PLUGINS_DB,
+  SESSIONS_DB,
+  /** @deprecated */ CHAT_STORE,
+  /** @deprecated */ PLAYER_STORE,
+  /** @deprecated */ PLUGIN_STORE,
+  /** @deprecated */ STATUS_STORE,
+  /** @deprecated */ USER_STORE,
+  /** @deprecated */ SERVER_STORE,
+  /** @deprecated */ SESSION_STORE,
   WEB_CERTS_DATA,
   WEB_SESSION_TOKEN,
   METRIC_HEARTBEAT_INTERVAL,
