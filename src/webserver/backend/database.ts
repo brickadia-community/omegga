@@ -6,7 +6,19 @@ import { parseBrickadiaTime } from '@util/time';
 import bcrypt from 'bcryptjs';
 import type BetterSqlite3 from 'better-sqlite3';
 import chokidar from 'chokidar';
-import { and, count, desc, eq, lt, gt, or, sql, asc } from 'drizzle-orm';
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  lt,
+  gt,
+  or,
+  sql,
+  asc,
+  type SQL,
+} from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import EventEmitter from 'events';
 import { randomUUID } from 'node:crypto';
@@ -140,17 +152,13 @@ export default class Database extends EventEmitter {
     const tx = this.sqlite.transaction(() => {
       // upsert all bans
       for (const banned in banList) {
-        this.db
-          .insert(schema.banHistory)
-          .values({
-            banned,
-            bannerId: banList[banned].bannerId ?? '',
-            created: parseBrickadiaTime(banList[banned].created) ?? 0,
-            expires: parseBrickadiaTime(banList[banned].expires) ?? 0,
-            reason: banList[banned].reason,
-          })
-          .onConflictDoNothing()
-          .run();
+        this.upsertBanHistory({
+          banned,
+          bannerId: banList[banned].bannerId ?? '',
+          created: parseBrickadiaTime(banList[banned].created) ?? 0,
+          expires: parseBrickadiaTime(banList[banned].expires) ?? 0,
+          reason: banList[banned].reason,
+        });
       }
     });
     tx();
@@ -673,14 +681,13 @@ export default class Database extends EventEmitter {
     return '';
   }
 
-  async reorderRoles(orderedIds: string[]): Promise<void> {
-    const len = orderedIds.length;
+  async reorderRoles(entries: { id: string; order: number }[]): Promise<void> {
     const tx = this.sqlite.transaction(() => {
-      for (let i = 0; i < len; i++) {
+      for (const { id, order } of entries) {
         this.db
           .update(schema.webRoles)
-          .set({ order: len - i })
-          .where(eq(schema.webRoles.id, orderedIds[i]))
+          .set({ order })
+          .where(eq(schema.webRoles.id, id))
           .run();
       }
     });
@@ -802,46 +809,58 @@ export default class Database extends EventEmitter {
     const pattern = search.length > 0 ? explode(search) : null;
     const patternSource = pattern?.source;
 
-    let baseWhere = sql`1=1`;
+    // an empty filter (e.g. "banned" with no active bans) matches nothing
+    if (limitId && limitId.length === 0)
+      return { pages: 0, total: 0, players: [] };
+
+    const conditions: SQL[] = [];
 
     if (limitId) {
-      const placeholders = limitId.map(id => sql`${id}`);
-      baseWhere = sql`${schema.playerHistory.id} IN (${sql.join(placeholders, sql`, `)})`;
+      conditions.push(inArray(schema.playerHistory.id, limitId));
     }
 
     if (patternSource) {
-      const searchCond = sql`(
+      // match name history values via json_each so the pattern can't hit
+      // JSON keys or date timestamps
+      conditions.push(sql`(
         ${schema.playerHistory.id} = ${search}
         OR ${schema.playerHistory.name} REGEXP ${patternSource}
         OR ${schema.playerHistory.displayName} REGEXP ${patternSource}
-        OR ${schema.playerHistory.nameHistory} REGEXP ${patternSource}
-      )`;
-      baseWhere = sql`${baseWhere} AND ${searchCond}`;
+        OR EXISTS (
+          SELECT 1 FROM json_each(${schema.playerHistory.nameHistory})
+          WHERE json_extract(json_each.value, '$.name') REGEXP ${patternSource}
+            OR json_extract(json_each.value, '$.displayName') REGEXP ${patternSource}
+        )
+      )`);
     }
+
+    const baseWhere = conditions.length > 0 ? and(...conditions) : undefined;
 
     const sortCol =
       sort === 'lastSeen'
         ? schema.playerHistory.lastSeen
         : sort === 'created'
           ? schema.playerHistory.created
-          : schema.playerHistory.name;
+          : sort === 'heartbeats'
+            ? schema.playerHistory.heartbeats
+            : sort === 'sessions'
+              ? schema.playerHistory.sessions
+              : sql`${schema.playerHistory.name} COLLATE NOCASE`;
     const orderDir = direction === 1 ? asc : desc;
 
-    const [totalResult, players] = [
-      this.db
-        .select({ count: count() })
-        .from(schema.playerHistory)
-        .where(baseWhere)
-        .get(),
-      this.db
-        .select()
-        .from(schema.playerHistory)
-        .where(baseWhere)
-        .orderBy(orderDir(sortCol))
-        .limit(limit)
-        .offset(limit * page)
-        .all(),
-    ];
+    const totalResult = this.db
+      .select({ count: count() })
+      .from(schema.playerHistory)
+      .where(baseWhere)
+      .get();
+    const players = this.db
+      .select()
+      .from(schema.playerHistory)
+      .where(baseWhere)
+      .orderBy(orderDir(sortCol))
+      .limit(limit)
+      .offset(limit * page)
+      .all();
 
     const total = totalResult?.count ?? 0;
     const result = players.map(p => this._toUserHistory(p));
@@ -894,24 +913,22 @@ export default class Database extends EventEmitter {
         ? schema.users.lastOnline
         : sort === 'created'
           ? schema.users.created
-          : schema.users.username;
+          : sql`${schema.users.username} COLLATE NOCASE`;
     const orderDir = direction === 1 ? asc : desc;
 
-    const [totalResult, users] = [
-      this.db
-        .select({ count: count() })
-        .from(schema.users)
-        .where(baseWhere)
-        .get(),
-      this.db
-        .select()
-        .from(schema.users)
-        .where(baseWhere)
-        .orderBy(orderDir(sortCol))
-        .limit(limit)
-        .offset(limit * page)
-        .all(),
-    ];
+    const totalResult = this.db
+      .select({ count: count() })
+      .from(schema.users)
+      .where(baseWhere)
+      .get();
+    const users = this.db
+      .select()
+      .from(schema.users)
+      .where(baseWhere)
+      .orderBy(orderDir(sortCol))
+      .limit(limit)
+      .offset(limit * page)
+      .all();
 
     return {
       pages: Math.ceil((totalResult?.count ?? 0) / limit),
@@ -1037,7 +1054,7 @@ export default class Database extends EventEmitter {
         lastInstanceId: instanceId,
         nameHistory,
         sessions: sql`${schema.playerHistory.sessions} + ${existing.lastSeen < now - 60 * 60 * 1000 ? 1 : 0}`,
-        instances: sql`${schema.playerHistory.instances} + ${existing.lastInstanceId === instanceId ? 1 : 0}`,
+        instances: sql`${schema.playerHistory.instances} + ${existing.lastInstanceId !== instanceId ? 1 : 0}`,
       })
       .where(eq(schema.playerHistory.id, existing.id))
       .run();
@@ -1076,12 +1093,7 @@ export default class Database extends EventEmitter {
         const players = this.db
           .select()
           .from(schema.playerHistory)
-          .where(
-            sql`${schema.playerHistory.id} IN (${sql.join(
-              data.players.map(p => sql`${p}`),
-              sql`, `,
-            )})`,
-          )
+          .where(inArray(schema.playerHistory.id, data.players))
           .all();
 
         for (const p of players) {
@@ -1106,10 +1118,8 @@ export default class Database extends EventEmitter {
       .values({
         banned: entry.banned,
         bannerId: entry.bannerId ?? '',
-        created:
-          typeof entry.created === 'number' ? entry.created : 0,
-        expires:
-          typeof entry.expires === 'number' ? entry.expires : 0,
+        created: typeof entry.created === 'number' ? entry.created : 0,
+        expires: typeof entry.expires === 'number' ? entry.expires : 0,
         reason: entry.reason ?? '',
       })
       .onConflictDoNothing()

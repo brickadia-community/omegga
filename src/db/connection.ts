@@ -8,11 +8,19 @@ export function openDb(filepath: string): BetterSqlite3.Database {
   db.pragma('synchronous = NORMAL');
   db.pragma('busy_timeout = 5000');
   db.pragma('foreign_keys = ON');
+  // sqlite calls this per row; cache the compiled pattern (it is identical
+  // across a query) so a table scan doesn't recompile it every row. reuse is
+  // safe because the regex has no g/y flag, so test() carries no lastIndex
+  let cache: { pattern: string; regex: RegExp } | null = null;
   db.function(
     'regexp',
     { deterministic: true },
-    (pattern: string, value: string) =>
-      new RegExp(pattern, 'i').test(value) ? 1 : 0,
+    (pattern: string, value: string) => {
+      if (!cache || cache.pattern !== pattern) {
+        cache = { pattern, regex: new RegExp(pattern, 'i') };
+      }
+      return cache.regex.test(value) ? 1 : 0;
+    },
   );
   return db;
 }

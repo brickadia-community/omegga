@@ -7,7 +7,7 @@ CREATE TABLE `ban_history` (
 	`reason` text DEFAULT '' NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `ban_history_unique_idx` ON `ban_history` (`banned`,`banner_id`,`created`,`reason`);--> statement-breakpoint
+CREATE UNIQUE INDEX `ban_history_unique_idx` ON `ban_history` (`banned`,`banner_id`,`created`,`expires`,`reason`);--> statement-breakpoint
 CREATE INDEX `ban_history_banned_created_idx` ON `ban_history` (`banned`,`created`);--> statement-breakpoint
 CREATE TABLE `chat_logs` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,

@@ -280,7 +280,11 @@ describe('Database', () => {
       const r2 = await database.createRole('B', '', perms);
       const r3 = await database.createRole('C', '', perms);
 
-      await database.reorderRoles([r3.id, r1.id, r2.id]);
+      await database.reorderRoles([
+        { id: r3.id, order: 3 },
+        { id: r1.id, order: 2 },
+        { id: r2.id, order: 1 },
+      ]);
       const all = await database.getAllRoles();
       expect(all[0].id).toBe(r3.id);
       expect(all[0].order).toBe(3);
@@ -487,6 +491,64 @@ describe('Database', () => {
       await database.addVisit({ id: '2', name: 'AAAB', displayName: 'AAAB' });
       const results = await database.getPlayers({ search: 'AAA' });
       expect(results.players[0].name).toBe('AAA');
+    });
+
+    it('getPlayers search does not match nameHistory JSON keys', async () => {
+      await database.addVisit({ id: 'j1', name: 'Foo', displayName: 'Foo' });
+      await database.addVisit({ id: 'j2', name: 'Bar', displayName: 'Bar' });
+
+      // 'name' and 'date' are keys in the serialized nameHistory JSON of
+      // every player; they must only match actual name values
+      expect((await database.getPlayers({ search: 'name' })).total).toBe(0);
+      expect((await database.getPlayers({ search: 'date' })).total).toBe(0);
+    });
+
+    it('getPlayers search matches past names in nameHistory', async () => {
+      await database.addVisit({
+        id: 'h1',
+        name: 'OldName',
+        displayName: 'OldName',
+      });
+      await database.addVisit({
+        id: 'h1',
+        name: 'NewName',
+        displayName: 'NewName',
+      });
+      const results = await database.getPlayers({ search: 'oldnam' });
+      expect(results.total).toBe(1);
+      expect(results.players[0].id).toBe('h1');
+    });
+
+    it('getPlayers with empty limitId returns no players', async () => {
+      await database.addVisit({ id: 'e1', name: 'Any', displayName: 'Any' });
+      const results = await database.getPlayers({ limitId: [] });
+      expect(results.total).toBe(0);
+      expect(results.players).toHaveLength(0);
+    });
+
+    it('getPlayers sorts by heartbeats and sessions', async () => {
+      await database.addVisit({ id: 's1', name: 'Low', displayName: 'Low' });
+      await database.addVisit({ id: 's2', name: 'High', displayName: 'High' });
+      await database.addHeartbeat({ bricks: 0, players: ['s2'], ips: {} });
+
+      const byHeartbeats = await database.getPlayers({
+        sort: 'heartbeats',
+        direction: -1,
+      });
+      expect(byHeartbeats.players[0].id).toBe('s2');
+    });
+
+    it('getPlayers sorts names case-insensitively', async () => {
+      await database.addVisit({ id: 'c1', name: 'alice', displayName: 'a' });
+      await database.addVisit({ id: 'c2', name: 'Bob', displayName: 'b' });
+      await database.addVisit({ id: 'c3', name: 'Zebra', displayName: 'z' });
+
+      const results = await database.getPlayers({ sort: 'name', direction: 1 });
+      expect(results.players.map(p => p.name)).toEqual([
+        'alice',
+        'Bob',
+        'Zebra',
+      ]);
     });
 
     it('getPlayers pagination', async () => {

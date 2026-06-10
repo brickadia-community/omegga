@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "89891d6f-2de2-41b9-9bd9-22ef2768e059",
+  "id": "4a074cc1-ef30-449d-b9a7-11a6624dbfe6",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "ban_history": {
@@ -61,6 +61,7 @@
             "banned",
             "banner_id",
             "created",
+            "expires",
             "reason"
           ],
           "isUnique": true

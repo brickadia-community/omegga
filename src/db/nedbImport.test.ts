@@ -10,7 +10,7 @@ import Datastore from 'nedb-promises';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { importNedbIfNeeded } from './nedbImport';
+import { importNedbIfNeeded, NEDB_FILES } from './nedbImport';
 import * as mainSchema from './schema';
 import * as pluginSchema from './pluginSchema';
 
@@ -55,7 +55,7 @@ describe('importNedbIfNeeded', () => {
 
   it('skips import if marker already exists', async () => {
     fs.writeFileSync(path.join(tmpDir, 'nedb-imported.marker'), 'done');
-    await writeNedb(path.join(tmpDir, soft.USER_STORE), [
+    await writeNedb(path.join(tmpDir, NEDB_FILES.users), [
       {
         type: 'user',
         _id: 'u1',
@@ -73,7 +73,7 @@ describe('importNedbIfNeeded', () => {
   });
 
   it('imports users', async () => {
-    await writeNedb(path.join(tmpDir, soft.USER_STORE), [
+    await writeNedb(path.join(tmpDir, NEDB_FILES.users), [
       {
         type: 'user',
         _id: 'u1',
@@ -131,19 +131,46 @@ describe('importNedbIfNeeded', () => {
         scopes: { 'chat:send': 'enabled', 'server:start': 'disabled' },
       },
     });
-    fs.writeFileSync(path.join(tmpDir, soft.USER_STORE), line + '\n');
+    fs.writeFileSync(path.join(tmpDir, NEDB_FILES.users), line + '\n');
     await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
 
     const users = mainDb.select().from(mainSchema.users).all();
     const perms = users[0].permissions as any;
     expect(perms.root).toBe('off');
     expect(perms.domains).toEqual({ chat: 'all' });
-    // the old colon-encoded keys pass through as-is (migration converts values, not keys)
-    expect(perms.scopes).toEqual({ 'chat:send': true, 'server:start': false });
+    // the old colon-encoded keys are decoded to the dotted runtime form
+    expect(perms.scopes).toEqual({ 'chat.send': true, 'server.start': false });
+  });
+
+  it('decodes colon-encoded scope keys from already-migrated (v2) user permissions', async () => {
+    // master's NeDB layer stored v2 PermissionSets with boolean values but
+    // still colon-encoded scope keys
+    const line = JSON.stringify({
+      type: 'user',
+      _id: 'v2',
+      username: 'v2user',
+      hash: 'h',
+      created: 1,
+      lastOnline: 0,
+      isOwner: false,
+      roles: [],
+      playerId: '',
+      permissions: {
+        root: 'off',
+        domains: { chat: 'all' },
+        scopes: { 'user:ban': true, 'role:edit': false },
+      },
+    });
+    fs.writeFileSync(path.join(tmpDir, NEDB_FILES.users), line + '\n');
+    await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
+
+    const users = mainDb.select().from(mainSchema.users).all();
+    const perms = users[0].permissions as any;
+    expect(perms.scopes).toEqual({ 'user.ban': true, 'role.edit': false });
   });
 
   it('imports chat messages in order', async () => {
-    await writeNedb(path.join(tmpDir, soft.CHAT_STORE), [
+    await writeNedb(path.join(tmpDir, NEDB_FILES.chat), [
       {
         type: 'chat',
         _id: 'c1',
@@ -180,7 +207,7 @@ describe('importNedbIfNeeded', () => {
   });
 
   it('imports player history, bans, kicks, and notes', async () => {
-    await writeNedb(path.join(tmpDir, soft.PLAYER_STORE), [
+    await writeNedb(path.join(tmpDir, NEDB_FILES.players), [
       {
         type: 'userHistory',
         _id: 'ph1',
@@ -236,7 +263,7 @@ describe('importNedbIfNeeded', () => {
   });
 
   it('imports heartbeats and punchcards', async () => {
-    await writeNedb(path.join(tmpDir, soft.STATUS_STORE), [
+    await writeNedb(path.join(tmpDir, NEDB_FILES.status), [
       {
         type: 'heartbeat',
         _id: 'hb1',
@@ -267,7 +294,7 @@ describe('importNedbIfNeeded', () => {
   });
 
   it('imports server store (instances, roles, configs)', async () => {
-    await writeNedb(path.join(tmpDir, soft.SERVER_STORE), [
+    await writeNedb(path.join(tmpDir, NEDB_FILES.server), [
       { type: 'app:start', _id: 'inst1', date: 9000 },
       {
         type: 'webRole',
@@ -332,19 +359,60 @@ describe('importNedbIfNeeded', () => {
       domains: { server: 'unset', chat: 'all' },
       scopes: { 'chat:send': 'enabled', 'server:start': 'disabled' },
     });
-    fs.writeFileSync(path.join(tmpDir, soft.SERVER_STORE), line + '\n');
+    fs.writeFileSync(path.join(tmpDir, NEDB_FILES.server), line + '\n');
     await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
 
     const configs = mainDb.select().from(mainSchema.serverConfig).all();
     const dp = configs.find(c => c.key === 'defaultPermissions')!.value as any;
     expect(dp.root).toBe('off');
     expect(dp.domains).toEqual({ chat: 'all' });
-    expect(dp.scopes).toEqual({ 'chat:send': true, 'server:start': false });
+    expect(dp.scopes).toEqual({ 'chat.send': true, 'server.start': false });
+  });
+
+  it('preserves boolean scopes in v2 defaultPermissions and decodes keys', async () => {
+    // stores that ran master's server v1->v2 migration hold boolean scope
+    // values (with colon-encoded keys), not 'enabled'/'disabled' strings
+    const line = JSON.stringify({
+      type: 'defaultPermissions',
+      _id: 'dp1',
+      root: 'read',
+      domains: { chat: 'all' },
+      scopes: { 'chat:send': true, 'server:start': false },
+    });
+    fs.writeFileSync(path.join(tmpDir, NEDB_FILES.server), line + '\n');
+    await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
+
+    const configs = mainDb.select().from(mainSchema.serverConfig).all();
+    const dp = configs.find(c => c.key === 'defaultPermissions')!.value as any;
+    expect(dp.root).toBe('read');
+    expect(dp.scopes).toEqual({ 'chat.send': true, 'server.start': false });
+  });
+
+  it('decodes colon-encoded scope keys in web role permissions', async () => {
+    const line = JSON.stringify({
+      type: 'webRole',
+      _id: 'role1',
+      name: 'Mod',
+      description: '',
+      order: 1,
+      permissions: {
+        root: 'off',
+        domains: {},
+        scopes: { 'player:kick': true },
+      },
+    });
+    fs.writeFileSync(path.join(tmpDir, NEDB_FILES.server), line + '\n');
+    await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
+
+    const roles = mainDb.select().from(mainSchema.webRoles).all();
+    expect((roles[0].permissions as any).scopes).toEqual({
+      'player.kick': true,
+    });
   });
 
   it('imports plugin store and config', async () => {
     // Need at least one main store file for the import to proceed
-    await writeNedb(path.join(tmpDir, soft.USER_STORE), [
+    await writeNedb(path.join(tmpDir, NEDB_FILES.users), [
       {
         type: 'user',
         _id: 'u1',
@@ -357,7 +425,7 @@ describe('importNedbIfNeeded', () => {
         playerId: '',
       },
     ]);
-    await writeNedb(path.join(tmpDir, soft.PLUGIN_STORE), [
+    await writeNedb(path.join(tmpDir, NEDB_FILES.plugins), [
       { type: 'store', plugin: 'my-plugin', key: 'score', value: 42 },
       { type: 'store', plugin: 'my-plugin', key: 'name', value: 'test' },
       {
@@ -390,8 +458,63 @@ describe('importNedbIfNeeded', () => {
     pluginSqlite.close();
   });
 
+  it('skips plugin store entries with no value instead of aborting', async () => {
+    await writeNedb(path.join(tmpDir, NEDB_FILES.users), [
+      {
+        type: 'user',
+        _id: 'u1',
+        username: 'x',
+        hash: 'h',
+        created: 1,
+        lastOnline: 0,
+        isOwner: false,
+        roles: [],
+        playerId: '',
+      },
+    ]);
+    // NeDB allowed store.set(key, undefined), serialized as a missing value
+    await writeNedb(path.join(tmpDir, NEDB_FILES.plugins), [
+      { type: 'store', plugin: 'my-plugin', key: 'novalue' },
+      { type: 'store', plugin: 'my-plugin', key: 'kept', value: 1 },
+    ]);
+    await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
+
+    expect(fs.existsSync(path.join(tmpDir, 'nedb-imported.marker'))).toBe(true);
+    const pluginSqlite = new BetterSqlite3(path.join(tmpDir, soft.PLUGINS_DB));
+    const pluginDb = drizzle(pluginSqlite);
+    const storeItems = pluginDb.select().from(pluginSchema.pluginStore).all();
+    expect(storeItems).toHaveLength(1);
+    expect(storeItems[0].key).toBe('kept');
+    pluginSqlite.close();
+  });
+
+  it('imports without a provided main connection (plugin loader bootstrap)', async () => {
+    await writeNedb(path.join(tmpDir, NEDB_FILES.users), [
+      {
+        type: 'user',
+        _id: 'u1',
+        username: 'standalone',
+        hash: 'h',
+        created: 1,
+        lastOnline: 0,
+        isOwner: false,
+        roles: [],
+        playerId: '',
+      },
+    ]);
+    await importNedbIfNeeded(tmpDir);
+
+    expect(fs.existsSync(path.join(tmpDir, 'nedb-imported.marker'))).toBe(true);
+    const sqlite = new BetterSqlite3(path.join(tmpDir, soft.MAIN_DB));
+    const db = drizzle(sqlite);
+    const users = db.select().from(mainSchema.users).all();
+    expect(users).toHaveLength(1);
+    expect(users[0].username).toBe('standalone');
+    sqlite.close();
+  });
+
   it('preserves original nedb files after import', async () => {
-    const userPath = path.join(tmpDir, soft.USER_STORE);
+    const userPath = path.join(tmpDir, NEDB_FILES.users);
     await writeNedb(userPath, [
       {
         type: 'user',
@@ -410,7 +533,7 @@ describe('importNedbIfNeeded', () => {
   });
 
   it('does not re-import on second run', async () => {
-    await writeNedb(path.join(tmpDir, soft.USER_STORE), [
+    await writeNedb(path.join(tmpDir, NEDB_FILES.users), [
       {
         type: 'user',
         _id: 'u1',

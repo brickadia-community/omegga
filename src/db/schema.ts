@@ -90,10 +90,13 @@ export const banHistory = sqliteTable(
     reason: text('reason').notNull().default(''),
   },
   table => [
+    // includes expires so a ban whose expiry is edited is recorded as a new
+    // history entry instead of being dropped by onConflictDoNothing
     uniqueIndex('ban_history_unique_idx').on(
       table.banned,
       table.bannerId,
       table.created,
+      table.expires,
       table.reason,
     ),
     index('ban_history_banned_created_idx').on(table.banned, table.created),

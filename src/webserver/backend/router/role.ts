@@ -221,10 +221,9 @@ export const roleRouter = router({
           .filter(o => !unmanagedOrders.includes(o))
           .sort((a, b) => b - a);
 
-        for (let i = 0; i < dedupedIds.length; i++) {
-          const newOrder = managedSlots[i] ?? i + 1;
-          await database.updateRole(dedupedIds[i], { order: newOrder });
-        }
+        await database.reorderRoles(
+          dedupedIds.map((id, i) => ({ id, order: managedSlots[i] ?? i + 1 })),
+        );
         log('reordered roles');
         return '';
       }),

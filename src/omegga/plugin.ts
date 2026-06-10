@@ -3,6 +3,7 @@ import { IPluginCommand, IPluginDocumentation } from '@/plugin';
 import soft from '@/softconfig';
 import { openDb } from '@/db/connection';
 import { runPluginMigrations } from '@/db/migrate';
+import { importNedbIfNeeded } from '@/db/nedbImport';
 import * as pluginSchema from '@/db/pluginSchema';
 import { and, count, eq } from 'drizzle-orm';
 import {
@@ -162,6 +163,8 @@ export class PluginStorage {
   // set a stored value
   async set<T = unknown>(key: string, value: T) {
     if (typeof key !== 'string' || key.length === 0) return;
+    // NeDB stored undefined as a missing value; the new column is NOT NULL
+    if (value === undefined) return this.delete(key);
     this.db
       .insert(pluginSchema.pluginStore)
       .values({ plugin: this.name, key, value })
@@ -179,6 +182,7 @@ export class PluginStorage {
 */
 export class PluginLoader {
   path: string;
+  dataPath: string;
   omegga: Omegga;
   pluginDb: BetterSQLite3Database;
   formats: (typeof Plugin)[];
@@ -191,8 +195,8 @@ export class PluginLoader {
     this.path = path.join(workDir, soft.PLUGIN_PATH);
     this.omegga = omegga;
 
-    const dataPath = path.join(workDir, soft.DATA_PATH);
-    const sqlite = openDb(path.join(dataPath, soft.PLUGINS_DB));
+    this.dataPath = path.join(workDir, soft.DATA_PATH);
+    const sqlite = openDb(path.join(this.dataPath, soft.PLUGINS_DB));
     this.pluginDb = drizzle(sqlite);
     runPluginMigrations(this.pluginDb);
 
@@ -290,6 +294,10 @@ export class PluginLoader {
   /** Scans a plugin at the specified directory and create a Plugin object. */
   async scanPlugin(dir: string): Promise<Plugin | undefined> {
     Logger.verbose('Scanning plugin', dir.underline);
+
+    // legacy NeDB plugin data must be imported before storage.init() writes
+    // defaults, even when the webserver (the other import trigger) is disabled
+    await importNedbIfNeeded(this.dataPath);
 
     if (!fs.existsSync(dir)) {
       Logger.errorp('Plugin directory does not exist', dir.brightRed.underline);
