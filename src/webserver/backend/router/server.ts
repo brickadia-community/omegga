@@ -1,4 +1,5 @@
 import Logger from '@/logger';
+import type { IServerStatus } from '@/omegga/types';
 import { steamcmdDownloadGame } from '@/updater';
 import { getLastSteamUpdateCheck, hasSteamUpdate } from '@/updater/steam';
 import { on } from 'events';
@@ -13,6 +14,10 @@ let _server: Webserver | null = null;
 export function setWebserver(s: Webserver) {
   _server = s;
 }
+
+// shared in-flight on-demand status fetch, so concurrent `status` callers on a
+// cold cache don't each issue their own Server.Status console command
+let _statusFetch: Promise<IServerStatus | null> | null = null;
 
 const autoRestartConfigSchema = z.object({
   type: z.literal('autoRestartConfig'),
@@ -85,9 +90,24 @@ export const serverRouter = router({
       // the cache, so don't make the caller wait for the next heartbeat
       const { omegga } = getContextDeps();
       if (!omegga.started) return null;
-      const status = await omegga.getServerStatus();
-      if (status && _server) _server.lastReportedStatus = status;
-      return status ?? null;
+
+      // reuse an in-flight fetch so concurrent callers share one console query;
+      // getServerStatus can reject (status command timeout / parse error), so
+      // fall back to the cache (or null) rather than erroring the request
+      _statusFetch ??= omegga
+        .getServerStatus()
+        .then(status => {
+          if (status && _server) _server.lastReportedStatus = status;
+          return status ?? null;
+        })
+        .catch(err => {
+          Logger.verbose('On-demand server status fetch failed', err);
+          return _server?.lastReportedStatus ?? null;
+        })
+        .finally(() => {
+          _statusFetch = null;
+        });
+      return _statusFetch;
     }),
 
     utilization: protectedProcedure(ScopeName.ServerUtilization).query(() => {
@@ -233,11 +253,12 @@ export const serverRouter = router({
     onPlayerCount: protectedProcedure(ScopeName.ServerStatus).subscription(
       async function* ({ signal, ctx }) {
         const { omegga } = getContextDeps();
-        yield omegga.players.length;
         const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
-        for await (const [count] of on(serverEvents, 'playerCount', {
-          signal: combined,
-        })) {
+        // start listening before the initial yield so a join/leave that lands
+        // in between isn't dropped (on() buffers events from when it's called)
+        const events = on(serverEvents, 'playerCount', { signal: combined });
+        yield omegga.players.length;
+        for await (const [count] of events) {
           yield count as number;
         }
       },

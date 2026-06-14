@@ -32,15 +32,20 @@ export const SessionInit = () => {
     onData: setPlayerCount,
   });
 
+  // depend on narrowed primitives, not the whole status object (which is a
+  // fresh reference every heartbeat refetch)
+  const hasStatus = !!serverStatus;
+  const serverName = serverStatus?.serverName ?? null;
+  const queryCount = serverStatus?.players?.length ?? null;
   useEffect(() => {
-    if (!canStatus || !serverStatus) {
+    if (!canStatus || !hasStatus) {
       document.title = 'Omegga';
       return;
     }
-    const count = playerCount ?? serverStatus.players?.length;
-    const serverName = serverStatus.serverName ?? 'Brickadia Server';
-    document.title = count != null ? `${serverName} - ${count}` : serverName;
-  }, [canStatus, serverStatus, playerCount]);
+    const count = playerCount ?? queryCount;
+    const name = serverName ?? 'Brickadia Server';
+    document.title = count != null ? `${name} - ${count}` : name;
+  }, [canStatus, hasStatus, serverName, queryCount, playerCount]);
 
   useEffect(() => {
     if (status === 'success' && data) {
