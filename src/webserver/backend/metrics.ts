@@ -367,6 +367,10 @@ export default function (server: Webserver) {
 
   // player leave events
   omegga.on('leave', async ({ id, name, displayName }) => {
+    // update realtime player count subscribers (the player has already been
+    // removed from omegga.players by the time 'leave' fires)
+    serverEvents.emit('playerCount', omegga.players.length);
+
     // tell web users a player left
     serverEvents.emit(
       'chat',
@@ -378,6 +382,10 @@ export default function (server: Webserver) {
   omegga.on('join', async ({ id, name, displayName }) => {
     // add the visit to the database
     const isFirst = await database.addVisit({ id, name, displayName });
+
+    // update realtime player count subscribers (the awaited DB call above means
+    // omegga.players has been pushed to by the time we read it here)
+    serverEvents.emit('playerCount', omegga.players.length);
 
     // tell web users a player joined (and if it's their first time joining)
     serverEvents.emit(
@@ -424,13 +432,17 @@ export default function (server: Webserver) {
       stopping: false,
     }),
   );
-  omegga.on('server:stopped', () =>
+  omegga.on('server:stopped', () => {
     serverEvents.emit('serverStatus', {
       started: false,
       starting: false,
       stopping: false,
-    }),
-  );
+    });
+    // a stopped server has no players - reset the realtime count to 0.
+    // ('server:stopped' fires before omegga.players is cleared, so emit 0
+    // explicitly rather than reading the still-stale length)
+    serverEvents.emit('playerCount', 0);
+  });
   omegga.on('server:stopping', () =>
     serverEvents.emit('serverStatus', {
       started: true,

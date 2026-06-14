@@ -76,8 +76,18 @@ export const serverRouter = router({
         }),
     }),
 
-    status: protectedProcedure(ScopeName.ServerStatus).query(() => {
-      return _server?.lastReportedStatus ?? null;
+    status: protectedProcedure(ScopeName.ServerStatus).query(async () => {
+      // serve the cached status from the last heartbeat when available
+      if (_server?.lastReportedStatus) return _server.lastReportedStatus;
+
+      // otherwise fetch it on demand - e.g. the page loaded (and wants the
+      // status, like for the page title) before the first heartbeat populated
+      // the cache, so don't make the caller wait for the next heartbeat
+      const { omegga } = getContextDeps();
+      if (!omegga.started) return null;
+      const status = await omegga.getServerStatus();
+      if (status && _server) _server.lastReportedStatus = status;
+      return status ?? null;
     }),
 
     utilization: protectedProcedure(ScopeName.ServerUtilization).query(() => {
@@ -91,6 +101,11 @@ export const serverRouter = router({
         starting: omegga.starting,
         stopping: omegga.stopping,
       };
+    }),
+
+    playerCount: protectedProcedure(ScopeName.ServerStatus).query(() => {
+      const { omegga } = getContextDeps();
+      return omegga.players.length;
     }),
 
     start: protectedProcedure(ScopeName.ServerStart).mutation(
@@ -209,6 +224,21 @@ export const serverRouter = router({
           signal: combined,
         })) {
           yield status;
+        }
+      },
+    ),
+
+    // realtime player count - yields the current count immediately, then again
+    // whenever a player joins or leaves
+    onPlayerCount: protectedProcedure(ScopeName.ServerStatus).subscription(
+      async function* ({ signal, ctx }) {
+        const { omegga } = getContextDeps();
+        yield omegga.players.length;
+        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
+        for await (const [count] of on(serverEvents, 'playerCount', {
+          signal: combined,
+        })) {
+          yield count as number;
         }
       },
     ),
