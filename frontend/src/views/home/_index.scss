@@ -87,4 +87,76 @@
     max-height: none;
     overflow: hidden;
   }
+
+  // Swipeable widget pages that replace the draggable grid on mobile.
+  .widget-pager {
+    display: flex;
+    // a definite width is required for the pages' `flex-basis: 100%` to resolve
+    // against the content box instead of their (wide) content
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    // Explicit height rather than relying on flex:1 / height:100%. On mobile the
+    // body can grow past the viewport (overflow-y: auto), so the height chain is
+    // unreliable; size from the viewport instead, leaving room for the top
+    // padding (24px) and the fixed bottom nav + a gap (~116px). `--vvh` is the
+    // live visual-viewport height (see viewport.ts) so the pager shrinks when
+    // the on-screen keyboard opens; falls back to 100dvh without JS.
+    height: calc(100vh - 140px - env(safe-area-inset-bottom, 0px));
+    height: calc(var(--vvh, 100dvh) - 140px - env(safe-area-inset-bottom, 0px));
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .widget-page {
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    scroll-snap-align: center;
+    // a single swipe can't skip past a page
+    scroll-snap-stop: always;
+    display: flex;
+    flex-direction: column;
+    border-radius: theme.$br-radius-md;
+    overflow: hidden;
+    background-color: theme.$br-element-popout-bg;
+  }
+
+  .widget-page-header {
+    text-transform: uppercase;
+
+    .ti,
+    .tabler-icon {
+      margin-right: 8px;
+    }
+  }
+
+  // While the on-screen keyboard is open the bottom nav is hidden, so reclaim
+  // its reserved space and shrink the pager to the (smaller) visible viewport
+  // so the chat input and messages stay above the keyboard.
+  html.keyboard-open .content {
+    padding-bottom: 24px;
+  }
+  html.keyboard-open .widget-pager {
+    height: calc(var(--vvh, 100dvh) - 32px);
+  }
+
+  .widget-page-contents {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
 }

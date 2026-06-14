@@ -5,6 +5,10 @@
   @include mixins.absolute-center;
   background-color: theme.$br-bg-primary;
   width: 500px;
+  // never wider than the viewport (with a 16px margin each side) - keeps the
+  // confirm dialogs from overflowing on mobile
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
   opacity: 0;
   border-radius: theme.$br-radius-md;
   overflow: hidden;

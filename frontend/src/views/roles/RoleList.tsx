@@ -15,7 +15,7 @@ import {
   TextArea,
   Toggle,
 } from '@components';
-import { useHasScope, useRequireScope } from '@hooks';
+import { useHasScope, useMobileInspector, useRequireScope } from '@hooks';
 import { useStore } from '@nanostores/react';
 import {
   IconGripVertical,
@@ -42,6 +42,10 @@ export const RoleList = () => {
 
   const [_location, navigate] = useLocation();
   const [_match, params] = useRoute('/roles/:id?');
+  const { onBack, swipeHandlers, inspectorOpen } = useMobileInspector(
+    !!params?.id,
+    '/roles',
+  );
 
   const rolesQuery = trpc.role.list.useQuery();
   const createMutation = trpc.role.create.useMutation();
@@ -155,7 +159,7 @@ export const RoleList = () => {
 
   return (
     <>
-      <NavHeader title="Roles">
+      <NavHeader title="Roles" onBack={onBack}>
         {canEdit && (
           <Button main boxy onClick={openCreate}>
             <IconPlus />
@@ -165,7 +169,10 @@ export const RoleList = () => {
       </NavHeader>
       <PageContent>
         <SideNav />
-        <div className="generic-container players-container">
+        <div
+          className={`generic-container players-container ${inspectorOpen ? 'inspector-open' : ''}`}
+          {...swipeHandlers}
+        >
           <div className="player-table-container">
             {canViewUsers && (
               <NavBar attached>

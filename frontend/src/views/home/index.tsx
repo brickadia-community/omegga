@@ -6,7 +6,7 @@ import {
   PageContent,
   SideNav,
 } from '@components';
-import { useHasScope } from '@hooks';
+import { useHasScope, useIsMobile } from '@hooks';
 import {
   IconApps,
   IconChevronDownRight,
@@ -47,6 +47,9 @@ const DEFAULT_LAYOUT = [
   { x: 4, y: 0, w: 4, h: 4, i: 'status' },
 ] satisfies Layout[];
 
+// Order of the swipeable widget pages on mobile.
+const MOBILE_ORDER = ['status', 'chat', 'utilization'] as const;
+
 const GRID_DATA = {
   minW: 2,
   maxW: 10,
@@ -69,6 +72,8 @@ export const HomeView = () => {
   }, [canChat, canStatus, canUtil]);
 
   const hasAnyPermission = canChat || canStatus || canUtil;
+
+  const isMobile = useIsMobile();
 
   const WIDGET_LIST = useMemo(() => {
     const list: Record<string, (typeof WIDGET_DEFS)[keyof typeof WIDGET_DEFS]> =
@@ -152,108 +157,142 @@ export const HomeView = () => {
 
   return (
     <>
-      <NavHeader title="Dashboard">
-        {hasAnyPermission && (
-          <div className="widgets-container">
-            <Button
-              normal
-              boxy
-              data-tooltip="Add more widgets to the dashboard"
-              onClick={() => setShowWidgets(!showWidgets)}
-            >
-              <IconApps />
-              Widgets
-            </Button>
-            <AnimatedDropdown visible={showWidgets}>
-              {Object.entries(WIDGET_LIST).map(([k, widget]) => (
-                <div key={k} className="widget-item">
-                  <div className="name" data-tooltip={widget.tooltip}>
-                    <widget.icon />
-                    {k}
+      {/* the dashboard header is empty on mobile (widget controls are gone), so
+          drop it entirely there */}
+      {!isMobile && (
+        <NavHeader title="Dashboard">
+          {hasAnyPermission && (
+            <div className="widgets-container">
+              <Button
+                normal
+                boxy
+                data-tooltip="Add more widgets to the dashboard"
+                onClick={() => setShowWidgets(!showWidgets)}
+              >
+                <IconApps />
+                Widgets
+              </Button>
+              <AnimatedDropdown visible={showWidgets}>
+                {Object.entries(WIDGET_LIST).map(([k, widget]) => (
+                  <div key={k} className="widget-item">
+                    <div className="name" data-tooltip={widget.tooltip}>
+                      <widget.icon />
+                      {k}
+                    </div>
+                    {hasWidget[k] ? (
+                      <Button
+                        warn
+                        icon
+                        data-tooltip={`Remove ${k} widget`}
+                        onClick={() => removeWidget(k)}
+                      >
+                        <IconMinus />
+                      </Button>
+                    ) : (
+                      <Button
+                        main
+                        icon
+                        data-tooltip={`Add ${k} widget`}
+                        onClick={() => addWidget(k)}
+                      >
+                        <IconPlus />
+                      </Button>
+                    )}
                   </div>
-                  {hasWidget[k] ? (
-                    <Button
-                      warn
-                      icon
-                      data-tooltip={`Remove ${k} widget`}
-                      onClick={() => removeWidget(k)}
-                    >
-                      <IconMinus />
-                    </Button>
-                  ) : (
-                    <Button
-                      main
-                      icon
-                      data-tooltip={`Add ${k} widget`}
-                      onClick={() => addWidget(k)}
-                    >
-                      <IconPlus />
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </AnimatedDropdown>
-          </div>
-        )}
-      </NavHeader>
-      <PageContent>
-        <SideNav />
-        <div className="grid-container" ref={containerRef}>
-          {!hasAnyPermission && (
-            <div className="no-permissions-message">
-              Contact your admin for support
+                ))}
+              </AnimatedDropdown>
             </div>
           )}
-          {hasAnyPermission && width !== null && (
-            <GridLayout
-              layout={filteredLayout.map(l => ({ ...l, ...GRID_DATA }))}
-              width={width}
-              cols={10}
-              autoSize
-              useCSSTransforms={true}
-              rowHeight={100}
-              isBounded={true}
-              isResizable={true}
-              isDraggable={true}
-              margin={GRID_MARGIN}
-              onLayoutChange={onLayoutChange}
-              draggableHandle=".drag-handle"
-              draggableCancel=".no-drag"
-              resizeHandles={['se']}
-              resizeHandle={
-                <IconChevronDownRight
-                  style={{ cursor: 'se-resize' }}
-                  className="resize-handle"
-                />
-              }
-            >
-              {filteredLayout.map(item => {
-                const Component =
-                  WIDGET_LIST[item.i as keyof typeof WIDGET_LIST]?.component;
-                if (!Component) return null;
+        </NavHeader>
+      )}
+      <PageContent>
+        <SideNav />
+        {isMobile ? (
+          hasAnyPermission ? (
+            // On mobile the draggable grid is replaced by full-screen widget
+            // pages you swipe between horizontally.
+            <div className="widget-pager">
+              {MOBILE_ORDER.filter(k => allowedWidgets[k]).map(k => {
+                const def = WIDGET_DEFS[k];
+                const Component = def.component;
                 return (
-                  <div key={item.i} className="grid-item">
-                    <Header className="drag-handle">
-                      <span style={{ flex: 1 }}>{item.i}</span>
-                      <Button
-                        icon
-                        error
-                        className="no-drag"
-                        data-tooltip="Close widget"
-                        onClick={() => removeWidget(item.i)}
-                      >
-                        <IconX />
-                      </Button>
+                  <div key={k} className="widget-page">
+                    <Header className="widget-page-header">
+                      <def.icon />
+                      {k}
                     </Header>
-                    <div className="drag-contents">
+                    <div className="widget-page-contents">
                       <Component />
                     </div>
                   </div>
                 );
               })}
-            </GridLayout>
-          )}
-        </div>
+            </div>
+          ) : (
+            <div className="grid-container">
+              <div className="no-permissions-message">
+                Contact your admin for support
+              </div>
+            </div>
+          )
+        ) : (
+          <div className="grid-container" ref={containerRef}>
+            {!hasAnyPermission && (
+              <div className="no-permissions-message">
+                Contact your admin for support
+              </div>
+            )}
+            {hasAnyPermission && width !== null && (
+              <GridLayout
+                layout={filteredLayout.map(l => ({ ...l, ...GRID_DATA }))}
+                width={width}
+                cols={10}
+                autoSize
+                useCSSTransforms={true}
+                rowHeight={100}
+                isBounded={true}
+                isResizable={true}
+                isDraggable={true}
+                margin={GRID_MARGIN}
+                onLayoutChange={onLayoutChange}
+                draggableHandle=".drag-handle"
+                draggableCancel=".no-drag"
+                resizeHandles={['se']}
+                resizeHandle={
+                  <IconChevronDownRight
+                    style={{ cursor: 'se-resize' }}
+                    className="resize-handle"
+                  />
+                }
+              >
+                {filteredLayout.map(item => {
+                  const Component =
+                    WIDGET_LIST[item.i as keyof typeof WIDGET_LIST]?.component;
+                  if (!Component) return null;
+                  return (
+                    <div key={item.i} className="grid-item">
+                      <Header className="drag-handle">
+                        <span style={{ flex: 1 }}>{item.i}</span>
+                        <Button
+                          icon
+                          error
+                          className="no-drag"
+                          data-tooltip="Close widget"
+                          onClick={() => removeWidget(item.i)}
+                        >
+                          <IconX />
+                        </Button>
+                      </Header>
+                      <div className="drag-contents">
+                        <Component />
+                      </div>
+                    </div>
+                  );
+                })}
+              </GridLayout>
+            )}
+          </div>
+        )}
       </PageContent>
     </>
   );

@@ -22,7 +22,7 @@ import {
   IconMapPin,
   IconRotate,
 } from '@tabler/icons-react';
-import { useHasScope, useRequireScope } from '@hooks';
+import { useHasScope, useMobileInspector, useRequireScope } from '@hooks';
 import { debounce, duration, heartbeatAgo } from '@utils';
 import { useMemo, useRef, useState } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
@@ -37,6 +37,10 @@ export const PlayerList = () => {
 
   const [_location, navigate] = useLocation();
   const [_match, params] = useRoute('/players/:id?');
+  const { onBack, swipeHandlers, inspectorOpen } = useMobileInspector(
+    !!params?.id,
+    '/players',
+  );
 
   const query = useRef({
     page: 0,
@@ -125,7 +129,7 @@ export const PlayerList = () => {
 
   return (
     <>
-      <NavHeader title="Players" className="players-view">
+      <NavHeader title="Players" className="players-view" onBack={onBack}>
         <div className="widgets-container">
           <Button
             normal
@@ -152,7 +156,10 @@ export const PlayerList = () => {
       </NavHeader>
       <PageContent>
         <SideNav />
-        <div className="generic-container players-container">
+        <div
+          className={`generic-container players-container ${inspectorOpen ? 'inspector-open' : ''}`}
+          {...swipeHandlers}
+        >
           <div className="player-table-container">
             <NavBar attached>
               <Input
@@ -262,7 +269,7 @@ export const PlayerList = () => {
                                     : 'Username'
                                 }
                               >
-                                {player.displayName ?? player.name}
+                                {player.displayName || player.name}
                               </div>
                               {player.displayName && (
                                 <div

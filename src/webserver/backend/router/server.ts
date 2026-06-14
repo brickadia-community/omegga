@@ -1,4 +1,5 @@
 import Logger from '@/logger';
+import type { IServerStatus } from '@/omegga/types';
 import { steamcmdDownloadGame } from '@/updater';
 import { getLastSteamUpdateCheck, hasSteamUpdate } from '@/updater/steam';
 import { on } from 'events';
@@ -13,6 +14,10 @@ let _server: Webserver | null = null;
 export function setWebserver(s: Webserver) {
   _server = s;
 }
+
+// shared in-flight on-demand status fetch, so concurrent `status` callers on a
+// cold cache don't each issue their own Server.Status console command
+let _statusFetch: Promise<IServerStatus | null> | null = null;
 
 const autoRestartConfigSchema = z.object({
   type: z.literal('autoRestartConfig'),
@@ -76,8 +81,33 @@ export const serverRouter = router({
         }),
     }),
 
-    status: protectedProcedure(ScopeName.ServerStatus).query(() => {
-      return _server?.lastReportedStatus ?? null;
+    status: protectedProcedure(ScopeName.ServerStatus).query(async () => {
+      // serve the cached status from the last heartbeat when available
+      if (_server?.lastReportedStatus) return _server.lastReportedStatus;
+
+      // otherwise fetch it on demand - e.g. the page loaded (and wants the
+      // status, like for the page title) before the first heartbeat populated
+      // the cache, so don't make the caller wait for the next heartbeat
+      const { omegga } = getContextDeps();
+      if (!omegga.started) return null;
+
+      // reuse an in-flight fetch so concurrent callers share one console query;
+      // getServerStatus can reject (status command timeout / parse error), so
+      // fall back to the cache (or null) rather than erroring the request
+      _statusFetch ??= omegga
+        .getServerStatus()
+        .then(status => {
+          if (status && _server) _server.lastReportedStatus = status;
+          return status ?? null;
+        })
+        .catch(err => {
+          Logger.verbose('On-demand server status fetch failed', err);
+          return _server?.lastReportedStatus ?? null;
+        })
+        .finally(() => {
+          _statusFetch = null;
+        });
+      return _statusFetch;
     }),
 
     utilization: protectedProcedure(ScopeName.ServerUtilization).query(() => {
@@ -91,6 +121,11 @@ export const serverRouter = router({
         starting: omegga.starting,
         stopping: omegga.stopping,
       };
+    }),
+
+    playerCount: protectedProcedure(ScopeName.ServerStatus).query(() => {
+      const { omegga } = getContextDeps();
+      return omegga.players.length;
     }),
 
     start: protectedProcedure(ScopeName.ServerStart).mutation(
@@ -209,6 +244,22 @@ export const serverRouter = router({
           signal: combined,
         })) {
           yield status;
+        }
+      },
+    ),
+
+    // realtime player count - yields the current count immediately, then again
+    // whenever a player joins or leaves
+    onPlayerCount: protectedProcedure(ScopeName.ServerStatus).subscription(
+      async function* ({ signal, ctx }) {
+        const { omegga } = getContextDeps();
+        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
+        // start listening before the initial yield so a join/leave that lands
+        // in between isn't dropped (on() buffers events from when it's called)
+        const events = on(serverEvents, 'playerCount', { signal: combined });
+        yield omegga.players.length;
+        for await (const [count] of events) {
+          yield count as number;
         }
       },
     ),

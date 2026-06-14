@@ -895,7 +895,19 @@ export default class Terminal {
     let launcherDone = false;
     let lastDoneMessage = '';
     omegga.on('line', l => {
-      if (options.debug) this.log('::'.blue, l);
+      // Redact the hosting token only in what we print to the debug log.
+      // Brickadia echoes its full command line (including -Token="...") via a
+      // LogInit line on stdout; restrict the redaction to engine log lines
+      // (LogInit/etc.) so we don't mangle other output (e.g. chat) that might
+      // legitimately contain a -Token= string. The raw `l` is still delivered
+      // to matchers/plugins elsewhere, so this must not mutate that value.
+      if (options.debug)
+        this.log(
+          '::'.blue,
+          /^Log\w+:/.test(l)
+            ? l.replace(/-Token="[^"]*"/, '-Token="REDACTED"')
+            : l,
+        );
       else if (!launcherDone) {
         if (l.match(/Update Failed/)) {
           err(l);

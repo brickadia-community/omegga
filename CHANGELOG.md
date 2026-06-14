@@ -4,10 +4,15 @@
 
 - Future features go here
 
-## 1.7.0 - 2026-05-27
+## 1.7.0 - 2026-06-14
 
-- Replace NeDB with Drizzle ORM + better-sqlite3 for all database storage
-- Automatic one-time migration imports existing NeDB data into SQLite on first startup (original files preserved)
+- Database: Replace NeDB with Drizzle ORM + better-sqlite3 for all database storage
+- Database: Automatic one-time migration imports existing NeDB data into SQLite on first startup (original files preserved)
+- Web UI: Mobile overhaul of the web-ui (navigation, layout, gestures)
+- Web UI: Add a favicon
+- Web UI: Tab name now reflects server name and realtime player count
+- Version checking is more reliable
+- Security: Omegga debug log now conceals the -Token data during LogInit
 
 
 ## 1.6.1 - 2026-05-25

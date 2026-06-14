@@ -8,7 +8,7 @@ import {
   Scroll,
   SideNav,
 } from '@components';
-import { useHasScope, useRequireScope } from '@hooks';
+import { useHasScope, useMobileInspector, useRequireScope } from '@hooks';
 import {
   IconAlertCircle,
   IconBug,
@@ -60,6 +60,10 @@ export const PluginList = () => {
   const canReloadAll = useHasScope(Permissions.PluginReloadAll);
 
   const [_location, params] = useRoute('/plugins/:id?');
+  const { onBack, swipeHandlers, inspectorOpen } = useMobileInspector(
+    !!params?.id,
+    '/plugins',
+  );
   const selectedPluginName = useMemo(
     () =>
       plugins.find(plugin => plugin.path === params?.id)?.name ??
@@ -107,7 +111,7 @@ export const PluginList = () => {
 
   return (
     <>
-      <NavHeader title="Plugins">
+      <NavHeader title="Plugins" onBack={onBack}>
         <span style={{ flex: 1 }} />
         {canReloadAll && (
           <Button
@@ -123,7 +127,10 @@ export const PluginList = () => {
       </NavHeader>
       <PageContent>
         <SideNav />
-        <div className="generic-container plugins-container">
+        <div
+          className={`generic-container plugins-container ${inspectorOpen ? 'inspector-open' : ''}`}
+          {...swipeHandlers}
+        >
           <div className="plugins-list-container">
             <NavBar>
               <Input

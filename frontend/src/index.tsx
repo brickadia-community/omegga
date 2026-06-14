@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { Route, Router, Switch } from 'wouter';
 import { useBrowserLocation } from 'wouter/use-browser-location';
 import './tooltip';
+import './viewport';
 import { trpc, trpcClient, queryClient } from './trpc';
 import { SessionInit } from './SessionInit';
 import { NotFound } from './views/NotFound';

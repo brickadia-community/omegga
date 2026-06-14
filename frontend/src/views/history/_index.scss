@@ -12,6 +12,21 @@
 }
 
 @media screen and (max-width: 600px) {
+  // smaller chat text so more history fits on a phone screen
+  .chat-history .log-entry {
+    font-size: 18px;
+  }
+
+  // The flex chain (.generic-container -> .chat-history -> .scroll-container)
+  // bottoms out in an absolutely-positioned scroller sized to 100% of its
+  // parent. On mobile the body can grow past the viewport, so that 100% resolves
+  // taller than the screen and the last chat lines slide under the fixed bottom
+  // nav. Bound the container to the visible viewport instead (top bar ~84px +
+  // bottom nav ~94px), matching the inspector views.
+  .history-container {
+    flex: none;
+    height: calc(var(--vvh, 100dvh) - 178px - env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .chat-new-day {

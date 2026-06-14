@@ -23,7 +23,6 @@ export const Dropdown = ({
     if (!open) return;
     function handler(e: MouseEvent) {
       if (e.target && !selfRef.current?.contains(e.target as Node)) {
-        console.log('[debug] close');
         setOpen(false);
       }
     }

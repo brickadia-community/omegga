@@ -89,14 +89,98 @@ $icon-height: $btn-height - 16px;
   }
 }
 
+// Bottom navigation bar is mobile-only; hidden on desktop.
+.bottom-nav {
+  display: none;
+}
+
+// Hide it while the on-screen keyboard is open so it doesn't float over the
+// keyboard (and so the view above can use the reclaimed space).
+html.keyboard-open .bottom-nav {
+  display: none !important;
+}
+
 @media screen and (max-width: 600px) {
+  // Swap the vertical side menu for the bottom navigation bar.
   .main-menu-buttons {
-    margin-right: 0;
-    width: 100%;
-    min-width: 100%;
+    display: none;
   }
 
-  .menu-button {
-    width: 100%;
+  .bottom-nav {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    background-color: theme.$br-bg-footer;
+    border-top: 2px solid theme.$br-bg-secondary;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .bottom-nav-scroll {
+    display: flex;
+    align-items: center;
+    // center the entries when they fit; fall back to start-aligned (so the
+    // first entry stays reachable) once they overflow and need scrolling
+    justify-content: safe center;
+    gap: 4px;
+    padding: 6px 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    // hide the scrollbar - swiping is the intended interaction
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .bottom-nav-button {
+    flex: 0 0 auto;
+    width: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px 0;
+    text-decoration: none;
+    user-select: none;
+    color: theme.$br-boring-button-fg;
+    border-radius: theme.$br-radius-sm;
+
+    &,
+    &:visited {
+      color: theme.$br-boring-button-fg;
+    }
+
+    &.active {
+      color: white;
+      background-color: theme.$br-button-normal;
+    }
+
+    .bottom-nav-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 52px;
+      color: white;
+      border-radius: theme.$br-radius-sm;
+
+      .ti,
+      .tabler-icon {
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    .bottom-nav-label {
+      font-size: 13px;
+      font-weight: bold;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
   }
 }

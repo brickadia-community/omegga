@@ -73,6 +73,12 @@ html {
   width: 100%;
   height: 100%;
   display: table;
+  // dark fallback so the browser's white default never flashes through when the
+  // mobile URL bar retracts / the viewport grows past the fixed background
+  background-color: theme.$br-bg-secondary;
+  // disable pull-to-refresh / scroll-chaining so a stray vertical swipe can't
+  // reload the page
+  overscroll-behavior: none;
 }
 
 body {
