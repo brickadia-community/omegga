@@ -26,29 +26,49 @@ const version: MatchGenerator<number> = omegga => {
         return;
       }
 
-      // Read the first 100 characters of the log file to find the version
-      const stream = createReadStream(LOG_PATH, {
-        encoding: 'utf8',
-        start: 0,
-        end: 100,
-      });
+      // The version line lives only in the log file (not stdout), near the very
+      // top. We trigger off a stdout line, but the file may not be flushed to
+      // disk that exact instant - so read the first 100 chars and, if the
+      // version line isn't there yet, retry a couple times to win that race.
+      const tryReadVersion = async (): Promise<number | null> => {
+        const stream = createReadStream(LOG_PATH, {
+          encoding: 'utf8',
+          start: 0,
+          end: 100,
+        });
 
-      (async () => {
         let data = '';
-        for await (const chunk of stream) {
-          data += chunk;
+        try {
+          for await (const chunk of stream) {
+            data += chunk;
+          }
+        } catch {
+          return null;
         }
 
         for (const line of data.split('\n')) {
           const match = line.match(versionRegExp);
-          if (!match) continue;
-
-          const version = Number(match.groups?.version);
-
-          omegga.emit('version', version);
-          Logger.verbose('Brickadia Version', version);
-          omegga.version = version;
+          if (match) return Number(match.groups?.version);
         }
+        return null;
+      };
+
+      (async () => {
+        // initial attempt + 2 retries; the version is at the start of the log
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const version = await tryReadVersion();
+          if (version != null) {
+            omegga.emit('version', version);
+            Logger.verbose('Brickadia Version', version);
+            omegga.version = version;
+            return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 250));
+        }
+        Logger.warnp(
+          'Could not determine Brickadia version from',
+          LOG_PATH.yellow,
+        );
       })();
 
       return 1;
