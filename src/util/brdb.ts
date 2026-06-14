@@ -376,6 +376,88 @@ type SchemaStruct = {
   props: Record<string, SchemaType>;
 };
 
+// Skip a single (arbitrary) msgpack value, returning the offset past it. Used
+// to skip schema sections we don't need to interpret (e.g. the variant/union
+// table in newer 3-element schema headers).
+function skipValue(buf: Buffer, offset: number): number {
+  const [kind, val] = mpMarker(buf[offset]);
+  offset++;
+  switch (kind) {
+    case 'fixpos':
+    case 'fixneg':
+    case 'nil':
+    case 'true':
+    case 'false':
+      return offset;
+    case 'uint8':
+    case 'int8':
+      return offset + 1;
+    case 'uint16':
+    case 'int16':
+      return offset + 2;
+    case 'uint32':
+    case 'int32':
+    case 'float32':
+      return offset + 4;
+    case 'uint64':
+    case 'int64':
+    case 'float64':
+      return offset + 8;
+    case 'fixstr':
+      return offset + val!;
+    case 'str8':
+    case 'bin8':
+      return offset + 1 + buf.readUInt8(offset);
+    case 'str16':
+    case 'bin16':
+      return offset + 2 + buf.readUInt16BE(offset);
+    case 'str32':
+    case 'bin32':
+      return offset + 4 + buf.readUInt32BE(offset);
+    case 'fixarray':
+      for (let i = 0; i < val!; i++) offset = skipValue(buf, offset);
+      return offset;
+    case 'array16': {
+      const len = buf.readUInt16BE(offset);
+      offset += 2;
+      for (let i = 0; i < len; i++) offset = skipValue(buf, offset);
+      return offset;
+    }
+    case 'array32': {
+      const len = buf.readUInt32BE(offset);
+      offset += 4;
+      for (let i = 0; i < len; i++) offset = skipValue(buf, offset);
+      return offset;
+    }
+    case 'fixmap':
+      for (let i = 0; i < val!; i++) {
+        offset = skipValue(buf, offset);
+        offset = skipValue(buf, offset);
+      }
+      return offset;
+    case 'map16': {
+      const len = buf.readUInt16BE(offset);
+      offset += 2;
+      for (let i = 0; i < len; i++) {
+        offset = skipValue(buf, offset);
+        offset = skipValue(buf, offset);
+      }
+      return offset;
+    }
+    case 'map32': {
+      const len = buf.readUInt32BE(offset);
+      offset += 4;
+      for (let i = 0; i < len; i++) {
+        offset = skipValue(buf, offset);
+        offset = skipValue(buf, offset);
+      }
+      return offset;
+    }
+    default:
+      throw new Error(`Cannot skip msgpack value of kind ${kind}`);
+  }
+}
+
 function readBrdbSchema(buf: Buffer) {
   const enums: Record<string, Record<string, number> & Record<number, string>> =
     {};
@@ -415,11 +497,15 @@ function readBrdbSchema(buf: Buffer) {
     return len;
   };
   const header = nextMarker();
-  if (header[0] !== 'fixarray' && header[1] !== 2) {
+  // Older saves use a 2-element schema: [enums, structs].
+  // Newer saves use a 3-element schema: [enums, variants, structs], where the
+  // middle element is a variant/union table we don't need to read owner data.
+  if (header[0] !== 'fixarray' || (header[1] !== 2 && header[1] !== 3)) {
     throw new Error(
-      `Expected schema header to be fixarray of length 2, got ${header[0]} ${header[1]}`,
+      `Expected schema header to be a fixarray of length 2 or 3, got ${header[0]} ${header[1]}`,
     );
   }
+  const hasVariants = header[1] === 3;
 
   const numEnums = mapLen('enums');
   for (let i = 0; i < numEnums; i++) {
@@ -436,6 +522,13 @@ function readBrdbSchema(buf: Buffer) {
       enums[name][value] = key;
     }
   }
+
+  // Newer schemas carry a variant/union table between the enums and the structs.
+  // It isn't needed to read owner data, so skip past it.
+  if (hasVariants) {
+    offset = skipValue(buf, offset);
+  }
+
   const numStructs = mapLen('structs');
   for (let i = 0; i < numStructs; i++) {
     let name: string;

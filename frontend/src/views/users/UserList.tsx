@@ -32,7 +32,7 @@ import {
   IconUsers,
   IconX,
 } from '@tabler/icons-react';
-import { useHasScope, useRequireScope } from '@hooks';
+import { useHasScope, useMobileInspector, useRequireScope } from '@hooks';
 import { duration, logout } from '@utils';
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
@@ -78,6 +78,10 @@ export const UserList = () => {
 
   const [_location, navigate] = useLocation();
   const [_match, params] = useRoute('/users/:id?');
+  const { onBack, swipeHandlers, inspectorOpen } = useMobileInspector(
+    !!params?.id,
+    '/users',
+  );
 
   const utils = trpc.useUtils();
   const createMutation = trpc.user.create.useMutation();
@@ -201,7 +205,7 @@ export const UserList = () => {
 
   return (
     <>
-      <NavHeader title="Users">
+      <NavHeader title="Users" onBack={onBack}>
         {hasDropdownActions && (
           <div className="widgets-container">
             <Button normal boxy onClick={() => setShowActions(!showActions)}>
@@ -227,7 +231,10 @@ export const UserList = () => {
       </NavHeader>
       <PageContent>
         <SideNav />
-        <div className="generic-container players-container">
+        <div
+          className={`generic-container players-container ${inspectorOpen ? 'inspector-open' : ''}`}
+          {...swipeHandlers}
+        >
           <div className="player-table-container">
             {canViewRoles && (
               <NavBar attached>

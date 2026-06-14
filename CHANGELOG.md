@@ -4,10 +4,11 @@
 
 - Future features go here
 
-## 1.7.0 - 2026-05-27
+## 1.7.0 - 2026-06-14
 
 - Replace NeDB with Drizzle ORM + better-sqlite3 for all database storage
 - Automatic one-time migration imports existing NeDB data into SQLite on first startup (original files preserved)
+- Mobile overhaul of the web-ui (navigation, layout, gestures)
 
 
 ## 1.6.1 - 2026-05-25

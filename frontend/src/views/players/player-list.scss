@@ -15,6 +15,16 @@
 .player-table-container,
 .player-inspector-container {
   @include mixins.column-container;
+
+  // the selected player's name fills the bar and truncates with an ellipsis -
+  // the full name is still shown in the inspector body below
+  .inspector-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .player-table-container {
@@ -67,5 +77,20 @@
   .player-table-container {
     margin-right: 0;
     margin-bottom: 16px;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  // full-width search bar on mobile
+  .player-table-container {
+    .input {
+      max-width: none;
+      margin-right: 8px;
+    }
+
+    // drop the flex spacer (inline style) so the input fills the row
+    .navbar > span {
+      flex: 0 0 auto !important;
+    }
   }
 }

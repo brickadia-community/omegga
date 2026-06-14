@@ -11,7 +11,7 @@ import {
   SideNav,
   useConfirm,
 } from '@components';
-import { useHasScope, useRequireScope } from '@hooks';
+import { useHasScope, useMobileInspector, useRequireScope } from '@hooks';
 import { useStore } from '@nanostores/react';
 import {
   IconCaretDown,
@@ -57,6 +57,10 @@ export const WorldList = () => {
 
   const [_location, params] = useRoute('/worlds/*?');
   const selectedWorld = params?.['*'];
+  const { onBack, swipeHandlers, inspectorOpen } = useMobileInspector(
+    !!selectedWorld,
+    '/worlds',
+  );
 
   const utils = trpc.useUtils();
   const useMut = trpc.world.use.useMutation();
@@ -187,7 +191,7 @@ export const WorldList = () => {
 
   return (
     <>
-      <NavHeader title="Worlds">
+      <NavHeader title="Worlds" onBack={onBack}>
         {(canSave || canCreate || canUse) && (
           <div className="widgets-container worlds">
             <Button
@@ -272,7 +276,10 @@ export const WorldList = () => {
       </NavHeader>
       <PageContent>
         <SideNav />
-        <div className="generic-container worlds-container">
+        <div
+          className={`generic-container worlds-container ${inspectorOpen ? 'inspector-open' : ''}`}
+          {...swipeHandlers}
+        >
           <div className="worlds-list-container">
             <NavBar>
               <Input

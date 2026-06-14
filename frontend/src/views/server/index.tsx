@@ -189,16 +189,18 @@ export const ServerView = () => {
         <SideNav />
         <div className="generic-container server-container">
           <NavBar className="server-status">
-            Server Status:{' '}
-            {starting
-              ? 'starting'
-              : stopping
-                ? 'stopping'
-                : started
-                  ? 'started'
-                  : 'stopped'}
+            <span className="status-label">Server Status: </span>
+            <span className="status-value">
+              {starting
+                ? 'starting'
+                : stopping
+                  ? 'stopping'
+                  : started
+                    ? 'started'
+                    : 'stopped'}
+            </span>
             {hasSteam && canUpdateCheck && hasUpdate !== null && (
-              <span style={{ marginLeft: 8, fontSize: '0.75em', opacity: 0.7 }}>
+              <span className="status-update">
                 {hasUpdate
                   ? 'Update available'
                   : `Up to date${lastCheckedAt ? ` (checked ${formatTimeAgo(lastCheckedAt)})` : ''}`}

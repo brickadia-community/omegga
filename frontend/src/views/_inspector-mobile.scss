@@ -1,0 +1,86 @@
+@use '../css/theme';
+
+// Mobile-only "inspector overlay" behaviour shared by the list+inspector views
+// (players, users, roles, plugins, worlds). The list fills the full height and
+// the inspector slides up over it when an item is selected (the outer container
+// gets `.inspector-open`). The top bar's back button and a swipe-down both
+// navigate back to the bare list route, which removes `.inspector-open`.
+//
+// Rules are nested under the container class on purpose: the inspector/list
+// containers get `position: relative` / `flex: 1` from the column-container
+// mixin (same specificity), so we need the extra `.x-container` qualifier to
+// win regardless of stylesheet order.
+@media screen and (max-width: 600px) {
+  .players-container,
+  .plugins-container,
+  .worlds-container {
+    position: relative;
+    overflow: hidden;
+    // `.generic-container` is `flex: 1` (flex-basis 0), which would otherwise
+    // override the height below in the main-content flex column - opt out so the
+    // explicit height actually applies.
+    flex: none;
+    // Fill from just below the top bar (~84px) down to the top of the fixed
+    // bottom nav (~94px). Uses --vvh (see viewport.ts) for keyboard / URL-bar
+    // awareness. Tune the offset if the top bar height changes.
+    height: calc(var(--vvh, 100dvh) - 178px - env(safe-area-inset-bottom, 0px));
+
+    // While the on-screen keyboard is open (e.g. focusing the search bar) the
+    // bottom nav is hidden, so reclaim its reserved ~94px - otherwise the list
+    // stops short and leaves a dead gap above the keyboard.
+    html.keyboard-open & {
+      height: calc(var(--vvh, 100dvh) - 84px);
+    }
+
+    // list fills the full height (inspector is taken out of flow)
+    .player-table-container,
+    .plugins-list-container,
+    .worlds-list-container {
+      margin-right: 0;
+      margin-bottom: 0;
+      height: 100%;
+    }
+
+    // inspector as a slide-up overlay
+    .player-inspector-container,
+    .plugin-inspector-container,
+    .world-inspector-container {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      margin: 0;
+      background-color: theme.$br-bg-primary;
+      border-radius: theme.$br-radius-md;
+      // slide in from the right edge
+      transform: translateX(100%);
+      transition: transform 0.25s ease;
+      pointer-events: none;
+      will-change: transform;
+    }
+
+    &.inspector-open {
+      .player-inspector-container,
+      .plugin-inspector-container,
+      .world-inspector-container {
+        transform: translateX(0);
+        pointer-events: auto;
+      }
+    }
+  }
+
+  // players / users / roles mount their inspector via <Switch> (a fresh element
+  // each time), so a CSS transition has nothing to animate from - drive the
+  // slide-in with a keyframe animation that runs on mount instead.
+  .players-container.inspector-open .player-inspector-container {
+    animation: inspector-slide-in 0.25s ease;
+  }
+}
+
+@keyframes inspector-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

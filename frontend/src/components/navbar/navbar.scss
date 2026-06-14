@@ -43,8 +43,27 @@
   margin: 0 4px;
 }
 
+// the inspector back button is mobile-only
+.nav-back {
+  display: none !important;
+}
+
 @media screen and (max-width: 600px) {
   .user-menu-name {
     display: none;
+  }
+
+  // hide the oversized page/inspector titles on mobile to save space
+  .nav-header {
+    display: none;
+  }
+
+  .main-nav {
+    margin-bottom: 8px;
+  }
+
+  .nav-back {
+    display: flex !important;
+    margin-right: 8px;
   }
 }

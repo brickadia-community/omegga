@@ -6,6 +6,7 @@ import { AnimatedDropdown } from '../animated-dropdown';
 import { Button } from '../button';
 import { logout } from '../../utils';
 import {
+  IconArrowLeft,
   IconCaretDown,
   IconCaretUp,
   IconLogout,
@@ -28,7 +29,14 @@ export const NavHeader = ({
   title,
   className,
   children,
-}: PropsWithChildren<{ title: string; className?: string }>) => {
+  onBack,
+}: PropsWithChildren<{
+  title: string;
+  className?: string;
+  // When set, a back button is shown on the left (mobile only) - used to
+  // dismiss the inspector overlay.
+  onBack?: () => void;
+}>) => {
   const user = useStore($user);
   const showLogout = useStore($showLogout);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,6 +45,17 @@ export const NavHeader = ({
     <div className={`main-nav ${className ?? ''}`}>
       <header className="nav-header">{title}</header>
       <NavBar>
+        {onBack && (
+          <Button
+            normal
+            icon
+            className="nav-back"
+            data-tooltip="Back"
+            onClick={onBack}
+          >
+            <IconArrowLeft />
+          </Button>
+        )}
         <span style={{ flex: 1 }} />
         {children}
         {showLogout && (

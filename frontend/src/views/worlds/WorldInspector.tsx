@@ -396,7 +396,7 @@ const MetaTable = ({ meta }: { meta: WorldMetaRes | null }) => {
                           owner.display_name ? 'Display Name' : 'Username'
                         }
                       >
-                        {owner.display_name ?? owner.name}
+                        {owner.display_name || owner.name}
                       </div>
                       {owner.display_name && (
                         <div className="username" data-tooltip="Username">

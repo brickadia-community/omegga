@@ -34,10 +34,69 @@
   }
 }
 
+.server-status {
+  .status-update {
+    margin-left: 8px;
+    font-size: 0.75em;
+    opacity: 0.7;
+  }
+}
+
 .buttons {
   flex-direction: row;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   margin-top: 8px;
+}
+
+@media screen and (max-width: 600px) {
+  // hide the "Server Status:" label - show just the status on the left and the
+  // update info pushed to the right
+  .server-status {
+    .status-label {
+      display: none;
+    }
+    .status-update {
+      margin-left: auto;
+    }
+  }
+
+  // the auto-restart numeric inputs only ever hold a few digits, so don't let
+  // them eat the whole row on mobile
+  .server-container .inputs-list .inputs .input {
+    width: 80px;
+    min-width: 0;
+    max-width: 80px;
+    flex: 0 0 80px;
+  }
+
+  // give the label column the remaining width (and let it wrap) so long labels
+  // like "Empty Server Lifetime (Hours)" aren't truncated
+  .server-container .inputs-list .inputs-item {
+    label {
+      min-width: 0;
+      flex: 1;
+      white-space: normal;
+      overflow: visible;
+      line-height: 1.15;
+      font-size: 16px;
+    }
+
+    .inputs {
+      flex: 0 0 auto;
+      // put the switch at the end (after the input) so every row's switch lines
+      // up on the right edge, whether or not the row has an input
+      flex-direction: row-reverse;
+      // space between the switch and the input
+      gap: 8px;
+
+      // the base style gives the toggle a margin-right; on toggle-only rows that
+      // would push the switch 8px off the right edge, out of line with the
+      // input-bearing rows. the gap above handles spacing, so drop it.
+      .toggle {
+        margin-right: 0;
+      }
+    }
+  }
 }

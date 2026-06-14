@@ -146,13 +146,14 @@ export const PlayerInspector = () => {
   return (
     <div className="player-inspector-container">
       <NavBar attached>
-        {player?.name || 'SELECT A PLAYER'}
-        <span style={{ flex: 1 }} />
+        <span className="inspector-title">
+          {player?.name || 'SELECT A PLAYER'}
+        </span>
         {player && (
           <div className="widgets-container">
             <Button normal boxy onClick={() => setShowActions(!showActions)}>
               {showActions ? <IconCaretUp /> : <IconCaretDown />}
-              User Actions
+              Actions
             </Button>
             <AnimatedDropdown visible={showActions}>
               {canClearBricks && (
@@ -234,7 +235,7 @@ export const PlayerInspector = () => {
                     </a>
                   </div>
                   <div className="stat">
-                    <b>Display Name:</b> {player.displayName ?? 'unknown'}
+                    <b>Display Name:</b> {player.displayName || 'unknown'}
                   </div>
                   <div className="stat">
                     <b>Host:</b> {player.isHost ? 'Yes' : 'No'}
@@ -334,7 +335,7 @@ export const PlayerInspector = () => {
                               h.displayName ? 'Display Name' : 'Username'
                             }
                           >
-                            {h.displayName ?? h.name}
+                            {h.displayName || h.name}
                           </div>
                           {/* If the display name is set, display the username below */}
                           {h.displayName && (

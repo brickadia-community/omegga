@@ -8,6 +8,25 @@
   .main-content {
     flex-direction: column;
     margin-bottom: 24px;
+    // allow children (the swipeable widget pager) to shrink instead of forcing
+    // the column wider than the viewport
+    min-width: 0;
+  }
+
+  // leave room for the fixed bottom navigation bar
+  .content {
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
+  // The content-parent grid only defines rows, so its single implicit column is
+  // `auto` and sizes to the max-content of `.content`. A wide descendant (the
+  // nowrap `.br-table`, the `min-width:200px` status widget) therefore blows the
+  // column past the viewport width, pushing `.content`'s right edge - and with
+  // it the 24px right padding - off the right side of the screen. Pin the column
+  // to a stretched `1fr` track with a `0` minimum so it fills the container
+  // exactly and never grows to fit wide content.
+  .content-parent {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

@@ -32,11 +32,11 @@ export const UserName = ({
   if (link && user?.id)
     return (
       <Link href={`/players/${user.id}`} {...props}>
-        {user?.displayName ?? user?.name}
+        {user?.displayName || user?.name}
       </Link>
     );
 
-  return <span {...props}>{user?.displayName ?? user?.name}</span>;
+  return <span {...props}>{user?.displayName || user?.name}</span>;
 };
 
 export const ChatEntry = ({ log }: { log: ChatLogEntry }) => {
