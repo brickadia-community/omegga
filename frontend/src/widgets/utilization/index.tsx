@@ -143,7 +143,7 @@ export const UtilizationWidget = () => {
 
   useEffect(() => {
     if (!queryUtil) return;
-    // Always seed history refs from query data — the subscription may have
+    // Always seed history refs from query data - the subscription may have
     // already set util, but the history refs could still be empty if the
     // subscription won the startup race against the query.
     const hist = queryUtil.history;

@@ -49,7 +49,7 @@ export const InfiniteScroll = ({
       if (onTopScrollsToBottom) {
         el.scrollTop = el.scrollHeight - el.offsetHeight - offset - 2;
       } else {
-        // New content was prepended — adjust scrollTop by the height of added content.
+        // New content was prepended - adjust scrollTop by the height of added content.
         // Use live el.scrollTop (not the stale ref) so we account for any
         // position changes since loading started.
         const heightDelta = el.scrollHeight - scrollHeightBeforeLoad.current;
@@ -57,7 +57,7 @@ export const InfiniteScroll = ({
           el.scrollTop += heightDelta;
         }
       }
-      // The scrollTop assignment above will fire a scroll event — ignore it
+      // The scrollTop assignment above will fire a scroll event - ignore it
       prevScrollTopRef.current = el.scrollTop;
       skipNextScroll.current = true;
     }

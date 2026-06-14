@@ -6,7 +6,6 @@ import _ from 'lodash';
 import { z } from 'zod/v4';
 import { ScopeName } from '../scopes';
 import { getContextDeps, protectedProcedure, router } from '../trpc';
-import type { IStoreBanHistory, IStoreKickHistory } from '../types';
 import { waitForEvent } from '../util';
 
 export const playerRouter = router({
@@ -190,19 +189,13 @@ export const playerRouter = router({
           return banList[id];
         });
         if (ban) {
-          const entry: IStoreBanHistory = {
-            type: 'banHistory',
+          database.upsertBanHistory({
             banned: id,
             bannerId: null,
             created: parseBrickadiaTime(ban.created),
             expires: parseBrickadiaTime(ban.expires),
             reason: ban.reason,
-          };
-          await database.stores.players.update(
-            entry,
-            { $set: entry },
-            { upsert: true },
-          );
+          });
         }
         return !!ban;
       }),
@@ -230,18 +223,12 @@ export const playerRouter = router({
           (leavingPlayer: { id: string }) => leavingPlayer.id === id,
         );
         if (ok) {
-          const entry: IStoreKickHistory = {
-            type: 'kickHistory',
+          database.upsertKickHistory({
             kicked: id,
             kickerId: null,
             created: Date.now(),
             reason,
-          };
-          await database.stores.players.update(
-            entry,
-            { $set: entry },
-            { upsert: true },
-          );
+          });
         }
         return ok;
       }),

@@ -142,7 +142,6 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     if (!options.noplugin) {
       Logger.verbose('Creating plugin loader');
-      // create the pluginloader
       this.pluginLoader = new PluginLoader(this.path, this);
     }
 
@@ -242,7 +241,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       if (!this.stopping) {
         this.stop().then(doRestart);
       } else {
-        // stop() already in progress from 'exit' handler — wait for it to finish
+        // stop() already in progress from 'exit' handler - wait for it to finish
         this.once('server:stopped', () => doRestart());
       }
     });

@@ -151,7 +151,7 @@ export interface IStoreRole {
   name: string;
   description: string;
   order: number;
-  permissions: import('./permissions').StoredPermissionSet;
+  permissions: import('./permissions').PermissionSet;
 }
 
 export interface IPunchcard {

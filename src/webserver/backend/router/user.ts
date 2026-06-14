@@ -1,6 +1,6 @@
 import { z } from 'zod/v4';
 import {
-  decodePermissions,
+  EMPTY_PERMISSIONS,
   userHasScope,
   type PermissionSet,
 } from '../permissions';
@@ -14,7 +14,6 @@ import {
 } from '../roleHierarchy';
 import { ScopeName } from '../scopes';
 import { router, protectedProcedure, getContextDeps } from '../trpc';
-import type { IStoreUser } from '../types';
 
 const PermissionSetSchema = z.object({
   root: z.enum(['all', 'read', 'off']),
@@ -52,7 +51,7 @@ export const userRouter = router({
           }) => ({
             ...user,
             hash: '',
-            permissions: decodePermissions(_perms as any),
+            permissions: _perms,
             totpEnabled: user.totpEnabled ?? false,
             passkeyCount: _pk?.length ?? 0,
             seenAgo: user.lastOnline ? now - user.lastOnline : Infinity,
@@ -99,9 +98,10 @@ export const userRouter = router({
 
         if (ctx.user.isOwner && ctx.user.username === '') {
           try {
-            await database.stores.users.update(
-              { _id: ctx.user._id },
-              { username, hash: await database.hash(password) },
+            database.updateOwnerCredentials(
+              ctx.user._id,
+              username,
+              await database.hash(password),
             );
           } catch (e) {
             error('error setting owner password', e);
@@ -149,9 +149,7 @@ export const userRouter = router({
           if (!userHasScope(ctx.user, ScopeName.UserPasswd, rolePerms))
             return 'missing permission';
 
-          const target = await database.stores.users.findOne<
-            IStoreUser & { _id: string }
-          >({ type: 'user', username });
+          const target = await database.findUserByUsername(username);
           if (!target) return 'user does not exist';
           const hierErr = await checkUserHierarchy(ctx.user, target);
           if (hierErr) return hierErr;
@@ -189,9 +187,7 @@ export const userRouter = router({
         if (!(await database.userExists(username)))
           return 'user does not exist';
 
-        const target = await database.stores.users.findOne<
-          IStoreUser & { _id: string }
-        >({ type: 'user', username });
+        const target = await database.findUserByUsername(username);
         if (!target) return 'user does not exist';
         const hierErr = await checkUserHierarchy(ctx.user, target);
         if (hierErr) return hierErr;
@@ -216,9 +212,7 @@ export const userRouter = router({
         if (!(await database.userExists(username)))
           return 'user does not exist';
 
-        const target = await database.stores.users.findOne<
-          IStoreUser & { _id: string }
-        >({ type: 'user', username });
+        const target = await database.findUserByUsername(username);
         if (!target) return 'user does not exist';
         const hierErr = await checkUserHierarchy(ctx.user, target);
         if (hierErr) return hierErr;
@@ -244,9 +238,7 @@ export const userRouter = router({
         if (username === ctx.user.username)
           return 'cannot edit own permissions';
 
-        const target = await database.stores.users.findOne<
-          IStoreUser & { _id: string }
-        >({ type: 'user', username });
+        const target = await database.findUserByUsername(username);
         if (!target) return 'user does not exist';
         const hierErr = await checkUserHierarchy(ctx.user, target);
         if (hierErr) return hierErr;
@@ -260,8 +252,10 @@ export const userRouter = router({
           );
           if (escErr) return escErr;
 
-          const currentPerms = decodePermissions(target.permissions);
-          const revErr = checkPermissionRevocation(currentPerms, permissions);
+          const revErr = checkPermissionRevocation(
+            target.permissions ?? EMPTY_PERMISSIONS,
+            permissions,
+          );
           if (revErr) return revErr;
         }
 
@@ -280,9 +274,7 @@ export const userRouter = router({
         if (username === ctx.user.username)
           return 'cannot grant roles to yourself';
 
-        const target = await database.stores.users.findOne<
-          IStoreUser & { _id: string }
-        >({ type: 'user', username });
+        const target = await database.findUserByUsername(username);
         if (!target) return 'user does not exist';
         if (target.isOwner) return 'cannot modify the owner';
 
@@ -299,20 +291,12 @@ export const userRouter = router({
         if (!ctx.user.isOwner) {
           const assignedRoles = await database.getUserAssignedRoles(ctx.user);
           const grantable = getGrantablePermissions(assignedRoles, role.order);
-          if (
-            !actorHasAllPermissions(
-              grantable,
-              decodePermissions(role.permissions),
-            )
-          )
+          if (!actorHasAllPermissions(grantable, role.permissions))
             return 'cannot grant a role with permissions you do not have';
         }
 
         if (target.roles.includes(roleId)) return '';
-        await database.stores.users.update(
-          { _id: target._id },
-          { $addToSet: { roles: roleId } },
-        );
+        database.addUserRole(target.id, roleId);
         log(`granted role "${role.name.yellow}" to "${username.yellow}"`);
         return '';
       }),
@@ -327,9 +311,7 @@ export const userRouter = router({
         if (username === ctx.user.username)
           return 'cannot revoke roles from yourself';
 
-        const target = await database.stores.users.findOne<
-          IStoreUser & { _id: string }
-        >({ type: 'user', username });
+        const target = await database.findUserByUsername(username);
         if (!target) return 'user does not exist';
         if (target.isOwner) return 'cannot modify the owner';
 
@@ -343,10 +325,7 @@ export const userRouter = router({
         );
         if (err) return err;
 
-        await database.stores.users.update(
-          { _id: target._id },
-          { $pull: { roles: roleId } },
-        );
+        database.removeUserRole(target.id, roleId);
         log(`revoked role "${role.name.yellow}" from "${username.yellow}"`);
         return '';
       }),
@@ -360,9 +339,7 @@ export const userRouter = router({
 
         if (username === ctx.user.username) return 'cannot reset own MFA';
 
-        const target = await database.stores.users.findOne<
-          IStoreUser & { _id: string }
-        >({ type: 'user', username });
+        const target = await database.findUserByUsername(username);
         if (!target) return 'user does not exist';
         const hierErr = await checkUserHierarchy(ctx.user, target);
         if (hierErr) return hierErr;

@@ -74,14 +74,12 @@ export const PLUGIN_FILE = './plugin.json';
 // post install file
 export const PLUGIN_POSTINSTALL = './setup.sh';
 
-// databases
-export const CHAT_STORE = 'chat.db';
-export const PLAYER_STORE = 'players.db';
-export const PLUGIN_STORE = 'plugins.db';
-export const STATUS_STORE = 'status.db';
-export const USER_STORE = 'users.db';
-export const SERVER_STORE = 'store.db';
-export const SESSION_STORE = 'session.db';
+// sqlite databases
+// (legacy nedb filenames live in db/nedbImport.ts, their only consumer)
+export const MAIN_DB = 'omegga.db';
+export const PLUGINS_DB = 'omegga-plugins.db';
+export const SESSIONS_DB = 'omegga-sessions.db';
+
 export const ACTIVE_WORLD_FILE = 'active_world';
 
 // website config
@@ -109,13 +107,9 @@ export default {
   PLUGIN_PATH,
   PLUGIN_FILE,
   PLUGIN_POSTINSTALL,
-  CHAT_STORE,
-  PLAYER_STORE,
-  PLUGIN_STORE,
-  STATUS_STORE,
-  USER_STORE,
-  SERVER_STORE,
-  SESSION_STORE,
+  MAIN_DB,
+  PLUGINS_DB,
+  SESSIONS_DB,
   WEB_CERTS_DATA,
   WEB_SESSION_TOKEN,
   METRIC_HEARTBEAT_INTERVAL,

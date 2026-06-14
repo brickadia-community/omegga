@@ -1,7 +1,58 @@
 import { MockPlugin } from '@/test/mockPlugin';
 import { mockOmegga } from '@/test/util';
+import { runPluginMigrations } from '@/db/migrate';
+import * as pluginSchema from '@/db/pluginSchema';
+import BetterSqlite3 from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { describe, expect, it, test } from 'vitest';
-import { PluginLoader } from './plugin';
+import { PluginLoader, PluginStorage } from './plugin';
+
+describe('PluginStorage', () => {
+  const omegga = mockOmegga();
+
+  function makeStorage() {
+    const sqlite = new BetterSqlite3(':memory:');
+    const db = drizzle(sqlite);
+    runPluginMigrations(db);
+    const storage = new PluginStorage(db, new MockPlugin('p', omegga));
+    return { sqlite, db, storage };
+  }
+
+  it('round-trips falsy JSON values', async () => {
+    const { storage, sqlite } = makeStorage();
+    await storage.set('zero', 0);
+    await storage.set('false', false);
+    await storage.set('empty', '');
+    expect(await storage.get('zero')).toBe(0);
+    expect(await storage.get('false')).toBe(false);
+    expect(await storage.get('empty')).toBe('');
+    sqlite.close();
+  });
+
+  it('treats set(key, null|undefined) as a delete (NOT NULL column)', async () => {
+    const { storage, sqlite } = makeStorage();
+    await storage.set('a', 1);
+    await storage.set('b', 2);
+    await storage.set('a', null as any);
+    await storage.set('b', undefined as any);
+    expect(await storage.get('a')).toBe(null);
+    expect(await storage.get('b')).toBe(null);
+    expect(await storage.count()).toBe(0);
+    sqlite.close();
+  });
+
+  it('does not throw on values that serialize to undefined', async () => {
+    const { storage, sqlite } = makeStorage();
+    await storage.set('fn', (() => {}) as any);
+    expect(await storage.get('fn')).toBe(null);
+    expect(
+      sqlite.prepare('SELECT COUNT(*) c FROM plugin_store').get() as {
+        c: number;
+      },
+    ).toEqual({ c: 0 });
+    sqlite.close();
+  });
+});
 
 describe('PluginLoader.calculateLoadOrder', () => {
   const omegga = mockOmegga();

@@ -1,7 +1,15 @@
 import Logger from '@/logger';
 import { IPluginCommand, IPluginDocumentation } from '@/plugin';
 import soft from '@/softconfig';
-import Datastore from 'nedb-promises';
+import { openDb } from '@/db/connection';
+import { runPluginMigrations } from '@/db/migrate';
+import { importNedbIfNeeded } from '@/db/nedbImport';
+import * as pluginSchema from '@/db/pluginSchema';
+import { and, count, eq } from 'drizzle-orm';
+import {
+  drizzle,
+  type BetterSQLite3Database,
+} from 'drizzle-orm/better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
 import type Player from './player';
@@ -26,27 +34,14 @@ export interface IPluginJSON {
 // TODO: move doc.json to this file (maybe)
 // TODO: cleaner plugin error messages
 
-export interface IStoreItem<T = unknown> {
-  type: 'store';
-  key: string;
-  plugin: string;
-  value: T;
-}
-
-export interface IStoreConfig {
-  type: 'config';
-  plugin: string;
-  value: Record<string, unknown>;
-}
-
 // key-value storage for a plugin
 export class PluginStorage {
-  store: Datastore;
+  private db: BetterSQLite3Database;
   plugin: Plugin;
   name: string;
 
-  constructor(store: Datastore, plugin: Plugin) {
-    this.store = store;
+  constructor(db: BetterSQLite3Database, plugin: Plugin) {
+    this.db = db;
     this.plugin = plugin;
     this.name = plugin.getName();
   }
@@ -54,58 +49,53 @@ export class PluginStorage {
   // get the initial config values
   getDefaultConfig() {
     const doc = this.plugin.getDocumentation();
-    // check if the documentation object exists and whether it has a config field
     if (!doc) return {};
     if (!doc.config) return {};
-
-    // insert values from default config values
     const config: Record<string, unknown> = {};
     for (const k in doc.config) {
       config[k] = doc.config[k].default;
     }
-
     return config;
   }
 
   // set the config field for this plugin
   async setConfig(value: unknown) {
-    await this.store.update(
-      { type: 'config', plugin: this.name },
-      {
-        $set: { value },
-      },
-      { upsert: true },
-    );
+    this.db
+      .insert(pluginSchema.pluginConfig)
+      .values({ plugin: this.name, value: value as Record<string, unknown> })
+      .onConflictDoUpdate({
+        target: pluginSchema.pluginConfig.plugin,
+        set: { value: value as Record<string, unknown> },
+      })
+      .run();
   }
 
   // get the config for this plugin
   async getConfig(): Promise<Record<string, unknown>> {
-    const config = await this.store.findOne<IStoreConfig>({
-      type: 'config',
-      plugin: this.name,
-    });
-    if (!config) return null;
-    return config.value;
+    const row = this.db
+      .select()
+      .from(pluginSchema.pluginConfig)
+      .where(eq(pluginSchema.pluginConfig.plugin, this.name))
+      .get();
+    if (!row) return null;
+    return row.value;
   }
 
   /** Wipes the configs for the plugin. */
   async wipeConfig() {
-    await this.store.remove(
-      { type: 'config', plugin: this.name },
-      { multi: true },
-    );
+    this.db
+      .delete(pluginSchema.pluginConfig)
+      .where(eq(pluginSchema.pluginConfig.plugin, this.name))
+      .run();
   }
 
   /** Initializes the configs for the plugin into the database and sets default configs. */
   async init() {
-    // get default and configured values
     const defaultConf = this.getDefaultConfig();
     const config = await this.getConfig();
-
     await this.setConfig({
       // use default config
       ...defaultConf,
-
       // override with actual config values
       ...(config ? config : {}),
     });
@@ -114,51 +104,79 @@ export class PluginStorage {
   // get a stored object
   async get<T>(key: string) {
     if (typeof key !== 'string' || key.length === 0) return;
-    const obj = await this.store.findOne<IStoreItem<T>>({
-      type: 'store',
-      plugin: this.name,
-      key,
-    });
-    if (!obj) return null;
-    return obj.value;
+    const row = this.db
+      .select()
+      .from(pluginSchema.pluginStore)
+      .where(
+        and(
+          eq(pluginSchema.pluginStore.plugin, this.name),
+          eq(pluginSchema.pluginStore.key, key),
+        ),
+      )
+      .get();
+    if (!row) return null;
+    return row.value as T;
   }
 
   // delete a stored object
   async delete(key: string) {
     if (typeof key !== 'string' || key.length === 0) return;
-    await this.store.remove({ type: 'store', plugin: this.name, key }, {});
+    this.db
+      .delete(pluginSchema.pluginStore)
+      .where(
+        and(
+          eq(pluginSchema.pluginStore.plugin, this.name),
+          eq(pluginSchema.pluginStore.key, key),
+        ),
+      )
+      .run();
   }
 
   // clear all stored values
   async wipe() {
-    await this.store.remove(
-      { type: 'store', plugin: this.name },
-      { multi: true },
-    );
+    this.db
+      .delete(pluginSchema.pluginStore)
+      .where(eq(pluginSchema.pluginStore.plugin, this.name))
+      .run();
   }
 
   // count number of objects in store
   async count() {
-    return await this.store.count({ type: 'store', plugin: this.name });
+    const result = this.db
+      .select({ count: count() })
+      .from(pluginSchema.pluginStore)
+      .where(eq(pluginSchema.pluginStore.plugin, this.name))
+      .get();
+    return result?.count ?? 0;
   }
 
   // get keys of all objects in store
   async keys() {
-    const objects = await this.store.find<IStoreItem>({
-      type: 'store',
-      plugin: this.name,
-    });
-    return objects.map(o => o.key);
+    const rows = this.db
+      .select({ key: pluginSchema.pluginStore.key })
+      .from(pluginSchema.pluginStore)
+      .where(eq(pluginSchema.pluginStore.plugin, this.name))
+      .all();
+    return rows.map(r => r.key);
   }
 
   // set a stored value
   async set<T = unknown>(key: string, value: T) {
     if (typeof key !== 'string' || key.length === 0) return;
-    await this.store.update<IStoreItem>(
-      { type: 'store', plugin: this.name, key },
-      { $set: { value } },
-      { upsert: true },
-    );
+    // the value column is NOT NULL and drizzle's json mode passes JS null/
+    // undefined through as SQL NULL (and values that serialize to undefined,
+    // e.g. functions); treat all of these as a delete, matching get()'s null
+    // return for absent keys (NeDB silently stored such values)
+    if (value == null || JSON.stringify(value) === undefined)
+      return this.delete(key);
+    this.db
+      .insert(pluginSchema.pluginStore)
+      .values({ plugin: this.name, key, value })
+      .onConflictDoUpdate({
+        target: [pluginSchema.pluginStore.plugin, pluginSchema.pluginStore.key],
+        set: { value },
+      })
+      .run();
   }
 }
 
@@ -168,8 +186,9 @@ export class PluginStorage {
 */
 export class PluginLoader {
   path: string;
+  dataPath: string;
   omegga: Omegga;
-  store: Datastore;
+  pluginDb: BetterSQLite3Database;
   formats: (typeof Plugin)[];
   plugins: Plugin[];
 
@@ -179,11 +198,12 @@ export class PluginLoader {
   constructor(workDir: string, omegga?: Omegga) {
     this.path = path.join(workDir, soft.PLUGIN_PATH);
     this.omegga = omegga;
-    this.store = Datastore.create({
-      filename: path.join(workDir, soft.DATA_PATH, soft.PLUGIN_STORE),
-      autoload: true,
-    });
-    this.store.persistence.setAutocompactionInterval(1000 * 60 * 5);
+
+    this.dataPath = path.join(workDir, soft.DATA_PATH);
+    const sqlite = openDb(path.join(this.dataPath, soft.PLUGINS_DB));
+    this.pluginDb = drizzle(sqlite);
+    runPluginMigrations(this.pluginDb);
+
     this.plugins = [];
 
     Logger.verbose('Loading plugin formats');
@@ -279,6 +299,10 @@ export class PluginLoader {
   async scanPlugin(dir: string): Promise<Plugin | undefined> {
     Logger.verbose('Scanning plugin', dir.underline);
 
+    // legacy NeDB plugin data must be imported before storage.init() writes
+    // defaults, even when the webserver (the other import trigger) is disabled
+    await importNedbIfNeeded(this.dataPath);
+
     if (!fs.existsSync(dir)) {
       Logger.errorp('Plugin directory does not exist', dir.brightRed.underline);
       return;
@@ -305,7 +329,7 @@ export class PluginLoader {
       }
 
       // create its storage
-      const storage = new PluginStorage(this.store, plugin);
+      const storage = new PluginStorage(this.pluginDb, plugin);
       await storage.init();
 
       // load the storage in

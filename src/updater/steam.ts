@@ -138,7 +138,7 @@ export async function steamcmdDownloadGame({
       (err as NodeJS.ErrnoException & { status: number }).status === 5
     ) {
       Logger.warnp(
-        'Steam login failed — this may require Steam Guard authentication.',
+        'Steam login failed. This may require Steam Guard authentication.',
       );
       Logger.warnp('Attempting interactive login...');
 
