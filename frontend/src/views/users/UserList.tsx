@@ -102,7 +102,7 @@ export const UserList = () => {
 
   const query = useRef({
     page: 0,
-    sort: 'lastSeen',
+    sort: 'lastOnline',
     direction: -1,
   });
   const { page, sort, direction } = query.current;

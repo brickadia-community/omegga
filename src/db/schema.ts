@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   index,
   integer,
@@ -8,33 +9,45 @@ import {
 import type { PermissionSet } from '@webserver/backend/permissions';
 import type { IChatUser, IWebAuthnCredential } from '@webserver/backend/types';
 
-export const users = sqliteTable('users', {
-  id: text('id').primaryKey(),
-  created: integer('created').notNull(),
-  lastOnline: integer('last_online').notNull().default(0),
-  username: text('username').notNull().unique(),
-  hash: text('hash').notNull(),
-  isOwner: integer('is_owner', { mode: 'boolean' }).notNull().default(false),
-  roles: text('roles', { mode: 'json' })
-    .notNull()
-    .$type<string[]>()
-    .default([]),
-  playerId: text('player_id').notNull().default(''),
-  isBanned: integer('is_banned', { mode: 'boolean' }).notNull().default(false),
-  permissions: text('permissions', { mode: 'json' }).$type<PermissionSet>(),
-  totpSecret: text('totp_secret'),
-  totpEnabled: integer('totp_enabled', { mode: 'boolean' })
-    .notNull()
-    .default(false),
-  passkeys: text('passkeys', { mode: 'json' })
-    .notNull()
-    .$type<IWebAuthnCredential[]>()
-    .default([]),
-  recoveryCodes: text('recovery_codes', { mode: 'json' })
-    .notNull()
-    .$type<string[]>()
-    .default([]),
-});
+export const users = sqliteTable(
+  'users',
+  {
+    id: text('id').primaryKey(),
+    created: integer('created').notNull(),
+    lastOnline: integer('last_online').notNull().default(0),
+    username: text('username').notNull().unique(),
+    hash: text('hash').notNull(),
+    isOwner: integer('is_owner', { mode: 'boolean' }).notNull().default(false),
+    roles: text('roles', { mode: 'json' })
+      .notNull()
+      .$type<string[]>()
+      .default([]),
+    playerId: text('player_id').notNull().default(''),
+    isBanned: integer('is_banned', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    permissions: text('permissions', { mode: 'json' }).$type<PermissionSet>(),
+    totpSecret: text('totp_secret'),
+    totpEnabled: integer('totp_enabled', { mode: 'boolean' })
+      .notNull()
+      .default(false),
+    passkeys: text('passkeys', { mode: 'json' })
+      .notNull()
+      .$type<IWebAuthnCredential[]>()
+      .default([]),
+    recoveryCodes: text('recovery_codes', { mode: 'json' })
+      .notNull()
+      .$type<string[]>()
+      .default([]),
+  },
+  table => [
+    // NOCASE so the default case-insensitive username sort can use the index
+    // (the UNIQUE on username is BINARY and can't serve ORDER BY ... NOCASE)
+    index('users_username_nocase_idx').on(
+      sql`${table.username} COLLATE NOCASE`,
+    ),
+  ],
+);
 
 export const chatLogs = sqliteTable(
   'chat_logs',
@@ -73,7 +86,8 @@ export const playerHistory = sqliteTable(
     instances: integer('instances').notNull().default(0),
   },
   table => [
-    index('player_history_name_idx').on(table.name),
+    // NOCASE so the default case-insensitive name sort can use the index
+    index('player_history_name_idx').on(sql`${table.name} COLLATE NOCASE`),
     index('player_history_display_name_idx').on(table.displayName),
     index('player_history_last_seen_idx').on(table.lastSeen),
   ],

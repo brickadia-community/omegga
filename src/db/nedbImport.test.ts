@@ -554,4 +554,116 @@ describe('importNedbIfNeeded', () => {
     await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
     expect(mainDb.select().from(mainSchema.users).all()).toHaveLength(0);
   });
+
+  it('does not duplicate append-only rows when the marker is lost', async () => {
+    // simulates a crash after the atomic main commit but before the marker file
+    // write: the in-DB completion flag must still suppress a re-import
+    await writeNedb(path.join(tmpDir, NEDB_FILES.chat), [
+      {
+        type: 'chat',
+        _id: 'c1',
+        created: 1,
+        instanceId: 'i',
+        action: 'msg',
+        user: {},
+        message: 'hi',
+      },
+    ]);
+    await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
+    expect(mainDb.select().from(mainSchema.chatLogs).all()).toHaveLength(1);
+
+    // drop the marker file but leave the committed data + flag in place
+    fs.rmSync(path.join(tmpDir, 'nedb-imported.marker'));
+    await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
+    // chat_logs has no unique constraint; a re-import would duplicate it
+    expect(mainDb.select().from(mainSchema.chatLogs).all()).toHaveLength(1);
+  });
+
+  it('imports plugin data when only plugins.db exists (no main stores)', async () => {
+    // a noweb server never creates the main store files, only plugins.db
+    await writeNedb(path.join(tmpDir, NEDB_FILES.plugins), [
+      { type: 'store', plugin: 'p', key: 'k', value: 7 },
+      { type: 'config', plugin: 'p', value: { on: true } },
+    ]);
+    await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
+
+    const pluginSqlite = new BetterSqlite3(path.join(tmpDir, soft.PLUGINS_DB));
+    const pluginDb = drizzle(pluginSqlite);
+    expect(pluginDb.select().from(pluginSchema.pluginStore).all()).toHaveLength(
+      1,
+    );
+    expect(
+      pluginDb.select().from(pluginSchema.pluginConfig).all(),
+    ).toHaveLength(1);
+    pluginSqlite.close();
+  });
+
+  it('skips plugin store entries with a null value', async () => {
+    await writeNedb(path.join(tmpDir, NEDB_FILES.plugins), [
+      { type: 'store', plugin: 'p', key: 'good', value: 1 },
+      { type: 'store', plugin: 'p', key: 'nulled', value: null },
+    ]);
+    await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
+
+    const pluginSqlite = new BetterSqlite3(path.join(tmpDir, soft.PLUGINS_DB));
+    const pluginDb = drizzle(pluginSqlite);
+    const items = pluginDb.select().from(pluginSchema.pluginStore).all();
+    expect(items).toHaveLength(1);
+    expect(items[0].key).toBe('good');
+    pluginSqlite.close();
+  });
+
+  it('sanitizes malformed nameHistory on import', async () => {
+    // legacy/hand-edited docs may hold bare strings or partial objects; these
+    // must be coerced so the json_each player search can't hit malformed JSON
+    fs.writeFileSync(
+      path.join(tmpDir, NEDB_FILES.players),
+      JSON.stringify({
+        type: 'userHistory',
+        _id: 'ph1',
+        id: 'uuid1',
+        name: 'P',
+        displayName: 'P',
+        nameHistory: ['BareString', { name: 'Old' }, null, 42],
+        created: 1,
+        lastSeen: 1,
+        lastInstanceId: 'i',
+      }) + '\n',
+    );
+    await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
+
+    const row = mainDb.select().from(mainSchema.playerHistory).all()[0];
+    // only the one well-formed object survives, coerced to full shape
+    expect(row.nameHistory).toEqual([
+      { name: 'Old', displayName: '', date: 0 },
+    ]);
+  });
+
+  it('normalizes legacy v1 permissions with empty scopes', async () => {
+    // an empty-scopes v1 user still carries 'unset' sentinels that must be
+    // normalized (a scopes-only heuristic would wrongly treat it as v2)
+    const line = JSON.stringify({
+      type: 'user',
+      _id: 'old',
+      username: 'u',
+      hash: 'h',
+      created: 1,
+      lastOnline: 0,
+      isOwner: false,
+      roles: [],
+      playerId: '',
+      permissions: {
+        root: 'unset',
+        domains: { server: 'unset', chat: 'all' },
+        scopes: {},
+      },
+    });
+    fs.writeFileSync(path.join(tmpDir, NEDB_FILES.users), line + '\n');
+    await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
+
+    const perms = mainDb.select().from(mainSchema.users).all()[0]
+      .permissions as any;
+    expect(perms.root).toBe('off');
+    expect(perms.domains).toEqual({ chat: 'all' });
+  });
 });

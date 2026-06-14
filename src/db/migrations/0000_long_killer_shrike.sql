@@ -52,7 +52,7 @@ CREATE TABLE `player_history` (
 	`instances` integer DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
-CREATE INDEX `player_history_name_idx` ON `player_history` (`name`);--> statement-breakpoint
+CREATE INDEX `player_history_name_idx` ON `player_history` ("name" COLLATE NOCASE);--> statement-breakpoint
 CREATE INDEX `player_history_display_name_idx` ON `player_history` (`display_name`);--> statement-breakpoint
 CREATE INDEX `player_history_last_seen_idx` ON `player_history` (`last_seen`);--> statement-breakpoint
 CREATE TABLE `player_notes` (
@@ -101,6 +101,7 @@ CREATE TABLE `users` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `users_username_unique` ON `users` (`username`);--> statement-breakpoint
+CREATE INDEX `users_username_nocase_idx` ON `users` ("username" COLLATE NOCASE);--> statement-breakpoint
 CREATE TABLE `web_roles` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,

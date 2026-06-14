@@ -16,10 +16,18 @@ export function openDb(filepath: string): BetterSqlite3.Database {
     'regexp',
     { deterministic: true },
     (pattern: string, value: string) => {
-      if (!cache || cache.pattern !== pattern) {
-        cache = { pattern, regex: new RegExp(pattern, 'i') };
+      // SQL NULL (e.g. json_extract of a missing key) must not match — without
+      // this guard RegExp.test(null) coerces null to the string "null"
+      if (value == null) return 0;
+      try {
+        if (!cache || cache.pattern !== pattern) {
+          cache = { pattern, regex: new RegExp(pattern, 'i') };
+        }
+        return cache.regex.test(value) ? 1 : 0;
+      } catch {
+        // an invalid pattern must not abort the whole query
+        return 0;
       }
-      return cache.regex.test(value) ? 1 : 0;
     },
   );
   return db;

@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4a074cc1-ef30-449d-b9a7-11a6624dbfe6",
+  "id": "82d7da1c-7808-41f9-ab92-98c36664d8e0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "ban_history": {
@@ -351,7 +351,7 @@
         "player_history_name_idx": {
           "name": "player_history_name_idx",
           "columns": [
-            "name"
+            "\"name\" COLLATE NOCASE"
           ],
           "isUnique": false
         },
@@ -648,6 +648,13 @@
             "username"
           ],
           "isUnique": true
+        },
+        "users_username_nocase_idx": {
+          "name": "users_username_nocase_idx",
+          "columns": [
+            "\"username\" COLLATE NOCASE"
+          ],
+          "isUnique": false
         }
       },
       "foreignKeys": {},
@@ -710,6 +717,21 @@
     "columns": {}
   },
   "internal": {
-    "indexes": {}
+    "indexes": {
+      "player_history_name_idx": {
+        "columns": {
+          "\"name\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      },
+      "users_username_nocase_idx": {
+        "columns": {
+          "\"username\" COLLATE NOCASE": {
+            "isExpression": true
+          }
+        }
+      }
+    }
   }
 }

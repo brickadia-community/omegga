@@ -163,8 +163,12 @@ export class PluginStorage {
   // set a stored value
   async set<T = unknown>(key: string, value: T) {
     if (typeof key !== 'string' || key.length === 0) return;
-    // NeDB stored undefined as a missing value; the new column is NOT NULL
-    if (value === undefined) return this.delete(key);
+    // the value column is NOT NULL and drizzle's json mode passes JS null/
+    // undefined through as SQL NULL (and values that serialize to undefined,
+    // e.g. functions); treat all of these as a delete, matching get()'s null
+    // return for absent keys (NeDB silently stored such values)
+    if (value == null || JSON.stringify(value) === undefined)
+      return this.delete(key);
     this.db
       .insert(pluginSchema.pluginStore)
       .values({ plugin: this.name, key, value })

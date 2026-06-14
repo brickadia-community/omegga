@@ -828,8 +828,9 @@ export default class Database extends EventEmitter {
         OR ${schema.playerHistory.displayName} REGEXP ${patternSource}
         OR EXISTS (
           SELECT 1 FROM json_each(${schema.playerHistory.nameHistory})
-          WHERE json_extract(json_each.value, '$.name') REGEXP ${patternSource}
-            OR json_extract(json_each.value, '$.displayName') REGEXP ${patternSource}
+          WHERE json_each.type = 'object'
+            AND (json_extract(json_each.value, '$.name') REGEXP ${patternSource}
+              OR json_extract(json_each.value, '$.displayName') REGEXP ${patternSource})
         )
       )`);
     }
@@ -999,66 +1000,76 @@ export default class Database extends EventEmitter {
 
   // add a user to the visit history, returns true if this is a first visit
   async addVisit(user: Required<IPlayer>) {
-    const existing = this.db
-      .select()
-      .from(schema.playerHistory)
-      .where(eq(schema.playerHistory.id, user.id))
-      .get();
     const now = Date.now();
+    // resolve the instance id before opening the transaction — the tx callback
+    // must stay synchronous, and this is the only await in the method
     const instanceId = await this.getInstanceId();
 
-    if (!existing) {
-      this.db
-        .insert(schema.playerHistory)
-        .values({
-          id: user.id,
+    // read-modify-write the row atomically so two near-simultaneous joins for
+    // the same id can't both insert (PK conflict) or clobber each other's
+    // nameHistory/counter updates from a shared stale snapshot
+    const visit = this.sqlite.transaction(() => {
+      const existing = this.db
+        .select()
+        .from(schema.playerHistory)
+        .where(eq(schema.playerHistory.id, user.id))
+        .get();
+
+      if (!existing) {
+        this.db
+          .insert(schema.playerHistory)
+          .values({
+            id: user.id,
+            name: user.name,
+            displayName: user.displayName,
+            nameHistory: [
+              { name: user.name, displayName: user.displayName, date: now },
+            ],
+            ips: [],
+            created: now,
+            lastSeen: now,
+            lastInstanceId: instanceId,
+            heartbeats: 0,
+            sessions: 1,
+            instances: 1,
+          })
+          .run();
+        return true;
+      }
+
+      const nameHistory = (existing.nameHistory ?? []) as {
+        name: string;
+        displayName: string;
+        date: number;
+      }[];
+      const hasName = nameHistory.some(
+        h => h.name === user.name && h.displayName === user.displayName,
+      );
+      if (!hasName) {
+        nameHistory.push({
           name: user.name,
           displayName: user.displayName,
-          nameHistory: [
-            { name: user.name, displayName: user.displayName, date: now },
-          ],
-          ips: [],
-          created: now,
+          date: now,
+        });
+      }
+
+      this.db
+        .update(schema.playerHistory)
+        .set({
           lastSeen: now,
+          name: user.name,
+          displayName: user.displayName,
           lastInstanceId: instanceId,
-          heartbeats: 0,
-          sessions: 1,
-          instances: 1,
+          nameHistory,
+          sessions: sql`${schema.playerHistory.sessions} + ${existing.lastSeen < now - 60 * 60 * 1000 ? 1 : 0}`,
+          instances: sql`${schema.playerHistory.instances} + ${existing.lastInstanceId !== instanceId ? 1 : 0}`,
         })
+        .where(eq(schema.playerHistory.id, existing.id))
         .run();
-      return true;
-    }
+      return false;
+    });
 
-    const nameHistory = (existing.nameHistory ?? []) as {
-      name: string;
-      displayName: string;
-      date: number;
-    }[];
-    const hasName = nameHistory.some(
-      h => h.name === user.name && h.displayName === user.displayName,
-    );
-    if (!hasName) {
-      nameHistory.push({
-        name: user.name,
-        displayName: user.displayName,
-        date: now,
-      });
-    }
-
-    this.db
-      .update(schema.playerHistory)
-      .set({
-        lastSeen: now,
-        name: user.name,
-        displayName: user.displayName,
-        lastInstanceId: instanceId,
-        nameHistory,
-        sessions: sql`${schema.playerHistory.sessions} + ${existing.lastSeen < now - 60 * 60 * 1000 ? 1 : 0}`,
-        instances: sql`${schema.playerHistory.instances} + ${existing.lastInstanceId !== instanceId ? 1 : 0}`,
-      })
-      .where(eq(schema.playerHistory.id, existing.id))
-      .run();
-    return false;
+    return visit();
   }
 
   // use data from minutely heartbeats to fuel metrics
@@ -1079,16 +1090,15 @@ export default class Database extends EventEmitter {
         .run();
 
       if (data.players.length > 0) {
-        for (const playerId of data.players) {
-          this.db
-            .update(schema.playerHistory)
-            .set({
-              lastSeen: now,
-              heartbeats: sql`${schema.playerHistory.heartbeats} + 1`,
-            })
-            .where(eq(schema.playerHistory.id, playerId))
-            .run();
-        }
+        // one bulk UPDATE for the shared lastSeen/heartbeats bump
+        this.db
+          .update(schema.playerHistory)
+          .set({
+            lastSeen: now,
+            heartbeats: sql`${schema.playerHistory.heartbeats} + 1`,
+          })
+          .where(inArray(schema.playerHistory.id, data.players))
+          .run();
 
         const players = this.db
           .select()

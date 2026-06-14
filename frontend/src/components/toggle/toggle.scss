@@ -33,7 +33,9 @@
     height: theme.$br-element-height;
     border-radius: theme.$br-radius-sm;
     margin-left: 0;
-    transition: margin-left 0.15s ease-out, background-color 0.15s ease-out;
+    transition:
+      margin-left 0.15s ease-out,
+      background-color 0.15s ease-out;
 
     &:focus {
       background: theme.$br-element-overlay;
