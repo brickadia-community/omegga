@@ -10,8 +10,22 @@
   background-color: theme.$br-bg-secondary;
 
   .players {
-    .players-child {
-      @include mixins.column;
+    @include mixins.column;
+    flex: 1;
+    // allow the scroll area below to shrink instead of overflowing the widget
+    min-height: 0;
+    max-width: 100%;
+
+    // keep the stats pinned at the top, outside the scroll area
+    .stats {
+      flex-shrink: 0;
+    }
+
+    // fill the remaining vertical height; the scroller handles both axes
+    // (overflow-y: scroll promotes overflow-x to auto), so the horizontal
+    // scrollbar sits at the bottom of the widget
+    .player-table {
+      min-width: 0;
     }
   }
 }

@@ -31,22 +31,22 @@ export const StatusWidget = () => {
   return (
     <div className="status-widget">
       {status?.players && (
-        <Scroll className="players">
-          <div className="players-child">
-            <div className="stats">
-              <div className="stat">
-                <b>Name:</b> {status.serverName}
-              </div>
-              <div className="stat">
-                <b>Uptime:</b> {duration(status.time)}
-              </div>
-              <div className="stat">
-                <b>Bricks:</b> {status.bricks}
-              </div>
-              <div className="stat">
-                <b>Players:</b> {status.players.length}
-              </div>
+        <div className="players">
+          <div className="stats">
+            <div className="stat">
+              <b>Name:</b> {status.serverName}
             </div>
+            <div className="stat">
+              <b>Uptime:</b> {duration(status.time)}
+            </div>
+            <div className="stat">
+              <b>Bricks:</b> {status.bricks}
+            </div>
+            <div className="stat">
+              <b>Players:</b> {status.players.length}
+            </div>
+          </div>
+          <Scroll className="player-table">
             <table className="br-table">
               <thead>
                 <tr>
@@ -75,8 +75,8 @@ export const StatusWidget = () => {
                 ))}
               </tbody>
             </table>
-          </div>
-        </Scroll>
+          </Scroll>
+        </div>
       )}
       {!status?.players && (
         <Loader blur size="huge">
