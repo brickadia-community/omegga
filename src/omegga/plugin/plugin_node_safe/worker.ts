@@ -157,13 +157,29 @@ async function createVm(
                 { request }: ExternalItemFunctionData,
                 callback: (err?: Error, result?: string) => void,
               ) {
+                // native addons: resolve the .node binary relative to the plugin
                 if (request.match(/\.node$/)) {
                   return callback(
                     null,
                     'commonjs ' + path.resolve(pluginPath, request),
                   );
                 }
-                callback();
+                // bundle the plugin's own sources: relative/absolute imports and
+                // the `src` alias all stay in the bundle
+                if (
+                  request.startsWith('.') ||
+                  request === 'src' ||
+                  request.startsWith('src/') ||
+                  path.isAbsolute(request)
+                ) {
+                  return callback();
+                }
+                // everything else is a bare specifier (a node builtin or a
+                // node_modules package). Leave it as a runtime require instead
+                // of bundling it, so native/wasm dependencies (dockerode, ssh2,
+                // grpc, ...) load via real node. The NodeVM permits these via
+                // `external: true` and the plugin's access list.
+                callback(null, 'commonjs ' + request);
               },
             ],
             resolve: {
