@@ -291,11 +291,35 @@ async function createVm(
     }
   }
   if (vm !== undefined) return [false, 'vm is already created'];
+  const sandbox: Record<string, unknown> = {};
+  for (const name of [
+    'fetch',
+    'Headers',
+    'Request',
+    'Response',
+    'FormData',
+    'Blob',
+    'File',
+    'AbortController',
+    'AbortSignal',
+    'URL',
+    'URLSearchParams',
+    'TextEncoder',
+    'TextDecoder',
+    'crypto',
+    'structuredClone',
+    'queueMicrotask',
+    'btoa',
+    'atob',
+  ]) {
+    const value = (globalThis as Record<string, unknown>)[name];
+    if (value !== undefined) sandbox[name] = value;
+  }
 
   // create the vm
   vm = new NodeVM({
     console: 'redirect',
-    sandbox: {},
+    sandbox,
     require: {
       external,
       builtin,
