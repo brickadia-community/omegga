@@ -198,6 +198,7 @@ export default function (server: Webserver) {
       try {
         await steamcmdDownloadGame({
           steambeta: omegga.config.server?.steambeta,
+          steambetaPassword: omegga.config.server?.steambetaPassword,
         });
       } catch (e) {
         error('An error occurred while downloading the update:', e);
