@@ -12,6 +12,7 @@ Huge breaking changes on in console commands for EA3...
 - Plugins: Automatically use new console command names when old ones are attempted to write to console
 - Add auto retry to steamcmd updater
 - Start tracking console commands by name in `Omegga.Console....` like `Omegga.Console.Server.Players.GiveItem`
+- Deprecate minigame functions for EA3, add a getGamemode function for EA3
 
 ## 1.7.0 - 2026-06-14
 
