@@ -98,9 +98,15 @@ function handleSteamError(err: unknown) {
 export async function steamcmdDownloadGame({
   steambeta,
   steambetaPassword,
+  retries = 3,
+  retryDelayMs = 5000,
 }: {
   steambeta?: string;
   steambetaPassword?: string;
+  /** number of attempts before giving up (steamcmd resumes partial downloads) */
+  retries?: number;
+  /** delay between retry attempts */
+  retryDelayMs?: number;
 } = {}) {
   const hasCredentials = !!process.env.STEAM_USERNAME;
   const steamLogin = hasCredentials
@@ -128,40 +134,62 @@ export async function steamcmdDownloadGame({
 
   const cmd = `${STEAMCMD_PATH} ${args.join(' ')}`;
 
-  try {
-    execSync(cmd, { stdio: 'inherit' });
-  } catch (err) {
-    if (
-      hasCredentials &&
-      err instanceof Error &&
-      'status' in err &&
-      (err as NodeJS.ErrnoException & { status: number }).status === 5
-    ) {
-      Logger.warnp(
-        'Steam login failed. This may require Steam Guard authentication.',
-      );
-      Logger.warnp('Attempting interactive login...');
+  // steamcmd resumes partial downloads, and late-stage failures (e.g. "state is
+  // 0x406 after update job") are frequently transient, so retry before giving up.
+  const attempts = Math.max(1, retries);
+  let triedInteractiveLogin = false;
 
-      if (await steamcmdInteractiveLogin()) {
-        Logger.logp('Login successful. Retrying download...');
-        try {
-          execSync(cmd, { stdio: 'inherit' });
-          return;
-        } catch (retryErr) {
-          handleSteamError(retryErr);
-          throw retryErr;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      execSync(cmd, { stdio: 'inherit' });
+      return;
+    } catch (err) {
+      // Steam Guard interactive re-auth on status 5, attempted at most once.
+      if (
+        !triedInteractiveLogin &&
+        hasCredentials &&
+        err instanceof Error &&
+        'status' in err &&
+        (err as NodeJS.ErrnoException & { status: number }).status === 5
+      ) {
+        triedInteractiveLogin = true;
+        Logger.warnp(
+          'Steam login failed. This may require Steam Guard authentication.',
+        );
+        Logger.warnp('Attempting interactive login...');
+
+        if (await steamcmdInteractiveLogin()) {
+          Logger.logp('Login successful. Retrying download...');
+          try {
+            execSync(cmd, { stdio: 'inherit' });
+            return;
+          } catch (retryErr) {
+            handleSteamError(retryErr);
+            err = retryErr;
+          }
+        } else {
+          Logger.errorp(
+            'Interactive login failed. Run',
+            'omegga steamlogin'.yellow,
+            'to authenticate manually.',
+          );
         }
       }
 
-      Logger.errorp(
-        'Interactive login failed. Run',
-        'omegga steamlogin'.yellow,
-        'to authenticate manually.',
-      );
-    }
+      handleSteamError(err);
 
-    handleSteamError(err);
-    throw err;
+      if (attempt < attempts) {
+        Logger.warnp(
+          `Steam download attempt ${attempt}/${attempts} failed; retrying in ${Math.round(
+            retryDelayMs / 1000,
+          )}s...`,
+        );
+        await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+        continue;
+      }
+
+      throw err;
+    }
   }
 }
 

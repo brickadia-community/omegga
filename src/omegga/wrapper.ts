@@ -8,6 +8,7 @@ import BrickadiaServer from '@brickadia/server';
 import { IConfig } from '@config/types';
 import EventEmitter from 'events';
 import path from 'path';
+import { migrateConsoleCommand } from './commands';
 import LogWrangler from './logWrangler';
 import type Omegga from './server';
 
@@ -55,7 +56,12 @@ class OmeggaWrapper extends EventEmitter {
     this.#server.write(str);
   }
   writeln(str: string) {
-    this.#server.writeln(str);
+    // auto-migrate stale console command names to the running game version's
+    // name (e.g. `Bricks.Clear` -> `br.Bricks.Clear`) so older plugins keep
+    // working. OmeggaWrapper is never used without Omegga, so `version` exists.
+    this.#server.writeln(
+      migrateConsoleCommand(str, (this as unknown as Omegga).version),
+    );
   }
   start() {
     return this.#server.start();

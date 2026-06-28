@@ -13,10 +13,12 @@ import {
   BRRoleSetup,
 } from '@brickadia/types';
 import commandInjector from '@omegga/commandInjector';
+import { ConsoleCommands, resolveConsoleCommands } from '@omegga/commands';
 import LogWrangler from '@omegga/logWrangler';
 import Player from '@omegga/player';
 import Omegga from '@omegga/server';
 import {
+  IGamemode,
   ILogMinigame,
   IMinigameList,
   IPlayerPositions,
@@ -111,6 +113,19 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   writeln: (line: string) => void;
   version: number;
   players: Player[];
+
+  /** memoized version-resolved console commands ({@link Console}) */
+  #console: { version: number; commands: ConsoleCommands };
+
+  /** version-resolved Brickadia console command names, nested by namespace */
+  get Console(): ConsoleCommands {
+    if (this.#console?.version !== this.version)
+      this.#console = {
+        version: this.version,
+        commands: resolveConsoleCommands(this.version),
+      };
+    return this.#console.commands;
+  }
 
   host: { id: string; name: string };
 
@@ -236,6 +251,9 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   }
   getMinigames(): Promise<ILogMinigame[]> {
     throw badBorrow('getMinigames');
+  }
+  getGamemode(): Promise<IGamemode | null> {
+    throw badBorrow('getGamemode');
   }
   getPlayers(): {
     id: string;

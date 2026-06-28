@@ -143,7 +143,8 @@ class Player implements OmeggaPlayer {
 
   static kill(omegga: OmeggaLike, target: string | OmeggaPlayer) {
     if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (target?.name) omegga.writeln(`Server.Players.Kill "${target?.name}"`);
+    if (target?.name)
+      omegga.writeln(`${omegga.Console.Server.Players.Kill} "${target?.name}"`);
   }
 
   static damage(
@@ -154,7 +155,9 @@ class Player implements OmeggaPlayer {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (amount === 0) return;
     if (target?.name)
-      omegga.writeln(`Server.Players.Damage "${target?.name}" ${amount}`);
+      omegga.writeln(
+        `${omegga.Console.Server.Players.Damage} "${target?.name}" ${amount}`,
+      );
   }
 
   static heal(
@@ -174,7 +177,9 @@ class Player implements OmeggaPlayer {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (!item) return;
     if (target?.name)
-      omegga.writeln(`Server.Players.GiveItem "${target?.name}" ${item}`);
+      omegga.writeln(
+        `${omegga.Console.Server.Players.GiveItem} "${target?.name}" ${item}`,
+      );
   }
 
   static takeItem(
@@ -185,7 +190,9 @@ class Player implements OmeggaPlayer {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (!item) return;
     if (target?.name)
-      omegga.writeln(`Server.Players.RemoveItem "${target?.name}" ${item}`);
+      omegga.writeln(
+        `${omegga.Console.Server.Players.RemoveItem} "${target?.name}" ${item}`,
+      );
   }
 
   static setTeam(
@@ -195,7 +202,9 @@ class Player implements OmeggaPlayer {
   ) {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (target?.name)
-      omegga.writeln(`Server.Players.SetTeam "${target?.name}" ${teamIndex}`);
+      omegga.writeln(
+        `${omegga.Console.Server.Players.SetTeam} "${target?.name}" ${teamIndex}`,
+      );
   }
 
   static setMinigame(
@@ -205,7 +214,9 @@ class Player implements OmeggaPlayer {
   ) {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (target?.name)
-      omegga.writeln(`Server.Players.SetMinigame "${target?.name}" ${index}`);
+      omegga.writeln(
+        `${omegga.Console.Server.Players.SetMinigame} "${target?.name}" ${index}`,
+      );
   }
 
   static setScore(
@@ -217,7 +228,7 @@ class Player implements OmeggaPlayer {
     if (typeof target === 'string') target = omegga.getPlayer(target);
     if (target?.name)
       omegga.writeln(
-        `Server.Players.SetLeaderboardValue "${target?.name}" ${minigameIndex} ${score}`,
+        `${omegga.Console.Server.Players.SetLeaderboardValue} "${target?.name}" ${minigameIndex} ${score}`,
       );
   }
 
@@ -248,7 +259,7 @@ class Player implements OmeggaPlayer {
         timeoutDelay: 1000,
         exec: () =>
           omegga.writeln(
-            `Server.Players.PrintLeaderboardValue "${name}" ${minigameIndex}`,
+            `${omegga.Console.Server.Players.PrintLeaderboardValue} "${name}" ${minigameIndex}`,
           ),
       },
     );
@@ -265,7 +276,7 @@ class Player implements OmeggaPlayer {
     if (!target?.name) return null;
 
     omegga.writeln(
-      `Server.Players.SetLeaderboardValue "${target.name}" "${key}" "${value}"`,
+      `${omegga.Console.Server.Players.SetLeaderboardValue} "${target.name}" "${key}" "${value}"`,
     );
   }
 
@@ -295,7 +306,7 @@ class Player implements OmeggaPlayer {
           timeoutDelay: 1000,
           exec: () =>
             omegga.writeln(
-              `Server.Players.PrintLeaderboardValue "${target.name}" "${key}"`,
+              `${omegga.Console.Server.Players.PrintLeaderboardValue} "${target.name}" "${key}"`,
             ),
         },
       )

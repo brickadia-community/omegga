@@ -26,10 +26,12 @@ import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'path';
 import { AutoRestartConfig } from '..';
 import commandInjector from './commandInjector';
+import { ConsoleCommands, resolveConsoleCommands } from './commands';
 import MATCHERS from './matchers';
 import Player from './player';
 import { PluginLoader } from './plugin';
 import {
+  IGamemode,
   ILogMinigame,
   IMinigameList,
   IOmeggaOptions,
@@ -62,6 +64,23 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   version: number;
 
+  /** memoized version-resolved console commands ({@link Console}) */
+  #console: { version: number; commands: ConsoleCommands };
+
+  /**
+   * version-resolved Brickadia console command names, nested by namespace.
+   * e.g. `omegga.Console.Bricks.Clear` -> "Bricks.Clear" or "br.Bricks.Clear"
+   * depending on the running game version.
+   */
+  get Console(): ConsoleCommands {
+    if (this.#console?.version !== this.version)
+      this.#console = {
+        version: this.version,
+        commands: resolveConsoleCommands(this.version),
+      };
+    return this.#console.commands;
+  }
+
   host?: { id: string; name: string };
   players: OmeggaPlayer[];
 
@@ -75,6 +94,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   listMinigames: () => Promise<IMinigameList>;
   getAllPlayerPositions: () => Promise<IPlayerPositions>;
   getMinigames: () => Promise<ILogMinigame[]>;
+  getGamemode: () => Promise<IGamemode | null>;
 
   /**
    * Omegga instance
@@ -189,7 +209,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       this.started = true;
       this.starting = false;
       this.currentMap = map;
-      this.writeln('Chat.MessageForUnknownCommands 0');
+      this.writeln(`${this.Console.Chat.MessageForUnknownCommands} 0`);
 
       this.restoreServer();
     });
@@ -324,7 +344,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         if (index > -1) {
           const { position } = players[index];
           this.writeln(
-            `Chat.Command /TP "${player.name}" ${position.join(' ')} 0`,
+            `${this.Console.Chat.Command} /TP "${player.name}" ${position.join(' ')} 0`,
           );
 
           // remove the entry
@@ -434,7 +454,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     messages
       .flatMap(m => m.toString().split('\n'))
       .filter(m => m.length < 512)
-      .forEach(m => this.writeln(`Chat.Broadcast ${m}`));
+      .forEach(m => this.writeln(`${this.Console.Chat.Broadcast} ${m}`));
   }
 
   whisper(target: string | OmeggaPlayer, ...messages: string[]) {
@@ -447,7 +467,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       .filter(m => m.length < 512)
       .forEach(m =>
         this.writeln(
-          `Chat.Whisper "${(target as { name: string }).name}" ${m}`,
+          `${this.Console.Chat.Whisper} "${(target as { name: string }).name}" ${m}`,
         ),
       );
   }
@@ -459,7 +479,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     // whisper the messages to that player
     if (message.length > 512) return;
     this.writeln(
-      `Chat.StatusMessage "${(target as { name: string }).name}" ${message}`,
+      `${this.Console.Chat.StatusMessage} "${(target as { name: string }).name}" ${message}`,
     );
   }
 
@@ -524,24 +544,26 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   saveMinigame(index: number, name: string) {
-    this.writeln(`Server.Minigames.SavePreset ${index} "${name}"`);
+    this.writeln(
+      `${this.Console.Server.Minigames.SavePreset} ${index} "${name}"`,
+    );
   }
 
   deleteMinigame(index: number) {
-    this.writeln(`Server.Minigames.Delete ${index}`);
+    this.writeln(`${this.Console.Server.Minigames.Delete} ${index}`);
   }
 
   resetMinigame(index: number) {
-    this.writeln(`Server.Minigames.Reset ${index}`);
+    this.writeln(`${this.Console.Server.Minigames.Reset} ${index}`);
   }
 
   nextRoundMinigame(index: number) {
-    this.writeln(`Server.Minigames.NextRound ${index}`);
+    this.writeln(`${this.Console.Server.Minigames.NextRound} ${index}`);
   }
 
   loadMinigame(presetName: string, owner = '') {
     this.writeln(
-      `Server.Minigames.LoadPreset "${presetName}" ${owner ? `"${owner}"` : ''}`,
+      `${this.Console.Server.Minigames.LoadPreset} "${presetName}" ${owner ? `"${owner}"` : ''}`,
     );
   }
 
@@ -555,13 +577,16 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   resetEnvironment() {
-    this.writeln(`Server.Environment.Reset`);
+    this.writeln(`${this.Console.Server.Environment.Reset}`);
   }
 
   async saveEnvironment(presetName: string): Promise<void> {
     await this.addWatcher(/Environment preset saved.$/, {
       // request the pawn for this player's controller (should only be one)
-      exec: () => this.writeln(`Server.Environment.SavePreset "${presetName}"`),
+      exec: () =>
+        this.writeln(
+          `${this.Console.Server.Environment.SavePreset} "${presetName}"`,
+        ),
       timeoutDelay: 100,
     });
   }
@@ -592,7 +617,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   loadEnvironment(presetName: string) {
-    this.writeln(`Server.Environment.LoadPreset ${presetName}`);
+    this.writeln(`${this.Console.Server.Environment.LoadPreset} ${presetName}`);
   }
 
   loadEnvironmentData(
@@ -647,7 +672,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     if (!target) return;
 
-    this.writeln(`Bricks.Clear ${target} ${quiet ? 1 : ''}`);
+    this.writeln(`${this.Console.Bricks.Clear} ${target} ${quiet ? 1 : ''}`);
   }
 
   clearRegion(
@@ -671,14 +696,14 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     }
 
     this.writeln(
-      `Bricks.ClearRegion ${region.center.join(' ')} ${region.extent.join(
+      `${this.Console.Bricks.ClearRegion} ${region.center.join(' ')} ${region.extent.join(
         ' ',
       )}${target}`,
     );
   }
 
   clearAllBricks(quiet = false) {
-    this.writeln(`Bricks.ClearAll ${quiet ? 1 : ''}`);
+    this.writeln(`${this.Console.Bricks.ClearAll} ${quiet ? 1 : ''}`);
   }
 
   saveBricks(
@@ -696,11 +721,11 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     if (region?.center && region?.extent)
       this.writeln(
-        `Bricks.SaveRegion ${saveName} ${region.center.join(
+        `${this.Console.Bricks.SaveRegion} ${saveName} ${region.center.join(
           ' ',
         )} ${region.extent.join(' ')}`,
       );
-    else this.writeln(`Bricks.Save ${saveName}`);
+    else this.writeln(`${this.Console.Bricks.Save} ${saveName}`);
   }
 
   async saveBricksAsync(
@@ -719,10 +744,10 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     const command =
       region?.center && region?.extent
-        ? `Bricks.SaveRegion ${saveNameClean} ${region.center.join(
+        ? `${this.Console.Bricks.SaveRegion} ${saveNameClean} ${region.center.join(
             ' ',
           )} ${region.extent.join(' ')}`
-        : `Bricks.Save ${saveNameClean}`;
+        : `${this.Console.Bricks.Save} ${saveNameClean}`;
 
     // wait for the server to save the file
     await this.watchLogChunk(command, /^(LogBrickSerializer|LogTemp): (.+)$/, {
@@ -754,9 +779,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       saveName = `"${saveName}"`;
 
     this.writeln(
-      `Bricks.Load ${saveName} ${offX} ${offY} ${offZ} ${quiet ? 1 : 0} ${
-        correctPalette ? 1 : 0
-      } ${correctCustom ? 1 : 0}`,
+      `${this.Console.Bricks.Load} ${saveName} ${offX} ${offY} ${offZ} ${
+        quiet ? 1 : 0
+      } ${correctPalette ? 1 : 0} ${correctCustom ? 1 : 0}`,
     );
   }
 
@@ -779,7 +804,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       saveName = `"${saveName}"`;
 
     this.writeln(
-      `Bricks.LoadTemplate ${saveName} ${offX} ${offY} ${offZ}  ${
+      `${this.Console.Bricks.LoadTemplate} ${saveName} ${offX} ${offY} ${offZ}  ${
         correctPalette ? 1 : 0
       } ${correctCustom ? 1 : 0} "${player.name}"`,
     );
@@ -831,7 +856,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     */
     let numRevisions = 0;
     const revisionsRaw = await this.watchLogChunk<RegExpMatchArray>(
-      `BR.World.ListRevisions "${worldName}"`,
+      `${this.Console.World.ListRevisions} "${worldName}"`,
       /^LogBRBundleManager: (There are (?<numRevisions>\d+) revisions|Revision (?<revision>\d+) - (?<date>[\d.-]+): (?<note>.+))$/,
       {
         last: match => Number(match.groups.reverse) === numRevisions,
@@ -870,7 +895,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   async loadWorld(worldName: string): Promise<boolean> {
     worldName = worldName.replace(/\.brdb$/i, '');
     if (!worldName || !this.getWorldPath(worldName)) return false;
-    this.writeln(`BR.World.Load "${worldName}"`);
+    this.writeln(`${this.Console.World.Load} "${worldName}"`);
     const res = await Promise.race([
       // wait for the map to change
       new Promise(resolve =>
@@ -892,7 +917,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     if (typeof revision !== 'number' || revision < 1) {
       throw new Error(`Invalid revision number: ${revision}`);
     }
-    this.writeln(`BR.World.LoadRevision "${worldName}" ${revision}`);
+    this.writeln(
+      `${this.Console.World.LoadRevision} "${worldName}" ${revision}`,
+    );
     const res = await Promise.race([
       // wait for the map to change
       new Promise(resolve =>
@@ -931,7 +958,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         },
         {
           exec: () => {
-            this.writeln(`BR.World.SaveAs "${worldName}"`);
+            this.writeln(`${this.Console.World.SaveAs} "${worldName}"`);
           },
           timeoutDelay: 2000,
         },
@@ -961,7 +988,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         },
         {
           exec: () => {
-            this.writeln(`BR.World.Save 0`);
+            this.writeln(`${this.Console.World.Save} 0`);
           },
           timeoutDelay: 2000,
         },
@@ -992,7 +1019,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         },
         {
           exec: () => {
-            this.writeln(`BR.World.CreateEmpty "${worldName}" ${map}`);
+            this.writeln(
+              `${this.Console.World.CreateEmpty} "${worldName}" ${map}`,
+            );
           },
           timeoutDelay: 2000,
         },
@@ -1045,7 +1074,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     // wait for the server to finish reading the save
     await this.watchLogChunk(
-      `Bricks.Load "${saveFile}" ${offX} ${offY} ${offZ} ${quiet ? 1 : 0} ${
+      `${this.Console.Bricks.Load} "${saveFile}" ${offX} ${offY} ${offZ} ${quiet ? 1 : 0} ${
         correctPalette ? 1 : 0
       } ${correctCustom ? 1 : 0}`,
       /^LogBrickSerializer: (.+)$/,
@@ -1085,7 +1114,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     // wait for the server to finish reading the save
     await this.watchLogChunk(
-      `Bricks.LoadTemplate "${saveFile}" ${offX} ${offY} ${offZ} ${
+      `${this.Console.Bricks.LoadTemplate} "${saveFile}" ${offX} ${offY} ${offZ} ${
         correctPalette ? 1 : 0
       } ${correctCustom ? 1 : 0} "${player.name}"`,
       /^LogBrickSerializer: (.+)$/,

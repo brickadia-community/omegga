@@ -182,7 +182,9 @@ export const playerRouter = router({
           omegga.getNameCache()?.savedPlayerNames?.[id].yellow ??
             'with id ' + id.yellow,
         );
-        omegga.writeln(`Chat.Command /Ban "${id}" ${duration} "${reason}"`);
+        omegga.writeln(
+          `${omegga.Console.Chat.Command} /Ban "${id}" ${duration} "${reason}"`,
+        );
         const ban = await waitForEvent(database, 'update.bans', () => {
           const banList = (omegga.getBanList() || { banList: {} }).banList;
           if (!banList[id]) return false;
@@ -216,7 +218,9 @@ export const playerRouter = router({
         const player = omegga.players.find(p => p.id === id);
         if (!player) return false;
         ctx.log('Kicking player', player.name.yellow);
-        omegga.writeln(`Chat.Command /Kick "${id}" "${reason}"`);
+        omegga.writeln(
+          `${omegga.Console.Chat.Command} /Kick "${id}" "${reason}"`,
+        );
         const ok = await waitForEvent(
           omegga,
           'leave',
@@ -246,7 +250,7 @@ export const playerRouter = router({
           omegga.getNameCache()?.savedPlayerNames?.[id].yellow ??
             'with id ' + id.yellow,
         );
-        omegga.writeln(`Chat.Command /Unban "${id}"`);
+        omegga.writeln(`${omegga.Console.Chat.Command} /Unban "${id}"`);
         const ok = await waitForEvent(database, 'update.bans', () => {
           const banList = (omegga.getBanList() || { banList: {} }).banList;
           return (
@@ -267,7 +271,7 @@ export const playerRouter = router({
           omegga.getNameCache()?.savedPlayerNames?.[id]?.yellow ??
             'with id ' + id.yellow,
         );
-        omegga.writeln(`Bricks.Clear "${id}"`);
+        omegga.writeln(`${omegga.Console.Bricks.Clear} "${id}"`);
         return true;
       }),
 
