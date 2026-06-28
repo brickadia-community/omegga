@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { color, time } from '@util';
 import type LogWrangler from './logWrangler';
 import {
+  IGamemode,
   ILogMinigame,
   IMinigameList,
   IPlayerPositions,
@@ -74,6 +75,13 @@ const buildTableHeaderRegex = (header: string) => {
       .join('\\|'),
   ); // join the regexes with the |
 };
+/**
+ * CL at which the gamemode/team object model (`BP_GameStateBase_C` +
+ * `BRGameModeTeam`) replaced the old `BP_Ruleset_C`/`BP_Team_C` minigame model
+ * (same CL the `Server.Minigames.*` console commands were deprecated).
+ */
+const GAMEMODE_MODEL_CL = 14000;
+
 // A list of commands that can be injected to things with the log wrangler
 /**
  * List of injected commands
@@ -151,14 +159,36 @@ const COMMANDS: InjectedCommands = {
 
   /**
    * Get a list of minigames
+   * @deprecated minigames were replaced by a single gamemode (~CL14000); on
+   * modern servers this returns at most one entry with an empty `owner`.
+   * Prefer {@link getGamemode}.
    * @return Minigame List
    */
   async listMinigames(): Promise<IMinigameList> {
-    const { omegga } = this as unknown as LogWrangler;
+    const w = this as unknown as LogWrangler;
+
+    // Modern servers (>=CL14000): `Server.Minigames.List` was removed when
+    // gamemodes replaced minigames. Derive a single entry from the gamemode;
+    // there is no per-minigame `owner` anymore.
+    if (w.omegga.version >= GAMEMODE_MODEL_CL) {
+      const gamemode = await w.omegga.getGamemode();
+      return gamemode
+        ? [
+            {
+              index: 0,
+              name: gamemode.name,
+              numMembers: gamemode.members.length,
+              owner: { name: '', id: '' },
+            },
+          ]
+        : [];
+    }
+
+    // Legacy: the `Server.Minigames.List` console command + table parsing.
     const minigameLines = await (
       this as OmeggaLike
     ).watchLogChunk<RegExpMatchArray>(
-      omegga.Console.Server.Minigames.List,
+      w.omegga.Console.Server.Minigames.List,
       /^LogConsoleCommands: (.+)$/,
       {
         first: match => match[1].startsWith('Minigame Count:'),
@@ -283,10 +313,33 @@ const COMMANDS: InjectedCommands = {
   },
 
   /**
-   * get all minigames and their players (and the player's teams)
+   * get all minigames and their players (and the player's teams).
+   *
+   * On servers older than CL14000 this returns one entry per `BP_Ruleset_C`
+   * minigame. On modern servers minigames were replaced by a single gamemode,
+   * so this returns a single-element array (the gamemode and its teams) for
+   * backwards compatibility - prefer {@link getGamemode}.
    */
   async getMinigames(): Promise<ILogMinigame[]> {
-    // patterns to match the console logs
+    const w = this as unknown as LogWrangler;
+
+    // modern servers (>=CL14000) have a single gamemode in place of minigames
+    if (w.omegga.version >= GAMEMODE_MODEL_CL) {
+      const gamemode = await w.omegga.getGamemode();
+      return gamemode
+        ? [
+            {
+              name: gamemode.name,
+              ruleset: gamemode.gamestate,
+              index: 0,
+              members: gamemode.members,
+              teams: gamemode.teams,
+            },
+          ]
+        : [];
+    }
+
+    // legacy (<CL14000): one entry per BP_Ruleset_C minigame
     const ruleNameRegExp =
       /^(?<index>\d+)\) BP_Ruleset_C (.+):PersistentLevel.(?<ruleset>BP_Ruleset_C_\d+)\.RulesetName = (?<name>.*)$/;
     const ruleMembersRegExp =
@@ -307,9 +360,7 @@ const COMMANDS: InjectedCommands = {
           this.watchLogChunk<RegExpMatchArray>(
             'GetAll BP_Ruleset_C RulesetName',
             ruleNameRegExp,
-            {
-              first: 'index',
-            },
+            { first: 'index' },
           ),
           this.watchLogArray<
             { index: string; ruleset: string },
@@ -330,17 +381,13 @@ const COMMANDS: InjectedCommands = {
           this.watchLogChunk<RegExpMatchArray>(
             'GetAll BP_Team_C TeamName',
             teamNameRegExp,
-            {
-              first: 'index',
-            },
+            { first: 'index' },
           ),
           // team color in a5 is based on (B=255,G=255,R=255,A=255)
           this.watchLogChunk<RegExpMatchArray>(
             'GetAll BP_Team_C TeamColor',
             teamColorRegExp,
-            {
-              first: 'index',
-            },
+            { first: 'index' },
           ),
         ]);
 
@@ -405,12 +452,7 @@ const COMMANDS: InjectedCommands = {
             color: handleColor(
               _.pick(
                 teamColors.find(t => t.groups.team === m.item.team)?.groups ??
-                  ({
-                    r: 0,
-                    g: 0,
-                    b: 0,
-                    a: 0,
-                  } as any),
+                  ({ r: 0, g: 0, b: 0, a: 0 } as any),
                 ['r', 'g', 'b', 'a'],
               ),
             ),
@@ -424,6 +466,97 @@ const COMMANDS: InjectedCommands = {
     } catch (e) {
       Logger.error('error getting minigames', e);
       return undefined;
+    }
+  },
+
+  /**
+   * get the single gamemode and its teams/players (modern servers, >=CL14000).
+   * Returns null on older servers (which instead have multiple minigames -
+   * use {@link getMinigames}).
+   */
+  async getGamemode(): Promise<IGamemode | null> {
+    const w = this as unknown as LogWrangler;
+    // the single-gamemode model only exists on modern servers
+    if (w.omegga.version < GAMEMODE_MODEL_CL) return null;
+
+    // patterns to match the console logs
+    const gameModeNameRegExp =
+      /^(?<index>\d+)\) BP_GameStateBase_C (.+):PersistentLevel\.(?<gamestate>BP_GameStateBase_C_\d+)\.GameModeName = (?<name>.*)$/;
+    const teamNameRegExp =
+      /^(?<index>\d+)\) BRGameModeTeam (.+):PersistentLevel\.(?<team>BRGameModeTeam_\d+)\.TeamName = (?<name>.*)$/;
+    const teamColorRegExp =
+      /^(?<index>\d+)\) BRGameModeTeam (.+):PersistentLevel\.(?<team>BRGameModeTeam_\d+)\.TeamColor = \(B=(?<b>\d+),G=(?<g>\d+),R=(?<r>\d+),A=(?<a>\d+)\)$/;
+    const teamMembersRegExp =
+      /^(?<index>\d+)\) BRGameModeTeam (.+):PersistentLevel\.(?<team>BRGameModeTeam_\d+)\.MemberStates =$/;
+    const playerStateRegExp =
+      /^\t(?<index>\d+): .*?BP_PlayerState_C'(.+):PersistentLevel\.(?<state>BP_PlayerState_C_\d+)'$/;
+
+    try {
+      // parse console output to get the gamemode and team info
+      const [gamemodes, teamNames, teamColors, teamMembers] = await Promise.all(
+        [
+          this.watchLogChunk<RegExpMatchArray>(
+            'GetAll BP_GameStateBase_C GameModeName',
+            gameModeNameRegExp,
+            { first: 'index', timeoutDelay: 250 },
+          ),
+          this.watchLogChunk<RegExpMatchArray>(
+            'GetAll BRGameModeTeam TeamName',
+            teamNameRegExp,
+            { first: 'index', timeoutDelay: 250 },
+          ),
+          // team color is (B=255,G=255,R=255,A=255)
+          this.watchLogChunk<RegExpMatchArray>(
+            'GetAll BRGameModeTeam TeamColor',
+            teamColorRegExp,
+            { first: 'index', timeoutDelay: 250 },
+          ),
+          this.watchLogArray<
+            { index: string; team: string },
+            { index: string; state: string }
+          >(
+            'GetAll BRGameModeTeam MemberStates',
+            teamMembersRegExp,
+            playerStateRegExp,
+          ),
+        ],
+      );
+
+      // there is a single gamemode (one BP_GameStateBase_C)
+      const gamemode = gamemodes[0]?.groups;
+      if (!gamemode) return null;
+
+      // build the teams from the name/color/member lookups
+      const teams = teamNames.map(t => {
+        const groups = t.groups!;
+        const id = groups.team;
+        const colorGroups = teamColors.find(c => c.groups?.team === id)?.groups;
+        return {
+          name: groups.name,
+          team: id,
+          // [r, g, b, a]
+          color: colorGroups
+            ? [colorGroups.r, colorGroups.g, colorGroups.b, colorGroups.a].map(
+                Number,
+              )
+            : [0, 0, 0, 0],
+          // resolve the players on this team from their player states
+          members: (teamMembers.find(m => m.item.team === id)?.members ?? [])
+            .map(m => this.getPlayer(m.state))
+            .filter((p): p is OmeggaPlayer => Boolean(p)),
+        };
+      });
+
+      return {
+        name: gamemode.name,
+        gamestate: gamemode.gamestate,
+        // the gamemode's members are every player across all teams
+        members: teams.flatMap(t => t.members),
+        teams,
+      };
+    } catch (e) {
+      Logger.error('error getting gamemode', e);
+      return null;
     }
   },
 };

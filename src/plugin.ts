@@ -7,6 +7,7 @@ import {
 } from '@brickadia/types';
 import { ConsoleCommands } from '@omegga/commands';
 import {
+  IGamemode,
   ILogMinigame,
   IMinigameList,
   IPlayerPositions,
@@ -437,14 +438,24 @@ export interface StaticPlayer {
 export interface InjectedCommands {
   /** Get server status */
   getServerStatus(this: OmeggaLike): Promise<IServerStatus | null>;
-  /** Get a list of minigames and their indices */
+  /**
+   * Get a list of minigames and their indices
+   * @deprecated minigames were replaced by a single gamemode (~CL14000); on
+   * modern servers this returns at most one entry with an empty `owner`.
+   * Prefer {@link InjectedCommands.getGamemode}.
+   */
   listMinigames(this: OmeggaLike): Promise<IMinigameList>;
   // /** Get all pawn data */
   // getAllPawnData(this: OmeggaLike, fields: PawnDataField[]): void;
   /** Get all player positions and pawns */
   getAllPlayerPositions(this: OmeggaLike): Promise<IPlayerPositions>;
-  /** Get minigames and members */
+  /** Get minigames and members (one entry per gamemode on modern servers) */
   getMinigames(this: OmeggaLike): Promise<ILogMinigame[]>;
+  /**
+   * Get the single gamemode and its teams/players (modern servers, >=CL14000).
+   * Returns null on older servers (use {@link InjectedCommands.getMinigames}).
+   */
+  getGamemode(this: OmeggaLike): Promise<IGamemode | null>;
 }
 
 export interface MockEventEmitter {

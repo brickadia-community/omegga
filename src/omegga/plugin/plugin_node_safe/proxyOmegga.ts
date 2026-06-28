@@ -18,6 +18,7 @@ import LogWrangler from '@omegga/logWrangler';
 import Player from '@omegga/player';
 import Omegga from '@omegga/server';
 import {
+  IGamemode,
   ILogMinigame,
   IMinigameList,
   IPlayerPositions,
@@ -250,6 +251,9 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   }
   getMinigames(): Promise<ILogMinigame[]> {
     throw badBorrow('getMinigames');
+  }
+  getGamemode(): Promise<IGamemode | null> {
+    throw badBorrow('getGamemode');
   }
   getPlayers(): {
     id: string;

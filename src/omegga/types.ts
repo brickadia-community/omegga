@@ -52,3 +52,24 @@ export type ILogMinigame = {
     members: OmeggaPlayer[];
   }[];
 };
+
+/**
+ * The single gamemode that replaced minigames (~CL14000). Owns the teams and
+ * the players within them.
+ */
+export type IGamemode = {
+  /** the gamemode name (e.g. "Sandbox") */
+  name: string;
+  /** the BP_GameStateBase_C object id */
+  gamestate: string;
+  /** every player across all teams */
+  members: OmeggaPlayer[];
+  teams: {
+    name: string;
+    /** the BRGameModeTeam object id */
+    team: string;
+    /** [r, g, b, a] */
+    color: number[];
+    members: OmeggaPlayer[];
+  }[];
+};

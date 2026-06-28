@@ -31,6 +31,7 @@ import MATCHERS from './matchers';
 import Player from './player';
 import { PluginLoader } from './plugin';
 import {
+  IGamemode,
   ILogMinigame,
   IMinigameList,
   IOmeggaOptions,
@@ -93,6 +94,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   listMinigames: () => Promise<IMinigameList>;
   getAllPlayerPositions: () => Promise<IPlayerPositions>;
   getMinigames: () => Promise<ILogMinigame[]>;
+  getGamemode: () => Promise<IGamemode | null>;
 
   /**
    * Omegga instance
