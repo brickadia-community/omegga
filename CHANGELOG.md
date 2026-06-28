@@ -4,6 +4,15 @@
 
 - Future features go here
 
+## 1.8.0 - 2026-06-27
+
+Huge breaking changes on in console commands for EA3...
+
+- Plugins: Add fetch/crypto/atob/etc builtins to safe plugins
+- Plugins: Automatically use new console command names when old ones are attempted to write to console
+- Add auto retry to steamcmd updater
+- Start tracking console commands by name in `Omegga.Console....` like `Omegga.Console.Server.Players.GiveItem`
+
 ## 1.7.0 - 2026-06-14
 
 - Database: Replace NeDB with Drizzle ORM + better-sqlite3 for all database storage

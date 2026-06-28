@@ -5,6 +5,7 @@ import {
   BRRoleAssignments,
   BRRoleSetup,
 } from '@brickadia/types';
+import { ConsoleCommands } from '@omegga/commands';
 import {
   ILogMinigame,
   IMinigameList,
@@ -23,6 +24,7 @@ declare global {
 
 export * from '@brickadia/types';
 export * from '@omegga/types';
+export type { ConsoleCommands } from '@omegga/commands';
 export { OmeggaPlugin };
 
 export type OL = OmeggaLike;
@@ -494,6 +496,13 @@ export interface OmeggaLike
 
   /** game CL version*/
   version: number;
+
+  /**
+   * version-resolved Brickadia console command names, nested by namespace.
+   * e.g. `Omegga.Console.Bricks.Clear` resolves to the command string for the
+   * running game version ("Bricks.Clear" or "br.Bricks.Clear")
+   */
+  Console: ConsoleCommands;
 
   /** verbose logging is enabled*/
   verbose: boolean;

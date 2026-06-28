@@ -83,10 +83,11 @@ const COMMANDS: InjectedCommands = {
    * Get a server status object containing bricks, time, players, player ping, player roles, etc
    */
   async getServerStatus(): Promise<IServerStatus | null> {
+    const { omegga } = this as unknown as LogWrangler;
     const statusLines = await (
       this as OmeggaLike
     ).watchLogChunk<RegExpMatchArray>(
-      'Server.Status',
+      omegga.Console.Server.Status,
       /^LogConsoleCommands: (.+)$/,
       {
         first: match => match[1].startsWith('Server Name:'),
@@ -153,10 +154,11 @@ const COMMANDS: InjectedCommands = {
    * @return Minigame List
    */
   async listMinigames(): Promise<IMinigameList> {
+    const { omegga } = this as unknown as LogWrangler;
     const minigameLines = await (
       this as OmeggaLike
     ).watchLogChunk<RegExpMatchArray>(
-      'Server.Minigames.List',
+      omegga.Console.Server.Minigames.List,
       /^LogConsoleCommands: (.+)$/,
       {
         first: match => match[1].startsWith('Minigame Count:'),
