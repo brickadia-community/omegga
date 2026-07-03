@@ -475,6 +475,80 @@ export default class RpcPlugin extends Plugin {
     rpc.addMethod('getSavePath', name =>
       this.omegga.getSavePath(name as unknown as string),
     );
+    rpc.addMethod('getPrefabs', () => this.omegga.getPrefabs());
+    rpc.addMethod(
+      'loadPrefab',
+      ({
+        path,
+        ...options
+      }: {
+        path: string;
+        offX?: number;
+        offY?: number;
+        offZ?: number;
+        atOriginalPosition?: boolean;
+        orientation?: number;
+        rootEntityPersistentIndex?: number;
+        mirrorAxes?: number;
+        overrideUserId?: string;
+      }) => this.omegga.loadPrefab(path, options),
+    );
+    rpc.addMethod(
+      'savePrefab',
+      ({
+        path,
+        ...options
+      }: {
+        path: string;
+        region?: {
+          center: [number, number, number];
+          extent: [number, number, number];
+        };
+        entities?: boolean;
+        rootEntityPersistentIndex?: number;
+        userId?: string;
+      }) => this.omegga.savePrefab(path, options),
+    );
+    rpc.addMethod(
+      'savePrefabAsync',
+      ({
+        path,
+        ...options
+      }: {
+        path: string;
+        region?: {
+          center: [number, number, number];
+          extent: [number, number, number];
+        };
+        entities?: boolean;
+        rootEntityPersistentIndex?: number;
+        userId?: string;
+      }) => this.omegga.savePrefabAsync(path, options),
+    );
+    rpc.addMethod(
+      'givePrefabToPlayer',
+      ({
+        path,
+        player,
+        preserveOwnership = false,
+      }: {
+        path: string;
+        player: string;
+        preserveOwnership?: boolean;
+      }) => this.omegga.givePrefabToPlayer(path, player, { preserveOwnership }),
+    );
+    rpc.addMethod(
+      'loadPrefabOnPlayer',
+      ({
+        path,
+        player,
+        preserveOwnership = false,
+      }: {
+        path: string;
+        player: string;
+        preserveOwnership?: boolean;
+      }) => this.omegga.loadPrefabOnPlayer(path, player, { preserveOwnership }),
+    );
     rpc.addMethod(
       'clearBricks',
       ({ target, quiet = false }: { target: string; quiet?: boolean }) =>
