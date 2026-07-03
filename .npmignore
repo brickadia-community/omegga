@@ -1,5 +1,6 @@
 .github/
 .vscode/
+.claude/
 /data/
 /plugins/
 /src/
