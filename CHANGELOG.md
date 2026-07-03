@@ -4,6 +4,15 @@
 
 - Future features go here
 
+## 1.8.1 - 2026-07-03
+
+Prefab support for EA3, replacing the removed `.brs` bricks commands.
+
+- Plugins: Add prefab methods (`loadPrefab`, `savePrefab`, `savePrefabAsync`, `givePrefabToPlayer`, `loadPrefabOnPlayer`, `getPrefabs`)
+- Plugins: `clearRegion`/`clearAllBricks` route to the new world clear commands on EA3 and can optionally clear entities
+- Plugins: Deprecate the `.brs` bricks methods removed by the game (`saveBricks`, `loadBricks`, `getSaveData`, `loadBricksOnPlayer`, etc.) - they warn and no-op
+- Commands: Warn when a plugin writes a console command the running game version has removed
+
 ## 1.8.0 - 2026-06-27
 
 Huge breaking changes on in console commands for EA3...

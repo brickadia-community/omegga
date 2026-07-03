@@ -26,7 +26,12 @@ import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'path';
 import { AutoRestartConfig } from '..';
 import commandInjector from './commandInjector';
-import { ConsoleCommands, resolveConsoleCommands } from './commands';
+import {
+  ConsoleCommands,
+  EA2_VERSION,
+  PREFAB_VERSION,
+  resolveConsoleCommands,
+} from './commands';
 import MATCHERS from './matchers';
 import Player from './player';
 import { PluginLoader } from './plugin';
@@ -43,6 +48,10 @@ import OmeggaWrapper from './wrapper';
 const MISSING_CMD =
   '"Command not found. Type <color=\\"ffff00\\">/help</> for a list of commands or <color=\\"ffff00\\">/plugins</> for plugin information."';
 
+// Prefab.SaveRegion requires a region; when saving the whole world we pass a
+// maximal extent centered on the origin to capture everything.
+const WHOLE_WORLD_EXTENT = 1_000_000_000;
+
 // TODO: safe broadcast parsing
 
 export default class Omegga extends OmeggaWrapper implements OmeggaLike {
@@ -58,6 +67,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   verbose: boolean;
   savePath: string;
   worldPath: string;
+  prefabPath: string;
   presetPath: string;
   configPath: string;
   options: IOmeggaOptions;
@@ -135,6 +145,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     // path to save files
     this.savePath = join(this.path, DATA_PATH, savedDir, 'Builds');
     this.worldPath = join(this.path, DATA_PATH, savedDir, 'Worlds');
+    this.prefabPath = join(this.path, DATA_PATH, savedDir, 'Prefabs');
 
     this.presetPath = join(this.path, DATA_PATH, savedDir, 'Presets');
 
@@ -660,6 +671,38 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       : [];
   }
 
+  /**
+   * Whether the running game version has removed the legacy .brs bricks console
+   * commands (Bricks.Save/Load/ClearAll/ClearRegion, World.LoadAdditive) in
+   * favor of the prefab (`br.Prefab.*`) and world (`br.World.Clear*`) commands.
+   * Removed at Brickadia CL{@link PREFAB_VERSION}.
+   */
+  #brsRemoved(): boolean {
+    return this.version > 0 && this.version >= PREFAB_VERSION;
+  }
+
+  /**
+   * Warn that a method backed by a removed console command is a no-op on the
+   * running game version, and return whether the caller should bail.
+   * @param method the omegga method being called (for the message)
+   * @param since CL version the underlying command was removed at
+   * @param release human release name for that version (e.g. `EA2`, `EA3`)
+   * @param replacement suggested replacement method/API
+   */
+  #warnRemoved(
+    method: string,
+    since: number,
+    release: string,
+    replacement: string,
+  ): boolean {
+    if (!(this.version > 0 && this.version >= since)) return false;
+    Logger.warnp(
+      `omegga.${method}() uses a console command removed in Brickadia ` +
+        `${release}. This call has no effect - use ${replacement} instead.`,
+    );
+    return true;
+  }
+
   clearBricks(target: string | { id: string }, quiet = false) {
     // target is a player object, just use that id
     if (typeof target === 'object' && target.id) target = target.id;
@@ -680,29 +723,68 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       center: [number, number, number];
       extent: [number, number, number];
     },
-    options?: { target: string | OmeggaPlayer },
+    options?: {
+      target?: string | OmeggaPlayer;
+      /** clear bricks in the region (default true) */
+      bricks?: boolean;
+      /** also clear entities in the region (default false, EA3 only) */
+      entities?: boolean;
+    },
   ) {
+    // resolve the optional owner filter (player object, uuid, or name) to a uuid
     let target = '';
-
-    // target is a player object, just use that id
-    if (options && typeof options.target === 'object')
-      target = ' ' + options.target.id;
-    // if the target isn't a uuid already, find the player by name or controller and use that uuid
-
-    if (typeof target === 'string' && !uuid.match(target)) {
-      // only set the target if the player exists
-      const player = this.getPlayer(target);
-      if (player) target = ' ' + player.id;
+    const rawTarget = options?.target;
+    if (rawTarget) {
+      if (typeof rawTarget === 'object') target = rawTarget.id;
+      else if (uuid.match(rawTarget)) target = rawTarget;
+      else target = this.getPlayer(rawTarget)?.id ?? '';
     }
 
+    const center = region.center.join(' ');
+    const extent = region.extent.join(' ');
+
+    if (this.#brsRemoved()) {
+      // br.World.ClearRegion <Center> <Extent> [ClearBricks] [ClearEntities] [FilterUserId]
+      const bricks = (options?.bricks ?? true) ? 1 : 0;
+      const entities = (options?.entities ?? false) ? 1 : 0;
+      this.writeln(
+        `${this.Console.World.ClearRegion} ${center} ${extent} ${bricks} ${entities}${
+          target ? ' ' + target : ''
+        }`,
+      );
+      return;
+    }
+
+    // legacy .brs region clear (bricks only)
     this.writeln(
-      `${this.Console.Bricks.ClearRegion} ${region.center.join(' ')} ${region.extent.join(
-        ' ',
-      )}${target}`,
+      `${this.Console.Bricks.ClearRegion} ${center} ${extent}${
+        target ? ' ' + target : ''
+      }`,
     );
   }
 
-  clearAllBricks(quiet = false) {
+  clearAllBricks(
+    options:
+      | boolean
+      | { quiet?: boolean; bricks?: boolean; entities?: boolean } = {},
+  ) {
+    // backwards compat: a bare boolean is the legacy `quiet` argument
+    const {
+      quiet = false,
+      bricks = true,
+      entities = false,
+    } = typeof options === 'boolean' ? { quiet: options } : options;
+
+    if (this.#brsRemoved()) {
+      // br.World.ClearAll [ClearBricks] [ClearEntities] [Silent]
+      this.writeln(
+        `${this.Console.World.ClearAll} ${bricks ? 1 : 0} ${
+          entities ? 1 : 0
+        } ${quiet ? 1 : 0}`,
+      );
+      return;
+    }
+    // legacy Bricks.ClearAll only ever cleared bricks
     this.writeln(`${this.Console.Bricks.ClearAll} ${quiet ? 1 : ''}`);
   }
 
@@ -713,6 +795,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       extent: [number, number, number];
     },
   ) {
+    if (this.#warnRemoved('saveBricks', PREFAB_VERSION, 'EA3', 'savePrefab'))
+      return;
     if (!saveName) return;
 
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
@@ -735,6 +819,15 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       extent: [number, number, number];
     },
   ): Promise<void> {
+    if (
+      this.#warnRemoved(
+        'saveBricksAsync',
+        PREFAB_VERSION,
+        'EA3',
+        'savePrefabAsync',
+      )
+    )
+      return;
     if (!saveName) return;
 
     let saveNameClean = saveName;
@@ -774,6 +867,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       correctCustom = false,
     } = {},
   ) {
+    if (this.#warnRemoved('loadBricks', PREFAB_VERSION, 'EA3', 'loadPrefab'))
+      return;
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
     if (!(saveName.startsWith('"') && saveName.endsWith('"')))
       saveName = `"${saveName}"`;
@@ -796,6 +891,15 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       correctCustom = false,
     } = {},
   ) {
+    if (
+      this.#warnRemoved(
+        'loadBricksOnPlayer',
+        EA2_VERSION,
+        'EA2',
+        'loadPrefabOnPlayer',
+      )
+    )
+      return;
     player = typeof player === 'string' ? this.getPlayer(player) : player;
     if (!player) return;
 
@@ -819,6 +923,12 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   getWorlds(): string[] {
     return existsSync(this.worldPath)
       ? glob.sync(this.worldPath + '/**/*.brdb')
+      : [];
+  }
+
+  getPrefabs(): string[] {
+    return existsSync(this.prefabPath)
+      ? glob.sync(this.prefabPath + '/**/*.brz')
       : [];
   }
 
@@ -1067,6 +1177,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       correctCustom = false,
     } = {},
   ) {
+    if (this.#warnRemoved('loadSaveData', PREFAB_VERSION, 'EA3', 'loadPrefab'))
+      return;
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
     // write savedata to file
@@ -1104,6 +1216,15 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       correctCustom = false,
     } = {},
   ) {
+    if (
+      this.#warnRemoved(
+        'loadSaveDataOnPlayer',
+        EA2_VERSION,
+        'EA2',
+        'loadPrefabOnPlayer',
+      )
+    )
+      return;
     player = typeof player === 'string' ? this.getPlayer(player) : player;
     if (!player) return;
 
@@ -1137,6 +1258,10 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     center: [number, number, number];
     extent: [number, number, number];
   }) {
+    if (
+      this.#warnRemoved('getSaveData', PREFAB_VERSION, 'EA3', 'the prefab API')
+    )
+      return undefined;
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
 
@@ -1156,6 +1281,156 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     }
 
     return undefined;
+  }
+
+  /**
+   * Load a prefab into the world (EA3). `path` is a bundle
+   * path ref such as `Prefabs/Uploads/<hash>.brz`.
+   * br.Prefab.Load <Path> [Offset X Y Z] [At Original Position] [Orientation]
+   *   [Root Entity Persistent Index] [Mirror Axes] [Override User Id]
+   */
+  loadPrefab(
+    path: string,
+    {
+      offX = 0,
+      offY = 0,
+      offZ = 0,
+      atOriginalPosition = false,
+      orientation = 0,
+      rootEntityPersistentIndex = -1,
+      mirrorAxes = 0,
+      overrideUserId = '',
+    }: {
+      offX?: number;
+      offY?: number;
+      offZ?: number;
+      atOriginalPosition?: boolean;
+      orientation?: number;
+      rootEntityPersistentIndex?: number;
+      /** bitmask: X=1 Y=2 Z=4 (e.g. 3 mirrors X and Y) */
+      mirrorAxes?: number;
+      overrideUserId?: string;
+    } = {},
+  ) {
+    if (!path) return;
+    this.writeln(
+      `${this.Console.Prefab.Load} "${path}" ${offX} ${offY} ${offZ} ${
+        atOriginalPosition ? 1 : 0
+      } ${orientation} ${rootEntityPersistentIndex} ${mirrorAxes}${
+        overrideUserId ? ` "${overrideUserId}"` : ''
+      }`,
+    );
+  }
+
+  /**
+   * Load a prefab onto a player (EA3). Replaces the
+   * removed {@link loadBricksOnPlayer}; backed by `br.Prefab.GiveToPlayer`.
+   * @param path prefab bundle path ref
+   * @param player player name/id or player object
+   * @param options give options (preserve ownership)
+   */
+  loadPrefabOnPlayer(
+    path: string,
+    player: string | OmeggaPlayer,
+    { preserveOwnership = false }: { preserveOwnership?: boolean } = {},
+  ) {
+    this.givePrefabToPlayer(path, player, { preserveOwnership });
+  }
+
+  /**
+   * Save the world (or a region of it) as a prefab (EA3).
+   * `path` is the destination bundle path ref (e.g. `Prefabs/MyPrefab.brz`).
+   * br.Prefab.SaveRegion <Path> <Center X Y Z> <Extent X Y Z> [Include Entities]
+   *   [Root Entity Persistent Index] [Filter User Id]
+   * @param path destination prefab bundle path ref
+   * @param options save options; omit `region` to capture the whole world
+   */
+  savePrefab(
+    path: string,
+    {
+      region,
+      entities = true,
+      rootEntityPersistentIndex = -1,
+      userId = '',
+    }: {
+      region?: {
+        center: [number, number, number];
+        extent: [number, number, number];
+      };
+      entities?: boolean;
+      rootEntityPersistentIndex?: number;
+      userId?: string;
+    } = {},
+  ) {
+    if (!path) return;
+    // the command always takes a region; with none given, capture the whole
+    // world from the origin with a maximal extent
+    const center = (region?.center ?? [0, 0, 0]).join(' ');
+    const extent = (
+      region?.extent ?? [
+        WHOLE_WORLD_EXTENT,
+        WHOLE_WORLD_EXTENT,
+        WHOLE_WORLD_EXTENT,
+      ]
+    ).join(' ');
+    this.writeln(
+      `${this.Console.Prefab.SaveRegion} "${path}" ${center} ${extent} ${
+        entities ? 1 : 0
+      } ${rootEntityPersistentIndex}${userId ? ` "${userId}"` : ''}`,
+    );
+  }
+
+  /**
+   * Save a prefab and resolve once the prefab file has been written to disk.
+   * @param path destination prefab bundle path ref
+   * @param options same options as {@link savePrefab}
+   * @returns the absolute path to the written prefab, or null on timeout
+   */
+  async savePrefabAsync(
+    path: string,
+    options?: {
+      region?: {
+        center: [number, number, number];
+        extent: [number, number, number];
+      };
+      entities?: boolean;
+      rootEntityPersistentIndex?: number;
+      userId?: string;
+    },
+  ): Promise<string | null> {
+    if (!path) return null;
+    this.savePrefab(path, options);
+
+    // TODO: confirm the write via the prefab-saved log line once its exact
+    // format is nailed down; for now poll for the written file on disk.
+    const name = path.replace(/^Prefabs[\\/]/i, '').replace(/\.brz$/i, '');
+    const file = join(this.prefabPath, name + '.brz');
+    const deadline = Date.now() + 30000;
+    while (Date.now() < deadline) {
+      if (existsSync(file)) return file;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    return null;
+  }
+
+  /**
+   * Give a prefab to a player's inventory (EA3).
+   * br.Prefab.GiveToPlayer <Path> <Player Name or User Id> [Preserve Ownership]
+   */
+  givePrefabToPlayer(
+    path: string,
+    player: string | OmeggaPlayer,
+    { preserveOwnership = false }: { preserveOwnership?: boolean } = {},
+  ) {
+    if (!path) return;
+    // the command accepts a player name or user id; prefer the resolved id
+    const target = typeof player === 'object' ? player.id : player;
+    if (!target) return;
+    this.writeln(
+      `${this.Console.Prefab.GiveToPlayer} "${path}" "${target}" ${
+        preserveOwnership ? 1 : 0
+      }`,
+    );
   }
 
   // TODO: switch this to use worlds...

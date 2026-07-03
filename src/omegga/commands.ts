@@ -1,3 +1,5 @@
+import Logger from '@/logger';
+
 // AUTO-GENERATED command name table. Maps each Brickadia console command to
 // its name across game versions so plugins/omegga can address commands without
 // hardcoding a name that changes between releases.
@@ -6,6 +8,9 @@
 // handful were restructured). Before that, the legacy names were used.
 // Minigames were deprecated at CL 14000 and replaced by GameMode commands;
 // the legacy Minigames commands still resolve but are no-ops on newer servers.
+// At CL 14626 the .brs bricks commands (Bricks.Save/Load/Clear*, World.LoadAdditive)
+// were removed in favor of the prefab/world commands; invoking a removed command
+// logs a warning ({@link migrateConsoleCommand}).
 //
 // Resolve the version-correct name with `omegga.Console`, e.g.
 // `omegga.Console.Bricks.Clear` -> "Bricks.Clear" or "br.Bricks.Clear".
@@ -16,8 +21,24 @@
 /** CL version at which console commands gained the `br.` prefix. */
 const RENAME_VERSION = 14349;
 
+/**
+ * CL version at which `Bricks.LoadTemplate` was removed (~EA2). Earliest EA2
+ * build observed is CL12960; the command was gone by then.
+ */
+export const EA2_VERSION = 12960;
+
+/**
+ * CL version (~EA3) at which the legacy .brs bricks console commands were
+ * removed in favor of prefab (`br.Prefab.*`) and world (`br.World.Clear*`)
+ * commands.
+ */
+export const PREFAB_VERSION = 14626;
+
 /** A console command whose name may differ across game versions. */
 export class ConsoleCommand {
+  /** CL version at which the game removed this command, if it was ever removed. */
+  removedAt?: number;
+
   /** @param versions [sinceVersion, name] pairs in ascending version order */
   constructor(private readonly versions: readonly [number, string][]) {}
 
@@ -30,6 +51,21 @@ export class ConsoleCommand {
     for (const [since, candidate] of this.versions)
       if (version >= since) name = candidate;
     return name;
+  }
+
+  /** Mark this command as removed from the game at `version` (fluent). */
+  removedIn(version: number): this {
+    this.removedAt = version;
+    return this;
+  }
+
+  /**
+   * Whether this command no longer exists at the given game version. An unknown
+   * version (server not started / not detected yet, `<= 0`) is treated as still
+   * present so we never warn on commands sent before the version is known.
+   */
+  isRemovedAt(version: number): boolean {
+    return this.removedAt != null && version > 0 && version >= this.removedAt;
   }
 
   /** every name this command has gone by, across versions */
@@ -58,8 +94,13 @@ export const COMMAND_TABLE = {
   Bricks: {
     ActuallyReduce: c('Bricks.ActuallyReduce', 'br.Bricks.ActuallyReduce'),
     Clear: c('Bricks.Clear', 'br.Bricks.Clear'),
-    ClearAll: c('Bricks.ClearAll', 'br.Bricks.ClearAll'),
-    ClearRegion: c('Bricks.ClearRegion', 'br.Bricks.ClearRegion'),
+    // removed at PREFAB_VERSION -> replaced by World.ClearAll / World.ClearRegion
+    ClearAll: c('Bricks.ClearAll', 'br.Bricks.ClearAll').removedIn(
+      PREFAB_VERSION,
+    ),
+    ClearRegion: c('Bricks.ClearRegion', 'br.Bricks.ClearRegion').removedIn(
+      PREFAB_VERSION,
+    ),
     Cluster: {
       EnableMergingDynamicGrids: c(
         'Bricks.Cluster.EnableMergingDynamicGrids',
@@ -178,8 +219,10 @@ export const COMMAND_TABLE = {
       'br.Bricks.GenerateMathTables',
     ),
     GetOctreeStats: c('Bricks.GetOctreeStats', 'br.Bricks.GetOctreeStats'),
-    Load: c('Bricks.Load', 'br.Bricks.Load'),
-    LoadTemplate: c('Bricks.LoadTemplate'),
+    // removed at PREFAB_VERSION -> replaced by Prefab.Load
+    Load: c('Bricks.Load', 'br.Bricks.Load').removedIn(PREFAB_VERSION),
+    // removed ~EA2 -> replaced by Prefab.GiveToPlayer (loadPrefabOnPlayer)
+    LoadTemplate: c('Bricks.LoadTemplate').removedIn(EA2_VERSION),
     LODScreenSizeScale: c(
       'Bricks.LODScreenSizeScale',
       'br.Bricks.LODScreenSizeScale',
@@ -217,7 +260,8 @@ export const COMMAND_TABLE = {
     ),
     RebuildClusters: c('Bricks.RebuildClusters', 'br.Bricks.RebuildClusters'),
     RebuildMeshes: c('Bricks.RebuildMeshes', 'br.Bricks.RebuildMeshes'),
-    Save: c('Bricks.Save', 'br.Bricks.Save'),
+    // removed at PREFAB_VERSION -> replaced by Prefab.SaveRegion
+    Save: c('Bricks.Save', 'br.Bricks.Save').removedIn(PREFAB_VERSION),
     SaveFileCompressionLevel: c(
       'Bricks.SaveFileCompressionLevel',
       'br.Bricks.SaveFileCompressionLevel',
@@ -246,7 +290,10 @@ export const COMMAND_TABLE = {
       'Bricks.SaveFileReadSizeLimit',
       'br.Bricks.SaveFileReadSizeLimit',
     ),
-    SaveRegion: c('Bricks.SaveRegion', 'br.Bricks.SaveRegion'),
+    // removed at PREFAB_VERSION -> replaced by Prefab.SaveRegion
+    SaveRegion: c('Bricks.SaveRegion', 'br.Bricks.SaveRegion').removedIn(
+      PREFAB_VERSION,
+    ),
     ValidateMathTables: c(
       'Bricks.ValidateMathTables',
       'br.Bricks.ValidateMathTables',
@@ -442,6 +489,12 @@ export const COMMAND_TABLE = {
   PlayerParts: {
     UseFastRender: c('br.PlayerParts.UseFastRender'),
   },
+  // prefab commands added at PREFAB_VERSION (replace the removed .brs commands)
+  Prefab: {
+    GiveToPlayer: c('br.Prefab.GiveToPlayer'),
+    Load: c('br.Prefab.Load'),
+    SaveRegion: c('br.Prefab.SaveRegion'),
+  },
   Resizer: {
     LogTests: c('br.Resizer.LogTests'),
   },
@@ -591,10 +644,14 @@ export const COMMAND_TABLE = {
     EnableWires: c('BR.WireRenderer.EnableWires'),
   },
   World: {
+    // added at PREFAB_VERSION (replace the removed Bricks.ClearAll/ClearRegion)
+    ClearAll: c('BR.World.ClearAll'),
+    ClearRegion: c('BR.World.ClearRegion'),
     CreateEmpty: c('BR.World.CreateEmpty'),
     ListRevisions: c('BR.World.ListRevisions'),
     Load: c('BR.World.Load'),
-    LoadAdditive: c('BR.World.LoadAdditive'),
+    // removed at PREFAB_VERSION -> use Prefab.Load
+    LoadAdditive: c('BR.World.LoadAdditive').removedIn(PREFAB_VERSION),
     LoadRevision: c('BR.World.LoadRevision'),
     Save: c('BR.World.Save'),
     SaveAs: c('BR.World.SaveAs'),
@@ -641,6 +698,9 @@ export const resolveConsoleCommands = (version: number): ConsoleCommands =>
 // -> the command. First write wins so canonical commands keep priority over
 // the deprecated aliases injected later in the table.
 const COMMAND_LOOKUP = new Map<string, ConsoleCommand>();
+
+// removed-command names (lowercased) we've already warned about, to avoid spam
+const warnedRemovedCommands = new Set<string>();
 const indexTree = (tree: CommandTree): void => {
   for (const key in tree) {
     const value = tree[key];
@@ -671,6 +731,20 @@ export const migrateConsoleCommand = (
   const head = space === -1 ? line : line.slice(0, space);
   const command = COMMAND_LOOKUP.get(head.toLowerCase());
   if (!command) return line;
+
+  // warn (once per command) when a plugin invokes a command the running game
+  // version has removed - it will have no effect
+  if (
+    command.isRemovedAt(version) &&
+    !warnedRemovedCommands.has(head.toLowerCase())
+  ) {
+    warnedRemovedCommands.add(head.toLowerCase());
+    Logger.warnp(
+      `Console command "${head}" was removed in Brickadia CL${command.removedAt} ` +
+        `and will have no effect. Update the plugin using it to the prefab/world equivalent.`,
+    );
+  }
+
   const resolved = command.resolve(version);
   // already a valid name for this version (console names are case-insensitive)
   if (resolved.toLowerCase() === head.toLowerCase()) return line;

@@ -693,7 +693,8 @@ export interface OmeggaCore {
   clearBricks(target: string | { id: string }, quiet?: boolean): void;
 
   /**
-   * Clear a region of bricks
+   * Clear a region of bricks. On EA3 this routes to `br.World.ClearRegion`
+   * and can optionally clear entities too.
    * @param region region to clear
    * @param options optional settings
    */
@@ -704,19 +705,31 @@ export interface OmeggaCore {
     },
     options?: {
       target?: string | OmeggaPlayer;
+      /** clear bricks in the region (default true) */
+      bricks?: boolean;
+      /** also clear entities in the region (default false, EA3 only) */
+      entities?: boolean;
     },
   ): void;
 
   /**
-   * Clear all bricks on the server
-   * @param quiet quietly clear bricks
+   * Clear all bricks on the server. On EA3 this routes to
+   * `br.World.ClearAll` and can optionally clear entities too. A bare boolean
+   * is accepted as the legacy `quiet` argument.
+   * @param options quiet (or `{ quiet, bricks, entities }`)
    */
-  clearAllBricks(quiet?: boolean): void;
+  clearAllBricks(
+    options?:
+      | boolean
+      | { quiet?: boolean; bricks?: boolean; entities?: boolean },
+  ): void;
 
   /**
    * Save bricks under a filename
    * @param saveName save file name
    * @param region region of bricks to save
+   * @deprecated removed in Brickadia EA3 (no-op on newer servers) - save a
+   * prefab with {@link savePrefabRegion} instead
    */
   saveBricks(
     saveName: string,
@@ -730,6 +743,8 @@ export interface OmeggaCore {
    * Save bricks under a filename, with a promise
    * @param saveName save file name
    * @param region region of bricks to save
+   * @deprecated removed in Brickadia EA3 (no-op on newer servers) - save a
+   * prefab with {@link savePrefabRegion} instead
    */
   saveBricksAsync(
     saveName: string,
@@ -741,6 +756,8 @@ export interface OmeggaCore {
 
   /**
    * Load bricks on the server
+   * @deprecated removed in Brickadia EA3 (no-op on newer servers) - load a
+   * prefab with {@link loadPrefab} instead
    */
   loadBricks(
     saveName: string,
@@ -756,6 +773,8 @@ export interface OmeggaCore {
 
   /**
    * Load bricks on the server into a player's clipbaord
+   * @deprecated removed in Brickadia ~EA2 (no-op on newer servers) - use
+   * {@link loadPrefabOnPlayer} instead
    */
   loadBricksOnPlayer(
     saveName: string,
@@ -847,6 +866,8 @@ export interface OmeggaCore {
   /**
    * load bricks from save data and resolve when game finishes loading
    * @param saveData BRS JS Save data
+   * @deprecated removed in Brickadia EA3 (no-op on newer servers) - use the
+   * prefab API ({@link loadPrefab}) instead
    */
   loadSaveData(
     saveData: WriteSaveObject,
@@ -864,6 +885,8 @@ export interface OmeggaCore {
    * load bricks from save data and resolve when game finishes loading
    * @param saveData BRS JS Save data
    * @param player Player name/id or player object
+   * @deprecated removed in Brickadia ~EA2 (no-op on newer servers) - use the
+   * prefab API ({@link loadPrefabOnPlayer}) instead
    */
   loadSaveDataOnPlayer(
     saveData: WriteSaveObject,
@@ -879,11 +902,101 @@ export interface OmeggaCore {
 
   /**
    * get current bricks as save data
+   * @deprecated removed in Brickadia EA3 (returns undefined on newer
+   * servers) - use the prefab API instead
    */
   getSaveData(region?: {
     center: [number, number, number];
     extent: [number, number, number];
   }): Promise<ReadSaveObject>;
+
+  /**
+   * Get all prefabs in the prefabs folder and child folders (EA3)
+   */
+  getPrefabs(): string[];
+
+  /**
+   * Load a prefab into the world (EA3). `path` is a bundle path ref such
+   * as `Prefabs/Uploads/<hash>.brz`.
+   * @param path prefab bundle path ref
+   * @param options placement options (offset, orientation, mirror axes, etc)
+   */
+  loadPrefab(
+    path: string,
+    options?: {
+      offX?: number;
+      offY?: number;
+      offZ?: number;
+      atOriginalPosition?: boolean;
+      orientation?: number;
+      rootEntityPersistentIndex?: number;
+      /** bitmask: X=1 Y=2 Z=4 (e.g. 3 mirrors X and Y) */
+      mirrorAxes?: number;
+      overrideUserId?: string;
+    },
+  ): void;
+
+  /**
+   * Save the world (or a region of it) as a prefab (EA3).
+   * @param path destination prefab bundle path ref (e.g. `Prefabs/MyPrefab.brz`)
+   * @param options save options; omit `region` to capture the whole world
+   */
+  savePrefab(
+    path: string,
+    options?: {
+      region?: {
+        center: [number, number, number];
+        extent: [number, number, number];
+      };
+      entities?: boolean;
+      rootEntityPersistentIndex?: number;
+      userId?: string;
+    },
+  ): void;
+
+  /**
+   * Save a prefab and resolve once the prefab file has been written to disk
+   * (EA3).
+   * @param path destination prefab bundle path ref
+   * @param options same options as {@link savePrefab}
+   * @returns absolute path to the written prefab, or null on timeout
+   */
+  savePrefabAsync(
+    path: string,
+    options?: {
+      region?: {
+        center: [number, number, number];
+        extent: [number, number, number];
+      };
+      entities?: boolean;
+      rootEntityPersistentIndex?: number;
+      userId?: string;
+    },
+  ): Promise<string | null>;
+
+  /**
+   * Give a prefab to a player's inventory (EA3).
+   * @param path prefab bundle path ref
+   * @param player player name/id or player object
+   * @param options give options (preserve ownership)
+   */
+  givePrefabToPlayer(
+    path: string,
+    player: string | OmeggaPlayer,
+    options?: { preserveOwnership?: boolean },
+  ): void;
+
+  /**
+   * Load a prefab onto a player (EA3, replaces {@link loadBricksOnPlayer}).
+   * @param path prefab bundle path ref
+   * @param player player name/id or player object
+   * @param options give options (preserve ownership)
+   */
+  loadPrefabOnPlayer(
+    path: string,
+    player: string | OmeggaPlayer,
+    options?: { preserveOwnership?: boolean },
+  ): void;
 
   /**
    * Change server map

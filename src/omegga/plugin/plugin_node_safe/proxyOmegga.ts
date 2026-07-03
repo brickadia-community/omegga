@@ -69,6 +69,12 @@ const STEAL_PROTOTYPES: Record<keyof Required<OmeggaCore>, true> = {
   getSaves: true,
   getWorldPath: true,
   getWorlds: true,
+  getPrefabs: true,
+  loadPrefab: true,
+  loadPrefabOnPlayer: true,
+  savePrefab: true,
+  savePrefabAsync: true,
+  givePrefabToPlayer: true,
   getWorldRevisions: true,
   loadWorld: true,
   loadWorldRevision: true,
@@ -329,13 +335,19 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
       center: [number, number, number];
       extent: [number, number, number];
     },
-    options: {
-      target: string | OmeggaPlayer;
+    options?: {
+      target?: string | OmeggaPlayer;
+      bricks?: boolean;
+      entities?: boolean;
     },
   ): void {
     throw badBorrow('clearRegion');
   }
-  clearAllBricks(quiet?: boolean): void {
+  clearAllBricks(
+    options?:
+      | boolean
+      | { quiet?: boolean; bricks?: boolean; entities?: boolean },
+  ): void {
     throw badBorrow('clearAllBricks');
   }
   saveBricks(saveName: string, region?: {}): void {
@@ -362,6 +374,66 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   }
   getWorlds(): string[] {
     throw badBorrow('getWorlds');
+  }
+  getPrefabs(): string[] {
+    throw badBorrow('getPrefabs');
+  }
+  loadPrefab(
+    path: string,
+    options?: {
+      offX?: number;
+      offY?: number;
+      offZ?: number;
+      atOriginalPosition?: boolean;
+      orientation?: number;
+      rootEntityPersistentIndex?: number;
+      mirrorAxes?: number;
+      overrideUserId?: string;
+    },
+  ): void {
+    throw badBorrow('loadPrefab');
+  }
+  loadPrefabOnPlayer(
+    path: string,
+    player: string | OmeggaPlayer,
+    options?: { preserveOwnership?: boolean },
+  ): void {
+    throw badBorrow('loadPrefabOnPlayer');
+  }
+  savePrefab(
+    path: string,
+    options?: {
+      region?: {
+        center: [number, number, number];
+        extent: [number, number, number];
+      };
+      entities?: boolean;
+      rootEntityPersistentIndex?: number;
+      userId?: string;
+    },
+  ): void {
+    throw badBorrow('savePrefab');
+  }
+  savePrefabAsync(
+    path: string,
+    options?: {
+      region?: {
+        center: [number, number, number];
+        extent: [number, number, number];
+      };
+      entities?: boolean;
+      rootEntityPersistentIndex?: number;
+      userId?: string;
+    },
+  ): Promise<string | null> {
+    throw badBorrow('savePrefabAsync');
+  }
+  givePrefabToPlayer(
+    path: string,
+    player: string | OmeggaPlayer,
+    options?: { preserveOwnership?: boolean },
+  ): void {
+    throw badBorrow('givePrefabToPlayer');
   }
   getSavePath(saveName: string): string {
     throw badBorrow('getSavePath');
