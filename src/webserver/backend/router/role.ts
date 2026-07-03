@@ -1,5 +1,5 @@
 import { z } from 'zod/v4';
-import { userHasScope, type PermissionSet } from '../permissions';
+import { RootLevel, userHasScope, type PermissionSet } from '../permissions';
 import {
   actorHasAllPermissions,
   checkPermissionRevocation,
@@ -77,7 +77,7 @@ export const roleRouter = router({
         }
 
         const perms = (input.permissions as PermissionSet) ?? {
-          root: 'off',
+          root: RootLevel.Off,
           domains: {},
           scopes: {},
         };

@@ -539,6 +539,8 @@ export interface OmeggaLike
   savePath: string;
   /** path to worlds */
   worldPath: string;
+  /** path to prefabs */
+  prefabPath: string;
   /** path to presets */
   presetPath: string;
   /** path to containing dir */

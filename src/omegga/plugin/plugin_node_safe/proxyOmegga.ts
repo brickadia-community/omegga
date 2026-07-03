@@ -37,6 +37,7 @@ export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({
       verbose: omegga.verbose,
       savePath: omegga.savePath,
       worldPath: omegga.worldPath,
+      prefabPath: omegga.prefabPath,
       path: omegga.path,
       configPath: omegga.configPath,
       presetPath: omegga.presetPath,
@@ -142,9 +143,11 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   stopping: boolean;
   currentMap: string;
 
+  path: string;
   configPath: string;
   savePath: string;
   worldPath: string;
+  prefabPath: string;
   presetPath: string;
 
   logWrangler: LogWrangler;
