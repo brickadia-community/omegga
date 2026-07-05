@@ -105,6 +105,19 @@ const brick = {
 import { checkWsl } from './wsl';
 const wsl = (): number => checkWsl();
 
+// Sqlite: the better-sqlite3 constructor, so plugins can open their own
+// databases (e.g. reading .brdb worlds via OMEGGA_UTIL.brdb). @types/better-
+// sqlite3 hides its `DatabaseConstructor` in a non-exported namespace, so the
+// bare `typeof` isn't nameable in declaration emit; instead spell out the
+// constructor signature from the exported `Database`/`Options` interfaces.
+// Those (and their transitive types) inline into the self-contained plugin
+// template via the dts bundler's --external-inlines better-sqlite3.
+import BetterSqlite3 from 'better-sqlite3';
+const Sqlite: new (
+  filename?: string | Buffer,
+  options?: BetterSqlite3.Options,
+) => BetterSqlite3.Database = BetterSqlite3;
+
 import brs_, {
   Brdb,
   WorldReader,
@@ -176,7 +189,7 @@ const brdb = {
 };
 
 export * as brs from 'brs-js';
-export { chat, color, uuid, pattern, time, map, brick, wsl, brdb };
+export { chat, color, uuid, pattern, time, map, brick, wsl, brdb, Sqlite };
 
 const OMEGGA_UTIL = {
   chat,
@@ -189,5 +202,6 @@ const OMEGGA_UTIL = {
   wsl,
   brs,
   brdb,
+  Sqlite,
 };
 export default OMEGGA_UTIL;

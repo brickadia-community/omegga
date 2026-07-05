@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "description": "Brickadia server installer, updater, manager, wrapper, configurator, and automator",
   "engines": {
     "node": ">=23.0.0"
@@ -121,7 +121,7 @@
     "check": "eslint",
     "db:generate": "npx drizzle-kit generate && npx drizzle-kit generate --config=drizzle.plugin.config.ts",
     "dist": "npm run build:frontend && npm run build && npm run dts",
-    "dts": "npx dts-bundle-generator --inline-declare-global --no-banner --no-check --external-inlines brs-js -o templates/safe-ts/omegga.d.ts -- ./src/plugin.ts",
+    "dts": "npx dts-bundle-generator --inline-declare-global --no-banner --no-check --external-inlines brs-js --external-inlines better-sqlite3 -o templates/safe-ts/omegga.d.ts -- ./src/plugin.ts",
     "lint:fix": "npx prettier --write \"src/\" \"frontend/src/\"",
     "lint": "npx prettier --check \"src/\" \"frontend/src\"",
     "prepare": "ts-patch install",

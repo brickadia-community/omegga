@@ -12,6 +12,7 @@ Wire graph log events and a brs-js 3.0.0 upgrade for native brdb/brz reading.
 - Plugins: Add `wirecmd:command` event, emitted when a `[Wire Graph]` log starts with a command word (lowercased) followed by space-separated args
 - Update brs-js to 3.0.0 and expose brdb/brz features on `OMEGGA_UTIL.brdb`
 - World revisions are now read directly from the `.brdb` file instead of the game console, so `getWorldRevisions` no longer requires the server to be running
+- Plugins: Add `OMEGGA_UTIL.Sqlite` for opening sqlite files (or brdb files)
 
 ## 1.8.1 - 2026-07-03
 
