@@ -34,6 +34,9 @@ import interact from './interact';
 // minigame join event
 import minigameJoin from './minigameJoin';
 
+import wire from './wire';
+// 'wirelog' event => raw; 'wirecmd:command' event => [...args]
+
 export default [
   join,
   leave,
@@ -46,4 +49,5 @@ export default [
   mapChange,
   interact,
   minigameJoin,
+  wire,
 ] as MatchGenerator<any>[];

@@ -4,6 +4,13 @@
 
 - Future features go here
 
+## 1.9.0 - 2026-07-04
+
+Wire graph log events.
+
+- Plugins: Add `wirelog` event, emitted for each `[Wire Graph]` console log with the raw text
+- Plugins: Add `wirecmd:command` event, emitted when a `[Wire Graph]` log starts with a command word (lowercased) followed by space-separated args
+
 ## 1.8.1 - 2026-07-03
 
 Prefab support for EA3, replacing the removed `.brs` bricks commands.
