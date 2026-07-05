@@ -4,12 +4,14 @@
 
 - Future features go here
 
-## 1.9.0 - 2026-07-04
+## 1.9.0 - 2026-07-05
 
-Wire graph log events.
+Wire graph log events and a brs-js 3.0.0 upgrade for native brdb/brz reading.
 
 - Plugins: Add `wirelog` event, emitted for each `[Wire Graph]` console log with the raw text
 - Plugins: Add `wirecmd:command` event, emitted when a `[Wire Graph]` log starts with a command word (lowercased) followed by space-separated args
+- Update brs-js to 3.0.0 and expose brdb/brz features on `OMEGGA_UTIL.brdb`
+- World revisions are now read directly from the `.brdb` file instead of the game console, so `getWorldRevisions` no longer requires the server to be running
 
 ## 1.8.1 - 2026-07-03
 

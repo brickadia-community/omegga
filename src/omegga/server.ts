@@ -17,6 +17,7 @@ import {
 } from '@brickadia/types';
 import { IConfig } from '@config/types';
 import { map as mapUtils, pattern, uuid } from '@util';
+import { readBrdbRevisions } from '@util/brdb';
 import { copyFiles, mkdir, readWatchedJSON } from '@util/file';
 import Webserver from '@webserver/backend';
 import brs, { type ReadSaveObject, type WriteSaveObject } from 'brs-js';
@@ -949,57 +950,17 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   async getWorldRevisions(worldName: string) {
-    if (!this.started || this.starting || this.stopping) {
-      throw new Error('Server is not started');
-    }
-
     worldName = worldName.replace(/\.brdb$/i, '');
 
-    if (!worldName || !this.getWorldPath(worldName)) {
+    const path = this.getWorldPath(worldName);
+    if (!worldName || !path) {
       throw new Error(`World "${worldName}" does not exist`);
     }
 
-    /*
-      LogBRBundleManager: There are 2 revisions
-      LogBRBundleManager: Revision 1 - 2001.02.03-04.05.06: Initial Revision
-      LogBRBundleManager: Revision 2 - 2001.02.03-04.05.06: Manual Save
-    */
-    let numRevisions = 0;
-    const revisionsRaw = await this.watchLogChunk<RegExpMatchArray>(
-      `${this.Console.World.ListRevisions} "${worldName}"`,
-      /^LogBRBundleManager: (There are (?<numRevisions>\d+) revisions|Revision (?<revision>\d+) - (?<date>[\d.-]+): (?<note>.+))$/,
-      {
-        last: match => Number(match.groups.reverse) === numRevisions,
-        first: match => {
-          if (match.groups?.numRevisions !== undefined) {
-            numRevisions = Number(match.groups.numRevisions);
-            return true;
-          }
-          return false;
-        },
-      },
-    );
-
-    if (!revisionsRaw) return [];
-    return revisionsRaw
-      .map(match => {
-        if (match.groups?.numRevisions !== undefined) {
-          return null;
-        }
-
-        const revision = match.groups.revision
-          ? Number(match.groups.revision)
-          : 0;
-        // parse date from YYYY.MM.DD-HH.MM.SS to YYYY-MM-DDTHH:MM:SSZ
-        const dateStr = match.groups.date.replace(
-          /(\d{4})\.(\d{2})\.(\d{2})-(\d{2})\.(\d{2})\.(\d{2})/,
-          '$1-$2-$3T$4:$5:$6Z',
-        );
-        const date = new Date(dateStr);
-        const note = match.groups.note || '';
-        return { index: revision, date, note };
-      })
-      .filter(Boolean);
+    // Revisions are read directly from the .brdb bundle (SQLite), so this no
+    // longer requires the server to be running or a console round-trip. The
+    // brdb revision indices/notes match the game's World.ListRevisions output.
+    return readBrdbRevisions(path) ?? [];
   }
 
   async loadWorld(worldName: string): Promise<boolean> {
