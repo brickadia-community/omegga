@@ -12,17 +12,18 @@ Omegga can do things like:
 - Read chat history with timestamps
 - See kick and ban history
 - Configure plugins from a web interface
+- Manage permissions and multi-user role based access to the above features on a web ui
 
 Omegga plugins can do things like:
 
+- Interface with in-game wires and react to in-game wire events
 - Add custom chat !commands and /commands
 - Respond to and send chat messages
-- Load bricks to player's clipboards
-- Load/Clear regions of bricks
+- Load bricks onto a player's template
+- Load/Clear regions of bricks, entities
 - Damage/heal players
 - Give/remove weapons to players
 - Change the environment
-- Create/delete minigames, and join/leave players from minigames
 - Teleport players, detect player's positions
 - Grant players roles
 - Detect when a brick with an interact component is clicked
