@@ -496,6 +496,12 @@ export interface MockEventEmitter {
       minigameName: string;
     }) => void,
   ): this;
+  on(event: 'wirelog', listener: (raw: string) => void): this;
+  on(event: `wirecmd:${string}`, listener: (...args: string[]) => void): this;
+  on(
+    event: 'wirecmd',
+    listener: (cmd: string, ...args: string[]) => void,
+  ): this;
 }
 
 export interface OmeggaLike

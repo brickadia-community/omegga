@@ -105,7 +105,27 @@ const brick = {
 import { checkWsl } from './wsl';
 const wsl = (): number => checkWsl();
 
-import brs_, { ReadSaveObject, WriteSaveObject, Uuid } from 'brs-js';
+// Sqlite: the better-sqlite3 constructor, so plugins can open their own
+// databases (e.g. reading .brdb worlds via OMEGGA_UTIL.brdb). @types/better-
+// sqlite3 hides its `DatabaseConstructor` in a non-exported namespace, so the
+// bare `typeof` isn't nameable in declaration emit; instead spell out the
+// constructor signature from the exported `Database`/`Options` interfaces.
+// Those (and their transitive types) inline into the self-contained plugin
+// template via the dts bundler's --external-inlines better-sqlite3.
+import BetterSqlite3 from 'better-sqlite3';
+const Sqlite: new (
+  filename?: string | Buffer,
+  options?: BetterSqlite3.Options,
+) => BetterSqlite3.Database = BetterSqlite3;
+
+import brs_, {
+  Brdb,
+  WorldReader,
+  brdb as brdbLib,
+  ReadSaveObject,
+  WriteSaveObject,
+  Uuid,
+} from 'brs-js';
 
 // this type has to exist or the dts exporter will try to dynamically export brs-js
 const brs: {
@@ -131,8 +151,57 @@ const brs: {
   };
 } = brs_ as any;
 
-export * as brs from 'brs-js';
-export { chat, color, uuid, pattern, time, map, brick, wsl };
+// brdb container + brz world reading/writing features from brs-js. Members
+// are listed explicitly (rather than `typeof brdbLib`) so the dts bundler
+// inlines each type instead of emitting a dynamic `import("brs-js/...")` the
+// self-contained plugin template cannot resolve.
+const brdb = {
+  // container + world reader
+  Brdb,
+  WorldReader,
+  BrzReader: brdbLib.BrzReader,
+  writeBrzContainer: brdbLib.writeBrzContainer,
+  writeBrzLegacy: brdbLib.writeBrzLegacy,
+  saveToPendingFs: brdbLib.saveToPendingFs,
+  toRelative: brdbLib.toRelative,
+  MAIN_GRID: brdbLib.MAIN_GRID,
+  CHUNK_SIZE: brdbLib.CHUNK_SIZE,
+  CHUNK_HALF: brdbLib.CHUNK_HALF,
+  // schema
+  BrdbSchema: brdbLib.BrdbSchema,
+  embeddedSchema: brdbLib.embeddedSchema,
+  // guid conversion
+  guidToUuid: brdbLib.guidToUuid,
+  uuidToGuid: brdbLib.uuidToGuid,
+  PUBLIC_GUID: brdbLib.PUBLIC_GUID,
+  // pending-tree + catalog helpers
+  file: brdbLib.file,
+  folder: brdbLib.folder,
+  isProceduralAsset: brdbLib.isProceduralAsset,
+  // low-level building blocks
+  bit: brdbLib.bit,
+  BitFlags: brdbLib.BitFlags,
+  ByteReader: brdbLib.ByteReader,
+  ByteWriter: brdbLib.ByteWriter,
+  // msgpack is a namespace; cast to any so the dts bundler emits `any`
+  // rather than an unresolvable `import("brs-js/.../msgpack.js")`
+  msgpack: brdbLib.msgpack as any,
+};
 
-const OMEGGA_UTIL = { chat, color, uuid, pattern, time, map, brick, wsl, brs };
+export * as brs from 'brs-js';
+export { chat, color, uuid, pattern, time, map, brick, wsl, brdb, Sqlite };
+
+const OMEGGA_UTIL = {
+  chat,
+  color,
+  uuid,
+  pattern,
+  time,
+  map,
+  brick,
+  wsl,
+  brs,
+  brdb,
+  Sqlite,
+};
 export default OMEGGA_UTIL;
