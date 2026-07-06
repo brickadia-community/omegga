@@ -1,4 +1,9 @@
-export { randomUUID as random } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
+
+// explicitly typed (rather than a bare re-export) so the generated plugin
+// d.ts emits `() => string` instead of an unresolvable
+// `typeof import("crypto").randomUUID`, keeping the template self-contained
+export const random: () => string = randomUUID;
 
 // regex pattern that matches uuids
 export const UUID_PATTERN =

@@ -20,7 +20,12 @@ import { map as mapUtils, pattern, uuid } from '@util';
 import { readBrdbRevisions } from '@util/brdb';
 import { copyFiles, mkdir, readWatchedJSON } from '@util/file';
 import Webserver from '@webserver/backend';
-import brs, { type ReadSaveObject, type WriteSaveObject } from 'brs-js';
+import brs, {
+  WorldReader,
+  writeBrzLegacy,
+  type ReadSaveObject,
+  type WriteSaveObject,
+} from 'brs-js';
 import 'colors';
 import glob from 'glob';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
@@ -52,6 +57,70 @@ const MISSING_CMD =
 // Prefab.SaveRegion requires a region; when saving the whole world we pass a
 // maximal extent centered on the origin to capture everything.
 const WHOLE_WORLD_EXTENT = 1_000_000_000;
+
+// These helpers are module-level (not class methods) on purpose: safe plugins
+// call these methods through a ProxyOmegga whose prototype steals Omegga's
+// implementations (see injectOmeggaPrototypes). A `#private` method would fail
+// the brand check when `this` is a ProxyOmegga ("Receiver must be an instance
+// of class Omegga"), so anything a stolen method depends on must not be
+// `#private`. Module functions keep working regardless of the receiver.
+
+/**
+ * Whether the running game version has removed the legacy .brs bricks console
+ * commands (Bricks.Save/Load/ClearAll/ClearRegion, World.LoadAdditive) in
+ * favor of the prefab (`br.Prefab.*`) and world (`br.World.Clear*`) commands.
+ * Removed at Brickadia CL{@link PREFAB_VERSION}.
+ */
+function brsRemoved(version: number): boolean {
+  return version > 0 && version >= PREFAB_VERSION;
+}
+
+/**
+ * Warn that a method backed by a removed console command is a no-op on the
+ * running game version, and return whether the caller should bail.
+ * @param version the running game version
+ * @param method the omegga method being called (for the message)
+ * @param since CL version the underlying command was removed at
+ * @param release human release name for that version (e.g. `EA2`, `EA3`)
+ * @param replacement suggested replacement method/API
+ */
+function warnRemoved(
+  version: number,
+  method: string,
+  since: number,
+  release: string,
+  replacement: string,
+): boolean {
+  if (!(version > 0 && version >= since)) return false;
+  Logger.warnp(
+    `omegga.${method}() uses a console command removed in Brickadia ` +
+      `${release}. This call has no effect - use ${replacement} instead.`,
+  );
+  return true;
+}
+
+/**
+ * Write a save to a temporary `.brz` prefab in the prefab directory (EA3).
+ * @returns the bare path ref for `br.Prefab.*` commands (no `Prefabs/` prefix
+ * or `.brz` extension) and the absolute file path for cleanup.
+ */
+function writeTempPrefab(
+  omegga: {
+    prefabPath: string;
+    _tempSavePrefix: string;
+    _tempCounter: { save: number };
+  },
+  saveData: WriteSaveObject,
+): { ref: string; file: string } {
+  const ref =
+    omegga._tempSavePrefix + Date.now() + '_' + omegga._tempCounter.save++;
+  const file = join(omegga.prefabPath, ref + '.brz');
+  if (!file.startsWith(omegga.prefabPath))
+    throw 'prefab file not in Saved/Prefabs directory';
+  mkdir(omegga.prefabPath);
+  writeFileSync(file, new Uint8Array(writeBrzLegacy(saveData)));
+  return { ref, file };
+}
 
 // TODO: safe broadcast parsing
 
@@ -672,38 +741,6 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       : [];
   }
 
-  /**
-   * Whether the running game version has removed the legacy .brs bricks console
-   * commands (Bricks.Save/Load/ClearAll/ClearRegion, World.LoadAdditive) in
-   * favor of the prefab (`br.Prefab.*`) and world (`br.World.Clear*`) commands.
-   * Removed at Brickadia CL{@link PREFAB_VERSION}.
-   */
-  #brsRemoved(): boolean {
-    return this.version > 0 && this.version >= PREFAB_VERSION;
-  }
-
-  /**
-   * Warn that a method backed by a removed console command is a no-op on the
-   * running game version, and return whether the caller should bail.
-   * @param method the omegga method being called (for the message)
-   * @param since CL version the underlying command was removed at
-   * @param release human release name for that version (e.g. `EA2`, `EA3`)
-   * @param replacement suggested replacement method/API
-   */
-  #warnRemoved(
-    method: string,
-    since: number,
-    release: string,
-    replacement: string,
-  ): boolean {
-    if (!(this.version > 0 && this.version >= since)) return false;
-    Logger.warnp(
-      `omegga.${method}() uses a console command removed in Brickadia ` +
-        `${release}. This call has no effect - use ${replacement} instead.`,
-    );
-    return true;
-  }
-
   clearBricks(target: string | { id: string }, quiet = false) {
     // target is a player object, just use that id
     if (typeof target === 'object' && target.id) target = target.id;
@@ -744,7 +781,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     const center = region.center.join(' ');
     const extent = region.extent.join(' ');
 
-    if (this.#brsRemoved()) {
+    if (brsRemoved(this.version)) {
       // br.World.ClearRegion <Center> <Extent> [ClearBricks] [ClearEntities] [FilterUserId]
       const bricks = (options?.bricks ?? true) ? 1 : 0;
       const entities = (options?.entities ?? false) ? 1 : 0;
@@ -776,7 +813,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       entities = false,
     } = typeof options === 'boolean' ? { quiet: options } : options;
 
-    if (this.#brsRemoved()) {
+    if (brsRemoved(this.version)) {
       // br.World.ClearAll [ClearBricks] [ClearEntities] [Silent]
       this.writeln(
         `${this.Console.World.ClearAll} ${bricks ? 1 : 0} ${
@@ -796,7 +833,15 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       extent: [number, number, number];
     },
   ) {
-    if (this.#warnRemoved('saveBricks', PREFAB_VERSION, 'EA3', 'savePrefab'))
+    if (
+      warnRemoved(
+        this.version,
+        'saveBricks',
+        PREFAB_VERSION,
+        'EA3',
+        'savePrefab',
+      )
+    )
       return;
     if (!saveName) return;
 
@@ -821,7 +866,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     },
   ): Promise<void> {
     if (
-      this.#warnRemoved(
+      warnRemoved(
+        this.version,
         'saveBricksAsync',
         PREFAB_VERSION,
         'EA3',
@@ -868,7 +914,15 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       correctCustom = false,
     } = {},
   ) {
-    if (this.#warnRemoved('loadBricks', PREFAB_VERSION, 'EA3', 'loadPrefab'))
+    if (
+      warnRemoved(
+        this.version,
+        'loadBricks',
+        PREFAB_VERSION,
+        'EA3',
+        'loadPrefab',
+      )
+    )
       return;
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
     if (!(saveName.startsWith('"') && saveName.endsWith('"')))
@@ -893,7 +947,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     } = {},
   ) {
     if (
-      this.#warnRemoved(
+      warnRemoved(
+        this.version,
         'loadBricksOnPlayer',
         EA2_VERSION,
         'EA2',
@@ -1138,8 +1193,20 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       correctCustom = false,
     } = {},
   ) {
-    if (this.#warnRemoved('loadSaveData', PREFAB_VERSION, 'EA3', 'loadPrefab'))
+    // EA3: the legacy Bricks.Load command was removed. Convert the save to a
+    // .brz prefab and load it into the world via br.Prefab.Load. The palette
+    // correction flags have no prefab equivalent and are ignored.
+    if (brsRemoved(this.version)) {
+      const { ref, file } = writeTempPrefab(this, saveData);
+      this.loadPrefab(ref, { offX, offY, offZ });
+      // the server reads the prefab synchronously and auto-closes the bundle a
+      // couple seconds later; clean up the temp file lazily (cf. loadEnvironment)
+      setTimeout(() => {
+        if (existsSync(file)) unlinkSync(file);
+      }, 5000);
       return;
+    }
+
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
     // write savedata to file
@@ -1177,8 +1244,26 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       correctCustom = false,
     } = {},
   ) {
+    player = typeof player === 'string' ? this.getPlayer(player) : player;
+    if (!player) return;
+
+    // EA3: give the save to the player as a prefab (their inventory) via
+    // br.Prefab.GiveToPlayer. Offsets have no equivalent and are ignored,
+    // matching loadPrefabOnPlayer.
+    if (brsRemoved(this.version)) {
+      const { ref, file } = writeTempPrefab(this, saveData);
+      this.givePrefabToPlayer(ref, player);
+      setTimeout(() => {
+        if (existsSync(file)) unlinkSync(file);
+      }, 5000);
+      return;
+    }
+
+    // The Bricks.LoadTemplate command was removed at EA2, before the prefab
+    // commands existed; there is no working path on that intermediate version.
     if (
-      this.#warnRemoved(
+      warnRemoved(
+        this.version,
         'loadSaveDataOnPlayer',
         EA2_VERSION,
         'EA2',
@@ -1186,8 +1271,6 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       )
     )
       return;
-    player = typeof player === 'string' ? this.getPlayer(player) : player;
-    if (!player) return;
 
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
@@ -1219,10 +1302,71 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     center: [number, number, number];
     extent: [number, number, number];
   }) {
-    if (
-      this.#warnRemoved('getSaveData', PREFAB_VERSION, 'EA3', 'the prefab API')
-    )
-      return undefined;
+    // EA3: the legacy Bricks.Save command was removed. Save the world (or the
+    // requested region) as a .brz prefab, then read it back into a legacy save
+    // object. Brick geometry, ownership, assets, materials, colors, and
+    // components are reconstructed; wires are not (the save-level `wires`
+    // array is left empty). Component names/data are EA3-native (e.g.
+    // `Component_Internal_Seat`), not the legacy `BCD_*` names.
+    if (brsRemoved(this.version)) {
+      const ref =
+        this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
+      const file = await this.savePrefabAsync(ref, { region });
+      if (!file) return undefined;
+
+      try {
+        // gridId 1 is the world's main brick grid (MAIN_GRID); entity
+        // sub-grids (>=2) are not captured, matching reader.bricks()'s default.
+        const MAIN_GRID = 1;
+        const reader = WorldReader.from(new Uint8Array(readFileSync(file)));
+        const bricks = [...reader.bricks(MAIN_GRID)].map(b => ({
+          ...b,
+          physical_index: 0,
+          components: {} as Record<string, unknown>,
+        }));
+
+        // Attach components to their bricks. Components are stored per chunk
+        // with a chunk-local brick index; reader.bricks() yields bricks in the
+        // same chunk order as brickChunkIndex(), so a running offset maps the
+        // chunk-local index onto the flat bricks array.
+        let brickOffset = 0;
+        for (const chunk of reader.brickChunkIndex(MAIN_GRID)) {
+          if (chunk.numComponents > 0) {
+            const { components } = reader.componentChunk(
+              MAIN_GRID,
+              chunk.index,
+            );
+            for (const c of components) {
+              const brick = bricks[brickOffset + c.brickIndex];
+              if (brick) brick.components[c.typeName] = c.data ?? {};
+            }
+          }
+          brickOffset += chunk.numBricks;
+        }
+
+        return {
+          version: 10,
+          map: this.currentMap ?? 'Unknown',
+          author: { id: this.host?.id ?? '', name: this.host?.name ?? '' },
+          host: { id: this.host?.id ?? '', name: this.host?.name ?? '' },
+          description: '',
+          brick_count: bricks.length,
+          mods: [],
+          brick_assets: reader.brickAssets(),
+          colors: [],
+          materials: reader.materials(),
+          physical_materials: [],
+          brick_owners: reader.brickOwners(),
+          game_version: this.version,
+          save_time: new Uint8Array(),
+          bricks,
+          components: {},
+        } as ReadSaveObject;
+      } finally {
+        if (existsSync(file)) unlinkSync(file);
+      }
+    }
+
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.save++;
 
@@ -1274,12 +1418,21 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     } = {},
   ) {
     if (!path) return;
+    // The root entity persistent index is looked up as a literal brick-grid
+    // entity, so passing the -1 sentinel errors ("No brick grid entity with
+    // persistent index 4294967295"). Omit it (and the positional args after
+    // it) to load into the world grid; only include it when a real index is
+    // given.
+    const rootPart =
+      rootEntityPersistentIndex >= 0
+        ? ` ${rootEntityPersistentIndex} ${mirrorAxes}${
+            overrideUserId ? ` "${overrideUserId}"` : ''
+          }`
+        : '';
     this.writeln(
       `${this.Console.Prefab.Load} "${path}" ${offX} ${offY} ${offZ} ${
         atOriginalPosition ? 1 : 0
-      } ${orientation} ${rootEntityPersistentIndex} ${mirrorAxes}${
-        overrideUserId ? ` "${overrideUserId}"` : ''
-      }`,
+      } ${orientation}${rootPart}`,
     );
   }
 
