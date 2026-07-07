@@ -499,11 +499,9 @@ export const PlayerInspector = () => {
           )}
           {modal === 'clear' && (
             <PopoutContent>
-              <p style={{ padding: 20 }}>
-                Are you sure you want to clear{' '}
-                <span style={{ color: 'white' }}>{player?.name ?? '??'}</span>'s
-                bricks?
-              </p>
+              Are you sure you want to clear{' '}
+              <span style={{ color: 'white' }}>{player?.name ?? '??'}</span>'s
+              bricks?
             </PopoutContent>
           )}
           <Footer attached>

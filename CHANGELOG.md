@@ -4,6 +4,13 @@
 
 - Future features go here
 
+## 1.9.1 - 2026-07-07
+
+Ban-history crash fix, web-ui ban/kick modal polish, and a brs-js bump.
+
+- Database: Fix server crash when syncing bans
+- Update brs-js to 3.2.4
+
 ## 1.9.0 - 2026-07-05
 
 Wire graph log events and a brs-js 3.0.0 upgrade for native brdb/brz reading.

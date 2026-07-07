@@ -1,6 +1,7 @@
 import * as schema from '@/db/schema';
 import { mockOmegga } from '@/test/util';
 import BetterSqlite3 from 'better-sqlite3';
+import { eq } from 'drizzle-orm';
 import {
   drizzle,
   type BetterSQLite3Database,
@@ -617,6 +618,31 @@ describe('Database', () => {
 
       const rows = db.select().from(schema.banHistory).all();
       expect(rows).toHaveLength(1);
+    });
+
+    // regression: a ban whose timestamp failed to parse used to arrive here as
+    // NaN. NaN is typeof 'number', so the old guard let it through, and binding
+    // NaN to the NOT NULL `expires`/`created` columns stored NULL and threw
+    // "NOT NULL constraint failed: ban_history.expires".
+    it('upsertBanHistory coerces NaN timestamps to 0 without throwing', () => {
+      expect(() =>
+        database.upsertBanHistory({
+          banned: 'p-nan',
+          bannerId: 'admin',
+          created: NaN,
+          expires: NaN,
+          reason: 'unparseable',
+        }),
+      ).not.toThrow();
+
+      const row = db
+        .select()
+        .from(schema.banHistory)
+        .where(eq(schema.banHistory.banned, 'p-nan'))
+        .get();
+      expect(row).toBeDefined();
+      expect(row!.created).toBe(0);
+      expect(row!.expires).toBe(0);
     });
 
     it('upsertKickHistory inserts and deduplicates', () => {

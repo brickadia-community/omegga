@@ -82,9 +82,15 @@ export function parseDuration(str: string) {
   return total;
 }
 
-// parse brickadia's time format (YYYY.MM.DD-HH-MM-SS) into a time object
+// parse brickadia's time format (YYYY.MM.DD-HH.MM.SS) into an epoch ms value.
+// returns NaN for malformed/invalid input (e.g. a missing time part, or a date
+// Brickadia has overflowed past a valid range) instead of throwing. Callers
+// must guard with Number.isFinite before persisting, since NaN bound to a
+// NOT NULL integer column is stored as NULL and violates the constraint.
 export function parseBrickadiaTime(str: string) {
+  if (typeof str !== 'string') return NaN;
   const [date, time] = str.split('-');
+  if (!date || !time) return NaN;
   return new Date(
     date.replace(/\./g, '-') + 'T' + time.replace(/\./g, ':') + 'Z',
   ).getTime();

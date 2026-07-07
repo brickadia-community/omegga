@@ -360,8 +360,10 @@ async function importNedb(
             .values({
               banned: b.banned ?? '',
               bannerId: b.bannerId ?? '',
-              created: typeof b.created === 'number' ? b.created : 0,
-              expires: typeof b.expires === 'number' ? b.expires : 0,
+              // Number.isFinite (not typeof) so a NaN timestamp becomes 0,
+              // binding NaN to a NOT NULL integer column stores NULL and throws
+              created: Number.isFinite(b.created) ? b.created : 0,
+              expires: Number.isFinite(b.expires) ? b.expires : 0,
               reason: b.reason ?? '',
             })
             .onConflictDoNothing()

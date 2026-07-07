@@ -11,7 +11,9 @@
   box-sizing: border-box;
   opacity: 0;
   border-radius: theme.$br-radius-md;
-  overflow: hidden;
+  // no `overflow: hidden` here: it would clip the duration dropdown's options
+  // (which open upward, out of the modal box). The rounded corners are kept by
+  // the attached header/footer rounding their own outer corners to match.
 
   &.visible {
     opacity: 1;
@@ -22,10 +24,35 @@
     position: relative;
   }
 
+  // with `overflow: hidden` gone, the corner-touching header/footer must round
+  // their own outer corners so the modal's rounded box is preserved (this makes
+  // the `attached` rounding implicit for every dialog, not just some)
+  .header {
+    border-top-left-radius: theme.$br-radius-md;
+    border-top-right-radius: theme.$br-radius-md;
+  }
+
+  .footer {
+    border-bottom-left-radius: theme.$br-radius-md;
+    border-bottom-right-radius: theme.$br-radius-md;
+  }
+
+  // uniform spacing for a stack of inputs: one padding on the container plus a
+  // gap between rows, instead of per-input margins (those needed per-modal
+  // !important overrides and produced uneven/doubled gaps)
   .popout-inputs {
-    .dropdown,
-    .input {
-      margin: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+
+    .ban-duration {
+      gap: 8px;
+
+      // duration field fills the row; the unit dropdown sizes to its content
+      .input {
+        flex: 1;
+      }
     }
   }
 }

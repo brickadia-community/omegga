@@ -1128,8 +1128,10 @@ export default class Database extends EventEmitter {
       .values({
         banned: entry.banned,
         bannerId: entry.bannerId ?? '',
-        created: typeof entry.created === 'number' ? entry.created : 0,
-        expires: typeof entry.expires === 'number' ? entry.expires : 0,
+        // Number.isFinite (not typeof) so NaN from parseBrickadiaTime becomes
+        // 0, binding NaN to a NOT NULL integer column stores NULL and throws
+        created: Number.isFinite(entry.created) ? entry.created : 0,
+        expires: Number.isFinite(entry.expires) ? entry.expires : 0,
         reason: entry.reason ?? '',
       })
       .onConflictDoNothing()

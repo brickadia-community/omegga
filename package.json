@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "description": "Brickadia server installer, updater, manager, wrapper, configurator, and automator",
   "engines": {
     "node": ">=23.0.0"
@@ -21,7 +21,7 @@
     "better-sqlite3": "^12.2.0",
     "better-sqlite3-session-store": "^0.1.0",
     "body-parser": "^1.19.0",
-    "brs-js": "^3.2.1",
+    "brs-js": "^3.2.4",
     "child_process": "^1.0.2",
     "chokidar": "^3.4.2",
     "colors": "^1.4.0",
