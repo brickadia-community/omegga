@@ -542,6 +542,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     // find the target player
     if (typeof target !== 'object') target = this.getPlayer(target);
 
+    // player may have left before the message could be sent
+    if (!target) return;
+
     // whisper the messages to that player
     messages
       .flatMap(m => m.toString().split('\n'))
@@ -556,6 +559,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   middlePrint(target: string | OmeggaPlayer, message: string) {
     // find the target player
     if (typeof target !== 'object') target = this.getPlayer(target);
+
+    // player may have left before the message could be sent
+    if (!target) return;
 
     // whisper the messages to that player
     if (message.length > 512) return;

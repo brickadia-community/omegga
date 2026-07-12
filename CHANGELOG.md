@@ -4,6 +4,13 @@
 
 - Future features go here
 
+## 1.9.2 - 2026-07-12
+
+Fix a matcher error when a player leaves before an unknown-command reply can be sent.
+
+- Fix `TypeError: Cannot read properties of undefined (reading 'name')` in the command matcher when whispering the "missing command" message to a player who already left
+- Plugins: `whisper`/`middlePrint` now no-op instead of throwing when the target player can't be resolved
+
 ## 1.9.1 - 2026-07-07
 
 Ban-history crash fix, web-ui ban/kick modal polish, and a brs-js bump.
