@@ -1002,6 +1002,14 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     return existsSync(file) ? file : undefined;
   }
 
+  getPrefabPath(prefabName: string) {
+    const file = join(
+      this.prefabPath,
+      prefabName.endsWith('.brz') ? prefabName : prefabName + '.brz',
+    );
+    return existsSync(file) ? file : undefined;
+  }
+
   getWorldPath(worldName: string) {
     const file = join(
       this.worldPath,
@@ -1174,9 +1182,79 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     writeFileSync(file, new Uint8Array(brs.write(saveData)));
   }
 
+  /**
+   * Read a `.brz` prefab file (EA3) into a legacy save object. Brick geometry,
+   * ownership, assets, materials, and components are reconstructed; wires are
+   * not (the save-level `wires` array is left empty). Component names/data are
+   * EA3-native (e.g. `Component_Internal_Seat`), not the legacy `BCD_*` names.
+   */
+  private readPrefabData(
+    file: string,
+    { nobricks = false } = {},
+  ): ReadSaveObject {
+    // gridId 1 is the world's main brick grid (MAIN_GRID); entity sub-grids
+    // (>=2) are not captured, matching reader.bricks()'s default.
+    const MAIN_GRID = 1;
+    const reader = WorldReader.from(new Uint8Array(readFileSync(file)));
+    const bricks = nobricks
+      ? []
+      : [...reader.bricks(MAIN_GRID)].map(b => ({
+          ...b,
+          physical_index: 0,
+          components: {} as Record<string, unknown>,
+        }));
+
+    // Attach components to their bricks. Components are stored per chunk with a
+    // chunk-local brick index; reader.bricks() yields bricks in the same chunk
+    // order as brickChunkIndex(), so a running offset maps the chunk-local
+    // index onto the flat bricks array.
+    if (!nobricks) {
+      let brickOffset = 0;
+      for (const chunk of reader.brickChunkIndex(MAIN_GRID)) {
+        if (chunk.numComponents > 0) {
+          const { components } = reader.componentChunk(MAIN_GRID, chunk.index);
+          for (const c of components) {
+            const brick = bricks[brickOffset + c.brickIndex];
+            if (brick) brick.components[c.typeName] = c.data ?? {};
+          }
+        }
+        brickOffset += chunk.numBricks;
+      }
+    }
+
+    return {
+      version: 10,
+      map: this.currentMap ?? 'Unknown',
+      author: { id: this.host?.id ?? '', name: this.host?.name ?? '' },
+      host: { id: this.host?.id ?? '', name: this.host?.name ?? '' },
+      description: '',
+      brick_count: bricks.length,
+      mods: [],
+      brick_assets: reader.brickAssets(),
+      colors: [],
+      materials: reader.materials(),
+      physical_materials: [],
+      brick_owners: reader.brickOwners(),
+      game_version: this.version,
+      save_time: new Uint8Array(),
+      bricks,
+      components: {},
+    } as ReadSaveObject;
+  }
+
   readSaveData(saveName: string, nobricks = false): ReadSaveObject {
     if (typeof saveName !== 'string')
       throw 'expected name argument for readSaveData';
+
+    // EA3: the legacy .brs format is gone; saved builds are `.brz` prefabs.
+    // Read the named prefab and reconstruct a legacy save object, mirroring
+    // getSaveData's EA3 path.
+    if (brsRemoved(this.version)) {
+      const file = this.getPrefabPath(saveName);
+      if (!file || !file.startsWith(this.prefabPath))
+        throw 'prefab file not in Saved/Prefabs directory';
+      return this.readPrefabData(file, { nobricks });
+    }
 
     const file = this.getSavePath(saveName);
     if (!file || !file.startsWith(this.savePath))
@@ -1321,53 +1399,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       if (!file) return undefined;
 
       try {
-        // gridId 1 is the world's main brick grid (MAIN_GRID); entity
-        // sub-grids (>=2) are not captured, matching reader.bricks()'s default.
-        const MAIN_GRID = 1;
-        const reader = WorldReader.from(new Uint8Array(readFileSync(file)));
-        const bricks = [...reader.bricks(MAIN_GRID)].map(b => ({
-          ...b,
-          physical_index: 0,
-          components: {} as Record<string, unknown>,
-        }));
-
-        // Attach components to their bricks. Components are stored per chunk
-        // with a chunk-local brick index; reader.bricks() yields bricks in the
-        // same chunk order as brickChunkIndex(), so a running offset maps the
-        // chunk-local index onto the flat bricks array.
-        let brickOffset = 0;
-        for (const chunk of reader.brickChunkIndex(MAIN_GRID)) {
-          if (chunk.numComponents > 0) {
-            const { components } = reader.componentChunk(
-              MAIN_GRID,
-              chunk.index,
-            );
-            for (const c of components) {
-              const brick = bricks[brickOffset + c.brickIndex];
-              if (brick) brick.components[c.typeName] = c.data ?? {};
-            }
-          }
-          brickOffset += chunk.numBricks;
-        }
-
-        return {
-          version: 10,
-          map: this.currentMap ?? 'Unknown',
-          author: { id: this.host?.id ?? '', name: this.host?.name ?? '' },
-          host: { id: this.host?.id ?? '', name: this.host?.name ?? '' },
-          description: '',
-          brick_count: bricks.length,
-          mods: [],
-          brick_assets: reader.brickAssets(),
-          colors: [],
-          materials: reader.materials(),
-          physical_materials: [],
-          brick_owners: reader.brickOwners(),
-          game_version: this.version,
-          save_time: new Uint8Array(),
-          bricks,
-          components: {},
-        } as ReadSaveObject;
+        return this.readPrefabData(file);
       } finally {
         if (existsSync(file)) unlinkSync(file);
       }

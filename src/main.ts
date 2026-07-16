@@ -55,7 +55,7 @@ const program = commander
   .version(VERSION)
   .option(
     '-d, --debug',
-    'Print all console logs rather than just chat messages',
+    'Print all console logs rather than just chat messages (env: BRICKADIA_DEBUG)',
   )
   .option(
     '-u, --update',
@@ -63,7 +63,9 @@ const program = commander
   )
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async () => {
-    const { debug, verbose, update } = program.opts();
+    const { verbose, update } = program.opts();
+    // BRICKADIA_DEBUG is an env-var alias for the --debug flag
+    const debug = Boolean(program.opts().debug || process.env.BRICKADIA_DEBUG);
     if (program.args.length > 0) {
       program.help();
       process.exit(1);
@@ -341,7 +343,11 @@ program
       workDir,
       global: globalAuth,
     }) => {
-      const { verbose, debug } = program.opts();
+      const { verbose } = program.opts();
+      // BRICKADIA_DEBUG is an env-var alias for the --debug flag
+      const debug = Boolean(
+        program.opts().debug || process.env.BRICKADIA_DEBUG,
+      );
       Logger.VERBOSE = Boolean(verbose);
 
       let branch: string, authDir: string, savedDir: string, launchArgs: string;

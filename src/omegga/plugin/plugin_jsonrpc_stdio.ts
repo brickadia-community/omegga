@@ -476,6 +476,9 @@ export default class RpcPlugin extends Plugin {
       this.omegga.getSavePath(name as unknown as string),
     );
     rpc.addMethod('getPrefabs', () => this.omegga.getPrefabs());
+    rpc.addMethod('getPrefabPath', name =>
+      this.omegga.getPrefabPath(name as unknown as string),
+    );
     rpc.addMethod(
       'loadPrefab',
       ({

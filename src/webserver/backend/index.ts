@@ -47,6 +47,8 @@ export default class Webserver {
 
   options: IServerConfig;
   https: boolean;
+  /** host shown in the "Web UI available at" log (OMEGGA_UI_HOST) */
+  host: string;
   started: boolean;
   created: Promise<boolean>;
 
@@ -60,6 +62,7 @@ export default class Webserver {
     this.port = Number(
       options.port || process.env.OMEGGA_PORT || soft.DEFAULT_PORT,
     );
+    this.host = process.env.OMEGGA_UI_HOST || '127.0.0.1';
     this.options = options;
     this.omegga = omegga;
     this.dataPath = path.join(omegga.path, soft.DATA_PATH);
@@ -408,7 +411,7 @@ export default class Webserver {
       this.server.listen(this.port, () => {
         log(
           `${'>>'.green} Web UI available at`,
-          `http${this.https ? 's' : ''}://127.0.0.1:${this.port}`.green,
+          `http${this.https ? 's' : ''}://${this.host}:${this.port}`.green,
         );
         this.started = true;
         this.database.addChatLog('server', {}, 'Server started');

@@ -924,6 +924,13 @@ export interface OmeggaCore {
   getPrefabs(): string[];
 
   /**
+   * Checks if a prefab exists and returns an absolute path (EA3)
+   * @param prefabName Prefab filename
+   * @return Path to string
+   */
+  getPrefabPath(prefabName: string): string;
+
+  /**
    * Load a prefab into the world (EA3). `path` is a bundle path ref such
    * as `Prefabs/Uploads/<hash>.brz`.
    * @param path prefab bundle path ref

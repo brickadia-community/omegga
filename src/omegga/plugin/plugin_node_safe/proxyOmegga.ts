@@ -71,6 +71,7 @@ const STEAL_PROTOTYPES: Record<keyof Required<OmeggaCore>, true> = {
   getWorldPath: true,
   getWorlds: true,
   getPrefabs: true,
+  getPrefabPath: true,
   loadPrefab: true,
   loadPrefabOnPlayer: true,
   savePrefab: true,
@@ -380,6 +381,9 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   }
   getPrefabs(): string[] {
     throw badBorrow('getPrefabs');
+  }
+  getPrefabPath(prefabName: string): string {
+    throw badBorrow('getPrefabPath');
   }
   loadPrefab(
     path: string,

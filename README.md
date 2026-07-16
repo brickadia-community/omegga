@@ -1060,6 +1060,7 @@ These can be set in your shell or in a `.env` file the same directory as a `omeg
 - `BRICKADIA_PASS` - Brickadia auth password (on first start)
 - `BRICKADIA_PORT` - Brickadia server port (default `7777`, on config creation)
 - `OMEGGA_PORT` - omegga webserver port (default `8080`, on config creation)
+- `OMEGGA_UI_HOST` - host shown in the "Web UI available at" log message (default `127.0.0.1`)
 - `BRICKADIA_DIR` - Override the need to use steamcmd and point to a Brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
 - `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default `~/.config/omegga/steam_installs`)
 - `STEAM_APP_ID` - Set the Steam App ID for Brickadia (default `3017590`)
@@ -1069,6 +1070,7 @@ These can be set in your shell or in a `.env` file the same directory as a `omeg
 - `PACKAGE_NOTIFIER` - When set to `false`, disables the npm update notifier
 - `STEAM_NOTIFIER` - When set to `false`, disables the SteamCMD update notifier
 - `SKIP_STEAMCMD_PROMPT` - When set to `true`, agrees to installing SteamCMD without prompting
+- `BRICKADIA_DEBUG` - When set, enables debug logging (equivalent to the `--debug` flag)
 
 ## Config
 

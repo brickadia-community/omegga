@@ -4,6 +4,14 @@
 
 - Future features go here
 
+## 1.9.3 - 2026-07-16
+
+- Plugins: `readSaveData` now reconstructs a legacy save from `.brz` prefabs on EA3, matching `getSaveData`
+- Plugins: Add `getPrefabPath` to resolve a prefab's absolute path
+- Add `OMEGGA_UI_HOST` env to override the host shown in the "Web UI available at" log (default `127.0.0.1`)
+- Add `BRICKADIA_DEBUG` env as an alias for the `--debug` flag
+- Update brs-js to 3.5.0
+
 ## 1.9.2 - 2026-07-12
 
 Fix a matcher error when a player leaves before an unknown-command reply can be sent.
