@@ -101,6 +101,11 @@ class OmeggaWrapper extends EventEmitter {
   worldExists(file: string) {
     return this.#server.worldExists(file);
   }
+
+  /** Resolve the game server binary path (steam/override installs; null for launcher) */
+  getGameBinaryPath(): string | null {
+    return this.#server.getGameBinaryPath();
+  }
 }
 
 export default OmeggaWrapper;

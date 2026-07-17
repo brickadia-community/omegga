@@ -155,6 +155,28 @@ export default class BrickadiaServer extends EventEmitter {
     );
   }
 
+  /**
+   * Resolve the path to the game server binary for steam/override installs.
+   * Returns null for launcher-managed installs, where the binary lives in a
+   * branch directory the launcher owns and isn't known statically here.
+   */
+  getGameBinaryPath(): string | null {
+    const overrideBinary = getOverrideGameBinary();
+    if (overrideBinary) return overrideBinary;
+
+    // a configured branch means the launcher manages the install, not steam
+    const isSteam = !this.config.server.branch;
+    if (!isSteam) return null;
+
+    const steamBeta = this.config.server.steambeta ?? 'main';
+    return path.join(
+      getSteamInstallDir(), // steam install directory
+      steamBeta, // steam beta branch (or main)
+      getSteamGameDir(), // Brickadia
+      GAME_BIN_PATH, // path to binary
+    );
+  }
+
   // start the server child process
   start() {
     const {
@@ -186,7 +208,7 @@ export default class BrickadiaServer extends EventEmitter {
       GAME_BIN_PATH, // path to binary
     );
 
-    let gameBinary = steamBinary;
+    let gameBinary = this.getGameBinaryPath() ?? steamBinary;
 
     if (overrideBinary) {
       if (!existsSync(overrideBinary)) {

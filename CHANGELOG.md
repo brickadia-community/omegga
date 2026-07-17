@@ -4,6 +4,12 @@
 
 - Future features go here
 
+## 1.10.0 - 2026-07-17
+
+This is a minor version bump because it may break existing plugins that rely on the `version` event
+
+- Resolve the game version from the server binary before startup
+
 ## 1.9.3 - 2026-07-16
 
 - Plugins: `readSaveData` now reconstructs a legacy save from `.brz` prefabs on EA3, matching `getSaveData`

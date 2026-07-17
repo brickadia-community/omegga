@@ -39,6 +39,7 @@ import {
   resolveConsoleCommands,
 } from './commands';
 import MATCHERS from './matchers';
+import { readBinaryVersion } from './matchers/version';
 import Player from './player';
 import { PluginLoader } from './plugin';
 import {
@@ -459,6 +460,20 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   //
   async start(): Promise<any> {
     this.starting = true;
+
+    // Resolve the game version straight from the server binary before plugins
+    // load, so `omegga.version` is valid at plugin `init` time (e.g. for
+    // readSaveData) instead of staying -1 until the game boots and writes its
+    // log. The log parser (matchers/version) still runs and corrects this if
+    // the binary read fails or the launcher path can't be resolved.
+    if (this.version < 0) {
+      const binVersion = readBinaryVersion(this.getGameBinaryPath());
+      if (binVersion != null) {
+        this.version = binVersion;
+        Logger.verbose('Brickadia Version (from binary)', binVersion);
+      }
+    }
+
     if (this.webserver) await this.webserver.start();
     if (this.pluginLoader) {
       // scan for plugins
