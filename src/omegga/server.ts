@@ -29,7 +29,7 @@ import brs, {
 import 'colors';
 import glob from 'glob';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
-import { basename, join } from 'path';
+import { basename, join, resolve, sep } from 'path';
 import { AutoRestartConfig } from '..';
 import commandInjector from './commandInjector';
 import {
@@ -98,6 +98,98 @@ function warnRemoved(
       `${release}. This call has no effect - use ${replacement} instead.`,
   );
   return true;
+}
+
+/**
+ * Resolve `name` to an existing file inside `dir`, appending `ext` when it is
+ * missing. `name` may be a bare name, a relative path, or an absolute path --
+ * `resolve` (unlike `join`) lets callers pass an absolute path from one of
+ * these getters straight back into an api that takes a name.
+ * @returns the absolute path, or undefined if it does not exist or escapes `dir`
+ */
+export function resolveInDir(
+  dir: string,
+  name: string,
+  ext: string,
+): string | undefined {
+  if (typeof name !== 'string' || !name) return undefined;
+  const file = resolve(
+    dir,
+    name.toLowerCase().endsWith(ext) ? name : name + ext,
+  );
+  // keep the file inside dir (guards against `..` traversal)
+  if (!file.startsWith(dir.endsWith(sep) ? dir : dir + sep)) return undefined;
+  return existsSync(file) ? file : undefined;
+}
+
+/**
+ * Read a `.brz` prefab file (EA3) into a legacy save object. Brick geometry,
+ * ownership, assets, materials, and components are reconstructed; wires are
+ * not (the save-level `wires` array is left empty). Component names/data are
+ * EA3-native (e.g. `Component_Internal_Seat`), not the legacy `BCD_*` names.
+ *
+ * This is a plain function rather than a method because `readSaveData` and
+ * `getSaveData` are handed to safe plugins via STEAL_PROTOTYPES and run with
+ * `this` bound to the plugin's proxy omegga, which has no private methods on
+ * it -- calling `this.readPrefabData(...)` there throws "not a function".
+ */
+function readPrefabData(
+  omegga: {
+    version: number;
+    currentMap?: string;
+    host?: { id: string; name: string };
+  },
+  file: string,
+  { nobricks = false } = {},
+): ReadSaveObject {
+  // gridId 1 is the world's main brick grid (MAIN_GRID); entity sub-grids
+  // (>=2) are not captured, matching reader.bricks()'s default.
+  const MAIN_GRID = 1;
+  const reader = WorldReader.from(new Uint8Array(readFileSync(file)));
+  const bricks = nobricks
+    ? []
+    : [...reader.bricks(MAIN_GRID)].map(b => ({
+        ...b,
+        physical_index: 0,
+        components: {} as Record<string, unknown>,
+      }));
+
+  // Attach components to their bricks. Components are stored per chunk with a
+  // chunk-local brick index; reader.bricks() yields bricks in the same chunk
+  // order as brickChunkIndex(), so a running offset maps the chunk-local
+  // index onto the flat bricks array.
+  if (!nobricks) {
+    let brickOffset = 0;
+    for (const chunk of reader.brickChunkIndex(MAIN_GRID)) {
+      if (chunk.numComponents > 0) {
+        const { components } = reader.componentChunk(MAIN_GRID, chunk.index);
+        for (const c of components) {
+          const brick = bricks[brickOffset + c.brickIndex];
+          if (brick) brick.components[c.typeName] = c.data ?? {};
+        }
+      }
+      brickOffset += chunk.numBricks;
+    }
+  }
+
+  return {
+    version: 10,
+    map: omegga.currentMap ?? 'Unknown',
+    author: { id: omegga.host?.id ?? '', name: omegga.host?.name ?? '' },
+    host: { id: omegga.host?.id ?? '', name: omegga.host?.name ?? '' },
+    description: '',
+    brick_count: bricks.length,
+    mods: [],
+    brick_assets: reader.brickAssets(),
+    colors: [],
+    materials: reader.materials(),
+    physical_materials: [],
+    brick_owners: reader.brickOwners(),
+    game_version: omegga.version,
+    save_time: new Uint8Array(),
+    bricks,
+    components: {},
+  } as ReadSaveObject;
 }
 
 /**
@@ -1010,27 +1102,15 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   getSavePath(saveName: string) {
-    const file = join(
-      this.savePath,
-      saveName.endsWith('.brs') ? saveName : saveName + '.brs',
-    );
-    return existsSync(file) ? file : undefined;
+    return resolveInDir(this.savePath, saveName, '.brs');
   }
 
   getPrefabPath(prefabName: string) {
-    const file = join(
-      this.prefabPath,
-      prefabName.endsWith('.brz') ? prefabName : prefabName + '.brz',
-    );
-    return existsSync(file) ? file : undefined;
+    return resolveInDir(this.prefabPath, prefabName, '.brz');
   }
 
   getWorldPath(worldName: string) {
-    const file = join(
-      this.worldPath,
-      worldName.endsWith('.brdb') ? worldName : worldName + '.brdb',
-    );
-    return existsSync(file) ? file : undefined;
+    return resolveInDir(this.worldPath, worldName, '.brdb');
   }
 
   async getWorldRevisions(worldName: string) {
@@ -1197,66 +1277,6 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     writeFileSync(file, new Uint8Array(brs.write(saveData)));
   }
 
-  /**
-   * Read a `.brz` prefab file (EA3) into a legacy save object. Brick geometry,
-   * ownership, assets, materials, and components are reconstructed; wires are
-   * not (the save-level `wires` array is left empty). Component names/data are
-   * EA3-native (e.g. `Component_Internal_Seat`), not the legacy `BCD_*` names.
-   */
-  private readPrefabData(
-    file: string,
-    { nobricks = false } = {},
-  ): ReadSaveObject {
-    // gridId 1 is the world's main brick grid (MAIN_GRID); entity sub-grids
-    // (>=2) are not captured, matching reader.bricks()'s default.
-    const MAIN_GRID = 1;
-    const reader = WorldReader.from(new Uint8Array(readFileSync(file)));
-    const bricks = nobricks
-      ? []
-      : [...reader.bricks(MAIN_GRID)].map(b => ({
-          ...b,
-          physical_index: 0,
-          components: {} as Record<string, unknown>,
-        }));
-
-    // Attach components to their bricks. Components are stored per chunk with a
-    // chunk-local brick index; reader.bricks() yields bricks in the same chunk
-    // order as brickChunkIndex(), so a running offset maps the chunk-local
-    // index onto the flat bricks array.
-    if (!nobricks) {
-      let brickOffset = 0;
-      for (const chunk of reader.brickChunkIndex(MAIN_GRID)) {
-        if (chunk.numComponents > 0) {
-          const { components } = reader.componentChunk(MAIN_GRID, chunk.index);
-          for (const c of components) {
-            const brick = bricks[brickOffset + c.brickIndex];
-            if (brick) brick.components[c.typeName] = c.data ?? {};
-          }
-        }
-        brickOffset += chunk.numBricks;
-      }
-    }
-
-    return {
-      version: 10,
-      map: this.currentMap ?? 'Unknown',
-      author: { id: this.host?.id ?? '', name: this.host?.name ?? '' },
-      host: { id: this.host?.id ?? '', name: this.host?.name ?? '' },
-      description: '',
-      brick_count: bricks.length,
-      mods: [],
-      brick_assets: reader.brickAssets(),
-      colors: [],
-      materials: reader.materials(),
-      physical_materials: [],
-      brick_owners: reader.brickOwners(),
-      game_version: this.version,
-      save_time: new Uint8Array(),
-      bricks,
-      components: {},
-    } as ReadSaveObject;
-  }
-
   readSaveData(saveName: string, nobricks = false): ReadSaveObject {
     if (typeof saveName !== 'string')
       throw 'expected name argument for readSaveData';
@@ -1268,7 +1288,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       const file = this.getPrefabPath(saveName);
       if (!file || !file.startsWith(this.prefabPath))
         throw 'prefab file not in Saved/Prefabs directory';
-      return this.readPrefabData(file, { nobricks });
+      return readPrefabData(this, file, { nobricks });
     }
 
     const file = this.getSavePath(saveName);
@@ -1414,7 +1434,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       if (!file) return undefined;
 
       try {
-        return this.readPrefabData(file);
+        return readPrefabData(this, file);
       } finally {
         if (existsSync(file)) unlinkSync(file);
       }
@@ -1540,10 +1560,18 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         WHOLE_WORLD_EXTENT,
       ]
     ).join(' ');
+    // As in loadPrefab, the root entity persistent index is looked up as a
+    // literal brick-grid entity, so passing the -1 sentinel fails with
+    // "No brick grid entity with persistent index 4294967295" and nothing is
+    // written. Omit it (and the user id after it) to save from the world grid.
+    const rootPart =
+      rootEntityPersistentIndex >= 0
+        ? ` ${rootEntityPersistentIndex}${userId ? ` "${userId}"` : ''}`
+        : '';
     this.writeln(
       `${this.Console.Prefab.SaveRegion} "${path}" ${center} ${extent} ${
         entities ? 1 : 0
-      } ${rootEntityPersistentIndex}${userId ? ` "${userId}"` : ''}`,
+      }${rootPart}`,
     );
   }
 

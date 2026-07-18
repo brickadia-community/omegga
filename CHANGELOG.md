@@ -2,7 +2,11 @@
 
 ## Latest
 
-- Future features go here
+## 1.10.1 - 2026-07-18
+
+- Plugins: Fix `getSavePath`/`getPrefabPath`/`getWorldPath` mangling absolute paths
+- Fix `savePrefab`/`savePrefabAsync` (and so `getSaveData` on EA3) always failing
+- Plugins: Fix `readSaveData`/`getSaveData` in safe plugins
 
 ## 1.10.0 - 2026-07-17
 
