@@ -2,6 +2,12 @@
 
 ## Latest
 
+## 1.11.0 - 2026-07-19
+
+- Add `/version` terminal command, warning when the binary on disk differs from the running build
+- Show the game version in the `Launching Brickadia Server` log
+- Fix the game version not being re-detected after a Steam update, and re-emit `version` on restart
+
 ## 1.10.1 - 2026-07-18
 
 - Plugins: Fix `getSavePath`/`getPrefabPath`/`getWorldPath` mangling absolute paths

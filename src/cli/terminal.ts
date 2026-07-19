@@ -1,6 +1,7 @@
 import Logger from '@/logger';
 import { OmeggaPlayer } from '@/plugin';
 import { steamcmdCheckUpdate, steamcmdDownloadGame } from '@/updater';
+import { readBinaryVersion } from '@omegga/matchers/version';
 import Omegga from '@omegga/server';
 import { IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
@@ -155,6 +156,31 @@ const COMMANDS: TerminalCommand[] = [
     async fn() {
       log('Restarting server...');
       await this.omegga.restartServer();
+    },
+  },
+  {
+    aliases: ['version', 'ver'],
+    desc: 'print the game version',
+    fn() {
+      // the running version, and what's actually on disk right now - a steam
+      // update can replace the binary underneath a running server
+      const running = this.omegga.version;
+      const binary = readBinaryVersion(this.omegga.getGameBinaryPath());
+
+      if (running > 0) log('Brickadia Server', ('CL' + running).green);
+      else warn('Game version is not known yet.');
+
+      if (binary == null) return;
+
+      if (running > 0 && binary !== running) {
+        warn(
+          'Server binary on disk is',
+          ('CL' + binary).yellow + '.',
+          'Restart to run the updated build.',
+        );
+      } else if (!(running > 0)) {
+        log('Server binary on disk is', ('CL' + binary).green);
+      }
     },
   },
   {

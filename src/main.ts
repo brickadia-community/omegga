@@ -5,6 +5,7 @@ import soft, {
 } from '@/softconfig';
 import { installLauncher } from '@cli/installer';
 import * as config from '@config';
+import { readBinaryVersion } from '@omegga/matchers/version';
 import Omegga from '@omegga/server';
 import * as file from '@util/file';
 import 'colors';
@@ -259,10 +260,13 @@ const program = commander
       });
     }
 
+    // resolved from the binary, so it's available before the server starts
+    const gameVersion = readBinaryVersion(server.getGameBinaryPath());
+
     Logger.logp(
-      `Launching brickadia server on port ${
-        ('' + (conf.server.port || 7777)).green
-      }...`,
+      `Launching Brickadia Server${
+        gameVersion ? ' ' + ('CL' + gameVersion).green : ''
+      } on port ${('' + (conf.server.port || 7777)).green}...`,
     );
 
     // start the server

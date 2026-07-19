@@ -556,14 +556,20 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     // Resolve the game version straight from the server binary before plugins
     // load, so `omegga.version` is valid at plugin `init` time (e.g. for
     // readSaveData) instead of staying -1 until the game boots and writes its
-    // log. The log parser (matchers/version) still runs and corrects this if
-    // the binary read fails or the launcher path can't be resolved.
-    if (this.version < 0) {
-      const binVersion = readBinaryVersion(this.getGameBinaryPath());
-      if (binVersion != null) {
-        this.version = binVersion;
-        Logger.verbose('Brickadia Version (from binary)', binVersion);
-      }
+    // log.
+    //
+    // This re-resolves on every start, not just the first: a steam update can
+    // replace the binary between restarts (the process is reused by the crash
+    // handler and restartServer), so a version cached from a previous boot goes
+    // stale. When the binary can't be read (e.g. launcher-managed installs) we
+    // reset to -1 so the log parser (matchers/version) re-detects this boot.
+    const binVersion = readBinaryVersion(this.getGameBinaryPath());
+    this.version = binVersion ?? -1;
+    if (binVersion != null) {
+      Logger.verbose('Brickadia Version (from binary)', binVersion);
+      // plugins that aren't reloaded on restart only learn the new version
+      // through this event (reloaded ones get it via bootstrap)
+      this.emit('version', binVersion);
     }
 
     if (this.webserver) await this.webserver.start();
