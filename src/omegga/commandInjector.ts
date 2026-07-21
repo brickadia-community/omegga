@@ -589,8 +589,8 @@ export default <T extends InjectedCommands>(
 ) => {
   for (const cmd in COMMANDS) {
     // disgusting type casting because we're injecting functions
-    (obj as unknown as Record<string, Function>)[cmd] = (
-      COMMANDS[cmd as keyof typeof COMMANDS] as Function
+    (obj as unknown as Record<string, (...args: unknown[]) => unknown>)[cmd] = (
+      COMMANDS[cmd as keyof typeof COMMANDS] as (...args: unknown[]) => unknown
     ).bind(logWrangler);
   }
 };

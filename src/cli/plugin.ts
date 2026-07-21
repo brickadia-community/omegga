@@ -297,7 +297,7 @@ export async function install(plugins: string[], _options: unknown) {
         verboseLog('Changing permission of', postInstallPath);
         fs.chmodSync(postInstallPath, '0755');
         verboseLog('Executing bash file');
-        let { stdout, stderr } = await exec(postInstallPath, {
+        const { stdout, stderr } = await exec(postInstallPath, {
           cwd: pluginPath,
           shell: 'bash',
         });
@@ -497,7 +497,7 @@ export async function update(pluginsNames: string[], _options: unknown) {
         plgLog(plugin, 'Running post install script...');
         try {
           fs.chmodSync(postInstallPath, '0755');
-          let { stdout, stderr } = await exec(postInstallPath, {
+          const { stdout, stderr } = await exec(postInstallPath, {
             cwd: plugin.path,
             shell: 'bash',
           });

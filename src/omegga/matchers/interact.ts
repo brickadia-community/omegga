@@ -4,7 +4,7 @@ import Logger from '@/logger';
 import { convertDisplayName } from '@util/brick';
 
 const interactRegExp =
-  /^Player "(?<name>[^"]+)" \((?<id>[^,]+), (?<pawn>[^,]+), (?<controller>[^)]+)\) interacted with brick "(?<brick>[^\"]+)" at (?<x>-?\d+) (?<y>-?\d+) (?<z>-?\d+), message: "(?<message>.*)".$/;
+  /^Player "(?<name>[^"]+)" \((?<id>[^,]+), (?<pawn>[^,]+), (?<controller>[^)]+)\) interacted with brick "(?<brick>[^"]+)" at (?<x>-?\d+) (?<y>-?\d+) (?<z>-?\d+), message: "(?<message>.*)".$/;
 
 const customEventRegExp = /^event:(?<name>[^:]+)(:(?<args>.*))?$/;
 

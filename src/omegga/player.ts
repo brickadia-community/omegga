@@ -141,7 +141,6 @@ class Player implements OmeggaPlayer {
           (p.state === 'Unchanged'
             ? permissions[p.name]
             : permissions[p.name] || p.state === 'Allowed');
-        permissions[p.name] = permissions[p.name];
       }
     }
 
@@ -494,7 +493,7 @@ class Player implements OmeggaPlayer {
     const previewClass = 'BP_ToolPreviewActor_C';
 
     const ownerRegExp = new RegExp(
-      `^(?<index>\\d+)\\) ${previewClass} (.+):PersistentLevel\\.(?<actor>${previewClass}_\\d+)\.Owner = .*?BP_PlayerController_C'(.+):PersistentLevel\\.(?<controller>BP_PlayerController_C_\\d+)'$`,
+      `^(?<index>\\d+)\\) ${previewClass} (.+):PersistentLevel\\.(?<actor>${previewClass}_\\d+)\\.Owner = .*?BP_PlayerController_C'(.+):PersistentLevel\\.(?<controller>BP_PlayerController_C_\\d+)'$`,
     );
     const transformParamsRegExp = new RegExp(
       `^(?<index>\\d+)\\) ${previewClass} (.+):PersistentLevel\\.(?<actor>${previewClass}_\\d+)\\.TransformParameters = \\(TargetGrid=("(?<targetGrid>.+)"|None),Location=\\(X=(?<x>.+),Y=(?<y>.+),Z=(?<z>.+)\\),Orientation=(?<orientation>.+)\\)$`,

@@ -601,7 +601,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
     descLines: () => ['Type /worlds load a world'],
     async fn(subcommand: string, ...args: string[]) {
       switch (subcommand) {
-        default:
+        default: {
           const commands = [
             {
               command: '/worlds use [world]',
@@ -643,9 +643,10 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             this.log('  ', command.yellow, '-', desc, `(${short.yellow})`);
           }
           return;
+        }
 
         case 'use':
-        case 'u':
+        case 'u': {
           const world = args[0]?.replace(/\.brdb$/, '');
           if (world && !this.omegga.worldExists(world)) {
             err(`World "${world}" does not exist`);
@@ -665,9 +666,10 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             err(`Failed to set default world to ${world.yellow}.`);
           }
           return;
+        }
 
         case 'list':
-        case 'ls':
+        case 'ls': {
           // list worlds
           const worlds = this.omegga.getWorlds();
           if (worlds.length === 0) {
@@ -686,8 +688,9 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             }
           }
           return;
+        }
         case 'load':
-        case 'l':
+        case 'l': {
           if (!this.omegga.started) {
             err('The server is not running');
             return;
@@ -726,8 +729,9 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
           }
 
           return;
+        }
         case 'saveas':
-        case 'sa':
+        case 'sa': {
           if (!this.omegga.started) {
             err('The server is not running');
             return;
@@ -751,9 +755,10 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             err(`Failed to save current world as ${saveWorldName.yellow}`);
           }
           return;
+        }
 
         case 'save':
-        case 's':
+        case 's': {
           if (!this.omegga.started) {
             err('The server is not running');
             return;
@@ -768,9 +773,10 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             err('Failed to save the current world');
           }
           return;
+        }
 
         case 'revisions':
-        case 'r':
+        case 'r': {
           if (!this.omegga.started) {
             err('The server is not running');
             return;
@@ -811,9 +817,10 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             err('An error occurred while getting world revisions:', String(e));
           }
           return;
+        }
 
         case 'new':
-        case 'n':
+        case 'n': {
           if (!this.omegga.started) {
             err('The server is not running');
             return;
@@ -840,6 +847,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
           }
           log(`Creating new world ${newWorldName.yellow}...`);
           this.omegga.createEmptyWorld(newWorldName, map);
+        }
       }
     },
   },

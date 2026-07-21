@@ -142,7 +142,7 @@ class LogWrangler implements LogWrangling {
       }
 
       this.#watchers.push(watcher as IWatcher<unknown>);
-      exec && exec();
+      exec?.();
     });
   }
 

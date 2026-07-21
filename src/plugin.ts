@@ -17,11 +17,13 @@ import util from '@util';
 import { type ReadSaveObject, type WriteSaveObject } from 'brs-js';
 
 export const _OMEGGA_UTILS_IMPORT = util;
+/* eslint-disable no-var -- `var` is required to declare globalThis properties */
 declare global {
   export var Omegga: OmeggaLike;
   export var Player: StaticPlayer;
   export var OMEGGA_UTIL: typeof _OMEGGA_UTILS_IMPORT;
 }
+/* eslint-enable no-var */
 
 export * from '@brickadia/types';
 export * from '@omegga/types';
@@ -464,21 +466,26 @@ export interface InjectedCommands {
   getGamemode(this: OmeggaLike): Promise<IGamemode | null>;
 }
 
+/** event listener shape, mirroring node's EventEmitter */
+export type MockEventListener = (...args: any[]) => void;
+
 export interface MockEventEmitter {
-  addListener(event: string, listener: Function): this;
+  addListener(event: string, listener: MockEventListener): this;
   emit(event: string, ...args: any[]): boolean;
   eventNames(): (string | symbol)[];
   getMaxListeners(): number;
   listenerCount(event: string): number;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- matches node's EventEmitter return type
   listeners(event: string): Function[];
-  off(event: string, listener: Function): this;
-  on(event: string, listener: Function): this;
-  once(event: string, listener: Function): this;
-  prependListener(event: string, listener: Function): this;
-  prependOnceListener(event: string, listener: Function): this;
+  off(event: string, listener: MockEventListener): this;
+  on(event: string, listener: MockEventListener): this;
+  once(event: string, listener: MockEventListener): this;
+  prependListener(event: string, listener: MockEventListener): this;
+  prependOnceListener(event: string, listener: MockEventListener): this;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- matches node's EventEmitter return type
   rawListeners(event: string): Function[];
   removeAllListeners(event?: string): this;
-  removeListener(event: string, listener: Function): this;
+  removeListener(event: string, listener: MockEventListener): this;
   setMaxListeners(maxListeners: number): this;
 
   on(event: 'close', listener: () => void): this;

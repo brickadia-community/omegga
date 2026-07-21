@@ -27,27 +27,29 @@ import {
 import { type ReadSaveObject, type WriteSaveObject } from 'brs-js';
 import EventEmitter from 'events';
 
+// fields blanket-applied onto the proxy by the 'bootstrap' event
+const bootstrapData = (omegga: Omegga) => ({
+  host: Object.freeze({ ...omegga.host }),
+  version: omegga.version,
+  verbose: omegga.verbose,
+  savePath: omegga.savePath,
+  worldPath: omegga.worldPath,
+  prefabPath: omegga.prefabPath,
+  path: omegga.path,
+  configPath: omegga.configPath,
+  presetPath: omegga.presetPath,
+  starting: omegga.starting,
+  started: omegga.started,
+  stopping: omegga.stopping,
+  config: omegga.config,
+  currentMap: omegga.currentMap,
+});
+type BootstrapData = ReturnType<typeof bootstrapData>;
+
 // bootstrap the proxy with initial omegga data
 export const bootstrap = (omegga: Omegga): Record<string, unknown[]> => ({
   'plugin:players:raw': [omegga.players.map(p => p.raw())],
-  bootstrap: [
-    {
-      host: Object.freeze({ ...omegga.host }),
-      version: omegga.version,
-      verbose: omegga.verbose,
-      savePath: omegga.savePath,
-      worldPath: omegga.worldPath,
-      prefabPath: omegga.prefabPath,
-      path: omegga.path,
-      configPath: omegga.configPath,
-      presetPath: omegga.presetPath,
-      starting: omegga.starting,
-      started: omegga.started,
-      stopping: omegga.stopping,
-      config: omegga.config,
-      currentMap: omegga.currentMap,
-    },
-  ],
+  bootstrap: [bootstrapData(omegga)],
 });
 
 // prototypes that can be directly stolen from omegga
@@ -180,10 +182,8 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     commandInjector(this, this.logWrangler);
 
     // blanket apply fields
-    this.once('bootstrap', data => {
-      for (const key in data) {
-        (this as any)[key] = data[key];
-      }
+    this.once('bootstrap', (data: BootstrapData) => {
+      Object.assign(this, data);
     });
 
     // data synchronization
@@ -357,10 +357,22 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   ): void {
     throw badBorrow('clearAllBricks');
   }
-  saveBricks(_saveName: string, _region?: {}): void {
+  saveBricks(
+    _saveName: string,
+    _region?: {
+      center: [number, number, number];
+      extent: [number, number, number];
+    },
+  ): void {
     throw badBorrow('saveBricks');
   }
-  saveBricksAsync(_saveName: string, _region?: {}): Promise<void> {
+  saveBricksAsync(
+    _saveName: string,
+    _region?: {
+      center: [number, number, number];
+      extent: [number, number, number];
+    },
+  ): Promise<void> {
     throw badBorrow('saveBricksAsync');
   }
   loadBricks(

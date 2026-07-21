@@ -539,7 +539,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       };
       this.on('join', callback);
 
-      let timeout = setTimeout(() => {
+      const timeout = setTimeout(() => {
         try {
           this.off('join', callback);
           if (existsSync(tempPlayersFile)) unlinkSync(tempPlayersFile);

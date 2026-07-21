@@ -26,22 +26,34 @@ export function hsv(
     b = 0;
   switch (i % 6) {
     case 0:
-      ((r = val), (g = t), (b = p));
+      r = val;
+      g = t;
+      b = p;
       break;
     case 1:
-      ((r = q), (g = val), (b = p));
+      r = q;
+      g = val;
+      b = p;
       break;
     case 2:
-      ((r = p), (g = val), (b = t));
+      r = p;
+      g = val;
+      b = t;
       break;
     case 3:
-      ((r = p), (g = q), (b = val));
+      r = p;
+      g = q;
+      b = val;
       break;
     case 4:
-      ((r = t), (g = p), (b = val));
+      r = t;
+      g = p;
+      b = val;
       break;
     case 5:
-      ((r = val), (g = p), (b = q));
+      r = val;
+      g = p;
+      b = q;
       break;
   }
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];

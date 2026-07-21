@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "allowJs": false,
-    "baseUrl": ".",
     "rootDir": ".",
     "paths": {
       "@omegga/*": [

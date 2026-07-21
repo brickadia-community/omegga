@@ -82,7 +82,7 @@ const omegga = new ProxyOmegga(exec);
 
 // add plugin fetcher
 omegga.getPlugin = async name => {
-  let plugin = (await emit('getPlugin', name)) as PluginInterop & {
+  const plugin = (await emit('getPlugin', name)) as PluginInterop & {
     emitPlugin(event: string, ...args: any[]): Promise<any>;
   };
   if (plugin) {
@@ -195,7 +195,7 @@ async function createVm(
               },
             },
             cache: {
-              type: 'filesystem' as 'filesystem',
+              type: 'filesystem' as const,
               cacheLocation: path.join(tsBuildPath, '.cache'),
               allowCollectingMemory: false,
               idleTimeout: 0,

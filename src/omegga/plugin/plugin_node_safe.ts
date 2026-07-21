@@ -194,7 +194,7 @@ export default class NodeVmPlugin extends Plugin {
       );
 
       if (plugin) {
-        let r = await plugin.emitPlugin(ev, name, args);
+        const r = await plugin.emitPlugin(ev, name, args);
         this.notify(resp, r);
       } else {
         Logger.error(name.brightRed.underline, '!>'.red, 'error in emitPlugin');

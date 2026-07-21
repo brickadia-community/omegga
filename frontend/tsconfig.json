@@ -71,8 +71,7 @@
       "@cli/*": [
         "../src/cli/*"
       ]
-    },
-    "baseUrl": "."
+    }
   },
   "include": [
     "src"

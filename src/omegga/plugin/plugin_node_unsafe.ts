@@ -89,6 +89,7 @@ export default class NodePlugin extends Plugin {
       }
 
       // require the plugin itself
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- unsafe plugins are loaded with a real runtime require
       const Plugin: OmeggaPlugin = require(this.pluginFile);
 
       // node plugins must export a class with a constructor

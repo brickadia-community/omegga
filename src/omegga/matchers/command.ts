@@ -7,7 +7,7 @@ const command: MatchGenerator<{
 }> = omegga => {
   // pattern to get PlayerController from a leave message
   const commandRegExp =
-    /^Player \"(?<name>.+?)\" is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
+    /^Player "(?<name>.+?)" is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
 
   // pattern to match the "command does not exist" error that follows
   const errorRegExp = /^Error: Command (?<errorCmd>.+?) does not exist\.$/;

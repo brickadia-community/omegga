@@ -661,7 +661,7 @@ export default class RpcPlugin extends Plugin {
         (this.server.getPlayer(player as unknown as string) as any)?.[name](),
       );
     rpc.addMethod('player.get', target => {
-      let player = this.server.getPlayer(target as unknown as string);
+      const player = this.server.getPlayer(target as unknown as string);
       return player && { ...player, host: player.isHost() };
     });
     addPlayerMethod('getRoles');
