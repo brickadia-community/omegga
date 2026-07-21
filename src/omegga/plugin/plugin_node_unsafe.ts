@@ -1,3 +1,4 @@
+/// <reference path="./disrequire.d.ts" />
 import Logger from '@/logger';
 import OmeggaPlugin, { type PluginStore } from '@/plugin';
 import type Omegga from '@omegga/server';

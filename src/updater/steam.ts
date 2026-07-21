@@ -1,3 +1,4 @@
+/// <reference path="./steam-acf2json.d.ts" />
 import Logger from '@/logger';
 import { getAppId, getSteamInstallDir, STEAMCMD_PATH } from '@/softconfig';
 import { execSync, spawnSync } from 'node:child_process';

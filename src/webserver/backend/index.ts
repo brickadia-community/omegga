@@ -1,3 +1,4 @@
+/// <reference path="./better-sqlite3-session-store.d.ts" />
 import Logger from '@/logger';
 import soft from '@/softconfig';
 import { openDb } from '@/db/connection';

@@ -65,6 +65,12 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'warn',
       // `catch (e) { /* ignored */ }` is a common idiom around console io
       'no-empty': ['error', { allowEmptyCatch: true }],
+      // path references pull ambient module declarations into entry-driven
+      // compilations (dts-bundle-generator) that never see the tsconfig globs
+      '@typescript-eslint/triple-slash-reference': [
+        'error',
+        { types: 'prefer-import', path: 'always', lib: 'always' },
+      ],
       // only require const when every destructured binding is never reassigned
       'prefer-const': ['error', { destructuring: 'all' }],
     },
