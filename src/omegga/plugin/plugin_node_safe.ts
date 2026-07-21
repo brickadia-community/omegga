@@ -21,9 +21,10 @@ const ACCESS_FILE = 'access.json';
 const PLUGIN_FILE = 'plugin.json';
 
 export default class NodeVmPlugin extends Plugin {
-  #worker: Worker;
-  #outInterface: readline.Interface;
-  #errInterface: readline.Interface;
+  // undefined until load() creates the worker and after the worker exits
+  #worker: Worker | undefined;
+  #outInterface: readline.Interface | undefined;
+  #errInterface: readline.Interface | undefined;
 
   // every node vm plugin requires a main file, a doc file, and an access file
   // may evolve this so it checks the contents of the doc file later
@@ -172,7 +173,7 @@ export default class NodeVmPlugin extends Plugin {
 
     // plugin fetching
     this.plugin.on('getPlugin', async (resp, name) => {
-      const plugin = this.omegga.pluginLoader.plugins.find(
+      const plugin = this.omegga?.pluginLoader?.plugins.find(
         p => p.getName() === name,
       );
 
@@ -188,7 +189,7 @@ export default class NodeVmPlugin extends Plugin {
     });
 
     this.plugin.on('emitPlugin', async (resp, target, ev, args) => {
-      const plugin = this.omegga.pluginLoader.plugins.find(
+      const plugin = this.omegga?.pluginLoader?.plugins.find(
         p => p.getName() === target,
       );
 
@@ -220,7 +221,7 @@ export default class NodeVmPlugin extends Plugin {
 
   // emit a custom plugin event
   async emitPlugin(ev: string, from: string, args: any[]) {
-    const [r]: any[] = (await this.emit('emitPlugin', ev, from, args)) ?? [];
+    const [r]: any[] = await this.emit('emitPlugin', ev, from, args);
     return r;
   }
 
@@ -243,6 +244,9 @@ export default class NodeVmPlugin extends Plugin {
   async load() {
     // can't load the plugin if it's already loaded
     if (typeof this.#worker !== 'undefined') return false;
+    // plugins constructed without a server (CLI) cannot be loaded
+    if (!this.omegga) return false;
+    const omegga = this.omegga;
 
     // vm restriction settings, default is access to everything
     const vmOptions = {
@@ -260,7 +264,7 @@ export default class NodeVmPlugin extends Plugin {
           JSON.stringify(config),
         );
       }
-      this.createWorker();
+      const worker = this.createWorker();
 
       // tell the worker its name :)
       await this.emit('name', this.getName());
@@ -270,12 +274,12 @@ export default class NodeVmPlugin extends Plugin {
       if (!(await this.emit('load', this.path, vmOptions))[0]) throw '';
 
       // get some initial information to create an omegga proxy
-      const initialData = bootstrap(this.omegga);
+      const initialData = bootstrap(omegga);
       // send all of the mock events to the proxy omegga
       Logger.verbose('Sending initial data to safe plugin');
       for (const ev in initialData) {
         try {
-          (this.#worker as Worker).postMessage({
+          worker.postMessage({
             action: 'brickadiaEvent',
             args: [ev, ...initialData[ev]],
           });
@@ -285,7 +289,7 @@ export default class NodeVmPlugin extends Plugin {
       }
 
       // pass events through
-      this.omegga.on('*', this.eventPassthrough);
+      omegga.on('*', this.eventPassthrough);
       Logger.verbose('Starting safe plugin');
       // actually start the plugin
       if (!(await this.emit('start', config))[0]) throw 'plugin failed start';
@@ -315,18 +319,19 @@ export default class NodeVmPlugin extends Plugin {
     return Promise.race([
       (async () => {
         // can't unload the plugin if it hasn't been loaded
-        if (typeof this.#worker === 'undefined') return false;
+        const worker = this.#worker;
+        if (typeof worker === 'undefined') return false;
 
         try {
           // stop the plugin (cleanly)
           await this.emit('stop');
 
           // remove listeners
-          this.omegga.off('*', this.eventPassthrough);
+          this.omegga?.off('*', this.eventPassthrough);
 
           // let the unload function wait for the worker to properly cleanup
           const promise = new Promise(res => {
-            this.#worker.once('exit', res);
+            worker.once('exit', res);
           });
 
           // kill the worker
@@ -336,13 +341,13 @@ export default class NodeVmPlugin extends Plugin {
           await promise;
 
           frozen = false;
-          if (timed) return;
+          if (timed) return false;
           this.emitStatus();
           this.commands = [];
           return true;
         } catch (e) {
           frozen = false;
-          if (timed) return;
+          if (timed) return false;
 
           Logger.error(
             '!>'.red,
@@ -365,7 +370,7 @@ export default class NodeVmPlugin extends Plugin {
           );
 
           // remove listeners
-          this.omegga.off('*', this.eventPassthrough);
+          this.omegga?.off('*', this.eventPassthrough);
 
           // tell the worker to exit
           if (this.#worker) this.#worker.emit('exit');
@@ -386,8 +391,9 @@ export default class NodeVmPlugin extends Plugin {
   }
 
   // emit an action to the worker and return a promise with its response
-  emit(action: string, ...args: any[]) {
-    if (!this.#worker) return;
+  emit(action: string, ...args: any[]): Promise<unknown[]> {
+    // no worker means no response; callers treat empty results as failure
+    if (!this.#worker) return Promise.resolve([]);
 
     const messageId = 'message:' + this.messageCounter++;
 
@@ -426,8 +432,8 @@ export default class NodeVmPlugin extends Plugin {
   }
 
   // create the worker for this plugin, attach emitter
-  createWorker() {
-    this.#worker = new Worker(
+  createWorker(): Worker {
+    const worker = new Worker(
       // vite transpiles worker.ts to dist/worker.js
       path.join(__dirname, '../../worker.js'),
       {
@@ -437,26 +443,27 @@ export default class NodeVmPlugin extends Plugin {
         },
       },
     );
+    this.#worker = worker;
 
     // pipe plugin output into omegga
     this.#outInterface = readline.createInterface({
-      input: this.#worker.stdout,
+      input: worker.stdout,
       terminal: false,
     });
     this.#errInterface = readline.createInterface({
-      input: this.#worker.stderr,
+      input: worker.stderr,
       terminal: false,
     });
     this.#outInterface.on('line', Logger.log);
     this.#errInterface.on('line', Logger.error);
 
     // attach message emitter
-    this.#worker.on('message', ({ action, args }) =>
+    worker.on('message', ({ action, args }) =>
       this.plugin.emit(action, ...args),
     );
 
     // broadcast an error if there is one
-    this.#worker.on('error', err => {
+    worker.on('error', err => {
       Logger.error(
         '!>'.red,
         'error in plugin',
@@ -466,10 +473,10 @@ export default class NodeVmPlugin extends Plugin {
     });
 
     // when the worker exits - set its variable to undefined this knows it's stopped
-    this.#worker.on('exit', () => {
-      this.omegga.off('*', this.eventPassthrough);
-      this.#outInterface.removeAllListeners('line');
-      this.#errInterface.removeAllListeners('line');
+    worker.on('exit', () => {
+      this.omegga?.off('*', this.eventPassthrough);
+      this.#outInterface?.removeAllListeners('line');
+      this.#errInterface?.removeAllListeners('line');
       try {
         if (this.#worker) this.#worker.terminate();
       } catch (err) {
@@ -483,6 +490,8 @@ export default class NodeVmPlugin extends Plugin {
       this.#worker = undefined;
       this.emitStatus();
     });
+
+    return worker;
   }
 
   eventPassthrough(...args: any[]) {

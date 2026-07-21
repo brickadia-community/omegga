@@ -1,5 +1,5 @@
 import Logger from '@/logger';
-import { IPluginCommand, IPluginDocumentation } from '@/plugin';
+import { type IPluginCommand, type IPluginDocumentation } from '@/plugin';
 import soft from '@/softconfig';
 import { openDb } from '@/db/connection';
 import { runPluginMigrations } from '@/db/migrate';
@@ -71,7 +71,7 @@ export class PluginStorage {
   }
 
   // get the config for this plugin
-  async getConfig(): Promise<Record<string, unknown>> {
+  async getConfig(): Promise<Record<string, unknown> | null> {
     const row = this.db
       .select()
       .from(pluginSchema.pluginConfig)
@@ -187,13 +187,15 @@ export class PluginStorage {
 export class PluginLoader {
   path: string;
   dataPath: string;
-  omegga: Omegga;
+  // undefined when constructed from the CLI (config commands)
+  omegga: Omegga | undefined;
   pluginDb: BetterSQLite3Database;
   formats: (typeof Plugin)[];
   plugins: Plugin[];
 
-  commands: Record<string, IPluginCommand & { _plugin: Plugin }>;
-  documentation: Record<string, IPluginDocumentation & { _plugin: Plugin }>;
+  commands: Record<string, IPluginCommand & { _plugin: Plugin }> = {};
+  documentation: Record<string, IPluginDocumentation & { _plugin: Plugin }> =
+    {};
 
   constructor(workDir: string, omegga?: Omegga) {
     this.path = path.join(workDir, soft.PLUGIN_PATH);
@@ -401,7 +403,7 @@ export class PluginLoader {
     }, {} as DependencyGraph);
 
     // find all nodes with no incoming edges to start processing
-    let zeros: string[] = Object.entries(depGraph).reduce(
+    let zeros: string[] = Object.entries(depGraph).reduce<string[]>(
       (arr, [name, { inDegree }]) => {
         if (inDegree === 0) {
           arr.push(name);
@@ -449,14 +451,12 @@ export class PluginLoader {
       .sort((a, b) => {
         const A = a.pluginConfig?.loadPriority;
         const B = b.pluginConfig?.loadPriority;
-        const aU = A == null;
-        const bU = B == null;
         // sort the result by load priority so that
         // a defined loadPriority that is negative comes before undefined (lower is earlier)
         // and a defined loadPriority that is positive comes after undefined (higher is later)
-        if (aU && bU) return 0;
-        if (aU) return B <= 0 ? 1 : -1;
-        if (bU) return A <= 0 ? -1 : 1;
+        if (A == null && B == null) return 0;
+        if (A == null) return B != null && B <= 0 ? 1 : -1;
+        if (B == null) return A <= 0 ? -1 : 1;
         return A - B;
       });
   }
@@ -486,7 +486,7 @@ export class PluginLoader {
       )
     )
       // remove plugins without formats
-      .filter(p => p);
+      .filter(p => p !== undefined);
 
     this.plugins = PluginLoader.calculateLoadOrder(unsortedPlugins);
 
@@ -503,8 +503,8 @@ export class PluginLoader {
 
   // show helptext
   showHelp(player: string | Player, ...args: string[]) {
-    // send the message to the player
-    const send = (msg: string) => this.omegga.whisper(player, msg);
+    // send the message to the player (only registered when a server exists)
+    const send = (msg: string) => this.omegga?.whisper(player, msg);
 
     // available commands and documentation from the plugin system
     const commands = this.commands ?? {};

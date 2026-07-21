@@ -1,4 +1,4 @@
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 
 const wire: MatchGenerator<{ raw: string }> = omegga => {
   // pattern to match wire graph log messages
@@ -9,7 +9,7 @@ const wire: MatchGenerator<{ raw: string }> = omegga => {
     // listen for wire graph messages
     pattern(_line, logMatch) {
       // line is not generic console log
-      if (!logMatch) return;
+      if (!logMatch?.groups) return;
 
       const { generator, data } = logMatch.groups;
       // check if log is a brickadia log
@@ -17,7 +17,7 @@ const wire: MatchGenerator<{ raw: string }> = omegga => {
 
       // match the wire graph log pattern
       const match = data.match(wireRegExp);
-      if (!match) return;
+      if (!match?.groups) return;
 
       return { raw: match.groups.raw };
     },

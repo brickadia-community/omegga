@@ -1,5 +1,9 @@
 import Logger from '@/logger';
-import { OmeggaLike, OmeggaPlayer, PluginInterop } from '@/plugin';
+import {
+  type OmeggaLike,
+  type OmeggaPlayer,
+  type PluginInterop,
+} from '@/plugin';
 import {
   BRICKADIA_AUTH_FILES,
   CONFIG_AUTH_DIR,
@@ -8,14 +12,14 @@ import {
   DATA_PATH,
 } from '@/softconfig';
 import { VERSION } from '@/version';
-import { EnvironmentPreset } from '@brickadia/presets';
+import { type EnvironmentPreset } from '@brickadia/presets';
 import {
-  BRBanList,
-  BRPlayerNameCache,
-  BRRoleAssignments,
-  BRRoleSetup,
+  type BRBanList,
+  type BRPlayerNameCache,
+  type BRRoleAssignments,
+  type BRRoleSetup,
 } from '@brickadia/types';
-import { IConfig } from '@config/types';
+import { type IConfig } from '@config/types';
 import { map as mapUtils, pattern, uuid } from '@util';
 import { readBrdbRevisions } from '@util/brdb';
 import { copyFiles, mkdir, readWatchedJSON } from '@util/file';
@@ -30,25 +34,26 @@ import 'colors';
 import glob from 'glob';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'path';
-import { AutoRestartConfig } from '..';
+import { type AutoRestartConfig } from '..';
 import commandInjector from './commandInjector';
 import {
-  ConsoleCommands,
+  type ConsoleCommands,
   EA2_VERSION,
   PREFAB_VERSION,
   resolveConsoleCommands,
 } from './commands';
 import MATCHERS from './matchers';
 import { readBinaryVersion } from './matchers/version';
-import Player from './player';
+// imported for its side effect: registers the global Player helper
+import './player';
 import { PluginLoader } from './plugin';
 import {
-  IGamemode,
-  ILogMinigame,
-  IMinigameList,
-  IOmeggaOptions,
-  IPlayerPositions,
-  IServerStatus,
+  type IGamemode,
+  type ILogMinigame,
+  type IMinigameList,
+  type IOmeggaOptions,
+  type IPlayerPositions,
+  type IServerStatus,
 } from './types';
 import OmeggaWrapper from './wrapper';
 
@@ -224,8 +229,10 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   _tempSavePrefix = 'omegga_temp_';
 
   // pluginloader is not private so plugins can potentially add more formats
-  pluginLoader: PluginLoader = undefined;
-  webserver: Webserver;
+  // undefined when plugins are disabled (--noplugin)
+  pluginLoader: PluginLoader | undefined = undefined;
+  // undefined when the web ui is disabled (--noweb)
+  webserver: Webserver | undefined;
 
   verbose: boolean;
   savePath: string;
@@ -238,7 +245,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   version: number;
 
   /** memoized version-resolved console commands ({@link Console}) */
-  #console: { version: number; commands: ConsoleCommands };
+  #console: { version: number; commands: ConsoleCommands } | undefined;
 
   /**
    * version-resolved Brickadia console command names, nested by namespace.
@@ -246,12 +253,15 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
    * depending on the running game version.
    */
   get Console(): ConsoleCommands {
-    if (this.#console?.version !== this.version)
-      this.#console = {
+    let memo = this.#console;
+    if (memo?.version !== this.version) {
+      memo = {
         version: this.version,
         commands: resolveConsoleCommands(this.version),
       };
-    return this.#console.commands;
+      this.#console = memo;
+    }
+    return memo.commands;
   }
 
   host?: { id: string; name: string };
@@ -263,11 +273,12 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   crashDetected = false;
   currentMap: string;
 
-  getServerStatus: () => Promise<IServerStatus>;
-  listMinigames: () => Promise<IMinigameList>;
-  getAllPlayerPositions: () => Promise<IPlayerPositions>;
-  getMinigames: () => Promise<ILogMinigame[]>;
-  getGamemode: () => Promise<IGamemode | null>;
+  // assigned by commandInjector() in the constructor
+  getServerStatus!: () => Promise<IServerStatus>;
+  listMinigames!: () => Promise<IMinigameList>;
+  getAllPlayerPositions!: () => Promise<IPlayerPositions>;
+  getMinigames!: () => Promise<ILogMinigame[]>;
+  getGamemode!: () => Promise<IGamemode | null>;
 
   /**
    * Omegga instance
@@ -331,7 +342,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     // and lets you view chat logs, disable plugins, etc
     if (!options.noweb) {
       Logger.verbose('Creating webserver');
-      this.webserver = new Webserver(cfg.omegga, this);
+      this.webserver = new Webserver(cfg.omegga ?? {}, this);
     }
 
     if (!options.noplugin) {
@@ -653,33 +664,31 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   whisper(target: string | OmeggaPlayer, ...messages: string[]) {
     // find the target player
-    if (typeof target !== 'object') target = this.getPlayer(target);
+    const player = typeof target !== 'object' ? this.getPlayer(target) : target;
 
     // player may have left before the message could be sent
-    if (!target) return;
+    if (!player) return;
 
     // whisper the messages to that player
     messages
       .flatMap(m => m.toString().split('\n'))
       .filter(m => m.length < 512)
       .forEach(m =>
-        this.writeln(
-          `${this.Console.Chat.Whisper} "${(target as { name: string }).name}" ${m}`,
-        ),
+        this.writeln(`${this.Console.Chat.Whisper} "${player.name}" ${m}`),
       );
   }
 
   middlePrint(target: string | OmeggaPlayer, message: string) {
     // find the target player
-    if (typeof target !== 'object') target = this.getPlayer(target);
+    const player = typeof target !== 'object' ? this.getPlayer(target) : target;
 
     // player may have left before the message could be sent
-    if (!target) return;
+    if (!player) return;
 
     // whisper the messages to that player
     if (message.length > 512) return;
     this.writeln(
-      `${this.Console.Chat.StatusMessage} "${(target as { name: string }).name}" ${message}`,
+      `${this.Console.Chat.StatusMessage} "${player.name}" ${message}`,
     );
   }
 
@@ -715,17 +724,19 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     ) as BRPlayerNameCache;
   }
 
-  getPlayer(target: string): OmeggaPlayer {
-    return this.players.find(
-      p =>
-        p.name === target ||
-        p.id === target ||
-        p.controller === target ||
-        p.state === target,
+  getPlayer(target: string): OmeggaPlayer | null {
+    return (
+      this.players.find(
+        p =>
+          p.name === target ||
+          p.id === target ||
+          p.controller === target ||
+          p.state === target,
+      ) ?? null
     );
   }
 
-  findPlayerByName(name: string): OmeggaPlayer {
+  findPlayerByName(name: string): OmeggaPlayer | null {
     name = name.toLowerCase();
     const exploded = pattern.explode(name);
     return (
@@ -735,7 +746,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       ) || // find by rough match
       this.players.find(
         p => p.name.match(exploded) || p.displayName.match(exploded),
-      ) // find by exploded regex match (ck finds cake, tbp finds TheBlackParrot)
+      ) || // find by exploded regex match (ck finds cake, tbp finds TheBlackParrot)
+      null
     );
   }
 
@@ -791,7 +803,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     });
   }
 
-  async getEnvironmentData(): Promise<EnvironmentPreset> {
+  async getEnvironmentData(): Promise<EnvironmentPreset | null> {
     const saveName =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.environment++;
 
@@ -803,7 +815,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     return data;
   }
 
-  readEnvironmentData(saveName: string): EnvironmentPreset {
+  readEnvironmentData(saveName: string): EnvironmentPreset | null {
     if (typeof saveName !== 'string')
       throw 'expected name argument for readEnvironmentData';
 
@@ -821,9 +833,13 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   loadEnvironmentData(
-    preset: EnvironmentPreset | EnvironmentPreset['data']['groups'],
+    preset:
+      | EnvironmentPreset
+      | NonNullable<EnvironmentPreset['data']>['groups'],
   ) {
-    if ('data' in preset) preset = preset.data.groups;
+    // a nullish preset would otherwise silently apply an empty environment
+    if (!preset) throw new Error('loadEnvironmentData requires a preset');
+    if ('data' in preset) preset = preset.data?.groups;
 
     const saveFile =
       this._tempSavePrefix + Date.now() + '_' + this._tempCounter.environment++;
@@ -862,17 +878,17 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   clearBricks(target: string | { id: string }, quiet = false) {
     // target is a player object, just use that id
-    if (typeof target === 'object' && target.id) target = target.id;
+    let id: string | null;
+    if (typeof target === 'object') id = target.id;
     // if the target isn't a uuid already, find the player by name or controller and use that uuid
-    else if (typeof target === 'string' && !uuid.match(target)) {
+    else if (!uuid.match(target)) {
       // only set the target if the player exists
-      const player = this.getPlayer(target);
-      target = player && player.id;
-    }
+      id = this.getPlayer(target)?.id ?? null;
+    } else id = target;
 
-    if (!target) return;
+    if (!id) return;
 
-    this.writeln(`${this.Console.Bricks.Clear} ${target} ${quiet ? 1 : ''}`);
+    this.writeln(`${this.Console.Bricks.Clear} ${id} ${quiet ? 1 : ''}`);
   }
 
   clearRegion(
@@ -1075,8 +1091,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       )
     )
       return;
-    player = typeof player === 'string' ? this.getPlayer(player) : player;
-    if (!player) return;
+    const target = typeof player === 'string' ? this.getPlayer(player) : player;
+    if (!target) return;
 
     // add quotes around the filename if it doesn't have them (backwards compat w/ plugins)
     if (!(saveName.startsWith('"') && saveName.endsWith('"')))
@@ -1085,7 +1101,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     this.writeln(
       `${this.Console.Bricks.LoadTemplate} ${saveName} ${offX} ${offY} ${offZ}  ${
         correctPalette ? 1 : 0
-      } ${correctCustom ? 1 : 0} "${player.name}"`,
+      } ${correctCustom ? 1 : 0} "${target.name}"`,
     );
   }
 
@@ -1244,7 +1260,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     worldName: string,
     map: 'Plate' | 'Space' | 'Studio' | 'Peaks' = 'Plate',
   ): Promise<boolean> {
-    if (!worldName) return;
+    if (!worldName) return false;
     worldName = worldName.replace(/\.brdb$/i, '');
 
     try {
@@ -1300,11 +1316,10 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     const file = this.getSavePath(saveName);
     if (!file || !file.startsWith(this.savePath))
       throw 'save file not in Saved/Builds directory';
-    if (file)
-      return brs.read(readFileSync(file), {
-        preview: false,
-        bricks: !nobricks,
-      });
+    return brs.read(readFileSync(file), {
+      preview: false,
+      bricks: !nobricks,
+    });
   }
 
   async loadSaveData(
@@ -1369,15 +1384,15 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       correctCustom = false,
     } = {},
   ) {
-    player = typeof player === 'string' ? this.getPlayer(player) : player;
-    if (!player) return;
+    const target = typeof player === 'string' ? this.getPlayer(player) : player;
+    if (!target) return;
 
     // EA3: give the save to the player as a prefab (their inventory) via
     // br.Prefab.GiveToPlayer. Offsets have no equivalent and are ignored,
     // matching loadPrefabOnPlayer.
     if (brsRemoved(this.version)) {
       const { ref, file } = writeTempPrefab(this, saveData);
-      this.givePrefabToPlayer(ref, player);
+      this.givePrefabToPlayer(ref, target);
       setTimeout(() => {
         if (existsSync(file)) unlinkSync(file);
       }, 5000);
@@ -1406,7 +1421,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     await this.watchLogChunk(
       `${this.Console.Bricks.LoadTemplate} "${saveFile}" ${offX} ${offY} ${offZ} ${
         correctPalette ? 1 : 0
-      } ${correctCustom ? 1 : 0} "${player.name}"`,
+      } ${correctCustom ? 1 : 0} "${target.name}"`,
       /^LogBrickSerializer: (.+)$/,
       {
         first: match => match[0].endsWith(saveFile + '.brs...'),
@@ -1636,7 +1651,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
   // TODO: switch this to use worlds...
   async changeMap(map: string) {
-    if (!map) return;
+    if (!map) return false;
 
     // ServerTravel requires /Game/Maps/Plate/Plate instead of Plate
     const brName = mapUtils.n2brn(map);
@@ -1658,8 +1673,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     return success;
   }
 
-  async getPlugin(name: string): Promise<PluginInterop> {
-    const plugin = this.pluginLoader.plugins.find(p => p.getName() === name);
+  async getPlugin(name: string): Promise<PluginInterop | null> {
+    const plugin = this.pluginLoader?.plugins.find(p => p.getName() === name);
 
     if (plugin) {
       return {

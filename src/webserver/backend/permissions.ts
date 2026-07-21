@@ -81,12 +81,6 @@ const ROOT_BY_RANK: RootLevel[] = [
   RootLevel.Read,
   RootLevel.All,
 ];
-const DOMAIN_BY_RANK: DomainLevel[] = [
-  DomainLevel.None,
-  DomainLevel.Read,
-  DomainLevel.All,
-];
-
 export function mergePermissionSets(...sets: PermissionSet[]): PermissionSet {
   let rootRank = 0;
   const domains: Partial<Record<Domain, DomainLevel>> = {};

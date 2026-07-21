@@ -1,5 +1,5 @@
-import { MatchGenerator } from './types';
-import { BrickInteraction } from '@/plugin';
+import { type MatchGenerator } from './types';
+import { type BrickInteraction } from '@/plugin';
 import Logger from '@/logger';
 import { convertDisplayName } from '@util/brick';
 
@@ -13,47 +13,43 @@ const interact: MatchGenerator<BrickInteraction> = omegga => {
     // listen for auth messages
     pattern(_line, logMatch) {
       // line is not generic console log
-      if (!logMatch) return;
+      if (!logMatch?.groups) return;
 
       const { generator, data } = logMatch.groups;
 
       if (generator !== 'LogBrickadia') return;
 
-      const match = data.match(interactRegExp);
+      const groups = data.match(interactRegExp)?.groups;
 
       // check if log is the kill server log
-      if (match) {
+      if (groups) {
         let blob: any = null,
           error = false,
           json = false;
-        if (match.groups.message?.startsWith('json:')) {
+        if (groups.message?.startsWith('json:')) {
           json = true;
           try {
-            blob = JSON.parse(match.groups.message.slice(5));
+            blob = JSON.parse(groups.message.slice(5));
           } catch (err) {
             Logger.verbose('Error parsing interact event json', data, err);
             error = true;
           }
         }
 
-        const convertedBrick = convertDisplayName(match.groups.brick) ?? [];
+        const convertedBrick = convertDisplayName(groups.brick);
 
         return {
           player: {
-            id: match.groups.id,
-            name: match.groups.name,
-            controller: match.groups.controller,
-            pawn: match.groups.pawn,
+            id: groups.id,
+            name: groups.name,
+            controller: groups.controller,
+            pawn: groups.pawn,
           },
-          brick_name: match.groups.brick,
-          brick_asset: convertedBrick[0],
-          brick_size: convertedBrick[1],
-          position: [
-            Number(match.groups.x),
-            Number(match.groups.y),
-            Number(match.groups.z),
-          ],
-          message: match.groups.message,
+          brick_name: groups.brick,
+          brick_asset: convertedBrick?.[0] ?? null,
+          brick_size: convertedBrick?.[1] ?? null,
+          position: [Number(groups.x), Number(groups.y), Number(groups.z)],
+          message: groups.message,
           json,
           error,
           data: blob,
@@ -63,7 +59,7 @@ const interact: MatchGenerator<BrickInteraction> = omegga => {
 
     callback(interaction) {
       const match = interaction.message.match(customEventRegExp);
-      if (match) {
+      if (match?.groups) {
         omegga.emit(
           `event:${match.groups.name}`,
           interaction.player,

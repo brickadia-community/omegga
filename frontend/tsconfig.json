@@ -23,7 +23,12 @@
     "noUncheckedSideEffectImports": true,
     "types": [
       "./src/index.d.ts",
-      "../src/webserver/backend/types.d.ts"
+      "../src/webserver/backend/types.d.ts",
+      /* ambient module declarations for untyped backend deps */
+      "../src/omegga/plugin/disrequire.d.ts",
+      "../src/updater/steam-acf2json.d.ts",
+      "../src/webserver/backend/better-sqlite3-session-store.d.ts",
+      "../src/update-notifier-cjs.d.ts"
     ],
     "paths": {
       "@components": [
@@ -48,8 +53,23 @@
       "@util/*": [
         "../src/util/*"
       ],
+      "@util": [
+        "../src/util/index.ts"
+      ],
       "@config/*": [
         "../src/config/*"
+      ],
+      "@config": [
+        "../src/config/index.ts"
+      ],
+      "@brickadia/*": [
+        "../src/brickadia/*"
+      ],
+      "@webserver/*": [
+        "../src/webserver/*"
+      ],
+      "@cli/*": [
+        "../src/cli/*"
       ]
     },
     "baseUrl": "."

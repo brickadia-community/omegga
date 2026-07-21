@@ -9,7 +9,11 @@ import hasbin from 'hasbin';
 import path from 'node:path';
 import prompts from 'prompts';
 import semver from 'semver';
-import simpleGit, { ResetMode, SimpleGit } from 'simple-git';
+import simpleGit, {
+  ResetMode,
+  type SimpleGit,
+  type StatusResult,
+} from 'simple-git';
 import { promisify } from 'node:util';
 import { VERSION } from '@/version';
 
@@ -77,9 +81,11 @@ const transformers: ITransformer[] = [
 
 // convert a shortened url into a full length one
 const transformUrl = (url: string): IPlugin => {
-  const found = transformers.find(t => url.match(t.pattern));
-  if (!found) return { type: 'raw', url };
-  return found.fn(url.match(found.pattern).groups);
+  for (const t of transformers) {
+    const match = url.match(t.pattern);
+    if (match?.groups) return t.fn(match.groups);
+  }
+  return { type: 'raw', url };
 };
 
 let needsNL = false;
@@ -102,7 +108,12 @@ const plg = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
 };
 const plgLog = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
   if (Logger.VERBOSE) plg(plugin, ...args);
-  else rewriteLine(plugin.name, '>>'.green, ...args);
+  else
+    rewriteLine(
+      plugin.name ?? ('url' in plugin ? plugin.url : ''),
+      '>>'.green,
+      ...args,
+    );
 };
 const plgWarn = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
   if (needsNL) {
@@ -142,7 +153,10 @@ const verboseLog = (...args: any[]) => {
   console.log('V>'.magenta, ...args);
 };
 
-function checkPlugin(omeggaPath: string, plugin: IPlugin | IInstalledPlugin) {
+function checkPlugin(
+  omeggaPath: string,
+  plugin: (IPlugin & { name: string }) | IInstalledPlugin,
+) {
   const pluginPath = path.join(omeggaPath, soft.PLUGIN_PATH, plugin.name);
 
   // check for the plugin file, whatever it's called
@@ -215,18 +229,19 @@ export async function install(plugins: string[], _options: unknown) {
   log('Attempting to install', (plugins.length + '').yellow, 'plugins...');
 
   for (const pluginUrl of plugins) {
-    const plugin = transformUrl(pluginUrl);
+    const transformed = transformUrl(pluginUrl);
 
     // if the plugin wasn't transformed, try to extract its name from the git url
-    if (!('name' in plugin)) {
+    let name = transformed.name;
+    if (!name) {
       try {
-        const { name } = path.parse(plugin.url);
-        plugin.name = name.replace(/^omegga-/, '');
+        name = path.parse(transformed.url).name.replace(/^omegga-/, '');
       } catch (e) {
-        console.error('!>'.red, 'Error parsing name from url', plugin.url);
+        console.error('!>'.red, 'Error parsing name from url', transformed.url);
         break;
       }
     }
+    const plugin = { ...transformed, name };
 
     log(
       'Installing plugin',
@@ -331,7 +346,10 @@ export async function update(pluginsNames: string[], _options: unknown) {
   log('Checking', (plugins.length + '').yellow, 'plugins for updates...');
 
   // list of plugins that will be updated
-  let pluginsToUpdate = [];
+  const pluginsToUpdate: (IInstalledPlugin & {
+    path: string;
+    git: SimpleGit;
+  })[] = [];
 
   for (const plugin of plugins) {
     if (needsNL) {
@@ -348,12 +366,13 @@ export async function update(pluginsNames: string[], _options: unknown) {
       continue;
     }
 
-    let status;
+    let status: StatusResult;
     // get git status
     try {
       status = await git.status();
     } catch (e) {
       plgErr(plugin, 'Error getting status', e);
+      continue;
     }
 
     try {
@@ -431,7 +450,7 @@ export async function update(pluginsNames: string[], _options: unknown) {
       }
 
       plgLog(plugin, 'Update available');
-      pluginsToUpdate.push(plugin);
+      pluginsToUpdate.push({ ...plugin, path: pluginPath, git });
     } catch (e) {
       plgErr(plugin, 'Error', e);
     }
@@ -657,7 +676,7 @@ async function init() {
 
   log('Initializing new', type.yellow, 'plugin', name.cyan, '...');
 
-  const templateData = {
+  const templateData: Record<string, string> = {
     name,
     author: author ?? 'AUTHOR',
     omeggaVersion: VERSION,
@@ -709,11 +728,15 @@ async function init() {
 
 function pluginLoaderFactory() {
   const workDir = getWorkDir();
+  if (!workDir) {
+    err('Not an omegga directory, run ', 'omegga init'.yellow, 'to setup one.');
+    process.exit(1);
+  }
   return new PluginLoader(workDir);
 }
 
 /** Loads in a plugin and it's documentation. */
-async function loadPlugin(pluginName) {
+async function loadPlugin(pluginName: string) {
   const pluginLoader = pluginLoaderFactory();
   const foundPluginDirectory = fs
     .readdirSync(pluginLoader.path)
@@ -727,13 +750,28 @@ async function loadPlugin(pluginName) {
   const plugin = await pluginLoader.scanPlugin(
     path.join(pluginLoader.path, foundPluginDirectory),
   );
+  if (!plugin) {
+    err(`Plugin ${pluginName} failed to load!`);
+    process.exit(1);
+  }
   return plugin;
+}
+
+/** Get a loaded plugin's config documentation or exit. */
+function getConfigDoc(plugin: Awaited<ReturnType<typeof loadPlugin>>) {
+  const configDoc = plugin.getDocumentation()?.config;
+  if (!configDoc) {
+    err('Plugin', plugin.getName().cyan, 'has no config documentation');
+    process.exit(1);
+  }
+  return configDoc;
 }
 
 async function listConfig(pluginName: string, json = false) {
   const plugin = await loadPlugin(pluginName);
-  const configDoc = plugin.getDocumentation().config;
-  const config = await plugin.storage.getConfig();
+  // plugins without a config section are valid; list only skips unknown keys
+  const configDoc = plugin.getDocumentation()?.config ?? {};
+  const config = (await plugin.storage.getConfig()) ?? {};
   if (json) {
     console.log(JSON.stringify(config, null, 2));
   } else {
@@ -743,7 +781,9 @@ async function listConfig(pluginName: string, json = false) {
       log(
         key.cyan,
         '=',
-        ['string', 'number', 'boolean'].includes(typeof value)
+        typeof value === 'string' ||
+          typeof value === 'number' ||
+          typeof value === 'boolean'
           ? value.toString().yellow
           : JSON.stringify(value).yellow,
       );
@@ -754,12 +794,12 @@ async function listConfig(pluginName: string, json = false) {
 
 async function getConfig(pluginName: string, configName: string, json = false) {
   const plugin = await loadPlugin(pluginName);
-  const configDoc = plugin.getDocumentation().config[configName];
+  const configDoc = getConfigDoc(plugin)[configName];
   if (configDoc === undefined) {
     err('Config', configName.cyan, 'not found');
     process.exit(1);
   }
-  const config = await plugin.storage.getConfig();
+  const config = (await plugin.storage.getConfig()) ?? {};
   if (json) {
     console.log(JSON.stringify(config[configName], null, 2));
   } else {
@@ -768,9 +808,13 @@ async function getConfig(pluginName: string, configName: string, json = false) {
   process.exit();
 }
 
-async function setConfig(pluginName, configName: string, valueString: string) {
+async function setConfig(
+  pluginName: string,
+  configName: string,
+  valueString: string,
+) {
   const plugin = await loadPlugin(pluginName);
-  const configDoc = plugin.getDocumentation().config[configName];
+  const configDoc = getConfigDoc(plugin)[configName];
   if (configDoc === undefined) {
     err('Config', configName.cyan, 'not found');
     process.exit(1);
@@ -809,7 +853,7 @@ async function setConfig(pluginName, configName: string, valueString: string) {
       process.exit(1);
   }
 
-  const pluginConfig = await plugin.storage.getConfig();
+  const pluginConfig = (await plugin.storage.getConfig()) ?? {};
   pluginConfig[configName] = parsed;
   await plugin.storage.setConfig(pluginConfig);
   log(
@@ -823,7 +867,7 @@ async function setConfig(pluginName, configName: string, valueString: string) {
   process.exit();
 }
 
-async function resetAllConfigs(pluginName, force) {
+async function resetAllConfigs(pluginName: string, force: boolean) {
   const plugin = await loadPlugin(pluginName);
   if (!force) {
     const { answer } = await prompts([
@@ -845,14 +889,14 @@ async function resetAllConfigs(pluginName, force) {
   process.exit();
 }
 
-async function resetConfig(pluginName, configName: string) {
+async function resetConfig(pluginName: string, configName: string) {
   const plugin = await loadPlugin(pluginName);
-  const configDoc = plugin.getDocumentation().config[configName];
+  const configDoc = getConfigDoc(plugin)[configName];
   if (configDoc === undefined) {
     err('Config', configName.cyan, 'not found');
     process.exit(1);
   }
-  const pluginConfig = await plugin.storage.getConfig();
+  const pluginConfig = (await plugin.storage.getConfig()) ?? {};
   pluginConfig[configName] = plugin.storage.getDefaultConfig()[configName];
   await plugin.storage.setConfig(pluginConfig);
   log(

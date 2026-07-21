@@ -13,8 +13,10 @@ export class MockPlugin extends Plugin {
     return 'mock';
   }
 
-  events: EventEmitter;
+  events = new EventEmitter();
   loaded = false;
+  // the mock constructor always assigns full documentation
+  declare documentation: IPluginDocumentation;
 
   constructor(
     pluginPath: string,

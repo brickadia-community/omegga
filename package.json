@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Brickadia server installer, updater, manager, wrapper, configurator, and automator",
   "engines": {
     "node": ">=23.0.0"
@@ -21,7 +21,7 @@
     "better-sqlite3": "^12.2.0",
     "better-sqlite3-session-store": "^0.1.0",
     "body-parser": "^1.19.0",
-    "brs-js": "^3.2.4",
+    "brs-js": "^3.6.0",
     "child_process": "^1.0.2",
     "chokidar": "^3.4.2",
     "colors": "^1.4.0",
@@ -128,6 +128,9 @@
     "start": "node --enable-source-maps index.js",
     "test:backend": "vitest --config vitest.backend.config.mts --dir ./src",
     "test": "npm run test:backend",
+    "typecheck": "npm run typecheck:backend && npm run typecheck:frontend",
+    "typecheck:backend": "npx tsc --noEmit -p src",
+    "typecheck:frontend": "npx tsc --noEmit -p frontend",
     "watch": "npm run build:frontend -- --watch"
   },
   "author": "Meshiest",

@@ -1,4 +1,4 @@
-import { ReadSaveObject } from 'brs-js';
+import { type ReadSaveObject } from 'brs-js';
 
 /**
  * sets all the bricks in saveData to target's ownership

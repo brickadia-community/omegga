@@ -1,4 +1,4 @@
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 
 const chat: MatchGenerator<{
   type: string;
@@ -34,7 +34,7 @@ const chat: MatchGenerator<{
     // listen for chat messages
     pattern(_line, logMatch) {
       // line is not generic console log
-      if (!logMatch) return;
+      if (!logMatch?.groups) return;
 
       const { generator, data } = logMatch.groups;
       // check if log is a chat log
@@ -44,7 +44,7 @@ const chat: MatchGenerator<{
       const chatMatch = data.match(chatRegExp);
       const kickMatch = data.match(kickRegExp);
 
-      if (chatMatch) {
+      if (chatMatch?.groups) {
         let { userId: id, name, message } = chatMatch.groups;
 
         name = sanitizeName(name);
@@ -55,7 +55,7 @@ const chat: MatchGenerator<{
 
         // return the player with the corresponding controller
         return { type: 'chat', id, name, message };
-      } else if (kickMatch) {
+      } else if (kickMatch?.groups) {
         let { name, kicker, reason } = kickMatch.groups;
         name = sanitizeName(name);
         kicker = sanitizeName(kicker);
@@ -75,7 +75,7 @@ const chat: MatchGenerator<{
         omegga.emit('chat', name, message);
 
         // chat command parsing, emit `chatcmd:test` when `!test` is sent in chat
-        if (message.startsWith('!')) {
+        if (message?.startsWith('!')) {
           const [cmd, ...args] = message.slice(1).split(' ');
           if (cmd.length > 0) {
             omegga.emit('chatcmd:' + cmd.toLowerCase(), name, ...args);

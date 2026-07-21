@@ -1,4 +1,4 @@
-import { IServerConfig } from '@config/types';
+import { type IServerConfig } from '@config/types';
 import * as schema from '@/db/schema';
 import type Omegga from '@omegga/server';
 import { explode } from '@util/pattern';
@@ -113,7 +113,11 @@ export default class Database extends EventEmitter {
       );
     setTimeout(this.syncBanList.bind(this), 500);
 
-    const handleKick = (kicked: IPlayer, kicker: IPlayer, reason: string) => {
+    const handleKick = (
+      kicked: IPlayer & { id: string },
+      kicker: IPlayer & { id: string },
+      reason: string,
+    ) => {
       // time the event listener should expire
       const eventExpire = Date.now() + 100;
       // detect a single leave
@@ -348,8 +352,9 @@ export default class Database extends EventEmitter {
     return null;
   }
 
-  // find a user by object id
-  async findUserById(id: string) {
+  // find a user by object id; an undefined id (no session) can still resolve
+  // to the passwordless owner user
+  async findUserById(id: string | undefined) {
     const row = this.db
       .select()
       .from(schema.users)
@@ -358,7 +363,7 @@ export default class Database extends EventEmitter {
           // the owner has no username, so everyone is the owner
           and(eq(schema.users.username, ''), eq(schema.users.isOwner, true)),
           // the user exists and has an id
-          eq(schema.users.id, id),
+          ...(id != null ? [eq(schema.users.id, id)] : []),
         ),
       )
       .get();

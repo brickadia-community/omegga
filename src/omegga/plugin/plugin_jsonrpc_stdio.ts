@@ -1,13 +1,13 @@
 import Logger from '@/logger';
-import { EnvironmentPreset } from '@brickadia/presets';
+import { type EnvironmentPreset } from '@brickadia/presets';
 import Omegga from '@omegga/server';
-import { WriteSaveObject } from 'brs-js';
+import { type WriteSaveObject } from 'brs-js';
 import {
   JSONRPCClient,
   JSONRPCServer,
   JSONRPCServerAndClient,
 } from 'json-rpc-2.0';
-import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
+import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'readline';
@@ -23,10 +23,14 @@ const DOC_FILE = 'doc.json';
 const PLUGIN_FILE = 'plugin.json';
 
 export default class RpcPlugin extends Plugin {
-  #child: ChildProcessWithoutNullStreams;
+  // undefined until load() spawns the child and after kill()
+  #child: ChildProcessWithoutNullStreams | undefined;
   #rpc: JSONRPCServerAndClient;
-  #errInterface: readline.Interface;
-  #outInterface: readline.Interface;
+  #errInterface: readline.Interface | undefined;
+  #outInterface: readline.Interface | undefined;
+
+  // path to the binary spawned when the plugin loads
+  pluginFile: string;
 
   messageCounter: number;
 
@@ -60,7 +64,7 @@ export default class RpcPlugin extends Plugin {
     this.eventPassthrough = this.eventPassthrough.bind(this);
     this.commands = [];
 
-    this.initRPC();
+    this.#rpc = this.initRPC();
   }
 
   isLoaded() {
@@ -86,6 +90,10 @@ export default class RpcPlugin extends Plugin {
       verbose('Plugin already has child process');
       return false;
     }
+
+    // plugins constructed without a server (CLI) cannot be loaded
+    if (!this.omegga) return false;
+    const omegga = this.omegga;
 
     let config;
     try {
@@ -130,7 +138,7 @@ export default class RpcPlugin extends Plugin {
       (async () => {
         try {
           // get some initial information to create an omegga proxy
-          const initialData = bootstrap(this.omegga);
+          const initialData = bootstrap(omegga);
 
           verbose('Sending initial data');
           // send all of the mock events to the proxy omegga
@@ -141,7 +149,7 @@ export default class RpcPlugin extends Plugin {
 
           verbose('Initializing event passthrough');
           // pass events through
-          this.omegga.on('*', this.eventPassthrough);
+          omegga.on('*', this.eventPassthrough);
 
           try {
             // tell the plugin to start
@@ -161,17 +169,20 @@ export default class RpcPlugin extends Plugin {
                 this.commands = cmds;
             }
           } catch (e) {
-            if (!e.message) return;
+            // messageless rejections are treated as a failed start; anything
+            // with a message is logged and the plugin is considered started
+            if (!(e && typeof e === 'object' && 'message' in e && e.message))
+              return false;
             Logger.errorp(name.brightRed.underline, 'error starting: ', e);
           }
 
           // plugin is not frozen, resolve that it has loaded
           frozen = false;
-          if (timed) return;
+          if (timed) return false;
           this.emitStatus();
           return true;
         } catch (e) {
-          if (timed) return;
+          if (timed) return false;
           Logger.errorp(
             'error loading stdio rpc plugin',
             name.brightRed.underline,
@@ -185,7 +196,7 @@ export default class RpcPlugin extends Plugin {
       })(),
       new Promise<boolean>(resolve => {
         // let user know if the child quit while launching
-        this.#child.once('exit', () => {
+        this.#child?.once('exit', () => {
           if (!frozen || timed) return;
           verbose('Plugin exited during init');
           frozen = false;
@@ -233,12 +244,12 @@ export default class RpcPlugin extends Plugin {
           await this.kill();
 
           frozen = false;
-          if (timed) return;
+          if (timed) return false;
           this.emitStatus();
           this.commands = [];
           return true;
         } catch (e) {
-          if (timed) return;
+          if (timed) return false;
           Logger.errorp(
             'error unloading rpc plugin',
             name.brightRed.underline,
@@ -271,7 +282,7 @@ export default class RpcPlugin extends Plugin {
   attachListeners() {
     const name = this.getName();
 
-    this.#outInterface.on('line', line => {
+    this.#outInterface?.on('line', line => {
       try {
         const rpcData = JSON.parse(line);
         try {
@@ -292,13 +303,13 @@ export default class RpcPlugin extends Plugin {
     });
 
     // stderr - print out the errors
-    this.#errInterface.on('line', err => {
+    this.#errInterface?.on('line', err => {
       Logger.error(name.brightRed.underline, '!>'.red, err);
     });
 
-    this.#child.on('error', () => this.kill());
-    this.#child.on('close', () => this.kill());
-    this.#child.on('exit', code => {
+    this.#child?.on('error', () => this.kill());
+    this.#child?.on('close', () => this.kill());
+    this.#child?.on('exit', code => {
       Logger.errorp(
         '!>'.red,
         'rpc plugin',
@@ -312,8 +323,8 @@ export default class RpcPlugin extends Plugin {
 
   // removes previously attached event listeners
   detachListeners() {
-    this.#outInterface.removeAllListeners('line');
-    this.#errInterface.removeAllListeners('line');
+    this.#outInterface?.removeAllListeners('line');
+    this.#errInterface?.removeAllListeners('line');
     if (this.#child) {
       this.#child.removeAllListeners('exit');
       this.#child.removeAllListeners('close');
@@ -335,17 +346,18 @@ export default class RpcPlugin extends Plugin {
   async kill() {
     this.#rpc.rejectAllPendingRequests('Plugin Terminated');
     this.detachListeners();
-    this.omegga.off('*', this.eventPassthrough);
-    if (!this.#child) return;
+    this.omegga?.off('*', this.eventPassthrough);
+    const child = this.#child;
+    if (!child) return;
 
     // create a promise for the exit of the process
-    const promise = new Promise(resolve => this.#child.once('exit', resolve));
+    const promise = new Promise(resolve => child.once('exit', resolve));
 
     // kill the process
-    this.#child.kill('SIGINT');
+    child.kill('SIGINT');
 
     // ...kill it again just to make sure it's dead
-    spawn('kill', ['-9', this.#child.pid + '']);
+    spawn('kill', ['-9', `${child.pid}`]);
 
     // wait for the process to exit
     await promise;
@@ -359,7 +371,7 @@ export default class RpcPlugin extends Plugin {
   }
 
   // setup the JSONRPC communication
-  initRPC() {
+  initRPC(): JSONRPCServerAndClient {
     const server = new JSONRPCServer();
     const client = new JSONRPCClient(req => {
       try {
@@ -369,7 +381,7 @@ export default class RpcPlugin extends Plugin {
         return Promise.reject(error);
       }
     });
-    const rpc = (this.#rpc = new JSONRPCServerAndClient(server, client));
+    const rpc = new JSONRPCServerAndClient(server, client);
 
     // plugin log generator function
     const ezLog =
@@ -407,77 +419,77 @@ export default class RpcPlugin extends Plugin {
 
     // server can run console commands
     rpc.addMethod('exec', line =>
-      this.omegga.writeln(line as unknown as string),
+      this.server.writeln(line as unknown as string),
     );
     rpc.addMethod('writeln', line =>
-      this.omegga.writeln(line as unknown as string),
+      this.server.writeln(line as unknown as string),
     );
     rpc.addMethod('broadcast', line =>
-      this.omegga.broadcast(line as unknown as string),
+      this.server.broadcast(line as unknown as string),
     );
     rpc.addMethod(
       'whisper',
       ({ target, line }: { target: string; line: string }) =>
-        this.omegga.whisper(target, line),
+        this.server.whisper(target, line),
     );
     rpc.addMethod(
       'middlePrint',
       ({ target, line }: { target: string; line: string }) =>
-        this.omegga.middlePrint(target, line),
+        this.server.middlePrint(target, line),
     );
-    rpc.addMethod('getPlayers', () => this.omegga.getPlayers());
+    rpc.addMethod('getPlayers', () => this.server.getPlayers());
     rpc.addMethod('getPlayerPosition', name =>
-      this.omegga.getPlayer(name as unknown as string)?.getPosition(),
+      this.server.getPlayer(name as unknown as string)?.getPosition(),
     ); // included for compatibility
     rpc.addMethod('getAllPlayerPositions', () =>
-      this.omegga.getAllPlayerPositions(),
+      this.server.getAllPlayerPositions(),
     );
     rpc.addMethod('getEnvironmentPresets', () =>
-      this.omegga.getEnvironmentPresets(),
+      this.server.getEnvironmentPresets(),
     );
-    rpc.addMethod('resetEnvironment', () => this.omegga.resetEnvironment());
+    rpc.addMethod('resetEnvironment', () => this.server.resetEnvironment());
     rpc.addMethod('saveEnvironment', name =>
-      this.omegga.saveEnvironment(name as unknown as string),
+      this.server.saveEnvironment(name as unknown as string),
     );
     rpc.addMethod('loadEnvironment', name =>
-      this.omegga.loadEnvironment(name as unknown as string),
+      this.server.loadEnvironment(name as unknown as string),
     );
     rpc.addMethod('loadEnvironmentData', data =>
-      this.omegga.loadEnvironmentData(data as EnvironmentPreset),
+      this.server.loadEnvironmentData(data as EnvironmentPreset),
     );
-    rpc.addMethod('getServerStatus', () => this.omegga.getServerStatus());
-    rpc.addMethod('getMinigames', () => this.omegga.getMinigames());
-    rpc.addMethod('getMinigamePresets', () => this.omegga.getMinigamePresets());
+    rpc.addMethod('getServerStatus', () => this.server.getServerStatus());
+    rpc.addMethod('getMinigames', () => this.server.getMinigames());
+    rpc.addMethod('getMinigamePresets', () => this.server.getMinigamePresets());
     rpc.addMethod(
       'saveMinigame',
       ({ index, name }: { index: number; name: string }) =>
-        this.omegga.saveMinigame(index, name),
+        this.server.saveMinigame(index, name),
     );
     rpc.addMethod(
       'loadMinigame',
       ({ name, owner }: { name: string; owner: string }) =>
-        this.omegga.loadMinigame(name, owner),
+        this.server.loadMinigame(name, owner),
     );
     rpc.addMethod('nextRoundMinigame', index =>
-      this.omegga.nextRoundMinigame(index as unknown as number),
+      this.server.nextRoundMinigame(index as unknown as number),
     );
     rpc.addMethod('resetMinigame', index =>
-      this.omegga.resetMinigame(index as unknown as number),
+      this.server.resetMinigame(index as unknown as number),
     );
     rpc.addMethod('deleteMinigame', index =>
-      this.omegga.deleteMinigame(index as unknown as number),
+      this.server.deleteMinigame(index as unknown as number),
     );
-    rpc.addMethod('listMinigames', () => this.omegga.listMinigames());
-    rpc.addMethod('getHostId', () => this.omegga.getHostId());
-    rpc.addMethod('getRoleSetup', () => this.omegga.getRoleSetup());
-    rpc.addMethod('getBanList', () => this.omegga.getBanList());
-    rpc.addMethod('getSaves', () => this.omegga.getSaves());
+    rpc.addMethod('listMinigames', () => this.server.listMinigames());
+    rpc.addMethod('getHostId', () => this.server.getHostId());
+    rpc.addMethod('getRoleSetup', () => this.server.getRoleSetup());
+    rpc.addMethod('getBanList', () => this.server.getBanList());
+    rpc.addMethod('getSaves', () => this.server.getSaves());
     rpc.addMethod('getSavePath', name =>
-      this.omegga.getSavePath(name as unknown as string),
+      this.server.getSavePath(name as unknown as string),
     );
-    rpc.addMethod('getPrefabs', () => this.omegga.getPrefabs());
+    rpc.addMethod('getPrefabs', () => this.server.getPrefabs());
     rpc.addMethod('getPrefabPath', name =>
-      this.omegga.getPrefabPath(name as unknown as string),
+      this.server.getPrefabPath(name as unknown as string),
     );
     rpc.addMethod(
       'loadPrefab',
@@ -494,7 +506,7 @@ export default class RpcPlugin extends Plugin {
         rootEntityPersistentIndex?: number;
         mirrorAxes?: number;
         overrideUserId?: string;
-      }) => this.omegga.loadPrefab(path, options),
+      }) => this.server.loadPrefab(path, options),
     );
     rpc.addMethod(
       'savePrefab',
@@ -510,7 +522,7 @@ export default class RpcPlugin extends Plugin {
         entities?: boolean;
         rootEntityPersistentIndex?: number;
         userId?: string;
-      }) => this.omegga.savePrefab(path, options),
+      }) => this.server.savePrefab(path, options),
     );
     rpc.addMethod(
       'savePrefabAsync',
@@ -526,7 +538,7 @@ export default class RpcPlugin extends Plugin {
         entities?: boolean;
         rootEntityPersistentIndex?: number;
         userId?: string;
-      }) => this.omegga.savePrefabAsync(path, options),
+      }) => this.server.savePrefabAsync(path, options),
     );
     rpc.addMethod(
       'givePrefabToPlayer',
@@ -538,7 +550,7 @@ export default class RpcPlugin extends Plugin {
         path: string;
         player: string;
         preserveOwnership?: boolean;
-      }) => this.omegga.givePrefabToPlayer(path, player, { preserveOwnership }),
+      }) => this.server.givePrefabToPlayer(path, player, { preserveOwnership }),
     );
     rpc.addMethod(
       'loadPrefabOnPlayer',
@@ -550,18 +562,18 @@ export default class RpcPlugin extends Plugin {
         path: string;
         player: string;
         preserveOwnership?: boolean;
-      }) => this.omegga.loadPrefabOnPlayer(path, player, { preserveOwnership }),
+      }) => this.server.loadPrefabOnPlayer(path, player, { preserveOwnership }),
     );
     rpc.addMethod(
       'clearBricks',
       ({ target, quiet = false }: { target: string; quiet?: boolean }) =>
-        this.omegga.clearBricks(target, quiet),
+        this.server.clearBricks(target, quiet),
     );
     rpc.addMethod('clearAllBricks', quiet =>
-      this.omegga.clearAllBricks(quiet as unknown as boolean),
+      this.server.clearAllBricks(quiet as unknown as boolean),
     );
     rpc.addMethod('saveBricks', name =>
-      this.omegga.saveBricks(name as unknown as string),
+      this.server.saveBricks(name as unknown as string),
     );
     rpc.addMethod(
       'loadBricks',
@@ -577,7 +589,7 @@ export default class RpcPlugin extends Plugin {
         offY?: number;
         offZ?: number;
         quiet?: boolean;
-      }) => this.omegga.loadBricks(name, { offX, offY, offZ, quiet }),
+      }) => this.server.loadBricks(name, { offX, offY, offZ, quiet }),
     );
     rpc.addMethod(
       'loadBricksOnPlayer',
@@ -594,12 +606,12 @@ export default class RpcPlugin extends Plugin {
         offY?: number;
         offZ?: number;
         quiet?: boolean;
-      }) => this.omegga.loadBricksOnPlayer(name, player, { offX, offY, offZ }),
+      }) => this.server.loadBricksOnPlayer(name, player, { offX, offY, offZ }),
     );
     rpc.addMethod('readSaveData', name =>
-      this.omegga.readSaveData(name as unknown as string),
+      this.server.readSaveData(name as unknown as string),
     );
-    rpc.addMethod('getSaveData', () => this.omegga.getSaveData());
+    rpc.addMethod('getSaveData', () => this.server.getSaveData());
     rpc.addMethod(
       'loadSaveData',
       ({
@@ -614,7 +626,7 @@ export default class RpcPlugin extends Plugin {
         offY?: number;
         offZ?: number;
         quiet?: boolean;
-      }) => this.omegga.loadSaveData(data, { offX, offY, offZ, quiet }),
+      }) => this.server.loadSaveData(data, { offX, offY, offZ, quiet }),
     );
     rpc.addMethod(
       'loadSaveDataOnPlayer',
@@ -632,10 +644,10 @@ export default class RpcPlugin extends Plugin {
         offZ?: number;
         quiet?: boolean;
       }) =>
-        this.omegga.loadSaveDataOnPlayer(data, player, { offX, offY, offZ }),
+        this.server.loadSaveDataOnPlayer(data, player, { offX, offY, offZ }),
     );
     rpc.addMethod('changeMap', map =>
-      this.omegga.changeMap(map as unknown as string),
+      this.server.changeMap(map as unknown as string),
     );
     rpc.addMethod('unload', () => this.unload());
     rpc.addMethod('reload', async () => {
@@ -646,10 +658,10 @@ export default class RpcPlugin extends Plugin {
     // player related operations
     const addPlayerMethod = (name: string) =>
       rpc.addMethod(`player.${name}`, player =>
-        (this.omegga.getPlayer(player as unknown as string) as any)?.[name](),
+        (this.server.getPlayer(player as unknown as string) as any)?.[name](),
       );
     rpc.addMethod('player.get', target => {
-      let player = this.omegga.getPlayer(target as unknown as string);
+      let player = this.server.getPlayer(target as unknown as string);
       return player && { ...player, host: player.isHost() };
     });
     addPlayerMethod('getRoles');
@@ -685,7 +697,7 @@ export default class RpcPlugin extends Plugin {
         offZ?: number;
         quiet?: boolean;
       }) =>
-        this.omegga
+        this.server
           .getPlayer(target)
           ?.loadDataAtGhostBrick(data, { rotate, offX, offY, offZ, quiet }),
     );
@@ -704,47 +716,47 @@ export default class RpcPlugin extends Plugin {
         offY?: number;
         offZ?: number;
       }) =>
-        this.omegga.getPlayer(target)?.loadSaveData(data, { offX, offY, offZ }),
+        this.server.getPlayer(target)?.loadSaveData(data, { offX, offY, offZ }),
     );
     rpc.addMethod(
       'player.clearBricks',
       ({ target, quiet = false }: { target: string; quiet?: boolean }) =>
-        this.omegga.getPlayer(target)?.clearBricks(quiet),
+        this.server.getPlayer(target)?.clearBricks(quiet),
     );
     rpc.addMethod(
       'player.loadBricks',
       ({ target, saveName }: { target: string; saveName: string }) =>
-        this.omegga.getPlayer(target)?.loadBricks(saveName),
+        this.server.getPlayer(target)?.loadBricks(saveName),
     );
     rpc.addMethod(
       'player.damage',
       ({ target, amount }: { target: string; amount: number }) =>
-        this.omegga.getPlayer(target)?.damage(amount),
+        this.server.getPlayer(target)?.damage(amount),
     );
     rpc.addMethod(
       'player.heal',
       ({ target, amount }: { target: string; amount: number }) =>
-        this.omegga.getPlayer(target)?.heal(amount),
+        this.server.getPlayer(target)?.heal(amount),
     );
     rpc.addMethod(
       'player.giveItem',
       ({ target, item }: { target: string; item: string }) =>
-        this.omegga.getPlayer(target)?.giveItem(item as any),
+        this.server.getPlayer(target)?.giveItem(item as any),
     );
     rpc.addMethod(
       'player.takeItem',
       ({ target, item }: { target: string; item: string }) =>
-        this.omegga.getPlayer(target)?.takeItem(item as any),
+        this.server.getPlayer(target)?.takeItem(item as any),
     );
     rpc.addMethod(
       'player.setTeam',
       ({ target, teamIndex }: { target: string; teamIndex: number }) =>
-        this.omegga.getPlayer(target)?.setTeam(teamIndex),
+        this.server.getPlayer(target)?.setTeam(teamIndex),
     );
     rpc.addMethod(
       'player.setMinigame',
       ({ target, index }: { target: string; index: number }) =>
-        this.omegga.getPlayer(target)?.setMinigame(index),
+        this.server.getPlayer(target)?.setMinigame(index),
     );
     rpc.addMethod(
       'player.setScore',
@@ -756,7 +768,7 @@ export default class RpcPlugin extends Plugin {
         target: string;
         minigameIndex: number;
         score: number;
-      }) => this.omegga.getPlayer(target)?.setScore(minigameIndex, score),
+      }) => this.server.getPlayer(target)?.setScore(minigameIndex, score),
     );
     rpc.addMethod(
       'player.setLeaderboard',
@@ -768,12 +780,12 @@ export default class RpcPlugin extends Plugin {
         target: string;
         key: string;
         value: number;
-      }) => this.omegga.getPlayer(target)?.setLeaderboard(key, value),
+      }) => this.server.getPlayer(target)?.setLeaderboard(key, value),
     );
 
     // plugin related operations
     rpc.addMethod('plugin.get', async name => {
-      const plugin = this.omegga.pluginLoader.plugins.find(
+      const plugin = this.server.pluginLoader?.plugins.find(
         p => p.getName() === (name as unknown as string),
       );
 
@@ -791,7 +803,7 @@ export default class RpcPlugin extends Plugin {
     rpc.addMethod(
       'plugin.emit',
       async ([name, event, ...args]: [string, string, ...any[]]) => {
-        const plugin = this.omegga.pluginLoader.plugins.find(
+        const plugin = this.server.pluginLoader?.plugins.find(
           p => p.getName() === name,
         );
 
@@ -802,6 +814,8 @@ export default class RpcPlugin extends Plugin {
         }
       },
     );
+
+    return rpc;
   }
 
   // emit a custom plugin event

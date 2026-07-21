@@ -1,5 +1,5 @@
 import Logger from '@/logger';
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 import path from 'path';
 import { createReadStream, existsSync, readFileSync } from 'node:fs';
 

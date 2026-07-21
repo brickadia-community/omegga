@@ -1,11 +1,11 @@
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 
 const exit: MatchGenerator<RegExpMatchArray> = omegga => {
   return {
     // listen for exit messages
     pattern(_line, logMatch) {
       // line is not generic console log
-      if (!logMatch) return;
+      if (!logMatch?.groups) return;
 
       const { generator, data } = logMatch.groups;
       // check if log is the kill server log

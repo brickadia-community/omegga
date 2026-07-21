@@ -95,7 +95,9 @@ describe('PluginLoader.calculateLoadOrder', () => {
         .slice()
         .sort(
           // ascending sort (lower loadPriority loads first)
-          (a, b) => a.pluginConfig.loadPriority - b.pluginConfig.loadPriority,
+          (a, b) =>
+            (a.pluginConfig?.loadPriority ?? 0) -
+            (b.pluginConfig?.loadPriority ?? 0),
         )
         .map(p => p.getName()),
     );

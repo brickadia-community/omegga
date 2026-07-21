@@ -58,7 +58,7 @@ export function useMobileInspector(open: boolean, listRoute: string) {
   const closingRef = useRef(closing);
   closingRef.current = closing;
 
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const close = useCallback(() => {
     if (!openRef.current || closingRef.current) return;

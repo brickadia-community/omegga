@@ -100,4 +100,11 @@ export default class Logger {
   }
 }
 
+// the Logger class is exposed globally for internal convenience
+// (src/index.d.ts is shadowed by src/index.ts, so the declaration lives here)
+declare global {
+  // eslint-disable-next-line no-var
+  var Logger: typeof import('./logger').default;
+}
+
 global.Logger = Logger;

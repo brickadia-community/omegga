@@ -1,4 +1,4 @@
-import { BRColor, BRVector } from './types';
+import { type BRColor, type BRVector } from './types';
 
 export type Preset<T extends string, D> = {
   formatVersion?: '1';

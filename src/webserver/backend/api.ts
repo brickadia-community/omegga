@@ -2,18 +2,19 @@
 // imports during the tRPC migration. Once the frontend is fully migrated to
 // tRPC (where types are inferred from AppRouter), this file can be deleted.
 
-import { IPluginDocumentation } from '@/plugin';
+import { type IPluginDocumentation } from '@/plugin';
+import type { readBrdbMeta } from '@util/brdb';
 import Database from './database';
 import type { PermissionSet } from './permissions';
 import type { Scope } from './scopes';
 import {
-  IFrontendBanEntry,
-  IStoreBanHistory,
-  IStoreKickHistory,
-  IStoreUser,
-  IUserAgo,
-  IUserHistory,
-  IUserNote,
+  type IFrontendBanEntry,
+  type IStoreBanHistory,
+  type IStoreKickHistory,
+  type IStoreUser,
+  type IUserAgo,
+  type IUserHistory,
+  type IUserNote,
 } from './types';
 
 export type OmeggaSocketData = {
@@ -100,31 +101,6 @@ export type WorldRevisionsRes = {
   note: string;
 }[];
 
-export type WorldMetaRes = {
-  meta: {
-    world: {
-      environment: string;
-    };
-    bundle: {
-      type: 'World';
-      iD: string;
-      name: string;
-      version: string;
-      tags: string[];
-      authors: string[];
-      createdAt: string;
-      updatedAt: string;
-      description: string;
-      dependencies: string[];
-    };
-  };
-  owners: {
-    id: string;
-    name: string;
-    display_name: string;
-    entity_count: number;
-    brick_count: number;
-    component_count: number;
-    wire_count: number;
-  }[];
-};
+// derived from the implementation so the frontend type can't drift from the
+// actual router output
+export type WorldMetaRes = NonNullable<ReturnType<typeof readBrdbMeta>>;

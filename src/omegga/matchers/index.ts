@@ -1,4 +1,4 @@
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 
 import join from './join';
 // 'join' event => { name, id, state, controller }

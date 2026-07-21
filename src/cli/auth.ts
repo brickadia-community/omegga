@@ -52,7 +52,7 @@ async function authFromPrompt({
   savedDir?: string;
   launchArgs?: string;
 }) {
-  let files: Record<string, Buffer>;
+  let files: Record<string, Buffer> | null;
 
   if (isSteam || !email || !password) {
     // Prompt user to pick to select username/password or Auth Token
@@ -154,7 +154,7 @@ async function authFromPrompt({
     console.log('>>'.green, 'Storing auth tokens...');
     const authPath = path.join(
       soft.CONFIG_HOME,
-      savedDir !== soft.CONFIG_SAVED_DIR ? savedDir : '',
+      savedDir && savedDir !== soft.CONFIG_SAVED_DIR ? savedDir : '',
       authDir ?? soft.CONFIG_AUTH_DIR,
     );
     file.mkdir(authPath);

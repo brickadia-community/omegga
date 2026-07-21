@@ -1,5 +1,5 @@
-import { MatchGenerator } from './types';
-import { OmeggaPlayer } from '@/plugin';
+import { type MatchGenerator } from './types';
+import { type OmeggaPlayer } from '@/plugin';
 import Logger from '@/logger';
 
 const leave: MatchGenerator<Promise<OmeggaPlayer>> = omegga => {
@@ -10,7 +10,7 @@ const leave: MatchGenerator<Promise<OmeggaPlayer>> = omegga => {
     // listen for leave events and wait for PlayerController info
     pattern(_line, logMatch) {
       // line is not generic console log
-      if (!logMatch) return;
+      if (!logMatch?.groups) return;
 
       const { generator, data } = logMatch.groups;
       // check if log is a disconnect log
@@ -20,10 +20,11 @@ const leave: MatchGenerator<Promise<OmeggaPlayer>> = omegga => {
       // get the PlayerController from the leave message if there is one (there should be)
       const match = data.match(ownerRegExp);
       if (!match) return null;
+      const controller = match[1];
 
       // helper func for finding player with this controller
       const getLeavingPlayer = () =>
-        omegga.players.find(p => p.controller === match[1]);
+        omegga.players.find(p => p.controller === controller);
 
       let found = getLeavingPlayer();
 
@@ -35,7 +36,7 @@ const leave: MatchGenerator<Promise<OmeggaPlayer>> = omegga => {
           found = getLeavingPlayer();
 
           if (found) return resolve(found);
-          if (tries-- < 0) return reject('ghost player ' + match[1]);
+          if (tries-- < 0) return reject('ghost player ' + controller);
 
           setTimeout(attempt, 50);
         }

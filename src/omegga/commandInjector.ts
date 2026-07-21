@@ -1,23 +1,29 @@
-import _ from 'lodash';
-import { color, time } from '@util';
+import { time } from '@util';
 import type LogWrangler from './logWrangler';
 import {
-  IGamemode,
-  ILogMinigame,
-  IMinigameList,
-  IPlayerPositions,
-  IServerStatus,
+  type IGamemode,
+  type ILogMinigame,
+  type IMinigameList,
+  type IPlayerPositions,
+  type IServerStatus,
 } from './types';
-import { InjectedCommands, OmeggaPlayer, OmeggaLike } from '@/plugin';
+import {
+  type InjectedCommands,
+  type OmeggaPlayer,
+  type OmeggaLike,
+} from '@/plugin';
 import Logger from '@/logger';
 
 type Cast<X, Y> = X extends Y ? X : Y;
 type ArrayElement<A> = A extends readonly (infer T)[] ? T : never;
 type Extract<T, U> = T extends U ? T : never;
-type FromEntriesDataField<T> = T extends PawnDataField<infer Key, any>[]
+// used by the commented-out getAllPawnData experiment below
+export type FromEntriesDataField<T> = T extends PawnDataField<infer Key, any>[]
   ? {
       [K in Cast<Key, string>]: ReturnType<
-        Extract<ArrayElement<T>, PawnDataField<K, any>>['valueTransform']
+        NonNullable<
+          Extract<ArrayElement<T>, PawnDataField<K, any>>['valueTransform']
+        >
       >;
     }
   : { [key in string]: any };
@@ -62,16 +68,14 @@ export type PawnDataField<F, T = string> = {
 
 const buildTableHeaderRegex = (header: string) => {
   const columns = header.match(/[^|]+/g);
+  if (!columns) throw new Error('invalid table header: ' + header);
   return new RegExp(
     columns // get all strings between the |'s'
-      .map((line, i) => [
+      .map((line, i): [string, number] => [
         line.slice(1, -1),
         line.length - (i === columns.length - 1 ? 1 : 2),
       ]) // calculate the lengths (and remove the spaces)
-      .map(
-        ([name, len]: [string, number]) =>
-          ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`,
-      ) // create a regex pattern to match strings of that length (and trim off whitespace at the end)
+      .map(([name, len]) => ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`) // create a regex pattern to match strings of that length (and trim off whitespace at the end)
       .join('\\|'),
   ); // join the regexes with the |
 };
@@ -133,23 +137,26 @@ const COMMANDS: InjectedCommands = {
       time: time.parseDuration(uptime[1]),
       // extract players using the generated table regex
       players: columnRegExp
-        ? tableLines.map(l => {
-            // match the player row with the generated regex
-            const {
-              groups: { name, ping, time: online, roles, address, id },
-            } = l.match(columnRegExp);
+        ? tableLines.flatMap(l => {
+            // match the player row with the generated regex; skip rows that
+            // don't fit the table format
+            const groups = l.match(columnRegExp)?.groups;
+            if (!groups) return [];
+            const { name, ping, time: online, roles, address, id } = groups;
             // trim and parse the matched data
-            return {
-              name: name.trim(),
-              ping: time.parseDuration(ping.trim()),
-              time: time.parseDuration(online.trim()),
-              roles: roles
-                .trim()
-                .split(', ')
-                .filter(r => r.length > 0), // roles are split by ', '
-              address: address.replace('(Owner)', '').trim(),
-              id: id.trim(),
-            };
+            return [
+              {
+                name: name.trim(),
+                ping: time.parseDuration(ping.trim()),
+                time: time.parseDuration(online.trim()),
+                roles: roles
+                  .trim()
+                  .split(', ')
+                  .filter(r => r.length > 0), // roles are split by ', '
+                address: address.replace('(Owner)', '').trim(),
+                id: id.trim(),
+              },
+            ];
           })
         : [],
     };
@@ -202,21 +209,27 @@ const COMMANDS: InjectedCommands = {
       .filter(l => l[1].startsWith('* '))
       .map(l => l[1].slice(1));
 
+    // no header means no minigame table was printed
+    if (!tableHeader) return [];
+
     // use the size of each column to build a regex that matches each row
     const columnRegExp = buildTableHeaderRegex(tableHeader);
 
-    return tableLines.map(l => {
-      // match the player row with the generated regex
-      const {
-        groups: { id, name, ownername, ownerid, member },
-      } = l.match(columnRegExp);
+    return tableLines.flatMap(l => {
+      // match the minigame row with the generated regex; skip rows that
+      // don't fit the table format
+      const groups = l.match(columnRegExp)?.groups;
+      if (!groups) return [];
+      const { id, name, ownername, ownerid, member } = groups;
       // trim and parse the matched data
-      return {
-        index: Number(id),
-        name: name.trim(),
-        numMembers: Number(member),
-        owner: { name: ownername.trim(), id: ownerid },
-      };
+      return [
+        {
+          index: Number(id),
+          name: name.trim(),
+          numMembers: Number(member),
+          owner: { name: ownername.trim(), id: ownerid },
+        },
+      ];
     });
   },
 
@@ -287,29 +300,34 @@ const COMMANDS: InjectedCommands = {
       ),
     ]);
 
-    return (
-      pawns
-        // iterate through the pawn+controllers
-        .map(pawn => ({
-          // find the player for the associated controller
-          player: this.getPlayer(pawn.groups.controller),
-          // find the position for the associated pawn
-          pos: positions.find(pos => pawn.groups.pawn === pos.groups.pawn),
-          isDead: deadFigures.find(
-            dead => pawn.groups.pawn === dead.groups.pawn,
-          ),
-          pawn,
-        }))
-        // filter by only those who have both player. previously we filtered by position but this breaks for players without a pawn, instead it's preferable to pass null
-        .filter(p => p.player)
-        // turn the position into a [x, y, z] number array (last 3 items in the array)
-        .map(p => ({
-          player: p.player,
-          pawn: p.pawn.groups.pawn || null,
-          pos: p.pos ? p.pos.slice(3).map(Number) : null,
-          isDead: p.isDead ? p.isDead.groups.dead === 'True' : true,
-        }))
-    );
+    // iterate through the pawn+controllers
+    // only include entries with a player. previously we filtered by position
+    // but this breaks for players without a pawn, instead it's preferable to
+    // pass null
+    return pawns.flatMap(pawnMatch => {
+      const groups = pawnMatch.groups;
+      if (!groups) return [];
+
+      // find the player for the associated controller
+      const player = this.getPlayer(groups.controller);
+      if (!player) return [];
+
+      // find the position for the associated pawn
+      const pos = positions.find(pos => groups.pawn === pos.groups?.pawn);
+      const isDead = deadFigures.find(
+        dead => groups.pawn === dead.groups?.pawn,
+      );
+
+      return [
+        {
+          player,
+          pawn: groups.pawn || null,
+          // turn the position into a [x, y, z] number array (last 3 items in the array)
+          pos: pos ? pos.slice(3).map(Number) : null,
+          isDead: isDead ? isDead.groups?.dead === 'True' : true,
+        },
+      ];
+    });
   },
 
   /**
@@ -391,27 +409,15 @@ const COMMANDS: InjectedCommands = {
           ),
         ]);
 
-      // figure out what to do with the matched color results
-      const handleColor = (
-        match:
-          | { color: string }
-          | { r: string; g: string; b: string; a: string },
-      ) => {
-        // color index, return the colorset color
-        if ('color' in match)
-          return color.DEFAULT_COLORSET[Number(match)].slice();
-        else return [match.r, match.g, match.b, match.a].map(Number);
-      };
-
       const sortedRulesets = rulesets.sort((a, b) =>
-        b.groups?.ruleset.localeCompare(a.groups?.ruleset),
+        (b.groups?.ruleset ?? '').localeCompare(a.groups?.ruleset ?? ''),
       );
       const globalIndex = rulesets.findIndex(
         ruleset => ruleset.groups?.name === 'GLOBAL',
       );
 
-      const indexMap = Object.fromEntries(
-        sortedRulesets.map((ruleset, index) => {
+      const indexMap: Record<string, number> = Object.fromEntries(
+        sortedRulesets.flatMap((ruleset, index) => {
           if (globalIndex > -1) {
             if (index > globalIndex) {
               index = index - 1;
@@ -420,52 +426,67 @@ const COMMANDS: InjectedCommands = {
             }
           }
 
-          return [ruleset.groups?.ruleset, index];
+          const name = ruleset.groups?.ruleset;
+          return name ? [[name, index]] : [];
         }),
       );
 
       // join the data into a big object
-      return rulesets.map(r => ({
-        name: r.groups.name,
-        ruleset: r.groups.ruleset,
-        index: indexMap[r.groups.ruleset],
+      return rulesets.flatMap(r => {
+        const groups = r.groups;
+        if (!groups) return [];
 
-        // get the players from the team members
-        members: ruleMembers
-          .find(m => m.item.ruleset === r.groups.ruleset)
-          .members // get the members from this ruleset
-          .map(m => this.getPlayer(m.state))
-          .filter(Boolean), // get the players
+        return [
+          {
+            name: groups.name,
+            ruleset: groups.ruleset,
+            index: indexMap[groups.ruleset],
 
-        // get the teams for this ruleset
-        teams: teamMembers
-          .filter(m => m.item.ruleset === r.groups.ruleset) // only get teams from this ruleset
-          .map(m => ({
-            // team name
-            name: _.get(
-              teamNames.find(t => t.groups.team === m.item.team),
-              'groups.name',
-            ) as string,
-            team: m.item.team,
-
-            // get the colors (different for a4 and a5)
-            color: handleColor(
-              _.pick(
-                teamColors.find(t => t.groups.team === m.item.team)?.groups ??
-                  ({ r: 0, g: 0, b: 0, a: 0 } as any),
-                ['r', 'g', 'b', 'a'],
-              ),
-            ),
-
-            // get the players from the team
-            members: m.members
+            // get the players from the team members
+            members: (
+              ruleMembers.find(m => m.item.ruleset === groups.ruleset)
+                ?.members ?? []
+            ) // get the members from this ruleset
               .map(m => this.getPlayer(m.state))
-              .filter(Boolean),
-          })),
-      }));
+              .filter((p): p is OmeggaPlayer => Boolean(p)), // get the players
+
+            // get the teams for this ruleset
+            teams: teamMembers
+              .filter(m => m.item.ruleset === groups.ruleset) // only get teams from this ruleset
+              .map(m => {
+                // team color is (B=255,G=255,R=255,A=255)
+                const colorGroups = teamColors.find(
+                  t => t.groups?.team === m.item.team,
+                )?.groups;
+                return {
+                  // team name
+                  name:
+                    teamNames.find(t => t.groups?.team === m.item.team)?.groups
+                      ?.name ?? '',
+                  team: m.item.team,
+
+                  // get the team color as [r, g, b, a]
+                  color: colorGroups
+                    ? [
+                        colorGroups.r,
+                        colorGroups.g,
+                        colorGroups.b,
+                        colorGroups.a,
+                      ].map(Number)
+                    : [0, 0, 0, 0],
+
+                  // get the players from the team
+                  members: m.members
+                    .map(m => this.getPlayer(m.state))
+                    .filter((p): p is OmeggaPlayer => Boolean(p)),
+                };
+              }),
+          },
+        ];
+      });
     } catch (e) {
       Logger.error('error getting minigames', e);
-      return undefined;
+      return [];
     }
   },
 
@@ -568,7 +589,8 @@ export default <T extends InjectedCommands>(
 ) => {
   for (const cmd in COMMANDS) {
     // disgusting type casting because we're injecting functions
-    (obj as unknown as Record<string, Function>)[cmd] =
-      COMMANDS[cmd as keyof typeof COMMANDS].bind(logWrangler);
+    (obj as unknown as Record<string, Function>)[cmd] = (
+      COMMANDS[cmd as keyof typeof COMMANDS] as Function
+    ).bind(logWrangler);
   }
 };

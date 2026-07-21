@@ -1,6 +1,6 @@
 import type { OmeggaLike, OmeggaPlayer, WeaponClass } from '@/plugin';
-import { IBrickBounds } from '@util/brick';
-import { WriteSaveObject } from 'brs-js';
+import { type IBrickBounds } from '@util/brick';
+import { type WriteSaveObject } from 'brs-js';
 import { brick as brickUtils, color } from '../util/';
 
 const DEFAULT_PERMS: Record<string, string[]> = {
@@ -38,6 +38,13 @@ const DEFAULT_PERMS: Record<string, string[]> = {
   ],
 };
 
+/** resolve a player target (name/id string or player object) to a player */
+const resolveTarget = (
+  omegga: OmeggaLike,
+  target: string | OmeggaPlayer,
+): OmeggaPlayer | null =>
+  typeof target === 'string' ? omegga.getPlayer(target) : target;
+
 class Player implements OmeggaPlayer {
   #omegga: OmeggaLike;
   name: string;
@@ -60,13 +67,13 @@ class Player implements OmeggaPlayer {
     // if the player is the host, the player has every permission
     if (omegga.host?.id === id) {
       return Object.freeze(
-        Object.fromEntries(
-          [].concat(
-            defaultRole.permissions.map(p => [p.name, true]),
-            // sometimes the default role does not have every permission listed
-            ...roles.map(r => r.permissions.map(p => [p.name, true])),
+        Object.fromEntries([
+          ...defaultRole.permissions.map(p => [p.name, true] as const),
+          // sometimes the default role does not have every permission listed
+          ...roles.flatMap(r =>
+            r.permissions.map(p => [p.name, true] as const),
           ),
-        ),
+        ]),
       );
     }
 
@@ -142,9 +149,9 @@ class Player implements OmeggaPlayer {
   }
 
   static kill(omegga: OmeggaLike, target: string | OmeggaPlayer) {
-    if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (target?.name)
-      omegga.writeln(`${omegga.Console.Server.Players.Kill} "${target?.name}"`);
+    const player = resolveTarget(omegga, target);
+    if (player?.name)
+      omegga.writeln(`${omegga.Console.Server.Players.Kill} "${player.name}"`);
   }
 
   static damage(
@@ -152,11 +159,11 @@ class Player implements OmeggaPlayer {
     target: string | OmeggaPlayer,
     amount: number,
   ) {
-    if (typeof target === 'string') target = omegga.getPlayer(target);
+    const player = resolveTarget(omegga, target);
     if (amount === 0) return;
-    if (target?.name)
+    if (player?.name)
       omegga.writeln(
-        `${omegga.Console.Server.Players.Damage} "${target?.name}" ${amount}`,
+        `${omegga.Console.Server.Players.Damage} "${player.name}" ${amount}`,
       );
   }
 
@@ -174,11 +181,11 @@ class Player implements OmeggaPlayer {
     target: string | OmeggaPlayer,
     item: WeaponClass,
   ) {
-    if (typeof target === 'string') target = omegga.getPlayer(target);
+    const player = resolveTarget(omegga, target);
     if (!item) return;
-    if (target?.name)
+    if (player?.name)
       omegga.writeln(
-        `${omegga.Console.Server.Players.GiveItem} "${target?.name}" ${item}`,
+        `${omegga.Console.Server.Players.GiveItem} "${player.name}" ${item}`,
       );
   }
 
@@ -187,11 +194,11 @@ class Player implements OmeggaPlayer {
     target: string | OmeggaPlayer,
     item: WeaponClass,
   ) {
-    if (typeof target === 'string') target = omegga.getPlayer(target);
+    const player = resolveTarget(omegga, target);
     if (!item) return;
-    if (target?.name)
+    if (player?.name)
       omegga.writeln(
-        `${omegga.Console.Server.Players.RemoveItem} "${target?.name}" ${item}`,
+        `${omegga.Console.Server.Players.RemoveItem} "${player.name}" ${item}`,
       );
   }
 
@@ -200,10 +207,10 @@ class Player implements OmeggaPlayer {
     target: string | OmeggaPlayer,
     teamIndex: number,
   ) {
-    if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (target?.name)
+    const player = resolveTarget(omegga, target);
+    if (player?.name)
       omegga.writeln(
-        `${omegga.Console.Server.Players.SetTeam} "${target?.name}" ${teamIndex}`,
+        `${omegga.Console.Server.Players.SetTeam} "${player.name}" ${teamIndex}`,
       );
   }
 
@@ -212,10 +219,10 @@ class Player implements OmeggaPlayer {
     target: string | OmeggaPlayer,
     index: number,
   ) {
-    if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (target?.name)
+    const player = resolveTarget(omegga, target);
+    if (player?.name)
       omegga.writeln(
-        `${omegga.Console.Server.Players.SetMinigame} "${target?.name}" ${index}`,
+        `${omegga.Console.Server.Players.SetMinigame} "${player.name}" ${index}`,
       );
   }
 
@@ -225,10 +232,10 @@ class Player implements OmeggaPlayer {
     minigameIndex: number,
     score: number,
   ) {
-    if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (target?.name)
+    const player = resolveTarget(omegga, target);
+    if (player?.name)
       omegga.writeln(
-        `${omegga.Console.Server.Players.SetLeaderboardValue} "${target?.name}" ${minigameIndex} ${score}`,
+        `${omegga.Console.Server.Players.SetLeaderboardValue} "${player.name}" ${minigameIndex} ${score}`,
       );
   }
 
@@ -237,20 +244,19 @@ class Player implements OmeggaPlayer {
     target: string | OmeggaPlayer,
     minigameIndex: number,
   ): Promise<number> {
-    if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (!target?.name) return 0;
+    const player = resolveTarget(omegga, target);
+    if (!player?.name) return 0;
 
-    const name = target?.name;
-    const id = target?.id;
+    const { name, id } = player;
 
     const match = await omegga.addWatcher(
-      (line, match) => {
-        if (match?.groups.generator !== 'LogConsoleCommands') return;
+      (_line, match) => {
+        if (match?.groups?.generator !== 'LogConsoleCommands') return;
 
         const test = match.groups.data.match(
           /^(?<uuid>.+) leaderboard value (?<minigame>\d+) = (?<score>-?\d+)$/,
         );
-        if (!test) return;
+        if (!test?.groups) return;
         if (test.groups.uuid !== id) return;
         if (Number(test.groups.minigame) !== minigameIndex) return;
         return test;
@@ -263,7 +269,8 @@ class Player implements OmeggaPlayer {
           ),
       },
     );
-    if (match) return Number(match[0].groups.score);
+    const score = match?.[0]?.groups?.score;
+    return score != null ? Number(score) : 0;
   }
 
   static setLeaderboard(
@@ -272,11 +279,11 @@ class Player implements OmeggaPlayer {
     key: string,
     value: number,
   ): void {
-    if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (!target?.name) return null;
+    const player = resolveTarget(omegga, target);
+    if (!player?.name) return;
 
     omegga.writeln(
-      `${omegga.Console.Server.Players.SetLeaderboardValue} "${target.name}" "${key}" "${value}"`,
+      `${omegga.Console.Server.Players.SetLeaderboardValue} "${player.name}" "${key}" "${value}"`,
     );
   }
 
@@ -285,20 +292,22 @@ class Player implements OmeggaPlayer {
     target: string | OmeggaPlayer,
     key: string,
   ): Promise<number | null> {
-    if (typeof target === 'string') target = omegga.getPlayer(target);
-    if (!target?.name) return null;
+    const player = resolveTarget(omegga, target);
+    if (!player?.name) return null;
+
+    const { name, id } = player;
 
     // LogConsoleCommands: <uuid> leaderboard value Key = 0
     const match = await omegga
       .addWatcher<RegExpMatchArray>(
-        (line, match) => {
-          if (match?.groups.generator !== 'LogConsoleCommands') return;
+        (_line, match) => {
+          if (match?.groups?.generator !== 'LogConsoleCommands') return;
 
           const test = match.groups.data.match(
             /^(?<uuid>.+) leaderboard value (?<key>.+) = (?<value>-?\d+)$/,
           );
-          if (!test) return;
-          if (test.groups.uuid !== target.id) return;
+          if (!test?.groups) return;
+          if (test.groups.uuid !== id) return;
           if (test.groups.key !== key) return;
           return test;
         },
@@ -306,13 +315,13 @@ class Player implements OmeggaPlayer {
           timeoutDelay: 1000,
           exec: () =>
             omegga.writeln(
-              `${omegga.Console.Server.Players.PrintLeaderboardValue} "${target.name}" "${key}"`,
+              `${omegga.Console.Server.Players.PrintLeaderboardValue} "${name}" "${key}"`,
             ),
         },
       )
       .catch(() => null);
-    if (match) return Number(match[0].groups.value);
-    return null;
+    const value = match?.[0]?.groups?.value;
+    return value != null ? Number(value) : null;
   }
 
   /**
@@ -361,7 +370,7 @@ class Player implements OmeggaPlayer {
   }
 
   isHost(): boolean {
-    return this.#omegga.host.id === this.id;
+    return this.#omegga.host?.id === this.id;
   }
 
   clearBricks(quiet = false) {
@@ -438,16 +447,16 @@ class Player implements OmeggaPlayer {
     );
 
     // wait for the pawn watcher to return a pawn
-    const [
-      {
-        groups: { pawn },
-      },
-    ] = await omegga.watchLogChunk<RegExpMatchArray>(
+    const [pawnMatch] = await omegga.watchLogChunk<RegExpMatchArray>(
       'GetAll BP_PlayerController_C Pawn Name=' + this.controller,
       pawnRegExp,
       { first: 'index', timeoutDelay: 100 },
     );
 
+    // no response is an error (matches the old rejection behavior); a pawn of
+    // "None" means the player has no pawn
+    const pawn = pawnMatch?.groups?.pawn;
+    if (!pawn) throw new Error(`no pawn response for ${this.controller}`);
     if (pawn === 'None') return null;
 
     // given a player's pawn, match the player's position
@@ -456,11 +465,7 @@ class Player implements OmeggaPlayer {
     );
 
     // wait for the position promise
-    const [
-      {
-        groups: { x, y, z },
-      },
-    ] = await omegga.addWatcher(posRegExp, {
+    const [posMatch] = await omegga.addWatcher(posRegExp, {
       // request the position for this player's pawn
       exec: () =>
         omegga.writeln(
@@ -469,15 +474,21 @@ class Player implements OmeggaPlayer {
       timeoutDelay: 100,
     });
 
+    const pos = posMatch?.groups;
+    if (!pos) return null;
+
     // return the player's position as an array of numbers
-    return [Number(x), Number(y), Number(z)];
+    return [Number(pos.x), Number(pos.y), Number(pos.z)];
   }
 
-  async getGhostBrick(): Promise<{
-    targetGrid: string;
-    location: number[];
-    orientation: string;
-  }> {
+  async getGhostBrick(): Promise<
+    | {
+        targetGrid: string;
+        location: number[];
+        orientation: string;
+      }
+    | undefined
+  > {
     const { controller } = this;
 
     const previewClass = 'BP_ToolPreviewActor_C';
@@ -511,37 +522,38 @@ class Player implements OmeggaPlayer {
     ]);
 
     // get BrickGridPreviewActor by controller
-    const owner = owners.find(owner => owner.groups.controller === controller);
+    const owner = owners.find(owner => owner.groups?.controller === controller);
 
-    if (!owner) return;
+    if (!owner?.groups) return;
 
     const actor = owner.groups.actor;
     // get transform parameters for the found actor
     const transformParameters = transformParams.find(
-      transformParameters => transformParameters.groups.actor === actor,
-    );
+      transformParameters => transformParameters.groups?.actor === actor,
+    )?.groups;
 
     if (!transformParameters) return;
 
     return {
-      targetGrid: transformParameters.groups.targetGrid,
+      targetGrid: transformParameters.targetGrid,
       location: [
-        +transformParameters.groups.x,
-        +transformParameters.groups.y,
-        +transformParameters.groups.z,
+        +transformParameters.x,
+        +transformParameters.y,
+        +transformParameters.z,
       ],
-      orientation: transformParameters.groups.orientation,
+      orientation: transformParameters.orientation,
     };
   }
 
-  async getPaint(): Promise<{
-    materialIndex: string;
-    materialAlpha: string;
-    material: string;
-    color: number[];
-  }> {
-    const { controller } = this;
-
+  async getPaint(): Promise<
+    | {
+        materialIndex: string;
+        materialAlpha: string;
+        material: string;
+        color: number[];
+      }
+    | undefined
+  > {
     const match = await this.#omegga
       .addWatcher<{
         materialIndex: string;
@@ -554,7 +566,7 @@ class Player implements OmeggaPlayer {
           const match = line.match(
             /^\[[^\]]+\]\[[^\]]+\]\d+\) BP_PlayerState_C .+?PersistentLevel\.(?<state>BP_PlayerState_C_\d+)\.ColorSelectionState = \(SelectedColor=\(B=(?<b>\d+),G=(?<g>\d+),R=(?<r>\d+),A=(?<a>\d+)\),MaterialIndex=(?<materialIndex>\d+),MaterialAlpha=(?<materialAlpha>\d+)\)$/,
           );
-          if (!match) return;
+          if (!match?.groups) return;
           if (match.groups.state !== this.state) return;
           const colorRaw = [+match.groups.r, +match.groups.g, +match.groups.b];
           return {
@@ -579,7 +591,8 @@ class Player implements OmeggaPlayer {
   }
 
   async isCrouched(pawn?: string): Promise<boolean> {
-    if (!pawn) pawn = await this.getPawn();
+    pawn ??= (await this.getPawn()) ?? undefined;
+    if (!pawn) return false;
 
     const reg =
       /(?<index>\d+)\) BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.bIsCrouched = (?<crouched>True|False)$/;
@@ -590,14 +603,15 @@ class Player implements OmeggaPlayer {
       { first: 'index', timeoutDelay: 500 },
     );
 
-    const me = resp.find(r => r.groups.pawn === pawn);
-    if (!me) return false;
+    const me = resp.find(r => r.groups?.pawn === pawn);
+    if (!me?.groups) return false;
 
     return me.groups.crouched == 'True';
   }
 
   async isDead(pawn?: string): Promise<boolean> {
-    if (!pawn) pawn = await this.getPawn();
+    pawn ??= (await this.getPawn()) ?? undefined;
+    if (!pawn) return true;
 
     const reg =
       /(?<index>\d+)\) BP_FigureV2_C .+?PersistentLevel\.(?<pawn>BP_FigureV2_C_\d+)\.bIsDead = (?<dead>True|False)$/;
@@ -608,8 +622,8 @@ class Player implements OmeggaPlayer {
       { first: 'index', timeoutDelay: 500 },
     );
 
-    const me = resp.find(r => r.groups.pawn === pawn);
-    if (!me) return true;
+    const me = resp.find(r => r.groups?.pawn === pawn);
+    if (!me?.groups) return true;
 
     return me.groups.dead == 'True';
   }
@@ -688,8 +702,11 @@ class Player implements OmeggaPlayer {
 
     // get selector for this controller, we need to handle if there are multiple selectors for the same controller
     const selectors = owners
-      .filter(selectors => selectors.groups.controller === controller)
-      .map(selectors => selectors.groups.tool)
+      .flatMap(selector =>
+        selector.groups?.controller === controller
+          ? [selector.groups.tool]
+          : [],
+      )
       .sort();
     const selector = selectors[0]; // grab the most recently created
 
@@ -699,8 +716,11 @@ class Player implements OmeggaPlayer {
 
     // template for this selector, we need to handle if there are multiple templates for the same selector and grab the most recent one
     const brickTemplates = templates
-      .filter(template => template.groups.tool === selector)
-      .map(template => template.groups.templateName)
+      .flatMap(template =>
+        template.groups?.tool === selector
+          ? [template.groups.templateName]
+          : [],
+      )
       .sort();
     const templateName = brickTemplates[0]; // grab the most recently created
 
@@ -710,21 +730,21 @@ class Player implements OmeggaPlayer {
 
     // find all values with matching template name
     const minBound = minBounds.find(
-      minBound => minBound.groups.templateName === templateName,
-    );
+      minBound => minBound.groups?.templateName === templateName,
+    )?.groups;
     const maxBound = maxBounds.find(
-      maxBound => maxBound.groups.templateName === templateName,
-    );
+      maxBound => maxBound.groups?.templateName === templateName,
+    )?.groups;
     const center = centers.find(
-      center => center.groups.templateName === templateName,
-    );
+      center => center.groups?.templateName === templateName,
+    )?.groups;
 
     if (!minBound || !maxBound || !center) return;
 
     return {
-      minBound: [+minBound.groups.x, +minBound.groups.y, +minBound.groups.z],
-      maxBound: [+maxBound.groups.x, +maxBound.groups.y, +maxBound.groups.z],
-      center: [+center.groups.x, +center.groups.y, +center.groups.z],
+      minBound: [+minBound.x, +minBound.y, +minBound.z],
+      maxBound: [+maxBound.x, +maxBound.y, +maxBound.z],
+      center: [+center.x, +center.y, +center.z],
     } as IBrickBounds;
   }
 

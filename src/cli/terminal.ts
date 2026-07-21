@@ -1,9 +1,9 @@
 import Logger from '@/logger';
-import { OmeggaPlayer } from '@/plugin';
+import { type OmeggaPlayer } from '@/plugin';
 import { steamcmdCheckUpdate, steamcmdDownloadGame } from '@/updater';
 import { readBinaryVersion } from '@omegga/matchers/version';
 import Omegga from '@omegga/server';
-import { IOmeggaOptions } from '@omegga/types';
+import { type IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
 import { checkWsl } from '@util/wsl';
 import { serverEvents } from '@webserver/backend/events';
@@ -370,7 +370,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
     aliases: ['reload'],
     desc: 'shorthand for /plugins reload',
     async fn() {
-      await COMMANDS.find(c => c.aliases.includes('plugins')).fn.bind(this)(
+      await COMMANDS.find(c => c.aliases.includes('plugins'))?.fn.bind(this)(
         'reload',
       );
     },
@@ -410,8 +410,8 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
               log(name.green.underline + ' (enabled, not loaded)');
             else log(name.red.underline + ' (disabled)');
 
-            log('  ' + docs.description);
-            log(('  Author: ' + docs.author).gray);
+            log('  ' + (docs?.description ?? 'no description'));
+            log(('  Author: ' + (docs?.author ?? 'unknown')).gray);
           }
         }
       } else if (subcommand === 'install') {
@@ -808,10 +808,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
               }
             }
           } catch (e) {
-            err(
-              'An error occurred while getting world revisions:',
-              e.toString(),
-            );
+            err('An error occurred while getting world revisions:', String(e));
           }
           return;
 
@@ -997,7 +994,7 @@ export default class Terminal {
     omegga.on('chat', (name, message) => {
       const player = omegga.getPlayer(name);
       this.log(
-        `${(player.displayName ?? player.name ?? name).brightYellow.underline}: ${message}`,
+        `${(player?.displayName ?? player?.name ?? name).brightYellow.underline}: ${message}`,
       );
     });
     omegga.on('start', () => {

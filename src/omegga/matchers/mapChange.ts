@@ -1,5 +1,5 @@
 import { brn2n } from '@util/map';
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 
 const mapChange: MatchGenerator<string> = omegga => {
   // LogLoad: Took 0.396473 seconds to LoadMap(/Game/Maps/Plate/Plate)
@@ -9,7 +9,7 @@ const mapChange: MatchGenerator<string> = omegga => {
     // listen for commands messages
     pattern(_line, logMatch) {
       // line is not generic console log
-      if (!logMatch) return;
+      if (!logMatch?.groups) return;
 
       const { generator, data } = logMatch.groups;
       // check if log is a world log

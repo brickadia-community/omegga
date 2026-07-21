@@ -11,7 +11,9 @@ describe('TOTP', () => {
   // RFC 6238 Appendix B test vectors
   // The test secret is ASCII "12345678901234567890" (20 bytes for SHA1)
   const RFC_SECRET_RAW = Buffer.from('12345678901234567890', 'ascii');
-  const RFC_SECRET = new Secret({ buffer: RFC_SECRET_RAW });
+  const RFC_SECRET = new Secret({
+    buffer: new Uint8Array(RFC_SECRET_RAW).buffer,
+  });
   const RFC_SECRET_B32 = RFC_SECRET.base32;
 
   // RFC 6238 test vectors for SHA1, 8-digit TOTP

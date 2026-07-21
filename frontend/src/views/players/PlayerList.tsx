@@ -22,7 +22,7 @@ import {
   IconMapPin,
   IconRotate,
 } from '@tabler/icons-react';
-import { useHasScope, useMobileInspector, useRequireScope } from '@hooks';
+import { useMobileInspector, useRequireScope } from '@hooks';
 import { debounce, duration, heartbeatAgo } from '@utils';
 import { useMemo, useRef, useState } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
@@ -32,7 +32,6 @@ import { PlayerInspector } from './PlayerInspector';
 
 export const PlayerList = () => {
   const canAccess = useRequireScope(Permissions.PlayerList);
-  const canGet = useHasScope(Permissions.PlayerGet);
   const [showFilters, setShowFilters] = useState(false);
 
   const [_location, navigate] = useLocation();

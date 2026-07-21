@@ -1,30 +1,30 @@
 import {
-  OmeggaCore,
-  OmeggaLike,
-  OmeggaPlayer,
-  PluginInterop,
-  WatcherPattern,
+  type OmeggaCore,
+  type OmeggaLike,
+  type OmeggaPlayer,
+  type PluginInterop,
+  type WatcherPattern,
 } from '@/plugin';
-import { EnvironmentPreset } from '@brickadia/presets';
+import { type EnvironmentPreset } from '@brickadia/presets';
 import {
-  BRBanList,
-  BRPlayerNameCache,
-  BRRoleAssignments,
-  BRRoleSetup,
+  type BRBanList,
+  type BRPlayerNameCache,
+  type BRRoleAssignments,
+  type BRRoleSetup,
 } from '@brickadia/types';
 import commandInjector from '@omegga/commandInjector';
-import { ConsoleCommands, resolveConsoleCommands } from '@omegga/commands';
+import { type ConsoleCommands, resolveConsoleCommands } from '@omegga/commands';
 import LogWrangler from '@omegga/logWrangler';
 import Player from '@omegga/player';
 import Omegga from '@omegga/server';
 import {
-  IGamemode,
-  ILogMinigame,
-  IMinigameList,
-  IPlayerPositions,
-  IServerStatus,
+  type IGamemode,
+  type ILogMinigame,
+  type IMinigameList,
+  type IPlayerPositions,
+  type IServerStatus,
 } from '@omegga/types';
-import { ReadSaveObject, WriteSaveObject } from 'brs-js';
+import { type ReadSaveObject, type WriteSaveObject } from 'brs-js';
 import EventEmitter from 'events';
 
 // bootstrap the proxy with initial omegga data
@@ -123,37 +123,40 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   players: Player[];
 
   /** memoized version-resolved console commands ({@link Console}) */
-  #console: { version: number; commands: ConsoleCommands };
+  #console: { version: number; commands: ConsoleCommands } | undefined;
 
   /** version-resolved Brickadia console command names, nested by namespace */
   get Console(): ConsoleCommands {
-    if (this.#console?.version !== this.version)
-      this.#console = {
+    let memo = this.#console;
+    if (memo?.version !== this.version) {
+      memo = {
         version: this.version,
         commands: resolveConsoleCommands(this.version),
       };
-    return this.#console.commands;
+      this.#console = memo;
+    }
+    return memo.commands;
   }
 
-  host: { id: string; name: string };
+  // these fields are assigned by the 'bootstrap' event, which the plugin
+  // loader always sends before plugin code runs (see bootstrap() above)
+  host!: { id: string; name: string };
 
-  verbose: boolean;
+  verbose!: boolean;
 
-  started: boolean;
-  starting: boolean;
-  stopping: boolean;
-  currentMap: string;
+  started!: boolean;
+  starting!: boolean;
+  stopping!: boolean;
+  currentMap!: string;
 
-  path: string;
-  configPath: string;
-  savePath: string;
-  worldPath: string;
-  prefabPath: string;
-  presetPath: string;
+  path!: string;
+  configPath!: string;
+  savePath!: string;
+  worldPath!: string;
+  prefabPath!: string;
+  presetPath!: string;
 
   logWrangler: LogWrangler;
-
-  getPlugin: (name: string) => Promise<PluginInterop>;
 
   constructor(exec: (line: string) => void) {
     super();
@@ -208,16 +211,16 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     });
   }
   addMatcher<T>(
-    pattern: RegExp | ((line: string, match: RegExpMatchArray) => T),
-    callback:
+    _pattern: RegExp | ((line: string, match: RegExpMatchArray | null) => T),
+    _callback:
       | ((match: RegExpMatchArray) => boolean)
       | ((match: RegExpMatchArray) => T),
   ): void {
     throw badBorrow('addMatcher');
   }
   addWatcher<T = RegExpMatchArray>(
-    pattern: RegExp | WatcherPattern<T>,
-    options?: {
+    _pattern: RegExp | WatcherPattern<T>,
+    _options?: {
       timeoutDelay?: number;
       bundle?: boolean;
       debounce?: boolean;
@@ -225,28 +228,28 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
       last?: (match: T) => boolean;
       exec?: () => void;
     },
-  ): Promise<RegExpMatchArray[] | T[]> {
+  ): Promise<T[]> {
     throw badBorrow('addWatcher');
   }
-  watchLogChunk<T = string>(
-    cmd: string,
-    pattern: RegExp | WatcherPattern<T>,
-    options?: {
+  watchLogChunk<T = RegExpMatchArray>(
+    _cmd: string,
+    _pattern: RegExp | WatcherPattern<T>,
+    _options?: {
       first?: 'index' | ((match: T) => boolean);
       last?: (match: T) => boolean;
       afterMatchDelay?: number;
       timeoutDelay?: number;
     },
-  ): Promise<RegExpMatchArray[] | T[]> {
+  ): Promise<T[]> {
     throw badBorrow('watchLogChunk');
   }
   watchLogArray<
     Item extends Record<string, string> = Record<string, string>,
     Member extends Record<string, string> = Record<string, string>,
   >(
-    cmd: string,
-    itemPattern: RegExp,
-    memberPattern: RegExp,
+    _cmd: string,
+    _itemPattern: RegExp,
+    _memberPattern: RegExp,
   ): Promise<{ item: Item; members: Member[] }[]> {
     throw badBorrow('watchLogArray');
   }
@@ -274,37 +277,37 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   }[] {
     throw badBorrow('getPlayers');
   }
-  getPlayer(target: string): OmeggaPlayer {
+  getPlayer(_target: string): OmeggaPlayer | null {
     throw badBorrow('getPlayer');
   }
-  findPlayerByName(name: string): OmeggaPlayer {
+  findPlayerByName(_name: string): OmeggaPlayer | null {
     throw badBorrow('findPlayerByName');
   }
   getHostId(): string {
     throw badBorrow('getHostId');
   }
-  broadcast(...messages: string[]): void {
+  broadcast(..._messages: string[]): void {
     throw badBorrow('broadcast');
   }
-  whisper(target: string | OmeggaPlayer, ...messages: string[]): void {
+  whisper(_target: string | OmeggaPlayer, ..._messages: string[]): void {
     throw badBorrow('whisper');
   }
-  middlePrint(target: string | OmeggaPlayer, message: string): void {
+  middlePrint(_target: string | OmeggaPlayer, _message: string): void {
     throw badBorrow('middlePrint');
   }
-  saveMinigame(index: number, name: string): void {
+  saveMinigame(_index: number, _name: string): void {
     throw badBorrow('saveMinigame');
   }
-  deleteMinigame(index: number): void {
+  deleteMinigame(_index: number): void {
     throw badBorrow('deleteMinigame');
   }
-  resetMinigame(index: number): void {
+  resetMinigame(_index: number): void {
     throw badBorrow('resetMinigame');
   }
-  nextRoundMinigame(index: number): void {
+  nextRoundMinigame(_index: number): void {
     throw badBorrow('nextRoundMinigame');
   }
-  loadMinigame(presetName: string, owner?: string): void {
+  loadMinigame(_presetName: string, _owner?: string): void {
     throw badBorrow('loadMinigame');
   }
   getMinigamePresets(): string[] {
@@ -313,33 +316,33 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   resetEnvironment(): void {
     throw badBorrow('resetEnvironment');
   }
-  saveEnvironment(presetName: string): Promise<void> {
+  saveEnvironment(_presetName: string): Promise<void> {
     throw badBorrow('saveEnvironment');
   }
-  getEnvironmentData(): Promise<EnvironmentPreset> {
+  getEnvironmentData(): Promise<EnvironmentPreset | null> {
     throw badBorrow('getEnvironmentData');
   }
-  loadEnvironment(presetName: string): void {
+  loadEnvironment(_presetName: string): void {
     throw badBorrow('loadEnvironment');
   }
-  readEnvironmentData(presetName: string): void {
+  readEnvironmentData(_presetName: string): EnvironmentPreset | null {
     throw badBorrow('readEnvironmentData');
   }
-  loadEnvironmentData(preset: EnvironmentPreset): void {
+  loadEnvironmentData(_preset: EnvironmentPreset): void {
     throw badBorrow('loadEnvironmentData');
   }
   getEnvironmentPresets(): string[] {
     throw badBorrow('getEnvironmentPresets');
   }
-  clearBricks(target: string | { id: string }, quiet?: boolean): void {
+  clearBricks(_target: string | { id: string }, _quiet?: boolean): void {
     throw badBorrow('clearBricks');
   }
   clearRegion(
-    region: {
+    _region: {
       center: [number, number, number];
       extent: [number, number, number];
     },
-    options?: {
+    _options?: {
       target?: string | OmeggaPlayer;
       bricks?: boolean;
       entities?: boolean;
@@ -348,28 +351,28 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     throw badBorrow('clearRegion');
   }
   clearAllBricks(
-    options?:
+    _options?:
       | boolean
       | { quiet?: boolean; bricks?: boolean; entities?: boolean },
   ): void {
     throw badBorrow('clearAllBricks');
   }
-  saveBricks(saveName: string, region?: {}): void {
+  saveBricks(_saveName: string, _region?: {}): void {
     throw badBorrow('saveBricks');
   }
-  saveBricksAsync(saveName: string, region?: {}): Promise<void> {
+  saveBricksAsync(_saveName: string, _region?: {}): Promise<void> {
     throw badBorrow('saveBricksAsync');
   }
   loadBricks(
-    saveName: string,
-    options?: { offX?: number; offY?: number; offZ?: number; quiet?: boolean },
+    _saveName: string,
+    _options?: { offX?: number; offY?: number; offZ?: number; quiet?: boolean },
   ): void {
     throw badBorrow('loadBricks');
   }
   loadBricksOnPlayer(
-    saveName: string,
-    player: string | OmeggaPlayer,
-    options?: { offX?: number; offY?: number; offZ?: number },
+    _saveName: string,
+    _player: string | OmeggaPlayer,
+    _options?: { offX?: number; offY?: number; offZ?: number },
   ): void {
     throw badBorrow('loadBricksOnPlayer');
   }
@@ -382,12 +385,12 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   getPrefabs(): string[] {
     throw badBorrow('getPrefabs');
   }
-  getPrefabPath(prefabName: string): string {
+  getPrefabPath(_prefabName: string): string | undefined {
     throw badBorrow('getPrefabPath');
   }
   loadPrefab(
-    path: string,
-    options?: {
+    _path: string,
+    _options?: {
       offX?: number;
       offY?: number;
       offZ?: number;
@@ -401,15 +404,15 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     throw badBorrow('loadPrefab');
   }
   loadPrefabOnPlayer(
-    path: string,
-    player: string | OmeggaPlayer,
-    options?: { preserveOwnership?: boolean },
+    _path: string,
+    _player: string | OmeggaPlayer,
+    _options?: { preserveOwnership?: boolean },
   ): void {
     throw badBorrow('loadPrefabOnPlayer');
   }
   savePrefab(
-    path: string,
-    options?: {
+    _path: string,
+    _options?: {
       region?: {
         center: [number, number, number];
         extent: [number, number, number];
@@ -422,8 +425,8 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     throw badBorrow('savePrefab');
   }
   savePrefabAsync(
-    path: string,
-    options?: {
+    _path: string,
+    _options?: {
       region?: {
         center: [number, number, number];
         extent: [number, number, number];
@@ -436,64 +439,64 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
     throw badBorrow('savePrefabAsync');
   }
   givePrefabToPlayer(
-    path: string,
-    player: string | OmeggaPlayer,
-    options?: { preserveOwnership?: boolean },
+    _path: string,
+    _player: string | OmeggaPlayer,
+    _options?: { preserveOwnership?: boolean },
   ): void {
     throw badBorrow('givePrefabToPlayer');
   }
-  getSavePath(saveName: string): string {
+  getSavePath(_saveName: string): string | undefined {
     throw badBorrow('getSavePath');
   }
-  getWorldPath(worldName: string): string {
+  getWorldPath(_worldName: string): string | undefined {
     throw badBorrow('getWorldPath');
   }
   getWorldRevisions(
-    worldName: string,
+    _worldName: string,
   ): Promise<{ index: number; date: Date; note: string }[]> {
     throw badBorrow('getWorldRevisions');
   }
-  loadWorld(worldName: string): Promise<boolean> {
+  loadWorld(_worldName: string): Promise<boolean> {
     throw badBorrow('loadWorld');
   }
-  loadWorldRevision(worldName: string, revision: number): Promise<boolean> {
+  loadWorldRevision(_worldName: string, _revision: number): Promise<boolean> {
     throw badBorrow('loadWorldRevision');
   }
-  saveWorldAs(worldName: string): Promise<boolean> {
+  saveWorldAs(_worldName: string): Promise<boolean> {
     throw badBorrow('saveWorldAs');
   }
   saveWorld(): Promise<boolean> {
     throw badBorrow('saveWorld');
   }
-  createEmptyWorld(worldName: string): Promise<boolean> {
+  createEmptyWorld(_worldName: string): Promise<boolean> {
     throw badBorrow('createEmptyWorld');
   }
-  writeSaveData(saveName: string, saveData: WriteSaveObject) {
+  writeSaveData(_saveName: string, _saveData: WriteSaveObject) {
     throw badBorrow('writeSaveData');
   }
-  readSaveData(saveName: string, nobricks?: boolean): ReadSaveObject {
+  readSaveData(_saveName: string, _nobricks?: boolean): ReadSaveObject {
     throw badBorrow('readSaveData');
   }
   loadSaveData(
-    saveData: WriteSaveObject,
-    options?: { offX?: number; offY?: number; offZ?: number; quiet?: boolean },
+    _saveData: WriteSaveObject,
+    _options?: { offX?: number; offY?: number; offZ?: number; quiet?: boolean },
   ): Promise<void> {
     throw badBorrow('loadSaveData');
   }
   loadSaveDataOnPlayer(
-    saveData: WriteSaveObject,
-    player: string | OmeggaPlayer,
-    options?: { offX?: number; offY?: number; offZ?: number },
+    _saveData: WriteSaveObject,
+    _player: string | OmeggaPlayer,
+    _options?: { offX?: number; offY?: number; offZ?: number },
   ): Promise<void> {
     throw badBorrow('loadSaveDataOnPlayer');
   }
-  getSaveData(region?: {
+  getSaveData(_region?: {
     center: [number, number, number];
     extent: [number, number, number];
-  }): Promise<ReadSaveObject> {
+  }): Promise<ReadSaveObject | undefined> {
     throw badBorrow('getSaveData');
   }
-  changeMap(map: string): Promise<boolean> {
+  changeMap(_map: string): Promise<boolean> {
     throw badBorrow('changeMap');
   }
   getRoleSetup(): BRRoleSetup {
@@ -508,14 +511,20 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   getNameCache(): BRPlayerNameCache {
     throw badBorrow('getNameCache');
   }
+  // overridden by the worker with an implementation that queries the host
+  getPlugin(_name: string): Promise<PluginInterop | null> {
+    throw badBorrow('getPlugin');
+  }
 }
 
 export function injectOmeggaPrototypes(
   proxyOmegga: typeof ProxyOmegga,
   omegga: typeof Omegga,
 ) {
-  // copy prototypes from core omegga to the proxy omegga
-  for (const fn in STEAL_PROTOTYPES) {
-    proxyOmegga.prototype[fn] = omegga.prototype[fn];
+  // copy prototypes from core omegga to the proxy omegga; writing through a
+  // union of method keys requires widening the target's value types
+  const proto = proxyOmegga.prototype as Record<keyof OmeggaCore, unknown>;
+  for (const fn of Object.keys(STEAL_PROTOTYPES) as (keyof OmeggaCore)[]) {
+    proto[fn] = omegga.prototype[fn];
   }
 }
