@@ -239,6 +239,74 @@ export default class Database extends EventEmitter {
     return this.findUserById(id);
   }
 
+  // check if a username is taken (case-insensitive, so users can't
+  // impersonate each other with case variants), optionally excluding a user id
+  async usernameTaken(username: string, excludeId?: string) {
+    const rows = this.db
+      .select({ id: schema.users.id })
+      .from(schema.users)
+      .where(sql`${schema.users.username} = ${username} COLLATE NOCASE`)
+      .all();
+    return rows.some(r => r.id !== excludeId);
+  }
+
+  // rename a user by id. throws when the name is invalid or already taken
+  async renameUser(id: string, username: string) {
+    if (!username.match(/^\w{1,32}$/))
+      throw new Error('username is not allowed');
+    if (await this.usernameTaken(username, id))
+      throw new Error('username is already taken');
+    try {
+      this.db
+        .update(schema.users)
+        .set({ username })
+        .where(eq(schema.users.id, id))
+        .run();
+    } catch (e) {
+      // unique constraint race between the taken check and the update
+      if ((e as { code?: string }).code?.startsWith('SQLITE_CONSTRAINT'))
+        throw new Error('username is already taken');
+      throw e;
+    }
+  }
+
+  // grant ownership to a user. throws when the user is missing, disabled, or
+  // already an owner
+  async grantOwner(username: string) {
+    const user = await this.findUserByUsername(username);
+    if (!user) throw new Error('user does not exist');
+    if (user.isOwner) throw new Error('user is already an owner');
+    if (user.isBanned)
+      throw new Error('cannot grant ownership to a disabled user');
+    this.db
+      .update(schema.users)
+      .set({ isOwner: true })
+      .where(eq(schema.users.id, user.id))
+      .run();
+  }
+
+  // revoke ownership from a user. throws when the user is missing, not an
+  // owner, or the last remaining owner
+  async revokeOwner(username: string) {
+    const user = await this.findUserByUsername(username);
+    if (!user) throw new Error('user does not exist');
+    if (!user.isOwner) throw new Error('user is not an owner');
+    const owners = this.db
+      .select({ count: count() })
+      .from(schema.users)
+      .where(eq(schema.users.isOwner, true))
+      .get();
+    if ((owners?.count ?? 0) <= 1)
+      throw new Error('cannot revoke the last owner');
+    this.db
+      .update(schema.users)
+      .set({ isOwner: false })
+      .where(eq(schema.users.id, user.id))
+      .run();
+    // abort any live sessions' subscriptions that were authorized as owner
+    serverEvents.emit('userInvalidated', username);
+  }
+
   // set a user's password
   async userPasswd(username: string, password: string) {
     const h = await this.hash(password);

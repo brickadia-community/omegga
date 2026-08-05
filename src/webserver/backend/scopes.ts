@@ -43,6 +43,7 @@ export const ScopeName = {
   UserList: 'user.list',
   UserCreate: 'user.create',
   UserPasswd: 'user.passwd',
+  UserRename: 'user.rename',
   UserBan: 'user.ban',
   UserDelete: 'user.delete',
   UserPermissions: 'user.permissions',
@@ -223,6 +224,11 @@ export const SCOPES = {
   },
   [S.UserPasswd]: {
     description: 'Change user passwords in the users view',
+    readOnly: false,
+    domain: D.User,
+  },
+  [S.UserRename]: {
+    description: 'Change your own username in the account view',
     readOnly: false,
     domain: D.User,
   },

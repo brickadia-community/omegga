@@ -143,6 +143,88 @@ describe('Database', () => {
       expect(user.permissions?.root).toBe(RootLevel.All);
     });
 
+    it('renameUser changes the username', async () => {
+      const created = defined(await database.createUser('oldname', 'pass'));
+      await database.renameUser(created.id, 'newname');
+      expect(await database.findUserByUsername('oldname')).toBeNull();
+      const renamed = defined(await database.findUserByUsername('newname'));
+      expect(renamed.id).toBe(created.id);
+      // credentials and account data are preserved
+      expect(await database.authUser('newname', 'pass')).not.toBeNull();
+    });
+
+    it('renameUser rejects invalid or taken names', async () => {
+      const created = defined(await database.createUser('renamer', 'pass'));
+      await database.createUser('other', 'pass');
+      await expect(
+        database.renameUser(created.id, 'bad name!'),
+      ).rejects.toThrow('username is not allowed');
+      await expect(database.renameUser(created.id, 'OTHER')).rejects.toThrow(
+        'username is already taken',
+      );
+      // changing only the case of your own name is allowed
+      await database.renameUser(created.id, 'Renamer');
+      const renamed = defined(await database.findUserByUsername('Renamer'));
+      expect(renamed.id).toBe(created.id);
+    });
+
+    it('usernameTaken is case-insensitive', async () => {
+      const created = defined(await database.createUser('Taken', 'pass'));
+      expect(await database.usernameTaken('taken')).toBe(true);
+      expect(await database.usernameTaken('TAKEN')).toBe(true);
+      expect(await database.usernameTaken('free')).toBe(false);
+      // a user does not conflict with their own name (case changes allowed)
+      expect(await database.usernameTaken('taken', created.id)).toBe(false);
+    });
+
+    it('grantOwner makes a user an owner', async () => {
+      await database.createAdminUser('admin', 'pass');
+      await database.createUser('heir', 'pass');
+      await database.grantOwner('heir');
+      const heir = defined(await database.findUserByUsername('heir'));
+      expect(heir.isOwner).toBe(true);
+      // the original owner is unchanged
+      const admin = defined(await database.findUserByUsername('admin'));
+      expect(admin.isOwner).toBe(true);
+    });
+
+    it('grantOwner rejects missing, owner, or disabled users', async () => {
+      await database.createAdminUser('admin', 'pass');
+      await expect(database.grantOwner('ghost')).rejects.toThrow(
+        'user does not exist',
+      );
+      await expect(database.grantOwner('admin')).rejects.toThrow(
+        'user is already an owner',
+      );
+      await database.createUser('disabled', 'pass');
+      await database.banUser('disabled', true);
+      await expect(database.grantOwner('disabled')).rejects.toThrow(
+        'cannot grant ownership to a disabled user',
+      );
+    });
+
+    it('revokeOwner demotes an owner but never the last one', async () => {
+      await database.createAdminUser('admin', 'pass');
+      await database.createUser('co', 'pass');
+      await expect(database.revokeOwner('ghost')).rejects.toThrow(
+        'user does not exist',
+      );
+      await expect(database.revokeOwner('co')).rejects.toThrow(
+        'user is not an owner',
+      );
+      await expect(database.revokeOwner('admin')).rejects.toThrow(
+        'cannot revoke the last owner',
+      );
+      await database.grantOwner('co');
+      await database.revokeOwner('admin');
+      expect(defined(await database.findUserByUsername('admin')).isOwner).toBe(
+        false,
+      );
+      expect(defined(await database.findUserByUsername('co')).isOwner).toBe(
+        true,
+      );
+    });
+
     it('getUsers paginates and searches', async () => {
       for (let i = 0; i < 5; i++) {
         await database.createUser(`user${i}`, 'pass');

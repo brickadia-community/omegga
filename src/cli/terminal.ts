@@ -63,6 +63,42 @@ function gameCommand(
   };
 }
 
+// subcommands of /user, rendered in /help and in the /user usage list
+const USER_COMMANDS = [
+  {
+    command: '/user passwd <username>',
+    desc: "reset a user's password",
+  },
+  {
+    command: '/user rename <username> <newname>',
+    desc: 'rename a user',
+  },
+  {
+    command: '/user resetmfa <username>',
+    desc: 'clear TOTP, passkeys, and recovery codes',
+  },
+  {
+    command: '/user disable <username>',
+    desc: 'prevent a user from signing in',
+  },
+  {
+    command: '/user enable <username>',
+    desc: 're-enable a disabled user',
+  },
+  {
+    command: '/user delete <username>',
+    desc: 'permanently delete a user',
+  },
+  {
+    command: '/user grantowner <username>',
+    desc: 'make a user an owner',
+  },
+  {
+    command: '/user revokeowner <username>',
+    desc: 'remove ownership from a user',
+  },
+];
+
 const COMMANDS: TerminalCommand[] = [
   // Brickadia commands
   gameCommand(
@@ -357,7 +393,7 @@ Uptime: ${msToTime(status.time).yellow}
 Players: ${status.players.length === 0 ? 'none'.grey : ''}
   ${status.players
     .map(p => `[${msToTime(p.time).grey}] ${p.name.brightYellow}`)
-    .join('\n      ')}
+    .join('\n  ')}
 `);
       } catch (e) {
         err('An error occurred while getting server status');
@@ -854,18 +890,29 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
   {
     aliases: ['user'],
     desc: 'manage web UI users',
-    descLines: () => [
-      "/user passwd <username>   - Reset a user's password",
-      '/user resetmfa <username> - Clear TOTP and passkeys',
-    ],
-    async fn(subcommand?: string, username?: string) {
+    descLines: () =>
+      USER_COMMANDS.map(({ command, desc }) => command.yellow + ' - ' + desc),
+    async fn(subcommand?: string, username?: string, newName?: string) {
       const db = this.omegga.webserver?.database;
       if (!db) {
         err('Database not available.');
         return;
       }
-      if (!subcommand || !username) {
-        err('Usage: /user <passwd|resetmfa> <username>');
+      const known = USER_COMMANDS.map(c => c.command.split(' ')[1]);
+      if (!subcommand || !known.includes(subcommand)) {
+        if (subcommand) err(`Unknown subcommand "${subcommand}".`);
+        log('Available user commands:');
+        for (const { command, desc } of USER_COMMANDS) {
+          this.log('  ', command.yellow, '-', desc);
+        }
+        return;
+      }
+      if (!username) {
+        err(
+          `Usage: /user ${subcommand} <username>${
+            subcommand === 'rename' ? ' <newname>' : ''
+          }`,
+        );
         return;
       }
       if (!(await db.userExists(username))) {
@@ -892,8 +939,70 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
           );
           break;
         }
-        default:
-          err(`Unknown subcommand "${subcommand}". Use passwd or resetmfa.`);
+        case 'rename': {
+          if (!newName) {
+            err('Usage: /user rename <username> <newname>');
+            return;
+          }
+          const user = await db.findUserByUsername(username);
+          if (!user) {
+            err(`User "${username}" does not exist.`);
+            return;
+          }
+          try {
+            await db.renameUser(user.id, newName);
+          } catch (e) {
+            err(e instanceof Error ? e.message : 'Error renaming user.');
+            return;
+          }
+          log(`Renamed "${username.yellow}" to "${newName.yellow}".`);
+          break;
+        }
+        case 'disable': {
+          await db.banUser(username, true);
+          log(`Disabled "${username.yellow}". They can no longer sign in.`);
+          break;
+        }
+        case 'enable': {
+          await db.banUser(username, false);
+          log(`Enabled "${username.yellow}". They can sign in again.`);
+          break;
+        }
+        case 'delete': {
+          const confirm = await new Promise<string>(resolve =>
+            this.rl.question(
+              `Permanently delete "${username}"? This cannot be undone. (y/N): `,
+              resolve,
+            ),
+          );
+          if (!/^y(es)?$/i.test(confirm.trim())) {
+            log('Cancelled.');
+            return;
+          }
+          await db.deleteUser(username);
+          log(`Deleted user "${username.yellow}".`);
+          break;
+        }
+        case 'grantowner': {
+          try {
+            await db.grantOwner(username);
+          } catch (e) {
+            err(e instanceof Error ? e.message : 'Error granting ownership.');
+            return;
+          }
+          log(`Granted ownership to "${username.yellow}".`);
+          break;
+        }
+        case 'revokeowner': {
+          try {
+            await db.revokeOwner(username);
+          } catch (e) {
+            err(e instanceof Error ? e.message : 'Error revoking ownership.');
+            return;
+          }
+          log(`Revoked ownership from "${username.yellow}".`);
+          break;
+        }
       }
     },
   },

@@ -1,9 +1,11 @@
+import bcrypt from 'bcryptjs';
 import { z } from 'zod/v4';
 import {
   EMPTY_PERMISSIONS,
   userHasScope,
   type PermissionSet,
 } from '../permissions';
+import { verifyToken } from '../totp';
 import {
   actorHasAllPermissions,
   checkPermissionEscalation,
@@ -168,6 +170,69 @@ export const userRouter = router({
           return "error setting user's password";
         }
         log(`changed password for "${username.yellow}"`);
+        return '';
+      }),
+
+    // self-service: change your own username (requires the user.rename
+    // permission). users cannot take a name already held by another user,
+    // including case variants
+    rename: protectedProcedure(ScopeName.UserRename)
+      .input(z.object({ username: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const { database } = getContextDeps();
+        const { username } = input;
+        const { log, error } = ctx;
+
+        if (!ctx.user.username)
+          return 'create an account before renaming yourself';
+        if (username === ctx.user.username) return '';
+
+        try {
+          await database.renameUser(ctx.user._id, username);
+        } catch (e) {
+          error('error renaming user', e);
+          return e instanceof Error ? e.message : 'error renaming user';
+        }
+        log(`renamed "${ctx.user.username.yellow}" to "${username.yellow}"`);
+        return '';
+      }),
+
+    // owner-only: grant full ownership to another user. requires the owner to
+    // re-enter their password (and a TOTP code when MFA is enabled)
+    grantOwner: protectedProcedure(ScopeName.SessionInfo)
+      .input(
+        z.object({
+          username: z.string(),
+          password: z.string(),
+          code: z.string().optional(),
+        }),
+      )
+      .mutation(async ({ input, ctx }) => {
+        const { database } = getContextDeps();
+        const { username, password, code } = input;
+        const { log, error } = ctx;
+
+        if (!ctx.user.isOwner) return 'only an owner can grant ownership';
+        if (!ctx.user.username)
+          return 'create an account before granting ownership';
+        if (username === ctx.user.username) return 'you are already an owner';
+
+        if (!(await bcrypt.compare(password, ctx.user.hash)))
+          return 'incorrect password';
+
+        if (ctx.user.totpEnabled) {
+          if (!code) return 'MFA code required';
+          if (!ctx.user.totpSecret || !verifyToken(code, ctx.user.totpSecret))
+            return 'invalid MFA code';
+        }
+
+        try {
+          await database.grantOwner(username);
+        } catch (e) {
+          error('error granting ownership', e);
+          return e instanceof Error ? e.message : 'error granting ownership';
+        }
+        log(`granted ownership to "${username.yellow}"`);
         return '';
       }),
 
