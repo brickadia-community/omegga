@@ -9,23 +9,22 @@ jobs:
 
     steps:
       - name: Check out Git repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: 23
+          cache: npm
 
       - name: Install Node.js dependencies
         run: npm ci
 
-      - name: Install prettier
-        run: npm i -g prettier
+      - name: Lint
+        run: npm run lint
 
-      - name: Run linters
-        uses: wearerequired/lint-action@v1
-        with:
-          github_token: ${{ secrets.github_token }}
-          prettier: true
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Run tests
         run: npm run test:backend

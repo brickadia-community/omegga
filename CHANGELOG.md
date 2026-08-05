@@ -14,6 +14,7 @@ Web UI user management (ownership granting, self-rename, new `/user` terminal su
 - Fix type errors across the entire codebase; both the backend and frontend tsconfigs typecheck strict
 - Set up eslint and fix all lints
 - Build: Remove the legacy `build:old` (tspc) script and its `ts-patch`/`typescript-transform-paths` dependencies, and fix `npm run dts`
+- CI: Run eslint and both typechecks on every push
 
 ## 1.11.0 - 2026-07-19
 
