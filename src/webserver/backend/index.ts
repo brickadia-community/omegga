@@ -1,11 +1,12 @@
+/// <reference path="./better-sqlite3-session-store.d.ts" />
 import Logger from '@/logger';
 import soft from '@/softconfig';
 import { openDb } from '@/db/connection';
 import { runMigrations } from '@/db/migrate';
 import { importNedbIfNeeded } from '@/db/nedbImport';
-import { IServerConfig } from '@config/types';
+import { type IServerConfig } from '@config/types';
 import type Omegga from '@omegga/server';
-import { IServerStatus } from '@omegga/types';
+import { type IServerStatus } from '@omegga/types';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import bodyParser from 'body-parser';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
@@ -43,7 +44,8 @@ export default class Webserver {
   omegga: Omegga;
 
   app: express.Express;
-  server: http.Server | https.Server;
+  // undefined until createServer() picks a protocol (http/https)
+  server: http.Server | https.Server | undefined;
 
   options: IServerConfig;
   https: boolean;
@@ -52,7 +54,8 @@ export default class Webserver {
   started: boolean;
   created: Promise<boolean>;
 
-  serverStatusInterval: ReturnType<typeof setInterval>;
+  // assigned by setupMetrics once the server status loop starts
+  serverStatusInterval: ReturnType<typeof setInterval> | undefined;
   lastReportedStatus: IServerStatus | null = null;
 
   dataPath: string;
@@ -66,6 +69,9 @@ export default class Webserver {
     this.options = options;
     this.omegga = omegga;
     this.dataPath = path.join(omegga.path, soft.DATA_PATH);
+
+    // create express app (routes are attached in createServer/initWebUI)
+    this.app = express();
 
     const mainSqlite = openDb(path.join(this.dataPath, soft.MAIN_DB));
     const mainDb = drizzle(mainSqlite);
@@ -92,9 +98,6 @@ export default class Webserver {
       this.database.sqlite,
       this.database.db,
     );
-
-    // create express app
-    this.app = express();
 
     // create a server with https if applicable
     const pickProtocol = async () => {
@@ -183,7 +186,7 @@ export default class Webserver {
     const api = express.Router();
 
     // check if this is the first user in the database
-    openApi.get('/first', async (req, res) =>
+    openApi.get('/first', async (_req, res) =>
       res.json(await this.database.isFirstUser()),
     );
 
@@ -407,8 +410,10 @@ export default class Webserver {
   async start() {
     if (this.started) return;
     await this.created;
+    const server = this.server;
+    if (!server) throw new Error('webserver failed to initialize');
     return await new Promise<void>(resolve => {
-      this.server.listen(this.port, () => {
+      server.listen(this.port, () => {
         log(
           `${'>>'.green} Web UI available at`,
           `http${this.https ? 's' : ''}://${this.host}:${this.port}`.green,
@@ -423,7 +428,7 @@ export default class Webserver {
   // stop the webserver
   stop() {
     this.database.addChatLog('server', {}, 'Server stopped');
-    this.server.close();
+    this.server?.close();
     this.started = false;
     clearInterval(this.serverStatusInterval);
   }

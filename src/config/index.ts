@@ -5,7 +5,7 @@ import path from 'node:path';
 import format_js from './formats/format_js';
 import format_yaml from './formats/format_yml';
 import reader from './reader';
-import { IConfig, IConfigFormat } from './types';
+import { type IConfig, type IConfigFormat } from './types';
 import writer from './writer';
 export * from './types';
 

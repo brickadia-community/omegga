@@ -35,8 +35,10 @@ export type IMinigameList = {
 
 export type IPlayerPositions = {
   player: OmeggaPlayer;
-  pawn: string;
-  pos: number[];
+  /** null when the player has no pawn (e.g. spectating) */
+  pawn: string | null;
+  /** null when the player has no pawn position */
+  pos: number[] | null;
   isDead: boolean;
 }[];
 

@@ -1,3 +1,4 @@
+/// <reference path="./steam-acf2json.d.ts" />
 import Logger from '@/logger';
 import { getAppId, getSteamInstallDir, STEAMCMD_PATH } from '@/softconfig';
 import { execSync, spawnSync } from 'node:child_process';
@@ -144,6 +145,9 @@ export async function steamcmdDownloadGame({
       execSync(cmd, { stdio: 'inherit' });
       return;
     } catch (err) {
+      // the error that is ultimately reported/thrown; replaced when the
+      // interactive-login retry fails with a newer error
+      let error: unknown = err;
       // Steam Guard interactive re-auth on status 5, attempted at most once.
       if (
         !triedInteractiveLogin &&
@@ -165,7 +169,7 @@ export async function steamcmdDownloadGame({
             return;
           } catch (retryErr) {
             handleSteamError(retryErr);
-            err = retryErr;
+            error = retryErr;
           }
         } else {
           Logger.errorp(
@@ -176,7 +180,7 @@ export async function steamcmdDownloadGame({
         }
       }
 
-      handleSteamError(err);
+      handleSteamError(error);
 
       if (attempt < attempts) {
         Logger.warnp(
@@ -188,7 +192,7 @@ export async function steamcmdDownloadGame({
         continue;
       }
 
-      throw err;
+      throw error;
     }
   }
 }
@@ -205,6 +209,7 @@ export type SteamAppInfo = {
 };
 
 function stripAnsi(s: string): string {
+  // eslint-disable-next-line no-control-regex -- the escape byte is the point
   return s.replace(/\x1b\[[0-9;]*m/g, '');
 }
 

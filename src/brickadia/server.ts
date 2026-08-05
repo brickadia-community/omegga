@@ -13,10 +13,10 @@ import {
   getSteamInstallDir,
 } from '@/softconfig';
 import { getGlobalToken } from '@cli/auth';
-import { IConfig } from '@config/types';
+import { type IConfig } from '@config/types';
 import { checkWsl } from '@util/wsl';
 import 'colors';
-import { ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
+import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import EventEmitter from 'node:events';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -47,9 +47,9 @@ const knownErrors: {
 
 /** Start a brickadia server */
 export default class BrickadiaServer extends EventEmitter {
-  #child: ChildProcessWithoutNullStreams = null;
-  #errInterface: readline.Interface = null;
-  #outInterface: readline.Interface = null;
+  #child: ChildProcessWithoutNullStreams | null = null;
+  #errInterface: readline.Interface | null = null;
+  #outInterface: readline.Interface | null = null;
 
   config: IConfig;
   path: string;
@@ -143,7 +143,7 @@ export default class BrickadiaServer extends EventEmitter {
   }
 
   /** Get the world that will be used next startup */
-  getNextWorld() {
+  getNextWorld(): { source: string; file: string } | null {
     const candidates = [
       { source: 'file', file: this.getActiveWorld() },
       { source: 'config', file: this.getConfigWorld() },
@@ -151,7 +151,10 @@ export default class BrickadiaServer extends EventEmitter {
     ];
 
     return (
-      candidates.find(({ file }) => file && this.worldExists(file)) ?? null
+      candidates.find(
+        (c): c is { source: string; file: string } =>
+          !!c.file && this.worldExists(c.file),
+      ) ?? null
     );
   }
 
@@ -282,7 +285,9 @@ export default class BrickadiaServer extends EventEmitter {
       !token && password ? `-Password="${password}"` : null, // remove password argument if not provided or token is provided
       `-port="${this.config.server.port}"`,
       this.config.server.launchArgs,
-    ].filter(Boolean); // remove unused arguments
+    ]
+      .filter(arg => typeof arg === 'string')
+      .filter(arg => arg.length > 0); // remove unused/empty arguments
     Logger.verbose(
       'Params for spawn',
       params
@@ -297,20 +302,18 @@ export default class BrickadiaServer extends EventEmitter {
     // Either unbuffer or stdbuf must be used because brickadia's output is buffered
     // this means that multiple lines can be bundled together if the output buffer is not full
     // unfortunately without stdbuf or unbuffer, the output would not happen immediately
-    this.#child = spawn('stdbuf', params);
+    const child = spawn('stdbuf', params);
+    this.#child = child;
 
-    Logger.verbose(
-      'Spawn process',
-      this.#child ? this.#child.pid : 'failed'.red,
-    );
+    Logger.verbose('Spawn process', child.pid ?? 'failed'.red);
 
-    this.#child.stdin.setDefaultEncoding('utf8');
+    child.stdin.setDefaultEncoding('utf8');
     this.#outInterface = readline.createInterface({
-      input: this.#child.stdout,
+      input: child.stdout,
       terminal: false,
     });
     this.#errInterface = readline.createInterface({
-      input: this.#child.stderr,
+      input: child.stderr,
       terminal: false,
     });
     this.attachListeners();
@@ -377,18 +380,18 @@ export default class BrickadiaServer extends EventEmitter {
 
   // attaches proxy event listeners
   attachListeners() {
-    this.#outInterface.on('line', this.lineListener);
-    this.#errInterface.on('line', this.errorListener);
-    this.#child.on('exit', this.exitListener);
-    this.#child.on('close', () => {});
+    this.#outInterface?.on('line', this.lineListener);
+    this.#errInterface?.on('line', this.errorListener);
+    this.#child?.on('exit', this.exitListener);
+    this.#child?.on('close', () => {});
   }
 
   // removes previously attached proxy event listeners
   detachListeners() {
-    this.#outInterface.off('line', this.lineListener);
-    this.#errInterface.off('line', this.errorListener);
-    this.#child.off('exit', this.exitListener);
-    this.#child.removeAllListeners('close');
+    this.#outInterface?.off('line', this.lineListener);
+    this.#errInterface?.off('line', this.errorListener);
+    this.#child?.off('exit', this.exitListener);
+    this.#child?.removeAllListeners('close');
   }
 
   // -- listeners for basic events (line, err, exit)

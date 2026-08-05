@@ -44,7 +44,8 @@ export const worldRouter = router({
 
     next: protectedProcedure(ScopeName.WorldNext).query(() => {
       const { omegga } = getContextDeps();
-      return omegga.getNextWorld();
+      // the frontend expects the world name, not the {source, file} pair
+      return omegga.getNextWorld()?.file ?? null;
     }),
 
     active: protectedProcedure(ScopeName.WorldActive).query(() => {

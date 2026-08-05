@@ -52,7 +52,6 @@ type PluginRenderInfo = ReturnType<typeof pluginStateFromInfo>;
 
 export const PluginList = () => {
   const canAccess = useRequireScope(Permissions.PluginList);
-  const canGet = useHasScope(Permissions.PluginGet);
   const [search, setSearch] = useState('');
   const [reloading, setReloading] = useState(false);
   const [plugins, setPlugins] = useState<any[]>([]);

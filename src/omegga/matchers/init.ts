@@ -1,12 +1,12 @@
 import Logger from '@/logger';
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 
 const init: MatchGenerator<void> = _omegga => {
   return {
     // listen for auth messages
     pattern(_line, logMatch) {
       // line is not generic console log
-      if (!logMatch) return;
+      if (!logMatch?.groups) return;
 
       const { generator, data } = logMatch.groups;
 

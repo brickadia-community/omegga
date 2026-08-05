@@ -85,7 +85,7 @@ const program = commander
       Logger.errorp('configured omegga default path does not exist');
       process.exit(1);
     }
-    if (!fs.statSync(workDir).isDirectory) {
+    if (!fs.statSync(workDir).isDirectory()) {
       Logger.errorp('configured omegga default path is not a directory');
       process.exit(1);
     }
@@ -106,6 +106,8 @@ const program = commander
       } catch (error) {
         Logger.errorp('Error reading config file');
         Logger.verbose(error);
+        // starting without a working config would only crash later
+        process.exit(1);
       }
     }
 
@@ -354,41 +356,46 @@ program
       );
       Logger.VERBOSE = Boolean(verbose);
 
-      let branch: string, authDir: string, savedDir: string, launchArgs: string;
-      let isSteam: boolean;
+      let branch: string | undefined,
+        authDir: string | undefined,
+        savedDir: string | undefined,
+        launchArgs: string | undefined;
+      let isSteam: boolean | undefined;
 
       // if there's a config in the current directory, use that one instead
       if (config.find('.')) workDir = '.';
 
       // check if configured path exists
-      if (fs.existsSync(workDir) && fs.statSync(workDir).isDirectory) {
+      if (fs.existsSync(workDir) && fs.statSync(workDir).isDirectory()) {
         Logger.verbose('Using working directory', workDir.yellow);
         // find the config for the working directory
         const configFile = config.find(workDir);
         Logger.verbose('Target config file:', configFile?.yellow);
-        try {
-          // read the config and extract the branch
-          const conf = config.read(configFile);
-          Logger.verbose(
-            'Auth config:',
-            conf?.server ?? 'no server config'.grey,
-          );
-          branch = conf?.server?.branch;
-          authDir = conf?.server?.authDir;
-          savedDir = conf?.server?.savedDir;
-          launchArgs = conf?.server?.launchArgs;
-          isSteam = !conf?.server?.branch;
-
-          if (localAuth && conf?.credentials?.token) {
-            Logger.logp(
-              "This server's auth is managed by the token in",
-              configFile.yellow,
+        if (configFile) {
+          try {
+            // read the config and extract the branch
+            const conf = config.read(configFile);
+            Logger.verbose(
+              'Auth config:',
+              conf?.server ?? 'no server config'.grey,
             );
-            return;
+            branch = conf?.server?.branch;
+            authDir = conf?.server?.authDir;
+            savedDir = conf?.server?.savedDir;
+            launchArgs = conf?.server?.launchArgs;
+            isSteam = !conf?.server?.branch;
+
+            if (localAuth && conf?.credentials?.token) {
+              Logger.logp(
+                "This server's auth is managed by the token in",
+                configFile.yellow,
+              );
+              return;
+            }
+          } catch (error) {
+            Logger.errorp('Error reading config file');
+            Logger.verbose(error);
           }
-        } catch (error) {
-          Logger.errorp('Error reading config file');
-          Logger.verbose(error);
         }
       } else {
         Logger.verbose('Using default working directory', workDir.yellow);

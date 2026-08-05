@@ -5,7 +5,7 @@
 import Logger from '@/logger';
 import soft from '@/softconfig';
 import BrickadiaServer from '@brickadia/server';
-import { IConfig } from '@config/types';
+import { type IConfig } from '@config/types';
 import EventEmitter from 'events';
 import path from 'path';
 import { migrateConsoleCommand } from './commands';

@@ -8,34 +8,52 @@ export function hsv(
   s?: number,
   v?: number,
 ) {
-  var r, g, b, i, f, p, q, t;
-  if (arguments.length === 1 && typeof h === 'object') {
-    ((s = h.s), (v = h.v), (h = h.h));
+  let hue: number, sat: number, val: number;
+  if (typeof h === 'object') {
+    ({ h: hue, s: sat, v: val } = h);
+  } else {
+    hue = h;
+    sat = s ?? 0;
+    val = v ?? 0;
   }
-  h = h as number;
-  i = Math.floor(h * 6);
-  f = h * 6 - i;
-  p = v * (1 - s);
-  q = v * (1 - f * s);
-  t = v * (1 - (1 - f) * s);
+  const i = Math.floor(hue * 6);
+  const f = hue * 6 - i;
+  const p = val * (1 - sat);
+  const q = val * (1 - f * sat);
+  const t = val * (1 - (1 - f) * sat);
+  let r = 0,
+    g = 0,
+    b = 0;
   switch (i % 6) {
     case 0:
-      ((r = v), (g = t), (b = p));
+      r = val;
+      g = t;
+      b = p;
       break;
     case 1:
-      ((r = q), (g = v), (b = p));
+      r = q;
+      g = val;
+      b = p;
       break;
     case 2:
-      ((r = p), (g = v), (b = t));
+      r = p;
+      g = val;
+      b = t;
       break;
     case 3:
-      ((r = p), (g = q), (b = v));
+      r = p;
+      g = q;
+      b = val;
       break;
     case 4:
-      ((r = t), (g = p), (b = v));
+      r = t;
+      g = p;
+      b = val;
       break;
     case 5:
-      ((r = v), (g = p), (b = q));
+      r = val;
+      g = p;
+      b = q;
       break;
   }
   return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];

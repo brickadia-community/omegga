@@ -1,11 +1,11 @@
 import { writeFileSync } from 'node:fs';
-import { IConfig, IConfigFormat } from './types';
+import { type IConfig, type IConfigFormat } from './types';
 import validate from './validator';
 
 // given a list of formats, generate a function for write to any of those formats
 const writer = (formats: IConfigFormat[]) => (path: string, blob: IConfig) => {
   // find the config format that matches this extension
-  const ext = path.split('.').pop().toLowerCase();
+  const ext = path.split('.').pop()?.toLowerCase();
   const format = formats.find(f => f.extension === ext);
   if (!format) throw 'missing format';
 

@@ -1,4 +1,4 @@
-import { Brick, Vector } from 'brs-js';
+import { type Brick, type Vector } from 'brs-js';
 
 import { getScaleAxis } from './getScaleAxis';
 import { getBrickSize } from './getBrickSize';

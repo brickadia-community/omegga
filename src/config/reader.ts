@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { IConfigFormat } from './types';
+import { type IConfigFormat } from './types';
 import validate from './validator';
 
 // given a list of formats, generate a function to write to any of those formats

@@ -18,6 +18,7 @@ import {
   IconBan,
   IconCaretDown,
   IconCaretUp,
+  IconCrown,
   IconDeviceFloppy,
   IconKey,
   IconShieldOff,
@@ -89,6 +90,7 @@ export const UserInspector = ({
   const deleteMutation = trpc.user.delete.useMutation();
   const passwdMutation = trpc.user.passwd.useMutation();
   const resetMfaMutation = trpc.user.resetMfa.useMutation();
+  const grantOwnerMutation = trpc.user.grantOwner.useMutation();
   const banConfirm = useConfirm();
   const deleteConfirm = useConfirm();
   const resetMfaConfirm = useConfirm();
@@ -102,6 +104,18 @@ export const UserInspector = ({
   const [passwdError, setPasswdError] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showGrantOwner, setShowGrantOwner] = useState(false);
+  const [grantOwnerLoading, setGrantOwnerLoading] = useState(false);
+  const [grantOwnerError, setGrantOwnerError] = useState('');
+  const [grantOwnerPassword, setGrantOwnerPassword] = useState('');
+  const [grantOwnerCode, setGrantOwnerCode] = useState('');
+
+  const isOwnerActor = !!myUser?.isOwner;
+  // the owner confirms with their own MFA code when granting ownership
+  const myMfaStatus = trpc.mfa.status.useQuery(undefined, {
+    enabled: isOwnerActor && !isSelfMode,
+  });
+  const needsMfaCode = !!myMfaStatus.data?.totpEnabled;
 
   useEffect(() => {
     if (user) {
@@ -220,6 +234,35 @@ export const UserInspector = ({
     else users.refetch();
   };
 
+  const hideGrantOwner = () => {
+    setShowGrantOwner(false);
+    setGrantOwnerError('');
+    setGrantOwnerPassword('');
+    setGrantOwnerCode('');
+  };
+
+  const handleGrantOwner = async () => {
+    setGrantOwnerError('');
+    setGrantOwnerLoading(true);
+    try {
+      const err = await grantOwnerMutation.mutateAsync({
+        username: selectedUsername,
+        password: grantOwnerPassword,
+        code: grantOwnerCode || undefined,
+      });
+      setGrantOwnerLoading(false);
+      if (err) {
+        setGrantOwnerError(err);
+      } else {
+        hideGrantOwner();
+        users.refetch();
+      }
+    } catch (e: any) {
+      setGrantOwnerLoading(false);
+      setGrantOwnerError(e?.message || 'Failed to grant ownership');
+    }
+  };
+
   const handlePasswd = async () => {
     setPasswdError('');
     if (newPassword !== confirmNewPassword) return;
@@ -245,11 +288,16 @@ export const UserInspector = ({
   const isSelf =
     (myUser?.username || 'Admin') === (selectedUsername || 'Admin');
   const hasMfa = user && (user.totpEnabled || (user.passkeyCount ?? 0) > 0);
+  const canGrantOwner = isOwnerActor && !user?.isBanned;
   const hasAdminActions =
     user &&
     !user.isOwner &&
     !isSelf &&
-    (canBan || canDelete || canPasswd || (canResetMfa && hasMfa));
+    (canBan ||
+      canDelete ||
+      canPasswd ||
+      (canResetMfa && hasMfa) ||
+      canGrantOwner);
 
   const defaultPerms = defaultPermsQuery.data
     ? ({
@@ -414,6 +462,18 @@ export const UserInspector = ({
                     Reset MFA
                   </Button>
                 )}
+                {canGrantOwner && (
+                  <Button
+                    warn
+                    onClick={() => {
+                      setShowActionsMenu(false);
+                      setShowGrantOwner(true);
+                    }}
+                  >
+                    <IconCrown />
+                    Grant Ownership
+                  </Button>
+                )}
                 {canDelete && (
                   <Button
                     error
@@ -488,6 +548,74 @@ export const UserInspector = ({
                 setPasswdError('');
               }}
             >
+              <IconX />
+              Cancel
+            </Button>
+          </Footer>
+        </Modal>
+      </Dimmer>
+      <Dimmer visible={showGrantOwner}>
+        <Loader active={grantOwnerLoading} size="huge">
+          Submitting
+        </Loader>
+        <Modal visible={!grantOwnerLoading}>
+          <Header>Grant Ownership</Header>
+          <PopoutContent>
+            <p>
+              Make <b>{selectedUsername}</b> an owner?
+            </p>
+            <p>
+              Owners have full access to the web UI, bypass all permissions, and
+              cannot be modified by other users. This cannot be undone from the
+              web UI.
+            </p>
+            <p>
+              Confirm with your password
+              {needsMfaCode ? ' and an MFA code' : ''} to continue.
+            </p>
+            {grantOwnerError && (
+              <p style={{ color: 'red' }}>Error: {grantOwnerError}</p>
+            )}
+          </PopoutContent>
+          <div className="popout-inputs">
+            <Input
+              placeholder="your password"
+              type="password"
+              value={grantOwnerPassword}
+              onChange={setGrantOwnerPassword}
+              onSubmit={
+                grantOwnerPassword.length && !needsMfaCode
+                  ? handleGrantOwner
+                  : undefined
+              }
+            />
+            {needsMfaCode && (
+              <Input
+                placeholder="MFA code"
+                type="text"
+                value={grantOwnerCode}
+                onChange={setGrantOwnerCode}
+                onSubmit={
+                  grantOwnerPassword.length && grantOwnerCode
+                    ? handleGrantOwner
+                    : undefined
+                }
+              />
+            )}
+          </div>
+          <Footer>
+            <Button
+              warn
+              disabled={
+                !grantOwnerPassword.length || (needsMfaCode && !grantOwnerCode)
+              }
+              onClick={handleGrantOwner}
+            >
+              <IconCrown />
+              Grant
+            </Button>
+            <div style={{ flex: 1 }} />
+            <Button normal onClick={hideGrantOwner}>
               <IconX />
               Cancel
             </Button>

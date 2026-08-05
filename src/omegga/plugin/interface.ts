@@ -1,6 +1,6 @@
-import OmeggaPlugin, { IPluginDocumentation } from '@/plugin';
+import { type IPluginDocumentation } from '@/plugin';
 import { PLUGIN_PATH } from '@/softconfig';
-import { IPluginJSON, PluginStorage } from '@omegga/plugin';
+import { type IPluginJSON, PluginStorage } from '@omegga/plugin';
 import Omegga from '@omegga/server';
 import {
   closeSync,
@@ -40,26 +40,37 @@ export class Plugin {
   }
 
   path: string;
-  omegga: Omegga;
+  // undefined when constructed from the CLI (config commands), which scans
+  // plugins without a running server
+  omegga: Omegga | undefined;
   shortPath: string;
-  storage: PluginStorage;
+  // assigned via setStorage() by PluginLoader.scanPlugin immediately after
+  // construction; every other access happens on scanned plugins
+  storage!: PluginStorage;
 
-  documentation: IPluginDocumentation;
-  pluginConfig: IPluginJSON;
-  pluginFile: string;
-  commands: string[];
-  loadedPlugin: OmeggaPlugin;
+  documentation: IPluginDocumentation | null = null;
+  pluginConfig: IPluginJSON | null = null;
+  commands: string[] = [];
 
   // initialize a plugin at this path
   constructor(pluginPath: string, omegga?: Omegga) {
     this.path = pluginPath;
     this.omegga = omegga;
-    if (omegga) {
-      this.shortPath = pluginPath.replace(
-        path.join(omegga.path, PLUGIN_PATH) + '/',
-        '',
+    this.shortPath = omegga
+      ? pluginPath.replace(path.join(omegga.path, PLUGIN_PATH) + '/', '')
+      : pluginPath;
+  }
+
+  // the attached server - only safe to access from code paths that require a
+  // loaded plugin (loading requires a server); throws a descriptive error
+  // instead of crashing on undefined when misused from a serverless (CLI)
+  // context
+  get server(): Omegga {
+    if (!this.omegga)
+      throw new Error(
+        `plugin ${this.path} was constructed without a server (CLI context)`,
       );
-    }
+    return this.omegga;
   }
 
   // assign plugin storage
@@ -87,7 +98,7 @@ export class Plugin {
 
   // emit a plugin status change
   emitStatus() {
-    this.omegga.emit('plugin:status', this.shortPath, {
+    this.omegga?.emit('plugin:status', this.shortPath, {
       name: this.getName(),
       isLoaded: this.isLoaded(),
       isEnabled: this.isEnabled(),
@@ -104,7 +115,7 @@ export class Plugin {
   }
 
   // get the documentation object for this plugin
-  getDocumentation(): IPluginDocumentation {
+  getDocumentation(): IPluginDocumentation | null {
     return null;
   }
 

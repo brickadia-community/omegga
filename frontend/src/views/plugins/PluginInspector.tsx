@@ -56,7 +56,7 @@ export const PluginInspector = () => {
   useEffect(() => {
     if (getQuery.data) {
       setPlugin(getQuery.data);
-      setConfig(getQuery.data.config);
+      setConfig(getQuery.data.config ?? {});
       setLoading(false);
     } else if (getQuery.isError) {
       setLoading(false);

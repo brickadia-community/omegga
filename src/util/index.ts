@@ -122,9 +122,9 @@ import brs_, {
   Brdb,
   WorldReader,
   brdb as brdbLib,
-  ReadSaveObject,
-  WriteSaveObject,
-  Uuid,
+  type ReadSaveObject,
+  type WriteSaveObject,
+  type Uuid,
 } from 'brs-js';
 
 // this type has to exist or the dts exporter will try to dynamically export brs-js

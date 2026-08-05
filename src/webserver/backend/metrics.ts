@@ -1,5 +1,5 @@
 import Logger from '@/logger';
-import { AutoRestartConfig, IServerStatus } from '@/plugin';
+import { type AutoRestartConfig, type IServerStatus } from '@/plugin';
 import soft from '@/softconfig';
 import {
   clearLastSteamUpdateCheck,
@@ -111,7 +111,7 @@ function collectUtilization(omeggaPath: string): SystemUtilization {
 const error = (...args: any[]) => Logger.error(...args);
 let lastRestart = 0;
 
-const sleep = t => new Promise(resolve => setTimeout(resolve, t));
+const sleep = (t: number) => new Promise(resolve => setTimeout(resolve, t));
 
 export default function (server: Webserver) {
   const { database, omegga } = server;
@@ -355,6 +355,8 @@ export default function (server: Webserver) {
   // chat events
   omegga.on('chat', async (name, message) => {
     const p = omegga.getPlayer(name);
+    // the player may have left before the chat event was handled
+    if (!p) return;
     const user = {
       id: p.id,
       name,

@@ -1,27 +1,29 @@
-import { EnvironmentPreset } from '@brickadia/presets';
+import { type EnvironmentPreset } from '@brickadia/presets';
 import {
-  BRBanList,
-  BRPlayerNameCache,
-  BRRoleAssignments,
-  BRRoleSetup,
+  type BRBanList,
+  type BRPlayerNameCache,
+  type BRRoleAssignments,
+  type BRRoleSetup,
 } from '@brickadia/types';
-import { ConsoleCommands } from '@omegga/commands';
+import { type ConsoleCommands } from '@omegga/commands';
 import {
-  IGamemode,
-  ILogMinigame,
-  IMinigameList,
-  IPlayerPositions,
-  IServerStatus,
+  type IGamemode,
+  type ILogMinigame,
+  type IMinigameList,
+  type IPlayerPositions,
+  type IServerStatus,
 } from '@omegga/types';
 import util from '@util';
-import { ReadSaveObject, WriteSaveObject } from 'brs-js';
+import { type ReadSaveObject, type WriteSaveObject } from 'brs-js';
 
 export const _OMEGGA_UTILS_IMPORT = util;
+/* eslint-disable no-var -- `var` is required to declare globalThis properties */
 declare global {
   export var Omegga: OmeggaLike;
   export var Player: StaticPlayer;
   export var OMEGGA_UTIL: typeof _OMEGGA_UTILS_IMPORT;
 }
+/* eslint-enable no-var */
 
 export * from '@brickadia/types';
 export * from '@omegga/types';
@@ -45,10 +47,10 @@ export interface BrickBounds {
 export interface BrickInteraction {
   /** Brick name from catalog (Turkey Body, 4x Cube) */
   brick_name: string;
-  /** Brick asset name */
-  brick_asset: string;
-  /** Brick size */
-  brick_size: [number, number, number];
+  /** Brick asset name; null when the display name is not recognized */
+  brick_asset: string | null;
+  /** Brick size; null when the display name is not recognized */
+  brick_size: [number, number, number] | null;
   /** Player information, id, name, controller, and pawn */
   player: { id: string; name: string; controller: string; pawn: string };
   /** Brick center position */
@@ -131,36 +133,42 @@ export interface OmeggaPlayer {
   getNameColor(): string;
 
   /**
-   * Get the player's pawn
+   * Get the player's pawn; null when the player has no pawn
    * @return pawn
    */
-  getPawn(): Promise<string>;
+  getPawn(): Promise<string | null>;
 
   /**
-   * Get player's position
+   * Get player's position; null when the player has no pawn
    * @return [x, y, z] coordinates
    */
-  getPosition(): Promise<[number, number, number]>;
+  getPosition(): Promise<[number, number, number] | null>;
 
   /**
    * Gets a user's ghost brick info (by uuid, name, controller, or player object)
    * @return ghost brick data
    */
-  getGhostBrick(): Promise<{
-    targetGrid: string;
-    location: number[];
-    orientation: string;
-  }>;
+  getGhostBrick(): Promise<
+    | {
+        targetGrid: string;
+        location: number[];
+        orientation: string;
+      }
+    | undefined
+  >;
 
   /**
    * gets a user's paint tool properties
    */
-  getPaint(): Promise<{
-    materialIndex: string;
-    materialAlpha: string;
-    material: string;
-    color: number[];
-  }>;
+  getPaint(): Promise<
+    | {
+        materialIndex: string;
+        materialAlpha: string;
+        material: string;
+        color: number[];
+      }
+    | undefined
+  >;
 
   /**
    * gets whether or not the player is crouching
@@ -176,13 +184,13 @@ export interface OmeggaPlayer {
    * Gets the bounds of the template in the user's clipboard (bounds of original selection box)
    * @return template bounds
    */
-  getTemplateBounds(): Promise<BrickBounds>;
+  getTemplateBounds(): Promise<BrickBounds | undefined>;
 
   /**
    * Get bricks inside template bounds
    * @return BRS JS Save Data
    */
-  getTemplateBoundsData(): Promise<ReadSaveObject>;
+  getTemplateBoundsData(): Promise<ReadSaveObject | undefined>;
 
   /**
    * Load bricks at ghost brick location
@@ -458,21 +466,26 @@ export interface InjectedCommands {
   getGamemode(this: OmeggaLike): Promise<IGamemode | null>;
 }
 
+/** event listener shape, mirroring node's EventEmitter */
+export type MockEventListener = (...args: any[]) => void;
+
 export interface MockEventEmitter {
-  addListener(event: string, listener: Function): this;
+  addListener(event: string, listener: MockEventListener): this;
   emit(event: string, ...args: any[]): boolean;
   eventNames(): (string | symbol)[];
   getMaxListeners(): number;
   listenerCount(event: string): number;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- matches node's EventEmitter return type
   listeners(event: string): Function[];
-  off(event: string, listener: Function): this;
-  on(event: string, listener: Function): this;
-  once(event: string, listener: Function): this;
-  prependListener(event: string, listener: Function): this;
-  prependOnceListener(event: string, listener: Function): this;
+  off(event: string, listener: MockEventListener): this;
+  on(event: string, listener: MockEventListener): this;
+  once(event: string, listener: MockEventListener): this;
+  prependListener(event: string, listener: MockEventListener): this;
+  prependOnceListener(event: string, listener: MockEventListener): this;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type -- matches node's EventEmitter return type
   rawListeners(event: string): Function[];
   removeAllListeners(event?: string): this;
-  removeListener(event: string, listener: Function): this;
+  removeListener(event: string, listener: MockEventListener): this;
   setMaxListeners(maxListeners: number): this;
 
   on(event: 'close', listener: () => void): this;
@@ -556,7 +569,7 @@ export interface OmeggaLike
    * If run in an unsafe plugin, the emitPlugin method sends events from
    * an "unsafe" plugin
    */
-  getPlugin(name: string): Promise<PluginInterop>;
+  getPlugin(name: string): Promise<PluginInterop | null>;
 }
 
 export interface OmeggaCore {
@@ -666,13 +679,13 @@ export interface OmeggaCore {
   saveEnvironment(presetName: string): Promise<void>;
 
   /** Save a temporary environment preset and return its contents */
-  getEnvironmentData(): Promise<EnvironmentPreset>;
+  getEnvironmentData(): Promise<EnvironmentPreset | null>;
 
   /**
-   * Read environment data as json
+   * Read environment data as json; null when the preset is missing or invalid
    * @param presetName preset name
    */
-  readEnvironmentData(presetName: string): void;
+  readEnvironmentData(presetName: string): EnvironmentPreset | null;
 
   /**
    * Load an environment preset
@@ -685,7 +698,9 @@ export interface OmeggaCore {
    * @param preset preset data
    */
   loadEnvironmentData(
-    preset: EnvironmentPreset | EnvironmentPreset['data']['groups'],
+    preset:
+      | EnvironmentPreset
+      | NonNullable<EnvironmentPreset['data']>['groups'],
   ): void;
 
   /**
@@ -804,9 +819,9 @@ export interface OmeggaCore {
   /**
    * Checks if a save exists and returns an absolute path
    * @param saveName Save filename
-   * @return Path to string
+   * @return Path to string, undefined if the save does not exist
    */
-  getSavePath(saveName: string): string;
+  getSavePath(saveName: string): string | undefined;
 
   /**
    * Get all worlds in the worlds folder and child folders
@@ -816,9 +831,9 @@ export interface OmeggaCore {
   /**
    * Checks if a world exists and returns an absolute path
    * @param worldName World name
-   * @return Path to string
+   * @return Path to string, undefined if the world does not exist
    */
-  getWorldPath(worldName: string): string;
+  getWorldPath(worldName: string): string | undefined;
 
   /**
    * Get a list of revisions for a world
@@ -916,7 +931,7 @@ export interface OmeggaCore {
   getSaveData(region?: {
     center: [number, number, number];
     extent: [number, number, number];
-  }): Promise<ReadSaveObject>;
+  }): Promise<ReadSaveObject | undefined>;
 
   /**
    * Get all prefabs in the prefabs folder and child folders (EA3)
@@ -928,7 +943,7 @@ export interface OmeggaCore {
    * @param prefabName Prefab filename
    * @return Path to string
    */
-  getPrefabPath(prefabName: string): string;
+  getPrefabPath(prefabName: string): string | undefined;
 
   /**
    * Load a prefab into the world (EA3). `path` is a bundle path ref such
@@ -1107,7 +1122,11 @@ export interface LogWrangling {
     callback: IMatcher<T>['callback'],
   ): void;
 
-  /** Run an active pattern on console output that resolves a match */
+  /**
+   * Run an active pattern on console output that resolves a match.
+   * T is the element type of the resolved matches - RegExpMatchArray for
+   * RegExp patterns, the pattern's return type for function patterns.
+   */
   addWatcher<T = RegExpMatchArray>(
     pattern: IWatcher<T>['pattern'],
     options?: {
@@ -1118,10 +1137,14 @@ export interface LogWrangling {
       last?: IWatcher<T>['last'];
       exec?: () => void;
     },
-  ): Promise<IWatcher<T>['matches']>;
+  ): Promise<T[]>;
 
-  /** Run a command and capture bundled output */
-  watchLogChunk<T = string>(
+  /**
+   * Run a command and capture bundled output.
+   * T is the element type of the resolved matches - RegExpMatchArray for
+   * RegExp patterns, the pattern's return type for function patterns.
+   */
+  watchLogChunk<T = RegExpMatchArray>(
     cmd: string,
     pattern: IWatcher<T>['pattern'],
     options?: {
@@ -1130,7 +1153,7 @@ export interface LogWrangling {
       afterMatchDelay?: number;
       timeoutDelay?: number;
     },
-  ): Promise<IWatcher<T>['matches']>;
+  ): Promise<T[]>;
 
   /** Run a command and capture bundled output for array functions */
   watchLogArray<
@@ -1145,8 +1168,8 @@ export interface LogWrangling {
 
 export type WatcherPattern<T> = (
   line: string,
-  match: RegExpMatchArray,
-) => T | RegExpMatchArray | '[OMEGGA_WATCHER_DONE]';
+  match: RegExpMatchArray | null,
+) => T | RegExpMatchArray | null | undefined | '[OMEGGA_WATCHER_DONE]';
 
 export type IMatcher<T> =
   | {
@@ -1154,7 +1177,7 @@ export type IMatcher<T> =
       callback: (match: RegExpMatchArray) => boolean;
     }
   | {
-      pattern: (line: string, match: RegExpMatchArray) => T;
+      pattern: (line: string, match: RegExpMatchArray | null) => T;
       callback: (match: RegExpMatchArray) => T;
     };
 
@@ -1246,7 +1269,7 @@ export interface IPluginDocumentation {
 
 export interface PluginInterop {
   name: string;
-  documentation: IPluginDocumentation;
+  documentation: IPluginDocumentation | null;
   loaded: boolean;
   emitPlugin?(event: string, args: any[]): Promise<any>;
 }

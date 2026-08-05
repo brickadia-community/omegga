@@ -1,4 +1,4 @@
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 
 // LogBrickadia: Ruleset My Minigame no saved checkpoint for player BrickadiaPlayer (00000000-0000-0000-0000-000000000000)
 // LogBrickadia: Ruleset My Minigame loading saved checkpoint for player BrickadiaPlayer (00000000-0000-0000-0000-000000000000)
@@ -7,13 +7,14 @@ const minigameJoinRegExp =
 
 const minigameJoin: MatchGenerator<{
   player: { name: string; id: string };
-  minigameName: string;
+  /** null when the player joined the GLOBAL ruleset */
+  minigameName: string | null;
 }> = omegga => {
   return {
     // listen for commands messages
     pattern(_line, logMatch) {
       // line is not generic console log
-      if (!logMatch) return;
+      if (!logMatch?.groups) return;
 
       const { generator, data } = logMatch.groups;
       // check if log is a world log
@@ -21,7 +22,7 @@ const minigameJoin: MatchGenerator<{
 
       // match the log to the map change finish pattern
       const matchChange = data.match(minigameJoinRegExp);
-      if (matchChange) {
+      if (matchChange?.groups) {
         const { minigame, name, id } = matchChange.groups;
 
         return {

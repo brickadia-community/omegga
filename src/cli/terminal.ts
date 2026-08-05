@@ -1,9 +1,9 @@
 import Logger from '@/logger';
-import { OmeggaPlayer } from '@/plugin';
+import { type OmeggaPlayer } from '@/plugin';
 import { steamcmdCheckUpdate, steamcmdDownloadGame } from '@/updater';
 import { readBinaryVersion } from '@omegga/matchers/version';
 import Omegga from '@omegga/server';
-import { IOmeggaOptions } from '@omegga/types';
+import { type IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
 import { checkWsl } from '@util/wsl';
 import { serverEvents } from '@webserver/backend/events';
@@ -62,6 +62,42 @@ function gameCommand(
     },
   };
 }
+
+// subcommands of /user, rendered in /help and in the /user usage list
+const USER_COMMANDS = [
+  {
+    command: '/user passwd <username>',
+    desc: "reset a user's password",
+  },
+  {
+    command: '/user rename <username> <newname>',
+    desc: 'rename a user',
+  },
+  {
+    command: '/user resetmfa <username>',
+    desc: 'clear TOTP, passkeys, and recovery codes',
+  },
+  {
+    command: '/user disable <username>',
+    desc: 'prevent a user from signing in',
+  },
+  {
+    command: '/user enable <username>',
+    desc: 're-enable a disabled user',
+  },
+  {
+    command: '/user delete <username>',
+    desc: 'permanently delete a user',
+  },
+  {
+    command: '/user grantowner <username>',
+    desc: 'make a user an owner',
+  },
+  {
+    command: '/user revokeowner <username>',
+    desc: 'remove ownership from a user',
+  },
+];
 
 const COMMANDS: TerminalCommand[] = [
   // Brickadia commands
@@ -357,7 +393,7 @@ Uptime: ${msToTime(status.time).yellow}
 Players: ${status.players.length === 0 ? 'none'.grey : ''}
   ${status.players
     .map(p => `[${msToTime(p.time).grey}] ${p.name.brightYellow}`)
-    .join('\n      ')}
+    .join('\n  ')}
 `);
       } catch (e) {
         err('An error occurred while getting server status');
@@ -370,7 +406,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
     aliases: ['reload'],
     desc: 'shorthand for /plugins reload',
     async fn() {
-      await COMMANDS.find(c => c.aliases.includes('plugins')).fn.bind(this)(
+      await COMMANDS.find(c => c.aliases.includes('plugins'))?.fn.bind(this)(
         'reload',
       );
     },
@@ -410,8 +446,8 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
               log(name.green.underline + ' (enabled, not loaded)');
             else log(name.red.underline + ' (disabled)');
 
-            log('  ' + docs.description);
-            log(('  Author: ' + docs.author).gray);
+            log('  ' + (docs?.description ?? 'no description'));
+            log(('  Author: ' + (docs?.author ?? 'unknown')).gray);
           }
         }
       } else if (subcommand === 'install') {
@@ -601,7 +637,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
     descLines: () => ['Type /worlds load a world'],
     async fn(subcommand: string, ...args: string[]) {
       switch (subcommand) {
-        default:
+        default: {
           const commands = [
             {
               command: '/worlds use [world]',
@@ -643,9 +679,10 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             this.log('  ', command.yellow, '-', desc, `(${short.yellow})`);
           }
           return;
+        }
 
         case 'use':
-        case 'u':
+        case 'u': {
           const world = args[0]?.replace(/\.brdb$/, '');
           if (world && !this.omegga.worldExists(world)) {
             err(`World "${world}" does not exist`);
@@ -665,9 +702,10 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             err(`Failed to set default world to ${world.yellow}.`);
           }
           return;
+        }
 
         case 'list':
-        case 'ls':
+        case 'ls': {
           // list worlds
           const worlds = this.omegga.getWorlds();
           if (worlds.length === 0) {
@@ -686,8 +724,9 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             }
           }
           return;
+        }
         case 'load':
-        case 'l':
+        case 'l': {
           if (!this.omegga.started) {
             err('The server is not running');
             return;
@@ -726,8 +765,9 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
           }
 
           return;
+        }
         case 'saveas':
-        case 'sa':
+        case 'sa': {
           if (!this.omegga.started) {
             err('The server is not running');
             return;
@@ -751,9 +791,10 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             err(`Failed to save current world as ${saveWorldName.yellow}`);
           }
           return;
+        }
 
         case 'save':
-        case 's':
+        case 's': {
           if (!this.omegga.started) {
             err('The server is not running');
             return;
@@ -768,9 +809,10 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
             err('Failed to save the current world');
           }
           return;
+        }
 
         case 'revisions':
-        case 'r':
+        case 'r': {
           if (!this.omegga.started) {
             err('The server is not running');
             return;
@@ -808,15 +850,13 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
               }
             }
           } catch (e) {
-            err(
-              'An error occurred while getting world revisions:',
-              e.toString(),
-            );
+            err('An error occurred while getting world revisions:', String(e));
           }
           return;
+        }
 
         case 'new':
-        case 'n':
+        case 'n': {
           if (!this.omegga.started) {
             err('The server is not running');
             return;
@@ -843,24 +883,36 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
           }
           log(`Creating new world ${newWorldName.yellow}...`);
           this.omegga.createEmptyWorld(newWorldName, map);
+        }
       }
     },
   },
   {
     aliases: ['user'],
     desc: 'manage web UI users',
-    descLines: () => [
-      "/user passwd <username>   - Reset a user's password",
-      '/user resetmfa <username> - Clear TOTP and passkeys',
-    ],
-    async fn(subcommand?: string, username?: string) {
+    descLines: () =>
+      USER_COMMANDS.map(({ command, desc }) => command.yellow + ' - ' + desc),
+    async fn(subcommand?: string, username?: string, newName?: string) {
       const db = this.omegga.webserver?.database;
       if (!db) {
         err('Database not available.');
         return;
       }
-      if (!subcommand || !username) {
-        err('Usage: /user <passwd|resetmfa> <username>');
+      const known = USER_COMMANDS.map(c => c.command.split(' ')[1]);
+      if (!subcommand || !known.includes(subcommand)) {
+        if (subcommand) err(`Unknown subcommand "${subcommand}".`);
+        log('Available user commands:');
+        for (const { command, desc } of USER_COMMANDS) {
+          this.log('  ', command.yellow, '-', desc);
+        }
+        return;
+      }
+      if (!username) {
+        err(
+          `Usage: /user ${subcommand} <username>${
+            subcommand === 'rename' ? ' <newname>' : ''
+          }`,
+        );
         return;
       }
       if (!(await db.userExists(username))) {
@@ -887,8 +939,70 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
           );
           break;
         }
-        default:
-          err(`Unknown subcommand "${subcommand}". Use passwd or resetmfa.`);
+        case 'rename': {
+          if (!newName) {
+            err('Usage: /user rename <username> <newname>');
+            return;
+          }
+          const user = await db.findUserByUsername(username);
+          if (!user) {
+            err(`User "${username}" does not exist.`);
+            return;
+          }
+          try {
+            await db.renameUser(user.id, newName);
+          } catch (e) {
+            err(e instanceof Error ? e.message : 'Error renaming user.');
+            return;
+          }
+          log(`Renamed "${username.yellow}" to "${newName.yellow}".`);
+          break;
+        }
+        case 'disable': {
+          await db.banUser(username, true);
+          log(`Disabled "${username.yellow}". They can no longer sign in.`);
+          break;
+        }
+        case 'enable': {
+          await db.banUser(username, false);
+          log(`Enabled "${username.yellow}". They can sign in again.`);
+          break;
+        }
+        case 'delete': {
+          const confirm = await new Promise<string>(resolve =>
+            this.rl.question(
+              `Permanently delete "${username}"? This cannot be undone. (y/N): `,
+              resolve,
+            ),
+          );
+          if (!/^y(es)?$/i.test(confirm.trim())) {
+            log('Cancelled.');
+            return;
+          }
+          await db.deleteUser(username);
+          log(`Deleted user "${username.yellow}".`);
+          break;
+        }
+        case 'grantowner': {
+          try {
+            await db.grantOwner(username);
+          } catch (e) {
+            err(e instanceof Error ? e.message : 'Error granting ownership.');
+            return;
+          }
+          log(`Granted ownership to "${username.yellow}".`);
+          break;
+        }
+        case 'revokeowner': {
+          try {
+            await db.revokeOwner(username);
+          } catch (e) {
+            err(e instanceof Error ? e.message : 'Error revoking ownership.');
+            return;
+          }
+          log(`Revoked ownership from "${username.yellow}".`);
+          break;
+        }
       }
     },
   },
@@ -997,7 +1111,7 @@ export default class Terminal {
     omegga.on('chat', (name, message) => {
       const player = omegga.getPlayer(name);
       this.log(
-        `${(player.displayName ?? player.name ?? name).brightYellow.underline}: ${message}`,
+        `${(player?.displayName ?? player?.name ?? name).brightYellow.underline}: ${message}`,
       );
     });
     omegga.on('start', () => {

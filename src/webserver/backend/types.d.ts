@@ -64,7 +64,8 @@ export interface IStoreChat {
   instanceId: string;
   action: 'msg' | 'server' | 'leave' | 'join';
   user: Partial<IChatUser>;
-  message?: string;
+  /** null for join/leave/server entries (the database column is nullable) */
+  message?: string | null;
 }
 
 export interface IStoreBanHistory {

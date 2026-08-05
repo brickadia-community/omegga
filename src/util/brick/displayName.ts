@@ -148,7 +148,7 @@ export const displayNameMap: [
     // 4x Inv. Cube Ramp Corner,
     // weird edge case because Inv. Cube and not Cube Inv. or Cube ... (Inverted)
     /^(\d+)x Inv. Cube Ramp Corner/,
-    (name, size) => [
+    (_name, size) => [
       'PB_DefaultRampCornerInverted',
       [Number(size) * 5, Number(size) * 5, Number(size) * 5],
     ],
@@ -216,7 +216,7 @@ function brickTypeSuffix(name: string): string {
   return 'PB_DefaultBrick';
 }
 
-export function convertDisplayName(name: string): NameConversion {
+export function convertDisplayName(name: string): NameConversion | null {
   for (const matcher of displayNameMap) {
     let matchDetails: RegExpMatchArray | null = null;
     if (typeof matcher[0] === 'string') {

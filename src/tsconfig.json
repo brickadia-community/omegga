@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "allowJs": false,
-    "baseUrl": ".",
     "rootDir": ".",
     "paths": {
       "@omegga/*": [
@@ -32,21 +31,11 @@
         "./*"
       ],
     },
-    "plugins": [
-      {
-        "transform": "typescript-transform-paths"
-      },
-      {
-        "transform": "typescript-transform-paths",
-        "afterDeclarations": true
-      }
-    ],
     "skipLibCheck": true,
     "module": "nodenext",
     "moduleResolution": "NodeNext",
-    // "noImplicitAny": true,
     "esModuleInterop": true,
-    // "strict": true,
+    "strict": true,
     "resolveJsonModule": true,
     "outDir": "../dist",
     "sourceMap": true,

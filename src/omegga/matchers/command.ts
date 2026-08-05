@@ -1,4 +1,4 @@
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 
 const command: MatchGenerator<{
   name: string;
@@ -7,7 +7,7 @@ const command: MatchGenerator<{
 }> = omegga => {
   // pattern to get PlayerController from a leave message
   const commandRegExp =
-    /^Player \"(?<name>.+?)\" is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
+    /^Player "(?<name>.+?)" is trying to call command "\/(?<command>.+?)" with arg string "(?<args>.*?)".$/;
 
   // pattern to match the "command does not exist" error that follows
   const errorRegExp = /^Error: Command (?<errorCmd>.+?) does not exist\.$/;
@@ -19,7 +19,7 @@ const command: MatchGenerator<{
     // listen for commands messages
     pattern(_line, logMatch) {
       // line is not generic console log
-      if (!logMatch) return;
+      if (!logMatch?.groups) return;
 
       const { generator, data } = logMatch.groups;
       // check if log is a command log
@@ -27,7 +27,7 @@ const command: MatchGenerator<{
 
       // check if this is a "command does not exist" error
       const errorMatch = data.match(errorRegExp);
-      if (errorMatch && lastCommandPlayer) {
+      if (errorMatch?.groups && lastCommandPlayer) {
         const name = lastCommandPlayer;
         lastCommandPlayer = null;
         omegga.emit('unknownCommand', name, errorMatch.groups.errorCmd);
@@ -36,7 +36,7 @@ const command: MatchGenerator<{
 
       // match the log to the command pattern
       const match = data.match(commandRegExp);
-      if (match) {
+      if (match?.groups) {
         const { name, command, args } = match.groups;
 
         // no player has this name. probably a bug

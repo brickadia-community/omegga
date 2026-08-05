@@ -1,13 +1,13 @@
 import Logger from '@/logger';
 import soft from '@/softconfig';
-import { IConfig } from '@config/types';
+import { type IConfig } from '@config/types';
 import * as file from '@util/file';
 import 'colors';
 import fs from 'node:fs';
 import path from 'node:path';
 import { write as writeConfig } from '../brickadia/config';
 import Omegga from './server';
-import { IOmeggaOptions } from './types';
+import { type IOmeggaOptions } from './types';
 
 const PORT = 63281;
 

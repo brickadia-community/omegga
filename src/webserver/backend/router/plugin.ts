@@ -11,7 +11,7 @@ export const pluginRouter = router({
     list: protectedProcedure(ScopeName.PluginList).query(() => {
       const { omegga } = getContextDeps();
       return _.sortBy(
-        omegga.pluginLoader.plugins.map(p => ({
+        (omegga.pluginLoader?.plugins ?? []).map(p => ({
           name: p.getName(),
           documentation: p.getDocumentation(),
           path: p.shortPath,
@@ -26,7 +26,7 @@ export const pluginRouter = router({
       .input(z.object({ shortPath: z.string() }))
       .query(async ({ input }) => {
         const { omegga } = getContextDeps();
-        const plugin = omegga.pluginLoader.plugins.find(
+        const plugin = omegga.pluginLoader?.plugins.find(
           p => p.shortPath === input.shortPath,
         );
         if (!plugin) return null;
@@ -60,7 +60,7 @@ export const pluginRouter = router({
       )
       .mutation(async ({ input }) => {
         const { omegga } = getContextDeps();
-        const plugin = omegga.pluginLoader.plugins.find(
+        const plugin = omegga.pluginLoader?.plugins.find(
           p => p.shortPath === input.shortPath,
         );
         if (!plugin) return null;
@@ -114,7 +114,7 @@ export const pluginRouter = router({
         const { omegga } = getContextDeps();
         const { log } = ctx;
 
-        const plugin = omegga.pluginLoader.plugins.find(
+        const plugin = omegga.pluginLoader?.plugins.find(
           p => p.shortPath === input.shortPath,
         );
         if (!plugin) return false;
@@ -130,7 +130,7 @@ export const pluginRouter = router({
         const { omegga } = getContextDeps();
         const { log } = ctx;
 
-        const plugin = omegga.pluginLoader.plugins.find(
+        const plugin = omegga.pluginLoader?.plugins.find(
           p => p.shortPath === input.shortPath,
         );
         if (!plugin) return false;
@@ -146,7 +146,7 @@ export const pluginRouter = router({
         const { omegga } = getContextDeps();
         const { log, error } = ctx;
 
-        const plugin = omegga.pluginLoader.plugins.find(
+        const plugin = omegga.pluginLoader?.plugins.find(
           p => p.shortPath === input.shortPath,
         );
         if (!plugin) return false;

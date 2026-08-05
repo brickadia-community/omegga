@@ -1,4 +1,4 @@
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 
 const auth: MatchGenerator<
   [
@@ -18,7 +18,7 @@ const auth: MatchGenerator<
     // listen for auth messages
     pattern(_line, logMatch) {
       // line is not generic console log
-      if (!logMatch) return;
+      if (!logMatch?.groups) return;
 
       const { generator, data } = logMatch.groups;
       // check if log is an auth log
@@ -30,7 +30,7 @@ const auth: MatchGenerator<
       const validMatch = data.match(validRegExp);
 
       // if the log matches one of the patterns, return the result
-      if (hostMatch) {
+      if (hostMatch?.groups) {
         const { displayName, username, id } = hostMatch.groups;
         return ['host', { displayName, name: username, id }];
       } else if (invalidMatch) {
@@ -41,7 +41,7 @@ const auth: MatchGenerator<
     },
     // when there's a match, emit the chat message event
     callback([type, host]) {
-      if (type == 'host') {
+      if (type == 'host' && host) {
         // store the host info
         omegga.host = Object.freeze(host);
         omegga.emit('host', Object.freeze(host));

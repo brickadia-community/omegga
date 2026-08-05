@@ -1,5 +1,6 @@
+/// <reference path="./disrequire.d.ts" />
 import Logger from '@/logger';
-import OmeggaPlugin, { PluginStore } from '@/plugin';
+import OmeggaPlugin, { type PluginStore } from '@/plugin';
 import type Omegga from '@omegga/server';
 import * as util from '@util';
 import disrequire from 'disrequire';
@@ -33,6 +34,11 @@ export default class NodePlugin extends Plugin {
   static getFormat() {
     return 'node_unsafe';
   }
+
+  // path to the file require()d when the plugin loads
+  pluginFile: string;
+  // the instantiated plugin class; undefined until load() and after unload()
+  loadedPlugin: OmeggaPlugin | undefined;
 
   constructor(pluginPath: string, omegga: Omegga) {
     super(pluginPath, omegga);
@@ -84,6 +90,7 @@ export default class NodePlugin extends Plugin {
       }
 
       // require the plugin itself
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- unsafe plugins are loaded with a real runtime require
       const Plugin: OmeggaPlugin = require(this.pluginFile);
 
       // node plugins must export a class with a constructor
@@ -104,11 +111,16 @@ export default class NodePlugin extends Plugin {
       };
 
       // create the loaded plugin
-      this.loadedPlugin = new (Plugin as any)(this.omegga, config, store);
+      const loadedPlugin: OmeggaPlugin = new (Plugin as any)(
+        this.omegga,
+        config,
+        store,
+      );
+      this.loadedPlugin = loadedPlugin;
 
       // start the loaded plugin
-      if (typeof this.loadedPlugin.init === 'function') {
-        const result = await this.loadedPlugin.init();
+      if (typeof loadedPlugin.init === 'function') {
+        const result = await loadedPlugin.init();
 
         // plugins can return a result object
         if (typeof result === 'object' && result) {
@@ -176,8 +188,10 @@ export default class NodePlugin extends Plugin {
       try {
         disrequire(file);
       } catch (e) {
-        if (e.code !== 'MODULE_NOT_FOUND')
-          // ignore error thrown if a module was deleted
+        // ignore error thrown if a module was deleted
+        if (
+          !(e instanceof Error && 'code' in e && e.code === 'MODULE_NOT_FOUND')
+        )
           throw e;
       }
     });

@@ -2,6 +2,20 @@
 
 ## Latest
 
+## 1.12.0 - 2026-08-05
+
+Web UI user management (ownership granting, self-rename, new `/user` terminal subcommands) and a typing/lint cleanup across the codebase.
+
+- Web UI: Owners can grant ownership to another user from the user inspector (confirms with password, and a TOTP code when MFA is enabled)
+- Web UI: Users can rename themselves from the account view with the new `user.rename` permission; new names are checked case-insensitively so users can't take another user's name
+- Terminal: `/user` gains `rename`, `disable`, `enable`, `delete`, `grantowner`, and `revokeowner` subcommands; running `/user` alone lists usage like `/worlds`
+- Terminal: Revoking ownership is console-only and refuses to demote the last remaining owner
+- Fix double indentation of the player list in `/status`
+- Fix type errors across the entire codebase; both the backend and frontend tsconfigs typecheck strict
+- Set up eslint and fix all lints
+- Build: Remove the legacy `build:old` (tspc) script and its `ts-patch`/`typescript-transform-paths` dependencies, and fix `npm run dts`
+- CI: Run eslint and both typechecks on every push
+
 ## 1.11.0 - 2026-07-19
 
 - Add `/version` terminal command, warning when the binary on disk differs from the running build

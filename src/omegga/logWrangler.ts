@@ -4,7 +4,7 @@ The wrapper combines the things looking at or waiting for logs with the actual s
 
 import Omegga from './server';
 
-import { IMatcher, IWatcher, LogWrangling } from '@/plugin';
+import { type IMatcher, type IWatcher, type LogWrangling } from '@/plugin';
 import Logger from '@/logger';
 
 const GENERIC_LINE_REGEX =
@@ -89,9 +89,9 @@ class LogWrangler implements LogWrangling {
       last?: IWatcher<T>['last'];
       exec?: () => void;
     } = {},
-  ): Promise<IWatcher<T>['matches']> {
+  ): Promise<T[]> {
     if (typeof pattern !== 'function' && !(pattern instanceof RegExp))
-      return undefined;
+      throw new Error('addWatcher pattern must be a function or RegExp');
 
     return new Promise((resolve, reject) => {
       // create the watcher
@@ -112,7 +112,8 @@ class LogWrangler implements LogWrangling {
 
       // remove helper
       watcher.remove = () => {
-        const index = this.#watchers.indexOf(watcher as IWatcher<T>);
+        // watchers of different generic types share one heterogeneous list
+        const index = this.#watchers.indexOf(watcher as IWatcher<unknown>);
         if (index > -1) {
           this.#watchers.splice(index, 1);
         }
@@ -121,11 +122,13 @@ class LogWrangler implements LogWrangling {
       // what the watcher dones when it completes
       watcher.done = () => {
         // remove the watcher if it exists
-        watcher.remove();
+        watcher.remove?.();
 
         // if the bundle option is set to true, resolve on timeout end
         if (bundle) {
-          resolve(watcher.matches);
+          // matches contains T[] when the pattern is a function, and
+          // RegExpMatchArray[] (the default T) when it is a RegExp
+          resolve((watcher.matches ?? []) as T[]);
         } else {
           Logger.verbose('Watcher', pattern.toString(), 'timed out');
           // reject the promise
@@ -138,8 +141,8 @@ class LogWrangler implements LogWrangling {
         watcher.timeout = setTimeout(watcher.done, timeoutDelay);
       }
 
-      this.#watchers.push(watcher as IWatcher<T>);
-      exec && exec();
+      this.#watchers.push(watcher as IWatcher<unknown>);
+      exec?.();
     });
   }
 
@@ -147,7 +150,7 @@ class LogWrangler implements LogWrangling {
   // first is a function or 'index' for the index capture group that determines if this is match is the first log
   // last is a function that determines if this match is the last log (and can terminate early)
   // aftermatch delay is borrowed from addWatcher
-  watchLogChunk<T = string>(
+  watchLogChunk<T = RegExpMatchArray>(
     cmd: string,
     pattern: IWatcher<T>['pattern'],
     {
@@ -161,7 +164,7 @@ class LogWrangler implements LogWrangling {
       afterMatchDelay?: number;
       timeoutDelay?: number;
     } = {},
-  ): Promise<IWatcher<T>['matches']> {
+  ): Promise<T[]> {
     // we're focused on the counter part of this, the rest will be passed to the pattern matcher
     const logLineRegExp =
       /\[(?<date>\d{4}\.\d\d.\d\d-\d\d.\d\d.\d\d:\d{3})\]\[\s*(?<counter>\d+)\](?<rest>.*)$/;
@@ -171,14 +174,12 @@ class LogWrangler implements LogWrangling {
 
     // create the
     return this.addWatcher<T>(
-      (line: string, _match: RegExpMatchArray) => {
+      (line: string, _match: RegExpMatchArray | null) => {
         const logLineMatch = line.match(logLineRegExp);
-        if (!logLineMatch) return;
+        if (!logLineMatch?.groups) return;
 
         // get the counter and rest of line from the log line match
-        const {
-          groups: { counter, rest },
-        } = logLineMatch;
+        const { counter, rest } = logLineMatch.groups;
 
         // run the regular pattern matcher
         const match =
@@ -208,7 +209,7 @@ class LogWrangler implements LogWrangling {
             typeof match === 'object' &&
             'groups' in match
           )
-            isFirst = match.groups.index === '0';
+            isFirst = (match as RegExpMatchArray).groups?.index === '0';
         } else {
           // otherwise, it doesn't matter
           isFirst = true;
@@ -273,13 +274,16 @@ class LogWrangler implements LogWrangling {
         const memberMatch = line.match(memberPattern);
         if (memberMatch) return ['member', memberMatch];
       },
-      { first: arr => arr[0] === 'item' && arr[1].groups.index === '0' },
+      { first: arr => arr[0] === 'item' && arr[1].groups?.index === '0' },
     )) as [string, RegExpMatchArray][];
 
     const array: { item: Item; members: Member[] }[] = [];
 
     // insert the results into the array
     for (const [type, { groups }] of results) {
+      // both patterns are documented to require capture groups
+      if (!groups) continue;
+
       // insert an item into the array
       if (type === 'item') {
         array.push({ item: groups as Item, members: [] });

@@ -29,43 +29,48 @@ const MAIN_FILE = 'omegga.plugin.js';
 const MAIN_FILE_TS = 'omegga.plugin.ts';
 const TS_BUILD_DIR = '.build';
 const TS_BUILD_FILE = 'plugin.js';
-let vm: NodeVM,
-  PluginClass: {
-    new (
-      omegga: OmeggaLike,
-      config: PluginConfig,
-      store: PluginStore,
-    ): OmeggaPlugin;
-  },
-  pluginInstance: OmeggaPlugin;
+let vm: NodeVM | undefined,
+  PluginClass:
+    | {
+        new (
+          omegga: OmeggaLike,
+          config: PluginConfig,
+          store: PluginStore,
+        ): OmeggaPlugin;
+      }
+    | undefined,
+  pluginInstance: OmeggaPlugin | undefined;
 let pluginName = 'unnamed plugin';
 let messageCounter = 0;
 // emitter that receives messages from the parent
 const parent = new EventEmitter();
 
+// this file only runs inside a worker thread, where parentPort is set
+if (!parentPort) throw new Error('plugin worker must run in a worker thread');
+const port = parentPort;
+
+// stringify an unknown thrown value for logging
+const errStr = (e: unknown): string =>
+  e instanceof Error ? (e.stack ?? String(e)) : String(e);
+
 // handle message passing
-parentPort.on('message', ({ action, args }) => parent.emit(action, ...args));
+port.on('message', ({ action, args }) => parent.emit(action, ...args));
 
 // emit a message to the parent port - async wait for a reponse
 const emit = (action: string, ...args: any[]) => {
   const messageId = 'message:' + messageCounter++;
 
-  let rejectFn: (reason?: any) => void;
   // promise waits for the message to resolve
-  const promise = new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => {
     parent.once(messageId, resolve);
-    rejectFn = reject;
+
+    try {
+      // post the message
+      port.postMessage({ action, args: [messageId, ...args] });
+    } catch (err) {
+      reject(err);
+    }
   });
-
-  try {
-    // post the message
-    parentPort.postMessage({ action, args: [messageId, ...args] });
-  } catch (err) {
-    rejectFn(err);
-  }
-
-  // return the promise
-  return promise;
 };
 
 // tell omegga to exec a command
@@ -77,7 +82,7 @@ const omegga = new ProxyOmegga(exec);
 
 // add plugin fetcher
 omegga.getPlugin = async name => {
-  let plugin = (await emit('getPlugin', name)) as PluginInterop & {
+  const plugin = (await emit('getPlugin', name)) as PluginInterop & {
     emitPlugin(event: string, ...args: any[]): Promise<any>;
   };
   if (plugin) {
@@ -114,7 +119,7 @@ parent.on('brickadiaEvent', (type, ...args) => {
     Logger.errorp(
       pluginName.brightRed,
       `Error in safe plugin worker's brickadiaEvent (${type}):`,
-      e?.stack ?? e.toString(),
+      errStr(e),
     );
   }
 });
@@ -123,8 +128,8 @@ parent.on('brickadiaEvent', (type, ...args) => {
 async function createVm(
   pluginPath: string,
   { builtin = ['*'], external = true, isTypeScript = false } = {},
-): Promise<[boolean, string]> {
-  let pluginCode: string;
+): Promise<[boolean, string] | undefined> {
+  let pluginCode: string | undefined;
 
   if (isTypeScript) {
     const tsBuildPath = path.join(pluginPath, TS_BUILD_DIR);
@@ -155,7 +160,7 @@ async function createVm(
             externals: [
               function (
                 { request }: ExternalItemFunctionData,
-                callback: (err?: Error, result?: string) => void,
+                callback: (err?: Error | null, result?: string) => void,
               ) {
                 // native addons: resolve the .node binary relative to the plugin
                 if (request.match(/\.node$/)) {
@@ -190,7 +195,7 @@ async function createVm(
               },
             },
             cache: {
-              type: 'filesystem' as 'filesystem',
+              type: 'filesystem' as const,
               cacheLocation: path.join(tsBuildPath, '.cache'),
               allowCollectingMemory: false,
               idleTimeout: 0,
@@ -229,19 +234,22 @@ async function createVm(
               ],
             },
           }),
-          (err, stats) => (err ? reject(err) : resolve(stats)),
+          (err, stats) =>
+            err || !stats
+              ? reject(err ?? new Error('webpack produced no stats'))
+              : resolve(stats),
         );
       });
 
       if (stats.hasErrors()) {
-        for (const err of stats.toJson().errors) {
+        for (const err of stats.toJson().errors ?? []) {
           Logger.errorp(err.moduleName, err.file);
           Logger.errorp(err.message);
         }
       }
 
       if (stats.hasWarnings()) {
-        for (const warning of stats.toJson().warnings) {
+        for (const warning of stats.toJson().warnings ?? []) {
           Logger.warnp(warning.moduleName, warning.file);
           Logger.warnp(warning.message);
         }
@@ -359,12 +367,14 @@ async function createVm(
     try {
       pluginCode = fs.readFileSync(file).toString();
     } catch (e) {
-      emit(
-        'error',
-        'failed to read plugin source: ' + (e?.stack ?? e.toString()),
-      );
-      throw 'failed to read plugin source: ' + (e?.stack ?? e.toString());
+      emit('error', 'failed to read plugin source: ' + errStr(e));
+      throw 'failed to read plugin source: ' + errStr(e);
     }
+  }
+
+  if (pluginCode === undefined) {
+    emit('error', 'plugin source was not loaded');
+    throw 'plugin source was not loaded';
   }
 
   // proxy the plugin out of the vm
@@ -375,7 +385,7 @@ async function createVm(
   } catch (e) {
     emit('error', 'plugin failed to init');
     Logger.errorp(pluginName.brightRed, e);
-    throw 'plugin failed to init: ' + (e?.stack ?? e.toString());
+    throw 'plugin failed to init: ' + errStr(e);
   }
 
   if (
@@ -425,11 +435,7 @@ parent.on('load', async (resp, pluginPath, options) => {
 
     emit(resp, true);
   } catch (err) {
-    Logger.errorp(
-      pluginName.brightRed,
-      'error creating vm',
-      err?.stack ?? err.toString(),
-    );
+    Logger.errorp(pluginName.brightRed, 'error creating vm', errStr(err));
     emit(resp, false);
   }
 });
@@ -439,6 +445,7 @@ parent.on('load', async (resp, pluginPath, options) => {
 // to coordinate async funcs
 parent.on('start', async (resp, config) => {
   try {
+    if (!PluginClass) throw new Error('plugin is not loaded');
     pluginInstance = new PluginClass(omegga as any as Omegga, config, store);
     const result = await pluginInstance.init();
     // if a plugin init returns a list of strings, treat them as the list of commands
@@ -455,7 +462,11 @@ parent.on('start', async (resp, config) => {
     }
     emit(resp, true);
   } catch (err) {
-    emit('error', 'error starting plugin', err?.stack ?? JSON.stringify(err));
+    emit(
+      'error',
+      'error starting plugin',
+      err instanceof Error ? (err.stack ?? String(err)) : JSON.stringify(err),
+    );
     emit(resp, false);
     Logger.errorp(pluginName.brightRed, 'Error starting plugin', err);
   }
@@ -470,7 +481,7 @@ parent.on('stop', async resp => {
     pluginInstance = undefined;
     emit(resp, true);
   } catch (err) {
-    emit('error', 'error stopping plugin', err?.stack ?? err.toString());
+    emit('error', 'error stopping plugin', errStr(err));
     emit(resp, false);
   }
 });

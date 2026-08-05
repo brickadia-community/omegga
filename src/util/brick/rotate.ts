@@ -1,4 +1,4 @@
-import { Brick } from 'brs-js';
+import { type Brick } from 'brs-js';
 import { translationTable, rotationTable } from './constants';
 
 export const d2o = (direction: number, rotation: number) =>

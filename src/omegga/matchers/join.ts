@@ -1,5 +1,5 @@
 import Player from '@omegga/player';
-import { MatchGenerator } from './types';
+import { type MatchGenerator } from './types';
 
 const join: MatchGenerator<Player> = omegga => {
   // username + id and a log counter to keep track of actual join messages
@@ -28,7 +28,7 @@ const join: MatchGenerator<Player> = omegga => {
   return {
     // listen for join events and wait for PlayerController info
     pattern(line, logMatch) {
-      if (logMatch) {
+      if (logMatch?.groups) {
         const { generator, counter, data } = logMatch.groups;
         let joinData = userJoinInfo.find(l => l.counter === counter);
 
@@ -46,7 +46,7 @@ const join: MatchGenerator<Player> = omegga => {
           );
 
           // put that value in the join data
-          if (match) {
+          if (match?.groups) {
             joinData[
               match.groups.field as 'UserName' | 'UserId' | 'DisplayName'
             ] = match.groups.value;
@@ -59,7 +59,13 @@ const join: MatchGenerator<Player> = omegga => {
 
           // make sure this joindata corresponds to this player
           // TODO: [BRICKADIA] display name used here instead of username...
-          if (match && joinData.DisplayName === match[1]) {
+          if (
+            match &&
+            joinData &&
+            joinData.DisplayName === match[1] &&
+            joinData.UserName != null &&
+            joinData.UserId != null
+          ) {
             // remove that player from our buffer
             userJoinInfo.splice(userJoinInfo.indexOf(joinData), 1);
 
@@ -82,7 +88,7 @@ const join: MatchGenerator<Player> = omegga => {
         const controllerMatch = line.match(controllerRegExp);
 
         // this line matches our PlayerName -> PlayerState pattern
-        if (stateMatch) {
+        if (stateMatch?.groups) {
           const { name, state } = stateMatch.groups;
 
           // find the joining player that has a matching name
@@ -96,7 +102,7 @@ const join: MatchGenerator<Player> = omegga => {
           omegga.writeln(`GetAll BRPlayerState Owner Name=${state}`);
 
           // this line matches our PlayerState -> PlayerController pattern
-        } else if (controllerMatch) {
+        } else if (controllerMatch?.groups) {
           const { controller, state } = controllerMatch.groups;
 
           // find the joining player that has a matching state
@@ -116,8 +122,8 @@ const join: MatchGenerator<Player> = omegga => {
             player.name,
             player.displayName,
             player.id,
-            player.controller,
-            player.state,
+            controller,
+            state,
           );
         }
       }

@@ -1,4 +1,4 @@
-import { Brick, Vector, WriteSaveObject } from 'brs-js';
+import { type Brick, type Vector, type WriteSaveObject } from 'brs-js';
 import type { IBrickBounds } from './checkBounds';
 import { getBrickSize } from './getBrickSize';
 import { getScaleAxis } from './getScaleAxis';
@@ -40,10 +40,11 @@ export function getBounds({ bricks, brick_assets }: WriteSaveObject) {
     center: [],
   } as unknown as IBrickBounds;
 
+  const assets = brick_assets ?? [];
   bricks.forEach(brick => {
-    minMaxBound(brick, brick_assets, bounds, 0);
-    minMaxBound(brick, brick_assets, bounds, 1);
-    minMaxBound(brick, brick_assets, bounds, 2);
+    minMaxBound(brick, assets, bounds, 0);
+    minMaxBound(brick, assets, bounds, 1);
+    minMaxBound(brick, assets, bounds, 2);
   });
 
   // calculate center from min and max bounds

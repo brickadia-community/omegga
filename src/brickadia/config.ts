@@ -1,4 +1,4 @@
-import { IConfig } from '@config/types';
+import { type IConfig } from '@config/types';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -27,7 +27,11 @@ ServerDescription=${config.server.description || ''}
 ServerPassword=${config.server.password || ''}
 MaxPlayers=${config.server.players || 20}
 bPubliclyListed=${(config.server.publiclyListed ?? true) ? 'True' : 'False'}
-WelcomeMessage="${config.server.welcomeMessage?.replace(/"/g, '\"').replace(/\\/g, '\\\\') || ''}"`,
+WelcomeMessage="${
+      config.server.welcomeMessage
+        ?.replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"') || ''
+    }"`,
   );
 
   /*
