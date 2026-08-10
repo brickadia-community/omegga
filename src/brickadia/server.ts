@@ -278,6 +278,8 @@ export default class BrickadiaServer extends EventEmitter {
       world && `-World="${world.file}"`,
       '-NotInstalled',
       '-log',
+      // remote file access is on unless explicitly disabled in the config
+      this.config.server.remoteFiles === false ? '-NoRemoteFileAccess' : null,
       checkWsl() === 1 ? '-OneThread' : null,
       this.path ? `-UserDir="${this.path}"` : null,
       token ? `-Token="${token}"` : null, // remove token argument if not provided

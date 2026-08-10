@@ -25,6 +25,7 @@ export const BrickadiaConfigSchema = z.object({
   authDir: z.string().optional(),
   savedDir: z.string().optional(),
   launchArgs: z.string().optional(),
+  remoteFiles: z.boolean().optional(),
   __LOCAL: z.boolean().optional(),
   __LEGACY: z.string().optional(),
 });

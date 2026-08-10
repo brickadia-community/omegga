@@ -1,6 +1,13 @@
 /// <reference path="./steam-acf2json.d.ts" />
 import Logger from '@/logger';
-import { getAppId, getSteamInstallDir, STEAMCMD_PATH } from '@/softconfig';
+import {
+  GAME_BIN_PATH,
+  getAppId,
+  getSteamGameDir,
+  getSteamInstallDir,
+  STEAMCMD_PATH,
+} from '@/softconfig';
+import { readBinaryVersion } from '@omegga/matchers/version';
 import { execSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import prompts from 'prompts';
@@ -135,6 +142,23 @@ export async function steamcmdDownloadGame({
 
   const cmd = `${STEAMCMD_PATH} ${args.join(' ')}`;
 
+  // mirrors the "Launching Brickadia Server CL####" startup log
+  const logUpdatedVersion = () => {
+    const version = readBinaryVersion(
+      path.join(
+        installDir,
+        steambeta ?? 'main',
+        getSteamGameDir(),
+        GAME_BIN_PATH,
+      ),
+    );
+    Logger.logp(
+      `Brickadia Server updated${
+        version ? ' to ' + ('CL' + version).green : ''
+      }`,
+    );
+  };
+
   // steamcmd resumes partial downloads, and late-stage failures (e.g. "state is
   // 0x406 after update job") are frequently transient, so retry before giving up.
   const attempts = Math.max(1, retries);
@@ -143,6 +167,7 @@ export async function steamcmdDownloadGame({
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       execSync(cmd, { stdio: 'inherit' });
+      logUpdatedVersion();
       return;
     } catch (err) {
       // the error that is ultimately reported/thrown; replaced when the
@@ -166,6 +191,7 @@ export async function steamcmdDownloadGame({
           Logger.logp('Login successful. Retrying download...');
           try {
             execSync(cmd, { stdio: 'inherit' });
+            logUpdatedVersion();
             return;
           } catch (retryErr) {
             handleSteamError(retryErr);

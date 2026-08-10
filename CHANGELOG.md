@@ -2,6 +2,12 @@
 
 ## Latest
 
+## 1.13.0 - 2026-08-10
+
+- Add `server.remoteFiles` config (default `true`); when `false`, the server launches with `-NoRemoteFileAccess`
+- Print the new game version (like the `Launching Brickadia Server` log) when a server update finishes
+- Bump brs-js to 3.7.0 for EA 3.1
+
 ## 1.12.0 - 2026-08-05
 
 Web UI user management (ownership granting, self-rename, new `/user` terminal subcommands) and a typing/lint cleanup across the codebase.

@@ -1087,6 +1087,8 @@ omegga:
 server:
   port: 7777 # game server port
   map: Plate # map name
+  # when false, the server launches with -NoRemoteFileAccess
+  remoteFiles: true
   # When branch is present, steamcmd is not used
   #branch: release:release-server # branch alias:branch name
   steambeta: public # try `unstable`
