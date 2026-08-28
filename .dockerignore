@@ -24,5 +24,6 @@ config.json
 
 # not part of the package
 .mcp.json
+justfile
 Dockerfile
 .dockerignore

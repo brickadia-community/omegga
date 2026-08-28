@@ -21,3 +21,4 @@ vitest.*.config.mts
 Dockerfile
 .dockerignore
 /docker/
+justfile
