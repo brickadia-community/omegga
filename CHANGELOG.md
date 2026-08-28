@@ -5,6 +5,9 @@
 ## 1.14.0
 
 - Add `omegga.binaryPath`: the directory containing the game server binary
+- Fix Ctrl+C hanging Omegga in an endless `readline was closed` error loop instead of shutting down
+- Fix terminal logs, launcher download progress, and plugin install progress crashing when stdout is not a TTY (piped output, `docker run` without `-t`)
+- Pressing Ctrl+C a second time while shutting down force closes Omegga
 
 ## 1.13.0 - 2026-08-10
 

@@ -92,8 +92,11 @@ let needsNL = false;
 
 // rewrite a console line
 const rewriteLine = (...args: string[]) => {
-  process.stdout.clearLine(0);
-  process.stdout.cursorTo(0);
+  // stdout has no cursor controls when omegga is piped or run in a container
+  if (process.stdout.isTTY) {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
+  }
   process.stdout.write(args.join(' '));
   needsNL = true;
 };

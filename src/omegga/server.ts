@@ -378,17 +378,27 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       this.addMatcher(pattern, callback);
     }
 
+    let handlingException = false;
     process.on('uncaughtException', async err => {
-      Logger.verbose('Uncaught exception', err);
-      this.emit('error', err);
-
-      // publish stop to database
-      this.webserver?.database?.addChatLog('server', {}, 'Server error');
+      // an exception thrown while handling one (a closed terminal, a broken
+      // database) rejects this handler, which node routes right back into
+      // uncaughtException - without this guard that loops forever
+      if (handlingException) {
+        console.error('Uncaught exception while shutting down', err);
+        process.exit(1);
+      }
+      handlingException = true;
 
       try {
+        Logger.verbose('Uncaught exception', err);
+        this.emit('error', err);
+
+        // publish stop to database
+        this.webserver?.database?.addChatLog('server', {}, 'Server error');
+
         await this.stop();
       } catch (e) {
-        Logger.error(e);
+        console.error(e);
       }
       process.exit();
     });

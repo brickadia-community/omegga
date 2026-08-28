@@ -180,10 +180,8 @@ const COMMANDS: TerminalCommand[] = [
   {
     aliases: ['stop', 'exit', 'quit', 'close'],
     desc: 'stop the server and close Omegga',
-    async fn() {
-      log('Stopping server...');
-      await this.omegga.stop();
-      process.exit();
+    fn() {
+      return this.shutdown();
     },
   },
   {
@@ -1013,6 +1011,10 @@ export default class Terminal {
   options: IOmeggaOptions;
   omegga: Omegga;
   rl: readline.Interface;
+  // readline closes when stdin ends (ctrl+c in a tty, a detached container) -
+  // using it after that throws ERR_USE_AFTER_CLOSE
+  #rlClosed = false;
+  #shuttingDown = false;
   constructor(omegga: Omegga, options: IOmeggaOptions = {}) {
     this.options = options;
     this.omegga = omegga;
@@ -1071,14 +1073,19 @@ export default class Terminal {
             DOWNLOADING BRICKADIA (100%) | Nearly done...
             DOWNLOADING BRICKADIA (100%), INSTALLING BRICKADIA (86%) | Nearly done...
           */
-          process.stdout.clearLine(0);
-          process.stdout.cursorTo(0);
-          process.stdout.write(l);
-          // add a newline on "Done!" but prevent newlines on repeat done messages
-          if (l.match(/Done!/) && l !== lastDoneMessage) {
-            lastDoneMessage = l;
-            process.stdout.write('\n');
+          const isDone = Boolean(l.match(/Done!/)) && l !== lastDoneMessage;
+          if (process.stdout.isTTY) {
+            process.stdout.clearLine(0);
+            process.stdout.cursorTo(0);
+            process.stdout.write(l);
+            // add a newline on "Done!" but prevent newlines on repeat done messages
+            if (isDone) process.stdout.write('\n');
+          } else if (isDone) {
+            // without a tty there is no cursor to rewind, so print the
+            // milestones on their own lines instead of every progress update
+            process.stdout.write(l + '\n');
           }
+          if (isDone) lastDoneMessage = l;
         } else if (l.match(/Disabling core dumps./)) {
           launcherDone = true;
         }
@@ -1176,9 +1183,31 @@ export default class Terminal {
     );
 
     this.rl.on('line', this.handleLine.bind(this));
-    // Gracefully shut down server on Ctrl+C and SIGTERM
-    process.on('SIGINT', () => this.handleLine('/stop'));
-    process.on('SIGTERM', () => this.handleLine('/stop'));
+    this.rl.on('close', () => (this.#rlClosed = true));
+
+    // Gracefully shut down server on Ctrl+C and SIGTERM. Listening for SIGINT on
+    // the interface stops readline from closing itself on ctrl+c in a tty -
+    // every log after that close would throw while trying to redraw the prompt
+    this.rl.on('SIGINT', () => this.shutdown());
+    process.on('SIGINT', () => this.shutdown());
+    process.on('SIGTERM', () => this.shutdown());
+  }
+
+  // stop the server and close omegga - a second request force closes
+  async shutdown() {
+    if (this.#shuttingDown) {
+      err('Force closing Omegga...');
+      process.exit(1);
+    }
+    this.#shuttingDown = true;
+    log('Stopping server...');
+    try {
+      await this.omegga.stop();
+    } catch (e) {
+      err('Error stopping server:', e);
+    }
+    this.rl.close();
+    process.exit();
   }
 
   async handleLine(line: string) {
@@ -1204,7 +1233,7 @@ export default class Terminal {
         this.omegga.broadcast(
           `"[<b><color=\\"ff00ff\\">SERVER</></>]: ${sanitize(line)}"`,
         );
-        process.stdout.clearLine(0);
+        if (process.stdout.isTTY) process.stdout.clearLine(0);
         this.log(`[${'SERVER'.brightMagenta.underline}]: ${line}`);
 
         // if omegga is running a webserver - send this message in the chat log
@@ -1229,34 +1258,34 @@ export default class Terminal {
   }
 
   // let readline render a log without interrupting user input
+  #write(method: 'log' | 'debug' | 'warn' | 'error', args: any[]) {
+    // stdout has no cursor controls when omegga is piped or run in a container
+    if (process.stdout.isTTY) {
+      process.stdout.clearLine(0);
+      process.stdout.cursorTo(0);
+    }
+    console[method](...Logger.timestamped(args));
+    // there is no prompt to redraw without a terminal, and its escape codes
+    // would just be noise in a piped log
+    if (process.stdout.isTTY && !this.#rlClosed) this.rl.prompt(true);
+  }
+
   log(...args: any[]) {
-    process.stdout.clearLine(0);
-    process.stdout.cursorTo(0);
-    console.log(...Logger.timestamped(args));
-    this.rl.prompt(true);
+    this.#write('log', args);
   }
 
   // let readline render a debug log without interrupting user input
   debug(...args: any[]) {
-    process.stdout.clearLine(0);
-    process.stdout.cursorTo(0);
-    console.debug(...Logger.timestamped(args));
-    this.rl.prompt(true);
+    this.#write('debug', args);
   }
 
   // let readline render a warning log without interrupting user input
   warn(...args: any[]) {
-    process.stdout.clearLine(0);
-    process.stdout.cursorTo(0);
-    console.warn(...Logger.timestamped(args));
-    this.rl.prompt(true);
+    this.#write('warn', args);
   }
 
   // let readline render an error log without interrupting user input
   error(...args: any[]) {
-    process.stdout.clearLine(0);
-    process.stdout.cursorTo(0);
-    console.error(...Logger.timestamped(args));
-    this.rl.prompt(true);
+    this.#write('error', args);
   }
 }
