@@ -77,7 +77,7 @@ async function authFromPrompt({
         type: 'password',
         name: 'token',
         message:
-          'Paste your server hosting token (from https://brickadia.com/account)',
+          'Paste your server hosting token (generate one at https://brickadia.com/account/tokens)',
         validate: value => (value ? true : 'Token is required'),
       });
 

@@ -8,6 +8,8 @@
 - Fix Ctrl+C hanging Omegga in an endless `readline was closed` error loop instead of shutting down
 - Fix terminal logs, launcher download progress, and plugin install progress crashing when stdout is not a TTY (piped output, `docker run` without `-t`)
 - Pressing Ctrl+C a second time while shutting down force closes Omegga
+- `OMEGGA_PORT` and `BRICKADIA_PORT` now override the ports in an existing config, not just when one is created
+- Point the hosting token prompt at https://brickadia.com/account/tokens
 
 ## 1.13.0 - 2026-08-10
 

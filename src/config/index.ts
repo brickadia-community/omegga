@@ -1,4 +1,6 @@
+import Logger from '@/logger';
 import soft from '@/softconfig';
+import 'colors';
 import Configstore from 'configstore';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -40,6 +42,30 @@ export const defaultConfig: IConfig = {
   },
 };
 
+/**
+ * Apply `OMEGGA_PORT` and `BRICKADIA_PORT` on top of a loaded config. A
+ * container's config file lives in a mounted volume that can't be templated,
+ * so the environment has to be able to win.
+ */
+export function applyPortOverrides(conf: IConfig): IConfig {
+  const parsePort = (name: string) => {
+    const raw = process.env[name];
+    if (!raw) return undefined;
+    const port = Number(raw);
+    if (Number.isInteger(port) && port > 0 && port < 65536) return port;
+    Logger.warnp(`Ignoring ${name.yellow}: ${raw.yellow} is not a port`);
+    return undefined;
+  };
+
+  const omeggaPort = parsePort('OMEGGA_PORT');
+  if (omeggaPort) conf.omegga = { ...conf.omegga, port: omeggaPort };
+
+  const serverPort = parsePort('BRICKADIA_PORT');
+  if (serverPort) conf.server = { ...conf.server, port: serverPort };
+
+  return conf;
+}
+
 // Writes save data to a file
 export const write = writer(formats);
 
@@ -61,4 +87,12 @@ export const find = (dir = '.') => {
 
 export * from './types';
 
-export default { store, write, read, find, defaultConfig, formats };
+export default {
+  store,
+  write,
+  read,
+  find,
+  defaultConfig,
+  formats,
+  applyPortOverrides,
+};

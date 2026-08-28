@@ -111,6 +111,8 @@ const program = commander
       }
     }
 
+    config.applyPortOverrides(conf);
+
     if (conf?.terminal?.timestamp) {
       Logger.setTimestamp(conf.terminal.timestamp);
     }
