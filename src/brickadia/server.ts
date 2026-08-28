@@ -180,6 +180,15 @@ export default class BrickadiaServer extends EventEmitter {
     );
   }
 
+  /**
+   * Resolve the directory the game server binary lives in. Null whenever
+   * {@link getGameBinaryPath} can't resolve a binary.
+   */
+  getGameBinaryDir(): string | null {
+    const binary = this.getGameBinaryPath();
+    return binary && path.dirname(binary);
+  }
+
   // start the server child process
   start() {
     const {

@@ -240,6 +240,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   prefabPath: string;
   presetPath: string;
   configPath: string;
+  binaryPath: string | null;
   options: IOmeggaOptions;
 
   version: number;
@@ -325,6 +326,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
 
     // path to config files
     this.configPath = join(this.path, DATA_PATH, savedDir, 'Server');
+
+    // directory the game binary and the files shipped beside it live in
+    this.binaryPath = this.getGameBinaryDir();
 
     // create dir folders
     Logger.verbose('Creating directories');

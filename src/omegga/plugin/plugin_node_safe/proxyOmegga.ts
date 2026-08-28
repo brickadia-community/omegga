@@ -38,6 +38,7 @@ const bootstrapData = (omegga: Omegga) => ({
   path: omegga.path,
   configPath: omegga.configPath,
   presetPath: omegga.presetPath,
+  binaryPath: omegga.binaryPath,
   starting: omegga.starting,
   started: omegga.started,
   stopping: omegga.stopping,
@@ -157,6 +158,7 @@ export class ProxyOmegga extends EventEmitter implements OmeggaLike {
   worldPath!: string;
   prefabPath!: string;
   presetPath!: string;
+  binaryPath!: string | null;
 
   logWrangler: LogWrangler;
 

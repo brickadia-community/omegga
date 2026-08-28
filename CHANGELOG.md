@@ -2,6 +2,10 @@
 
 ## Latest
 
+## 1.14.0
+
+- Add `omegga.binaryPath`: the directory containing the game server binary
+
 ## 1.13.0 - 2026-08-10
 
 - Add `server.remoteFiles` config (default `true`); when `false`, the server launches with `-NoRemoteFileAccess`

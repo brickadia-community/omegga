@@ -564,6 +564,11 @@ export interface OmeggaLike
   presetPath: string;
   /** path to containing dir */
   path: string;
+  /**
+   * path to the directory containing the game server binary - null when the
+   * install is launcher-managed and the binary location isn't known
+   */
+  binaryPath: string | null;
 
   /** get a plugin's name, documentation, and loaded status
    * If run in an unsafe plugin, the emitPlugin method sends events from

@@ -106,6 +106,11 @@ class OmeggaWrapper extends EventEmitter {
   getGameBinaryPath(): string | null {
     return this.#server.getGameBinaryPath();
   }
+
+  /** Resolve the directory containing the game server binary */
+  getGameBinaryDir(): string | null {
+    return this.#server.getGameBinaryDir();
+  }
 }
 
 export default OmeggaWrapper;
