@@ -8,6 +8,7 @@ import * as config from '@config';
 import { readBinaryVersion } from '@omegga/matchers/version';
 import Omegga from '@omegga/server';
 import * as file from '@util/file';
+import { isContainer } from '@util/container';
 import 'colors';
 import commander from 'commander';
 import dotenv from 'dotenv';
@@ -37,7 +38,16 @@ const notifier =
         updateCheckInterval: 1000 * 60 * 60 * 24,
       })
     : null;
-notifier?.notify();
+if (notifier) {
+  const { update } = notifier;
+  notifier.notify(
+    update && isContainer()
+      ? {
+          message: `Update available ${update.current} → ${update.latest}\nPull a new container image to update`,
+        }
+      : undefined,
+  );
+}
 
 // TODO: let omegga bundle config (roles, bans, server config) to zip
 // TODO: let omegga unbundle config from zip to current omegga dir
@@ -237,9 +247,10 @@ const program = commander
 
     if (notifier?.update) {
       Logger.logp(
-        `Omegga update is available (${('v' + notifier.update.latest).yellow})! Run`,
-        'npm i -g omegga'.yellow,
-        'to update!',
+        `Omegga update is available (${('v' + notifier.update.latest).yellow})!`,
+        isContainer()
+          ? 'Pull a new container image to update!'
+          : `Run ${'npm i -g omegga'.yellow} to update!`,
       );
     }
 

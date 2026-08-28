@@ -1,0 +1,28 @@
+# Everything the image builds for itself, plus anything that would leak host
+# state into the build. `npm run dist` regenerates dist/, public/, and
+# templates/safe-ts/omegga.d.ts inside the container.
+.git
+.github
+.vscode
+.claude
+node_modules
+dist
+public
+templates/safe-ts/omegga.d.ts
+*.tgz
+
+# a developer's local omegga instance
+/server
+/data
+/plugins
+.omegga-config.*
+.omegga.*
+omegga-config.*
+omegga.*
+config.yml
+config.json
+
+# not part of the package
+.mcp.json
+Dockerfile
+.dockerignore

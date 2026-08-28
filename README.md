@@ -40,6 +40,8 @@ Omegga plugins can do things like:
 
 You can run omegga in the [Windows Subsystem for Linux](#wsl) (I recommend Ubuntu) or on an actual linux install.
 
+If you would rather not install node and omegga on the host, there is a [container image](#containers) that has both.
+
 <font size="5" color="red">Do not install omegga or run brickadia/omegga as root/superuser</font>:
 
 - running `whoami` should NOT print "root"
@@ -74,7 +76,7 @@ If you need to run omegga as root, make sure your branch is `main-server` or `un
     npm i -g omegga
     ```
 
-4. Head over to [Running Omegga](#running) or troubleshoot below.
+4. Head over to [Running Omegga](#running) or troubleshoot below. To run it in a container instead of installing it, see [Containers](#containers).
 
 ### Install Troubleshooting
 
@@ -217,11 +219,108 @@ To start a server, simply type the following in a linux shell after install:
 
 Omegga will prompt for credentials as necessary and only stores the auth tokens brickadia generates on login. **Omegga does not store your password**.
 
+## Containers
+
+Release tags publish an image to `ghcr.io/brickadia-community/omegga`.
+
+```sh
+docker run -it --rm \
+  -v omegga-home:/home/steam \
+  -v "$PWD/server:/server" \
+  -p 8080:8080 -p 7777:7777/udp \
+  -e BRICKADIA_TOKEN -e OMEGGA_PORT=8080 -e BRICKADIA_PORT=7777 \
+  -e PUID="$(id -u)" -e PGID="$(id -g)" \
+  ghcr.io/brickadia-community/omegga
+```
+
+Generate a hosting token at https://brickadia.com/account/tokens; without one omegga stops at an interactive auth prompt on first start. Arguments are passed through, so `omegga --debug` and `bash` both work in place of the default command. Omegga handles `SIGINT` and `SIGTERM`, so ctrl+c and `docker stop` shut down gracefully - add `--init` if you also want zombie reaping.
+
+Omegga is baked into the image, so it updates by pulling a new one rather than through npm:
+
+```sh
+docker pull ghcr.io/brickadia-community/omegga:latest
+docker compose pull && docker compose up -d # or, under compose
+```
+
+`latest` moves with every release, so pin a version like `:1.14.0` if you would rather choose when that happens. Nothing pulls on its own - `podman auto-update` and watchtower are the usual ways to automate it.
+
+The game is not in the image. It updates in place inside the volume with `omegga --update` or `/update`, and steamcmd keeps itself up to date. Setting the container's command to `omegga --update` (`command: omegga --update` under compose) checks on every start, at the cost of not starting at all when Steam is unreachable, rather than running the version already installed.
+
+### Compose
+
+```yaml
+services:
+  omegga:
+    image: ghcr.io/brickadia-community/omegga:latest
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    env_file: .env
+    ports:
+      - '${OMEGGA_PORT}:${OMEGGA_PORT}/tcp'
+      - '${BRICKADIA_PORT}:${BRICKADIA_PORT}/udp'
+    volumes:
+      - home:/home/steam
+      - ./server:/server
+
+volumes:
+  home:
+```
+
+```sh
+# .env - read for the ${...} above, and passed to the container
+BRICKADIA_TOKEN=...
+OMEGGA_PORT=8080
+BRICKADIA_PORT=7777
+PUID=1000
+PGID=1000
+```
+
+`compose run --rm --service-ports omegga` attaches a tty, so ctrl+c goes to omegga. With `compose up` it goes to compose, which stops the container instead.
+
+### Volumes
+
+- `/home/steam` - the Brickadia install, steamcmd, and auth files. Keep it on a named volume or the game is downloaded again every time the container is recreated.
+- `/server` - the omegga working directory: `omegga-config.yml`, `data`, and `plugins`. Bind mount it to edit them from the host.
+
+### Ports
+
+Set them with `OMEGGA_PORT` and `BRICKADIA_PORT` rather than editing the config file, so one value drives both the server and the port mapping. They override the config, though `server.port` still has to be present in it. See [Environment Variables](#environment-variables) for the rest.
+
+Brickadia reports its configured port to the master server, so a published port has to be the same number the server runs on. Never map `-p 7778:7777/udp`.
+
+### File Ownership
+
+`PUID` and `PGID` decide who owns what omegga writes into a bind-mounted `/server`; set them to your own `id -u` and `id -g`. `PUID=0` runs as root instead and leaves root-owned files behind on the host.
+
+### Building
+
+The `Dockerfile` builds omegga on top of `gameservermanagers/steamcmd`, with node from nvm.
+
+```sh
+# the omegga in this checkout
+docker build -t omegga .
+
+# or a release off npm, where OMEGGA_VERSION is an npm version
+docker build -t omegga --target npm --build-arg OMEGGA_VERSION=1.14.0 .
+```
+
+`OMEGGA_VERSION` is required and has to be an exact version. There is deliberately no `latest` default: that layer is cached on its command text, so `latest` would never invalidate it - rebuilds would keep reinstalling whichever version was current the first time, and only `--no-cache` would get past it.
+
+### Podman
+
+`podman build`, `podman run`, and `podman compose` take the same arguments and read the same compose file. Two things differ:
+
+- Rootless podman maps the container's root to your own user, so `PUID=0` is what leaves bind-mounted files owned by you - the opposite of the advice above. Keeping the container's unprivileged user maps it to a subuid instead, and `/server` ends up owned by an id you need `podman unshare` to touch. To stay unprivileged inside the container, `--userns=keep-id:uid=1000,gid=1000` maps you onto the image's `steam` user.
+- On SELinux systems bind mounts need a relabel: `-v "$PWD/server:/server:Z"`.
+
 ## Updating
 
 Omegga will tell you when it's out of date. You can update with this command:
 
     npm i -g omegga
+
+In a container, pull a new image instead - see [Containers](#containers).
 
 If don't have automatic update enabled, you can start update the Brickadia server by starting omegga with the `--update` flag:
 
@@ -1055,11 +1154,11 @@ These can be set in your shell or in a `.env` file the same directory as a `omeg
 
 `omegga` accepts the following environment variables:
 
-- `BRICKADIA_TOKEN` - Specify hosting token instead of using config
+- `BRICKADIA_TOKEN` - Specify hosting token instead of using config (generate one at https://brickadia.com/account/tokens)
 - `BRICKADIA_USER` - Brickadia auth username (on first start)
 - `BRICKADIA_PASS` - Brickadia auth password (on first start)
-- `BRICKADIA_PORT` - Brickadia server port (default `7777`, on config creation)
-- `OMEGGA_PORT` - omegga webserver port (default `8080`, on config creation)
+- `BRICKADIA_PORT` - Brickadia server port (default `7777`); overrides `server.port` from the config
+- `OMEGGA_PORT` - omegga webserver port (default `8080`); overrides `omegga.port` from the config
 - `OMEGGA_UI_HOST` - host shown in the "Web UI available at" log message (default `127.0.0.1`)
 - `BRICKADIA_DIR` - Override the need to use steamcmd and point to a Brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
 - `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default `~/.config/omegga/steam_installs`)

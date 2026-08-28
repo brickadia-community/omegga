@@ -2,7 +2,7 @@
 
 ## Latest
 
-## 1.14.0
+## 1.14.0 - 2026-08-28
 
 - Add `omegga.binaryPath`: the directory containing the game server binary
 - Fix Ctrl+C hanging Omegga in an endless `readline was closed` error loop instead of shutting down
@@ -10,6 +10,9 @@
 - Pressing Ctrl+C a second time while shutting down force closes Omegga
 - `OMEGGA_PORT` and `BRICKADIA_PORT` now override the ports in an existing config, not just when one is created
 - Point the hosting token prompt at https://brickadia.com/account/tokens
+- The update notice says to pull a new image when omegga is running in a container, instead of `npm i -g omegga`
+- Add a `Dockerfile`: steamcmd base, node from nvm, runs unprivileged with PUID/PGID remapping; builds this repo by default, or `--target npm --build-arg OMEGGA_VERSION=x.y.z` for a release off npm
+- CI: publish the image to `ghcr.io/brickadia-community/omegga` on `v*` tags (or manually), tagged by semver
 
 ## 1.13.0 - 2026-08-10
 
