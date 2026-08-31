@@ -1,8 +1,9 @@
 module.exports = class Plugin {
-  constructor(omegga, config, store) {
+  constructor(omegga, config, store, metrics) {
     this.omegga = omegga;
     this.config = config;
     this.store = store;
+    this.metrics = metrics;
   }
 
   async init() {

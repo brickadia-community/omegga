@@ -360,6 +360,16 @@ export default class BrickadiaServer extends EventEmitter {
     this.write(line + '\n');
   }
 
+  /**
+   * pid of the running game process, or null when it isn't running.
+   *
+   * The child is spawned through `stdbuf`, which execs the game in place, so
+   * this is the game's own pid and /proc entry.
+   */
+  get pid(): number | null {
+    return this.#child?.pid ?? null;
+  }
+
   // forcibly kills the server
   stop() {
     if (!this.#child) {

@@ -284,7 +284,9 @@ const COMMANDS: TerminalCommand[] = [
       }
 
       log('Checking for updates...');
-      const result = steamcmdCheckUpdate(this.omegga.config.server?.steambeta);
+      const result = await steamcmdCheckUpdate(
+        this.omegga.config.server?.steambeta,
+      );
       if (!result) {
         err('Failed to check for updates.');
         return;
@@ -393,7 +395,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
     .map(p => `[${msToTime(p.time).grey}] ${p.name.brightYellow}`)
     .join('\n  ')}
 `);
-      } catch (e) {
+      } catch {
         err('An error occurred while getting server status');
       }
     },

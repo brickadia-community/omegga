@@ -286,7 +286,7 @@ export class PluginLoader {
             Logger.verbose('Unloaded', p.getName().underline);
           }
         }
-      } catch (e) {
+      } catch {
         Logger.errorp(
           'Error unloading plugin',
           p.getName().brightRed.underline,

@@ -86,6 +86,12 @@ const buildTableHeaderRegex = (header: string) => {
  */
 const GAMEMODE_MODEL_CL = 14000;
 
+/** the `Players (online/max):` line that terminates the status header */
+const PLAYER_COUNT_REGEX = /^Players \((\d+)\/(\d+)\):/;
+
+/** header keys that carry text or a duration rather than a stat */
+const NON_STAT_KEYS = ['Server Name', 'Description', 'Time'];
+
 // A list of commands that can be injected to things with the log wrangler
 /**
  * List of injected commands
@@ -118,23 +124,53 @@ const COMMANDS: InjectedCommands = {
       ? buildTableHeaderRegex(tableHeader)
       : null;
 
-    if (statusLines.length < 5) return null;
+    // The status header is a block of `Key: value` lines terminated by the
+    // player table's `Players (n/m):` line. It's read by key rather than by
+    // position, so a line the game adds later cannot shift (or invalidate)
+    // everything after it, and so new stats are picked up automatically.
+    const lines = statusLines.map(l => l[1]);
+    const playersIndex = lines.findIndex(l => PLAYER_COUNT_REGEX.test(l));
+    const headerLines =
+      playersIndex === -1 ? lines : lines.slice(0, playersIndex);
 
-    const serverName = statusLines[0][1].match(/^Server Name: (.*)$/);
-    const description = statusLines[1][1].match(/^Description: (.*)$/);
-    const bricks = statusLines[2][1].match(/^Bricks: (\d+)$/);
-    const components = statusLines[3][1].match(/^Components: (\d+)$/);
-    const uptime = statusLines[4][1].match(/^Time: (.*)$/);
+    // keys are hardcoded literals, so there's nothing to escape here
+    const findValue = (key: string) => {
+      const pattern = new RegExp(`^${key}: ?(.*)$`);
+      for (const line of headerLines) {
+        const match = line.match(pattern);
+        if (match) return match[1];
+      }
+      return undefined;
+    };
 
-    if (!serverName || !description || !bricks || !components || !uptime)
-      return null;
+    const serverName = findValue('Server Name');
+    const uptime = findValue('Time');
+
+    // these two frame the block; without them nothing was parsed
+    if (serverName == null || uptime == null) return null;
+
+    // every other integer-valued header line is a stat: bricks and components
+    // today, plus whatever the game starts reporting later
+    const stats: Record<string, number> = {};
+    for (const line of headerLines) {
+      const match = line.match(/^([A-Za-z][A-Za-z ]*?): (\d+)$/);
+      if (!match || NON_STAT_KEYS.includes(match[1])) continue;
+      stats[match[1].toLowerCase().replace(/ +/g, '_')] = Number(match[2]);
+    }
+
+    const playerCounts =
+      playersIndex === -1
+        ? null
+        : lines[playersIndex].match(PLAYER_COUNT_REGEX);
 
     const status = {
-      serverName: serverName[1],
-      description: description[1],
-      bricks: Number(bricks[1]),
-      components: Number(components[1]),
-      time: time.parseDuration(uptime[1]),
+      serverName,
+      description: findValue('Description') ?? '',
+      bricks: stats.bricks ?? 0,
+      components: stats.components ?? 0,
+      time: time.parseDuration(uptime),
+      ...(playerCounts ? { maxPlayers: Number(playerCounts[2]) } : {}),
+      stats,
       // extract players using the generated table regex
       players: columnRegExp
         ? tableLines.flatMap(l => {

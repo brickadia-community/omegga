@@ -36,6 +36,7 @@ export type PC<T extends Record<string, unknown> = Record<string, unknown>> =
   PluginConfig<T>;
 export type PS<T extends Record<string, unknown> = Record<string, unknown>> =
   PluginStore<T>;
+export type PM = PluginMetrics;
 
 export interface BrickBounds {
   minBound: [number, number, number];
@@ -1083,6 +1084,77 @@ export type PluginConfig<
   T extends Record<string, unknown> = Record<string, unknown>,
 > = T;
 
+/** Label values attached to a plugin metric */
+export type PluginMetricLabels = Record<string, string | number | boolean>;
+
+/** Options common to every plugin metric */
+export interface PluginMetricOptions {
+  /**
+   * Metric name, exported as `omegga_plugin_<plugin>_<name>`. Must be
+   * lowercase letters, digits, and underscores.
+   */
+  name: string;
+  /** One-line description, shown in the scrape output */
+  help?: string;
+  /** Label names this metric may use (`plugin` is added automatically) */
+  labels?: string[];
+}
+
+/** A value that only ever increases, such as a number of events */
+export interface MetricCounter {
+  /** Add to the count (default 1), optionally on a labelled series */
+  inc(value?: number): void;
+  inc(labels: PluginMetricLabels, value?: number): void;
+  /** Discard every series */
+  reset(): void;
+}
+
+/** A value that can go up and down, such as a queue length */
+export interface MetricGauge {
+  set(value: number): void;
+  set(labels: PluginMetricLabels, value: number): void;
+  inc(value?: number): void;
+  inc(labels: PluginMetricLabels, value?: number): void;
+  dec(value?: number): void;
+  dec(labels: PluginMetricLabels, value?: number): void;
+  /** Stop exporting one labelled series */
+  remove(labels?: PluginMetricLabels): void;
+  /**
+   * Produce the value on demand instead of setting it. The callback runs when
+   * the metric is collected, which is cheaper than setting it on a timer.
+   */
+  collect(fn: () => number | void): void;
+  reset(): void;
+}
+
+/** Bucketed observations, such as durations */
+export interface MetricHistogram {
+  observe(value: number): void;
+  observe(labels: PluginMetricLabels, value: number): void;
+  /** Start a timer; call the returned function to observe elapsed seconds */
+  startTimer(labels?: PluginMetricLabels): () => number;
+  reset(): void;
+}
+
+/**
+ * Prometheus metrics for a plugin, exported under `omegga_plugin_<plugin>_`.
+ *
+ * Handles are always returned, so no guards are needed: when the metrics
+ * endpoint is disabled every call is a no-op.
+ */
+export interface PluginMetrics {
+  /** Whether the metrics endpoint is enabled; handles work either way */
+  readonly enabled: boolean;
+  counter(opts: PluginMetricOptions): MetricCounter;
+  gauge(opts: PluginMetricOptions): MetricGauge;
+  histogram(
+    opts: PluginMetricOptions & {
+      /** Upper bounds in ascending order; `+Inf` is added automatically */
+      buckets?: number[];
+    },
+  ): MetricHistogram;
+}
+
 /** An omegga plugin */
 export default abstract class OmeggaPlugin<
   Config extends Record<string, unknown> = Record<string, unknown>,
@@ -1091,15 +1163,27 @@ export default abstract class OmeggaPlugin<
   omegga: OmeggaLike;
   config: PluginConfig<Config>;
   store: PluginStore<Storage>;
+  /**
+   * Prometheus metrics for this plugin; no-ops when metrics are disabled.
+   *
+   * Always supplied by the plugin loader. It is declared optional purely so
+   * that plugins written before metrics existed still satisfy
+   * `implements OmeggaPlugin`. Declare `metrics: PM` on your own class, as
+   * the templates do for `omegga`, `config`, and `store`, to get the
+   * non-optional type.
+   */
+  metrics?: PluginMetrics;
 
   constructor(
     omegga: OmeggaLike,
     config: PluginConfig<Config>,
     store: PluginStore<Storage>,
+    metrics: PluginMetrics,
   ) {
     this.omegga = omegga;
     this.config = config;
     this.store = store;
+    this.metrics = metrics;
   }
 
   /** Run when plugin starts, returns /commands it uses */

@@ -73,7 +73,7 @@ export function readWatchedJSON(file: string) {
 export function mkdir(path: string) {
   try {
     fs.mkdirSync(path, { recursive: true });
-  } catch (e) {
+  } catch {
     /* */
   }
 }

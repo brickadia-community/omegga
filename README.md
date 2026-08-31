@@ -1160,6 +1160,9 @@ These can be set in your shell or in a `.env` file the same directory as a `omeg
 - `BRICKADIA_PORT` - Brickadia server port (default `7777`); overrides `server.port` from the config
 - `OMEGGA_PORT` - omegga webserver port (default `8080`); overrides `omegga.port` from the config
 - `OMEGGA_UI_HOST` - host shown in the "Web UI available at" log message (default `127.0.0.1`)
+- `METRICS_ENABLED` - Serve the prometheus metrics endpoint; overrides `metrics.enabled` from the config
+- `METRICS_BIND` - Address the metrics endpoint binds to (default `127.0.0.1`); overrides `metrics.bind`
+- `METRICS_PORT` - Metrics endpoint port (default `9000`); overrides `metrics.port`
 - `BRICKADIA_DIR` - Override the need to use steamcmd and point to a Brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
 - `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default `~/.config/omegga/steam_installs`)
 - `STEAM_APP_ID` - Set the Steam App ID for Brickadia (default `3017590`)
@@ -1194,4 +1197,191 @@ server:
 terminal:
   # prepend timestamps to terminal output (see https://www.npmjs.com/package/dateformat)
   #timestamp: "HH:MM:ss" # e.g. 14:05:30, "[HH:MM:ss]" for [14:05:30]
+metrics:
+  enabled: false # serve a prometheus metrics endpoint
+  bind: 127.0.0.1 # address to bind (the endpoint is unauthenticated by default)
+  port: 9000 # metrics port
+  path: /metrics # url path to serve on
+  #token: hunter2 # when set, scrapes must send `Authorization: Bearer <token>`
+  defaultMetrics: true # export standard process_/nodejs_ metrics for omegga
+  statusMaxAge: 15 # seconds before a scrape refreshes the cached server status
+  plugins: true # let plugins register their own metrics
 ```
+
+## Metrics
+
+Omegga can serve a [Prometheus](https://prometheus.io) scrape endpoint, off by
+default. It is a standalone HTTP server, so it works with `omegga.webui: false`
+and binds to its own address and port.
+
+```yaml
+metrics:
+  enabled: true
+  bind: '127.0.0.1'
+  port: 9000
+```
+
+Or set `METRICS_ENABLED=true`, `METRICS_BIND`, `METRICS_PORT`.
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: omegga
+    static_configs:
+      - targets: ['localhost:9000']
+```
+
+### Security
+
+The endpoint is **unauthenticated**, hence the loopback default. To expose it,
+either front it with a reverse proxy or set `metrics.token` and have Prometheus
+send it as `authorization: { credentials: ... }`. Omegga warns at startup if you
+bind off-loopback without a token.
+
+### Game metrics
+
+| metric | type | description |
+| --- | --- | --- |
+| `brickadia_server_info` | gauge | Build and config as labels (`version`, `server_name`, `map`, `steambeta`, `port`); always `1` |
+| `brickadia_up` | gauge | `1` when the game is running and answering status commands |
+| `brickadia_server_state` | gauge | State set: `1` on the active `state` of `starting`/`running`/`stopping`/`stopped`/`updating` |
+| `brickadia_starting`, `brickadia_stopping`, `brickadia_updating` | gauge | The same states as flat booleans, easier to alert on |
+| `brickadia_uptime_seconds`, `brickadia_start_time_seconds` | gauge | Uptime and last start |
+| `brickadia_players_online`, `brickadia_players_max` | gauge | Connected players and slots |
+| `brickadia_bricks_count`, `brickadia_components_count` | gauge | World contents |
+| `brickadia_entities_count` | gauge | Entities, when the game reports them |
+| `brickadia_status_age_seconds` | gauge | Age of the cached server status |
+| `brickadia_update_available` | gauge | Whether an update was found at the last check |
+| `brickadia_update_check_timestamp_seconds`, `brickadia_last_update_timestamp_seconds` | gauge | Last update check and last completed update |
+| `brickadia_players_joined_total` | counter | Player joins |
+| `brickadia_players_joined_unique_total` | counter | Distinct players since omegga started |
+| `brickadia_players_left_total`, `brickadia_players_kicked_total` | counter | Disconnects and kicks |
+| `brickadia_player_playtime_seconds_total` | counter | Total player-seconds connected; accrues live, so in-progress sessions count |
+| `brickadia_chat_messages_total` | counter | Chat messages |
+| `brickadia_commands_total`, `brickadia_unknown_commands_total` | counter | Chat commands run |
+| `brickadia_interactions_total` | counter | Brick interactions |
+| `brickadia_log_lines_total`, `brickadia_stderr_lines_total` | counter | Game log throughput; a flatline is the earliest sign it has wedged |
+| `brickadia_starts_total`, `brickadia_stops_total`, `brickadia_crashes_total` | counter | Lifecycle events |
+| `brickadia_map_changes_total`, `brickadia_autorestarts_total`, `brickadia_updates_total` | counter | Map changes, autorestarts, updates |
+| `brickadia_status_poll_failures_total` | counter | Status polls that timed out or failed to parse |
+| `brickadia_player_session_seconds` | histogram | How long players stayed connected |
+| `brickadia_player_ping_seconds` | histogram | Player ping, sampled once per status poll |
+| `brickadia_status_poll_duration_seconds` | histogram | How long `Server.Status` took, a good proxy for game hitching |
+| `brickadia_process_cpu_seconds_total` | counter | CPU consumed by the game process (Linux) |
+| `brickadia_process_resident_memory_bytes`, `brickadia_process_start_time_seconds`, `brickadia_process_open_fds` | gauge | Game process stats from `/proc` (Linux) |
+
+World stats come from a `Server.Status` console command, cached and refreshed at
+most once per `statusMaxAge` seconds however many servers scrape. A scrape
+serves the cache and refreshes in the background, so an unresponsive game reads
+`brickadia_up 0` instead of stalling the scrape. Any integer line in the status
+header is exported as `brickadia_<name>_count`, so stats a future build starts
+reporting appear on their own.
+
+### Omegga metrics
+
+| metric | type | description |
+| --- | --- | --- |
+| `omegga_build_info` | gauge | Version, node version, platform, containerized; always `1` |
+| `omegga_up`, `omegga_start_time_seconds` | gauge | Liveness and start time |
+| `omegga_webserver_up` | gauge | Whether the web UI is serving |
+| `omegga_plugins_scanned`, `omegga_plugins_enabled`, `omegga_plugins_loaded` | gauge | Plugin counts |
+| `omegga_plugin_info`, `omegga_plugin_loaded`, `omegga_plugin_enabled` | gauge | Per-plugin state, labelled by `plugin` |
+| `omegga_uncaught_exceptions_total` | counter | Exceptions reaching the process handler |
+| `omegga_unhandled_rejections_total` | counter | Promise rejections reaching the process handler |
+| `omegga_plugin_errors_total` | counter | Plugin load, unload, and runtime failures, by `plugin` |
+| `omegga_plugin_metrics_series` | gauge | Series each plugin is exporting |
+| `omegga_plugin_metrics_dropped_total`, `omegga_plugin_metrics_errors_total` | counter | Plugin metrics hitting the limits, or whose `collect()` threw |
+| `omegga_metrics_collect_errors_total` | counter | Omegga's own collectors that threw and were skipped |
+| `omegga_host_cpu_ratio`, `omegga_host_memory_*`, `omegga_host_disk_*` | gauge | Host utilization (sampled by the web UI heartbeat; absent when it is off) |
+| `omegga_host_network_receive_bytes_total`, `omegga_host_network_transmit_bytes_total` | counter | Host network totals (Linux) |
+| `omegga_scrapes_total`, `omegga_scrape_duration_seconds` | counter, histogram | The endpoint's own stats |
+
+Omegga exits after an uncaught exception, so a scrape usually will not catch
+`omegga_uncaught_exceptions_total` incrementing; the target going down is the
+signal. `omegga_plugin_errors_total` keeps a series for plugins that have since
+unloaded, so a crash loop stays visible.
+
+With `defaultMetrics: true` (the default) the standard `process_*` and
+`nodejs_*` metrics are included under their conventional names.
+
+### Plugin metrics
+
+Plugins get a `metrics` object as a fourth constructor argument, alongside
+`store`. Everything registered is exported as
+`omegga_plugin_<plugin>_<metric>`, with the plugin's real name as a `plugin`
+label.
+
+```ts
+import OmeggaPlugin, { OL, PS, PC, PM } from 'omegga';
+
+export default class Plugin implements OmeggaPlugin<Config, Storage> {
+  omegga: OL;
+  config: PC<Config>;
+  store: PS<Storage>;
+  metrics: PM;
+
+  constructor(omegga: OL, config: PC<Config>, store: PS<Storage>, metrics: PM) {
+    this.omegga = omegga;
+    this.config = config;
+    this.store = store;
+    this.metrics = metrics;
+  }
+
+  async init() {
+    // omegga_plugin_my_plugin_kills_total{plugin="my plugin",weapon="pistol"}
+    const kills = this.metrics.counter({
+      name: 'kills_total',
+      help: 'Kills by weapon',
+      labels: ['weapon'],
+    });
+    this.omegga.on('cmd:kill', () => kills.inc({ weapon: 'pistol' }));
+
+    // gauges push with set()/inc()/dec() or pull with collect()
+    this.metrics
+      .gauge({ name: 'queue_size', help: 'Queued' })
+      .collect(() => this.queue.length);
+
+    // histograms observe values, or time a block
+    const done = this.metrics
+      .histogram({ name: 'lookup_seconds', help: 'Lookups', buckets: [0.1, 1] })
+      .startTimer();
+    await this.lookup();
+    done();
+  }
+}
+```
+
+A plugin's metrics are dropped when it unloads *or crashes*, so a dead plugin's
+last values are never scraped as if live. A `collect()` that throws leaves that
+metric at its last value and bumps `omegga_plugin_metrics_errors_total`, without
+affecting the rest of the scrape. Worker and RPC plugin metrics render from the
+last snapshot the host received and run no plugin code during a scrape, so a
+hung plugin goes stale rather than delaying it.
+
+**Limits.** At most 64 metrics per plugin, 1000 label combinations each, 8 label
+names. Going over yields a no-op handle or a dropped series, counted by
+`omegga_plugin_metrics_dropped_total`. Those limits are a backstop, not a
+licence: **never label with a player name, ID, brick, or position.** Label
+with things you can enumerate ahead of time.
+
+**RPC plugins** push a `metrics` notification carrying the same snapshot, as
+often as they like:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "method": "metrics",
+  "params": [
+    {
+      "type": "counter",
+      "name": "omegga_plugin_my_plugin_kills_total",
+      "help": "Kills by weapon",
+      "samples": [{ "labels": { "weapon": "pistol" }, "value": 12 }]
+    }
+  ]
+}
+```
+
+Histogram families also carry `buckets` (ascending upper bounds); their samples
+carry `counts` (one per bucket plus a trailing `+Inf` slot, not cumulative),
+`sum`, and `count`. Names must start with the plugin's own prefix.

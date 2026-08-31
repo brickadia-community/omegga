@@ -159,7 +159,7 @@ export const pluginRouter = router({
             plugin.getName().yellow,
           );
           return true;
-        } catch (e) {
+        } catch {
           error(
             'Error',
             input.enabled ? 'enabling'.green : 'disabling'.red,

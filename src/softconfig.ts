@@ -8,6 +8,18 @@ export const GLOBAL_TOKEN = path.join(CONFIG_HOME, 'global_auth_token');
 
 export const DEFAULT_PORT = 8080;
 
+// prometheus metrics endpoint defaults. it binds to loopback because the
+// endpoint is unauthenticated unless a token is configured
+export const METRICS_DEFAULTS = {
+  bind: '127.0.0.1',
+  port: 9000,
+  path: '/metrics',
+  /** seconds a cached server status may age before a scrape refreshes it */
+  statusMaxAge: 15,
+  /** how often a plugin worker ships its metric snapshot to the host */
+  pluginFlushInterval: 5000,
+};
+
 // filenames that omegga searches for
 // extensions are added based on the available config formats
 export const CONFIG_FILENAMES = [
@@ -96,6 +108,7 @@ export default {
   PROJECT_NAME,
   CONFIG_HOME,
   DEFAULT_PORT,
+  METRICS_DEFAULTS,
   CONFIG_FILENAMES,
   BRICKADIA_INSTALLS,
   LOCAL_LAUNCHER,

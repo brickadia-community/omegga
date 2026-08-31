@@ -4,10 +4,13 @@
 // rather than unloading and reloading code
 
 import Logger from '@/logger';
+import { NOOP_PLUGIN_METRICS, PluginMetricsFacade } from '@/metrics/plugin';
+import { PLUGIN_LIMITS, Registry } from '@/metrics/registry';
 import OmeggaPlugin, {
   OmeggaLike,
   PluginConfig,
   PluginInterop,
+  PluginMetrics,
   PluginStore,
 } from '@/plugin';
 import Player from '@omegga/player';
@@ -36,6 +39,7 @@ let vm: NodeVM | undefined,
           omegga: OmeggaLike,
           config: PluginConfig,
           store: PluginStore,
+          metrics: PluginMetrics,
         ): OmeggaPlugin;
       }
     | undefined,
@@ -92,6 +96,35 @@ omegga.getPlugin = async name => {
     return plugin;
   } else {
     return null;
+  }
+};
+
+/*
+  Plugin metrics live in this worker, not in the host: writes are local and
+  cheap, and the host only ever receives a periodic snapshot. That keeps the
+  scrape path free of any dependency on this worker being responsive - a stuck
+  plugin's metrics go stale rather than stalling prometheus.
+*/
+const metricsRegistry = new Registry(PLUGIN_LIMITS);
+let metrics: PluginMetrics = NOOP_PLUGIN_METRICS;
+let metricsFlush: ReturnType<typeof setInterval> | undefined;
+let lastSnapshot = '';
+
+const flushMetrics = () => {
+  try {
+    const snapshot = metricsRegistry.snapshot();
+    // gauges with collect callbacks change on their own, so compare the
+    // rendered snapshot rather than tracking writes
+    const serialized = JSON.stringify(snapshot);
+    if (serialized === lastSnapshot) return;
+    lastSnapshot = serialized;
+    emit('metrics.snapshot', snapshot).catch(() => {});
+  } catch (err) {
+    Logger.errorp(
+      pluginName.brightRed,
+      'error collecting metrics',
+      errStr(err),
+    );
   }
 };
 
@@ -425,6 +458,19 @@ parent.on('name', (resp, name) => {
   emit(resp);
 });
 
+// enable metrics. The host sends this only when the endpoint is on, so
+// plugins on a server without metrics keep the no-op facade and cost nothing
+parent.on('metrics.enable', (resp, flushInterval: number) => {
+  metrics = new PluginMetricsFacade(metricsRegistry, pluginName, message =>
+    Logger.warnp(pluginName.brightYellow, message),
+  );
+  clearInterval(metricsFlush);
+  metricsFlush = setInterval(flushMetrics, flushInterval);
+  // the worker must never be held open by a metrics timer
+  metricsFlush.unref();
+  emit(resp);
+});
+
 // get memory usage for this plugin
 parent.on('mem', resp => emit(resp, 'mem', process.memoryUsage()));
 
@@ -446,7 +492,12 @@ parent.on('load', async (resp, pluginPath, options) => {
 parent.on('start', async (resp, config) => {
   try {
     if (!PluginClass) throw new Error('plugin is not loaded');
-    pluginInstance = new PluginClass(omegga as any as Omegga, config, store);
+    pluginInstance = new PluginClass(
+      omegga as any as Omegga,
+      config,
+      store,
+      metrics,
+    );
     const result = await pluginInstance.init();
     // if a plugin init returns a list of strings, treat them as the list of commands
     if (typeof result === 'object' && result) {
@@ -479,6 +530,10 @@ parent.on('stop', async resp => {
       await pluginInstance.stop.bind(pluginInstance)();
     }
     pluginInstance = undefined;
+    clearInterval(metricsFlush);
+    metricsFlush = undefined;
+    metricsRegistry.clear();
+    lastSnapshot = '';
     emit(resp, true);
   } catch (err) {
     emit('error', 'error stopping plugin', errStr(err));

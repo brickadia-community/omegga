@@ -23,6 +23,11 @@ import { type IConfig } from '@config/types';
 import { map as mapUtils, pattern, uuid } from '@util';
 import { readBrdbRevisions } from '@util/brdb';
 import { copyFiles, mkdir, readWatchedJSON } from '@util/file';
+import MetricsServer from '@/metrics';
+import {
+  recordUncaughtException,
+  recordUnhandledRejection,
+} from '@/metrics/errors';
 import Webserver from '@webserver/backend';
 import brs, {
   WorldReader,
@@ -233,6 +238,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   pluginLoader: PluginLoader | undefined = undefined;
   // undefined when the web ui is disabled (--noweb)
   webserver: Webserver | undefined;
+  // undefined unless metrics.enabled is set in the config
+  metrics: MetricsServer | undefined;
 
   verbose: boolean;
   savePath: string;
@@ -349,6 +356,13 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       this.webserver = new Webserver(cfg.omegga ?? {}, this);
     }
 
+    // the prometheus endpoint is independent of the web ui, so that metrics
+    // still work with `omegga.webui: false`
+    if (cfg.metrics?.enabled) {
+      Logger.verbose('Creating metrics server');
+      this.metrics = new MetricsServer(this, cfg.metrics);
+    }
+
     if (!options.noplugin) {
       Logger.verbose('Creating plugin loader');
       this.pluginLoader = new PluginLoader(this.path, this);
@@ -378,6 +392,15 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       this.addMatcher(pattern, callback);
     }
 
+    // Node's default for an unhandled rejection is to throw, which lands in the
+    // uncaughtException handler below. Registering a listener here suppresses
+    // that default, so this one rethrows to keep omegga's crash behaviour
+    // exactly as it was; the rejection is counted on its way through.
+    process.on('unhandledRejection', err => {
+      recordUnhandledRejection();
+      throw err;
+    });
+
     let handlingException = false;
     process.on('uncaughtException', async err => {
       // an exception thrown while handling one (a closed terminal, a broken
@@ -388,6 +411,8 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         process.exit(1);
       }
       handlingException = true;
+
+      recordUncaughtException();
 
       try {
         Logger.verbose('Uncaught exception', err);
@@ -597,6 +622,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       this.emit('version', binVersion);
     }
 
+    // started before the webserver so a port clash surfaces early, and before
+    // plugins so their metric registrations have somewhere to land
+    if (this.metrics) await this.metrics.start();
     if (this.webserver) await this.webserver.start();
     if (this.pluginLoader) {
       // scan for plugins
@@ -1235,7 +1263,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         },
       );
       return match?.[0]?.['res'] ?? false;
-    } catch (err) {
+    } catch {
       return false;
     }
   }
@@ -1265,7 +1293,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         },
       );
       return match?.[0]?.['res'] ?? false;
-    } catch (err) {
+    } catch {
       return false;
     }
   }
@@ -1298,7 +1326,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         },
       );
       return match?.[0]?.['res'] ?? false;
-    } catch (err) {
+    } catch {
       return false;
     }
   }

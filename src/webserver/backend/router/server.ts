@@ -201,7 +201,7 @@ export const serverRouter = router({
           ctx.log('Updating server...');
           let ok = false;
           try {
-            steamcmdDownloadGame({
+            await steamcmdDownloadGame({
               steambeta: omegga.config.server?.steambeta,
               steambetaPassword: omegga.config.server?.steambetaPassword,
             });

@@ -1,5 +1,6 @@
 /// <reference path="./disrequire.d.ts" />
 import Logger from '@/logger';
+import { recordPluginError } from '@/metrics/errors';
 import OmeggaPlugin, { type PluginStore } from '@/plugin';
 import type Omegga from '@omegga/server';
 import * as util from '@util';
@@ -110,11 +111,13 @@ export default class NodePlugin extends Plugin {
         keys: () => this.storage.keys(),
       };
 
-      // create the loaded plugin
+      // unsafe plugins run in omegga's own process, so their metrics facade
+      // writes straight into the host registry
       const loadedPlugin: OmeggaPlugin = new (Plugin as any)(
         this.omegga,
         config,
         store,
+        this.metrics,
       );
       this.loadedPlugin = loadedPlugin;
 
@@ -138,6 +141,7 @@ export default class NodePlugin extends Plugin {
       this.emitStatus();
       return true;
     } catch (e) {
+      recordPluginError(this.getName());
       Logger.errorp('error loading node plugin', this.getName(), e);
       this.emitStatus();
       return false;
@@ -160,10 +164,12 @@ export default class NodePlugin extends Plugin {
       // unload the plugin
       this.disrequireAll();
       this.loadedPlugin = undefined;
+      this.dropMetrics();
       this.emitStatus();
       this.commands = [];
       return true;
     } catch (e) {
+      recordPluginError(this.getName());
       Logger.errorp('error unloading node plugin', this.getName(), e);
       this.emitStatus();
       return false;
