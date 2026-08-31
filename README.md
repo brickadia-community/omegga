@@ -1243,7 +1243,8 @@ bind off-loopback without a token.
 | metric | type | description |
 | --- | --- | --- |
 | `brickadia_server_info` | gauge | Build and config as labels (`version`, `server_name`, `map`, `steambeta`, `port`); always `1` |
-| `brickadia_up` | gauge | `1` when the game is running and answering status commands |
+| `brickadia_up` | gauge | `1` when the game is running with a map loaded, from its start/stop log events |
+| `brickadia_status_responsive` | gauge | `1` when the last status poll was answered; absent until one is attempted |
 | `brickadia_server_state` | gauge | State set: `1` on the active `state` of `starting`/`running`/`stopping`/`stopped`/`updating` |
 | `brickadia_starting`, `brickadia_stopping`, `brickadia_updating` | gauge | The same states as flat booleans, easier to alert on |
 | `brickadia_uptime_seconds`, `brickadia_start_time_seconds` | gauge | Uptime and last start |

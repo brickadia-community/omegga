@@ -50,6 +50,8 @@ class StatusCache {
   status: IServerStatus | null = null;
   updatedAt = 0;
   failures = 0;
+  /** whether the most recent poll answered; null until one has been attempted */
+  lastPollOk: boolean | null = null;
   /** seconds the last poll took, for the duration histogram */
   onPoll: ((seconds: number) => void) | undefined;
 
@@ -79,12 +81,18 @@ class StatusCache {
     try {
       const status = await this.omegga.getServerStatus();
       this.onPoll?.(Number(process.hrtime.bigint() - start) / 1e9);
-      if (status) this.offer(status);
-      else this.failures++;
+      if (status) {
+        this.offer(status);
+        this.lastPollOk = true;
+      } else {
+        this.failures++;
+        this.lastPollOk = false;
+      }
     } catch {
-      // a timed-out status means the game is not answering; that is data, and
-      // `brickadia_up` reports it
+      // a timed-out status means the game stopped answering console commands,
+      // which `brickadia_status_responsive` reports
       this.failures++;
+      this.lastPollOk = false;
     } finally {
       this.inFlight = null;
     }
@@ -195,12 +203,19 @@ export function registerBrickadiaMetrics(
   registry
     .gauge({
       name: 'brickadia_up',
-      help: 'Whether the Brickadia server is running and answering status commands',
+      help: 'Whether the Brickadia server is running with a map loaded',
+    })
+    .collect(() => (omegga.started && !omegga.stopping ? 1 : 0));
+
+  registry
+    .gauge({
+      name: 'brickadia_status_responsive',
+      help: 'Whether the last server status poll was answered',
     })
     .collect(() => {
-      if (!omegga.started || omegga.stopping) return 0;
-      // one missed poll is normal jitter; two means it stopped answering
-      return cache.ageMs < maxAgeMs * 2 ? 1 : 0;
+      if (!omegga.started || omegga.stopping) return [];
+      // absent rather than 0 until a poll has actually been attempted
+      return cache.lastPollOk === null ? [] : cache.lastPollOk ? 1 : 0;
     });
 
   registry
