@@ -1,6 +1,6 @@
 import _debounce from 'lodash/debounce';
 
-export interface DebouncedFunc<T extends (...args: any[]) => any> {
+export interface DebouncedFunc<T extends (...args: never[]) => unknown> {
   /**
    * Call the original function, but applying the debounce rules.
    *
@@ -26,7 +26,7 @@ export interface DebouncedFunc<T extends (...args: any[]) => any> {
    */
   flush(): ReturnType<T> | undefined;
 }
-export interface DebouncedFuncLeading<T extends (...args: any[]) => any>
+export interface DebouncedFuncLeading<T extends (...args: never[]) => unknown>
   extends DebouncedFunc<T> {
   (...args: Parameters<T>): ReturnType<T>;
   flush(): ReturnType<T>;
@@ -40,12 +40,12 @@ export interface DebounceSettingsLeading extends DebounceSettings {
   leading: true;
 }
 export const debounce:
-  | (<T extends (...args: any) => any>(
+  | (<T extends (...args: never[]) => unknown>(
       func: T,
       wait: number | undefined,
       options?: DebounceSettingsLeading,
     ) => DebouncedFuncLeading<T>)
-  | (<T extends (...args: any) => any>(
+  | (<T extends (...args: never[]) => unknown>(
       func: T,
       wait?: number,
       options?: DebounceSettings,

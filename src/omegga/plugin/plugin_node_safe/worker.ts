@@ -61,7 +61,7 @@ const errStr = (e: unknown): string =>
 port.on('message', ({ action, args }) => parent.emit(action, ...args));
 
 // emit a message to the parent port - async wait for a reponse
-const emit = (action: string, ...args: any[]) => {
+const emit = (action: string, ...args: unknown[]) => {
   const messageId = 'message:' + messageCounter++;
 
   // promise waits for the message to resolve
@@ -87,10 +87,10 @@ const omegga = new ProxyOmegga(exec);
 // add plugin fetcher
 omegga.getPlugin = async name => {
   const plugin = (await emit('getPlugin', name)) as PluginInterop & {
-    emitPlugin(event: string, ...args: any[]): Promise<any>;
+    emitPlugin(event: string, ...args: unknown[]): Promise<any>;
   };
   if (plugin) {
-    plugin.emitPlugin = async (ev: string, ...args: any[]) => {
+    plugin.emitPlugin = async (ev: string, ...args: unknown[]) => {
       return await emit('emitPlugin', name, ev, cloneDeep(args));
     };
     return plugin;
@@ -375,7 +375,7 @@ async function createVm(
       name: string,
       symbol: string,
     ) =>
-    (...args: any[]) =>
+    (...args: unknown[]) =>
       console[logFn](name.underline, symbol, ...args);
 
   // special formatting for stdout

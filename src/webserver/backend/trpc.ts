@@ -28,8 +28,8 @@ export type Context = {
   user: IStoreUser & { id: string; _id: string };
   req: import('express').Request;
   userAbort: AbortController;
-  log: (...args: any[]) => void;
-  error: (...args: any[]) => void;
+  log: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
 };
 
 export async function createContext(
@@ -38,7 +38,7 @@ export async function createContext(
   const { database } = getContextDeps();
   const req = opts.req;
 
-  const session = (req as any).session;
+  const session = req.session;
   if (session?.mfaPending) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
@@ -74,8 +74,8 @@ export async function createContext(
     get userAbort() {
       return getUserAbort();
     },
-    log: (...args: any[]) => Logger.logp(usernameText, ...args),
-    error: (...args: any[]) => Logger.errorp(usernameText, ...args),
+    log: (...args: unknown[]) => Logger.logp(usernameText, ...args),
+    error: (...args: unknown[]) => Logger.errorp(usernameText, ...args),
   };
 }
 

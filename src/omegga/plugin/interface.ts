@@ -123,7 +123,11 @@ export class Plugin {
   }
 
   // emit a custom event from another plugin
-  async emitPlugin(_ev: string, _from: string, _args: any[]): Promise<any> {}
+  async emitPlugin(
+    _ev: string,
+    _from: string,
+    _args: unknown[],
+  ): Promise<any> {}
 
   // get the plugin name, usually based on documentation data
   getName() {

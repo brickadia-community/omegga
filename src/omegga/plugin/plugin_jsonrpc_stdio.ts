@@ -80,7 +80,8 @@ export default class RpcPlugin extends Plugin {
   // spawn the plugin as a child process
   async load() {
     const name = this.getName();
-    const verbose = (...msg: any[]) => Logger.verbose(name.underline, ...msg);
+    const verbose = (...msg: unknown[]) =>
+      Logger.verbose(name.underline, ...msg);
     verbose('Load method invoked');
     let frozen = true,
       timed = false;
@@ -373,7 +374,7 @@ export default class RpcPlugin extends Plugin {
     this.emitStatus();
   }
 
-  eventPassthrough(type: string, ...args: any[]) {
+  eventPassthrough(type: string, ...args: unknown[]) {
     if (!this.#child) return;
     this.notify(type, args);
   }
@@ -819,7 +820,7 @@ export default class RpcPlugin extends Plugin {
 
     rpc.addMethod(
       'plugin.emit',
-      async ([name, event, ...args]: [string, string, ...any[]]) => {
+      async ([name, event, ...args]: [string, string, ...unknown[]]) => {
         const plugin = this.server.pluginLoader?.plugins.find(
           p => p.getName() === name,
         );
@@ -836,17 +837,17 @@ export default class RpcPlugin extends Plugin {
   }
 
   // emit a custom plugin event
-  async emitPlugin(event: string, from: string, args: any[]) {
+  async emitPlugin(event: string, from: string, args: unknown[]) {
     return await this.emit('plugin:emit', [event, from, ...args]);
   }
 
   // emit a message to the plugin via the jsonrpc client and expect a response
-  emit(type: string, arg?: any) {
+  emit(type: string, arg?: unknown) {
     return this.#rpc.request(type, arg);
   }
 
   // emit a message to the plugin via the jsonrpc client, don't expect a response
-  notify(type: string, arg?: any) {
+  notify(type: string, arg?: unknown) {
     try {
       this.#rpc.notify(type, arg);
     } catch {

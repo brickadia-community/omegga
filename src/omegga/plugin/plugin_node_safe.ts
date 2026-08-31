@@ -231,8 +231,8 @@ export default class NodeVmPlugin extends Plugin {
   }
 
   // emit a custom plugin event
-  async emitPlugin(ev: string, from: string, args: any[]) {
-    const [r]: any[] = await this.emit('emitPlugin', ev, from, args);
+  async emitPlugin(ev: string, from: string, args: unknown[]) {
+    const [r]: unknown[] = await this.emit('emitPlugin', ev, from, args);
     return r;
   }
 
@@ -411,7 +411,7 @@ export default class NodeVmPlugin extends Plugin {
   }
 
   // emit an action to the worker and return a promise with its response
-  emit(action: string, ...args: any[]): Promise<unknown[]> {
+  emit(action: string, ...args: unknown[]): Promise<unknown[]> {
     // no worker means no response; callers treat empty results as failure
     if (!this.#worker) return Promise.resolve([]);
 
@@ -437,7 +437,7 @@ export default class NodeVmPlugin extends Plugin {
   }
 
   // notify a response to the worker
-  notify(action: string, ...args: any[]) {
+  notify(action: string, ...args: unknown[]) {
     if (!this.#worker) return;
 
     // post the message
@@ -517,7 +517,7 @@ export default class NodeVmPlugin extends Plugin {
     return worker;
   }
 
-  eventPassthrough(...args: any[]) {
+  eventPassthrough(...args: unknown[]) {
     // worker does not exist
     if (!this.#worker) return;
 

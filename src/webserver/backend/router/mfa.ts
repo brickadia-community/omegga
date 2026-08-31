@@ -4,6 +4,7 @@ import QRCode from 'qrcode';
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
+  type AuthenticatorTransportFuture,
 } from '@simplewebauthn/server';
 import { z } from 'zod/v4';
 import { ScopeName } from '../scopes';
@@ -20,7 +21,10 @@ function getRpID(req: import('express').Request): string {
   return req.hostname;
 }
 
-async function requirePassword(ctx: any, password: string): Promise<boolean> {
+async function requirePassword(
+  ctx: { user: { hash: string } },
+  password: string,
+): Promise<boolean> {
   return bcrypt.compare(password, ctx.user.hash);
 }
 
@@ -51,8 +55,8 @@ export const mfaRouter = router({
           const uri = generateURI(secret, ctx.user.username || 'Admin');
           const qrCode = await QRCode.toDataURL(uri);
           // store secret in session so enable can't accept arbitrary secrets
-          (ctx.req as any).session.pendingTotpSecret = secret;
-          (ctx.req as any).session.save();
+          ctx.req.session.pendingTotpSecret = secret;
+          ctx.req.session.save();
           return { secret, uri, qrCode };
         }),
 
@@ -60,14 +64,14 @@ export const mfaRouter = router({
         .input(z.object({ code: z.string() }))
         .mutation(async ({ input, ctx }) => {
           const { database } = getContextDeps();
-          const secret = (ctx.req as any).session.pendingTotpSecret;
+          const secret = ctx.req.session.pendingTotpSecret;
           if (!secret) return 'no pending TOTP setup';
           if (!verifyToken(input.code, secret)) {
             return 'invalid code';
           }
           await database.setUserTotp(ctx.user.username, secret, true);
-          delete (ctx.req as any).session.pendingTotpSecret;
-          (ctx.req as any).session.save();
+          delete ctx.req.session.pendingTotpSecret;
+          ctx.req.session.save();
           return '';
         }),
 
@@ -93,15 +97,15 @@ export const mfaRouter = router({
             userName: ctx.user.username || 'Admin',
             excludeCredentials: (ctx.user.passkeys ?? []).map(p => ({
               id: p.id,
-              transports: p.transports as any,
+              transports: p.transports as AuthenticatorTransportFuture[],
             })),
             authenticatorSelection: {
               residentKey: 'preferred',
               userVerification: 'preferred',
             },
           });
-          (ctx.req as any).session.mfaChallenge = options.challenge;
-          (ctx.req as any).session.save();
+          ctx.req.session.mfaChallenge = options.challenge;
+          ctx.req.session.save();
           return options;
         },
       ),
@@ -115,11 +119,11 @@ export const mfaRouter = router({
         )
         .mutation(async ({ input, ctx }) => {
           const { database } = getContextDeps();
-          const challenge = (ctx.req as any).session.mfaChallenge;
+          const challenge = ctx.req.session.mfaChallenge;
           if (!challenge) return 'no pending challenge';
           // clear challenge immediately to prevent replay
-          delete (ctx.req as any).session.mfaChallenge;
-          (ctx.req as any).session.save();
+          delete ctx.req.session.mfaChallenge;
+          ctx.req.session.save();
           try {
             const verification = await verifyRegistrationResponse({
               response: input.credential,
