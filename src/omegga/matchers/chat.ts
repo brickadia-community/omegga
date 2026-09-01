@@ -7,12 +7,18 @@ const chat: MatchGenerator<{
   kicker?: string;
   reason?: string;
   message?: string;
+  duration?: string;
 }> = omegga => {
   // pattern to get PlayerController from a leave message
   const chatRegExp =
     /^\[SenderId: (?<userId>[^\]]+)\] (?<name>.+?): (?<message>.+)$/;
   const kickRegExp =
     /^(?<name>.+?) was kicked by (?<kicker>.+?) \((?<reason>.+?)\)$/;
+  // `Someone was banned by Admin (griefing), expires in 1 minute`. The expiry
+  // clause is optional because only the timed form has been observed, and a
+  // permanent ban has no expiry to report.
+  const banRegExp =
+    /^(?<name>.+?) was banned by (?<kicker>.+?) \((?<reason>.+?)\)(?:, expires in (?<duration>.+))?$/;
 
   const exists = (name: string, id?: string) =>
     id
@@ -43,6 +49,7 @@ const chat: MatchGenerator<{
       // match the chat log to the chat message pattern
       const chatMatch = data.match(chatRegExp);
       const kickMatch = data.match(kickRegExp);
+      const banMatch = data.match(banRegExp);
 
       if (chatMatch?.groups) {
         let { userId: id, name, message } = chatMatch.groups;
@@ -64,10 +71,22 @@ const chat: MatchGenerator<{
         if (!exists(name) || !exists(kicker)) return;
 
         return { type: 'kick', name, kicker, reason };
+      } else if (banMatch?.groups) {
+        let { name, kicker, reason } = banMatch.groups;
+        const { duration } = banMatch.groups;
+        name = sanitizeName(name);
+        kicker = sanitizeName(kicker);
+        reason = sanitizeMsg(reason);
+
+        // unlike a kick, a ban can name someone who is not connected, so the
+        // banned player is deliberately not checked against the player list
+        if (!exists(kicker)) return;
+
+        return { type: 'ban', name, kicker, reason, duration };
       }
     },
     // when there's a match, emit the chat message event
-    callback({ type, id, name, kicker, message, reason }) {
+    callback({ type, id, name, kicker, message, reason, duration }) {
       if (type === 'chat') {
         const player = omegga.players.find(p => p.id === id);
         // Use the player's non-display-name if available
@@ -84,6 +103,8 @@ const chat: MatchGenerator<{
         }
       } else if (type === 'kick') {
         omegga.emit('kick', name, kicker, reason);
+      } else if (type === 'ban') {
+        omegga.emit('ban', name, kicker, reason, duration);
       }
     },
   };

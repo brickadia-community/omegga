@@ -16,6 +16,7 @@ import {
   getUpdateCount,
   isUpdatingGame,
 } from '@/updater/steam';
+import { parseBrickadiaTime } from '@util/time';
 import { type Registry, type ScalarSample } from '../registry';
 
 /** how long a scrape will wait for the very first status, in ms */
@@ -295,6 +296,11 @@ export function registerBrickadiaMetrics(
     name: 'brickadia_players_kicked_total',
     help: 'Number of players kicked',
   });
+
+  const bans = registry.counter({
+    name: 'brickadia_players_banned_total',
+    help: 'Number of players banned',
+  });
   const chat = registry.counter({
     name: 'brickadia_chat_messages_total',
     help: 'Number of chat messages sent by players',
@@ -337,6 +343,7 @@ export function registerBrickadiaMetrics(
     uniqueJoins,
     leaves,
     kicks,
+    bans,
     chat,
     commands,
     unknownCommands,
@@ -417,6 +424,7 @@ export function registerBrickadiaMetrics(
   omegga.on('unknownCommand', () => unknownCommands.inc());
   omegga.on('interact', () => interactions.inc());
   omegga.on('kick', () => kicks.inc());
+  omegga.on('ban', () => bans.inc());
 
   omegga.on('join', (player: { id: string }) => {
     joins.inc();
@@ -462,6 +470,46 @@ export function registerBrickadiaMetrics(
       help: 'Maximum number of player slots',
     })
     .collect(() => cache.status?.maxPlayers ?? []);
+
+  /*
+    These sit alongside `brickadia_players_banned_total`, which counts the log
+    event. The counter says how many bans were issued; these say how many are in
+    force, which a counter cannot answer because bans expire and can be lifted.
+    BanList.json is watched and cached by omegga, so reading it per scrape costs
+    nothing.
+  */
+  const countBans = () => {
+    const list = omegga.getBanList()?.banList;
+    if (!list) return null;
+    const now = Date.now();
+    let active = 0;
+    let listed = 0;
+    for (const ban of Object.values(list)) {
+      listed++;
+      // matches the players view: a ban expiring no later than it was issued is
+      // permanent, otherwise it counts until its expiry passes
+      if (
+        ban.expires <= ban.created ||
+        (parseBrickadiaTime(ban.expires) ?? 0) > now
+      )
+        active++;
+    }
+    return { active, listed };
+  };
+
+  registry
+    .gauge({
+      name: 'brickadia_bans_active',
+      help: 'Players currently banned, counting permanent bans',
+    })
+    .collect(() => countBans()?.active ?? []);
+
+  registry
+    .gauge({
+      name: 'brickadia_bans_listed',
+      help: 'Entries in the ban list, including ones that have expired',
+    })
+    .collect(() => countBans()?.listed ?? []);
 
   registry
     .gauge({

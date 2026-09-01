@@ -1257,6 +1257,8 @@ bind off-loopback without a token.
 | `brickadia_players_joined_total` | counter | Player joins |
 | `brickadia_players_joined_unique_total` | counter | Distinct players since omegga started |
 | `brickadia_players_left_total`, `brickadia_players_kicked_total` | counter | Disconnects and kicks |
+| `brickadia_players_banned_total` | counter | Bans issued |
+| `brickadia_bans_active`, `brickadia_bans_listed` | gauge | Bans in force, and every ban list entry including expired ones |
 | `brickadia_player_playtime_seconds_total` | counter | Total player-seconds connected; accrues live, so in-progress sessions count |
 | `brickadia_chat_messages_total` | counter | Chat messages |
 | `brickadia_commands_total`, `brickadia_unknown_commands_total` | counter | Chat commands run |
