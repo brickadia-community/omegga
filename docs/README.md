@@ -1,4 +1,4 @@
-# Omegga
+# <img src="https://cdn.discordapp.com/emojis/615904012432310274.png" width="32"> Omegga
 
 Omegga wraps [Brickadia](https://brickadia.com/)'s server console to provide
 interactivity and utility via plugins along with a web interface for managing

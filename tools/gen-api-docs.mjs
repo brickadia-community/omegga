@@ -142,13 +142,15 @@ function tagsOf(node) {
 /** Collapse a type node down to one line of source text. */
 function typeText(node, source) {
   if (!node) return '';
-  return node
-    .getText(source)
-    // doc comments on the members of an inline object type
-    .replace(/\/\*\*[\s\S]*?\*\//g, '')
-    .replace(/\s*\n\s*/g, ' ')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+  return (
+    node
+      .getText(source)
+      // doc comments on the members of an inline object type
+      .replace(/\/\*\*[\s\S]*?\*\//g, '')
+      .replace(/\s*\n\s*/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+  );
 }
 
 /**
@@ -244,9 +246,7 @@ function renderMembers(members, source, out) {
         const pdesc = paragraphs(
           params.get(param.name.getText(source)) ?? '',
         ).replace(/\n+/g, ' ');
-        out.push(
-          `| \`${cell(pname)}\` | \`${cell(type)}\` | ${cell(pdesc)} |`,
-        );
+        out.push(`| \`${cell(pname)}\` | \`${cell(type)}\` | ${cell(pdesc)} |`);
       }
       out.push('');
     }
@@ -260,7 +260,8 @@ function renderMembers(members, source, out) {
 
 function declParams(node) {
   if (node.parameters) return [...node.parameters];
-  if (node.type && ts.isFunctionTypeNode(node.type)) return [...node.type.parameters];
+  if (node.type && ts.isFunctionTypeNode(node.type))
+    return [...node.type.parameters];
   return [];
 }
 
@@ -364,7 +365,12 @@ function renderPage(page, decls) {
     renderDeclaration(name, entry, decls, out);
   }
 
-  return out.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';
+  return (
+    out
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trimEnd() + '\n'
+  );
 }
 
 // ---------------------------------------------------------------- main

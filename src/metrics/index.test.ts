@@ -1,9 +1,10 @@
+import { type IMetricsConfig } from '@config/types';
+import type Omegga from '@omegga/server';
 import EventEmitter from 'node:events';
+import http from 'node:http';
 import { afterEach, describe, expect, it } from 'vitest';
 import MetricsServer from './index';
 import { CONTENT_TYPE } from './render';
-import type Omegga from '@omegga/server';
-import { type IMetricsConfig } from '@config/types';
 
 /** the slice of Omegga the collectors touch */
 function fakeOmegga(): Omegga {
@@ -49,6 +50,45 @@ async function listen(server: MetricsServer): Promise<number> {
     server as unknown as { server: { address(): { port: number } } }
   ).server.address();
   return address.port;
+}
+
+/**
+ * One connection per request, rather than fetch's pooled keep-alive sockets.
+ * Reusing a pooled socket races the server closing it: the next request is
+ * written onto a connection that is already being torn down, and no response
+ * ever comes back. It surfaces intermittently as
+ * `UND_ERR_SOCKET: other side closed`. `agent: false` opens and closes a
+ * socket per request, so there is nothing to reuse and nothing to race.
+ */
+function request(
+  url: string,
+  options: { method?: string; headers?: Record<string, string> } = {},
+): Promise<{
+  status: number;
+  headers: http.IncomingHttpHeaders;
+  body: string;
+}> {
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      url,
+      {
+        agent: false,
+        method: options.method ?? 'GET',
+        headers: options.headers,
+      },
+      res => {
+        let body = '';
+        res.setEncoding('utf8');
+        res.on('data', chunk => (body += chunk));
+        res.on('error', reject);
+        res.on('end', () =>
+          resolve({ status: res.statusCode ?? 0, headers: res.headers, body }),
+        );
+      },
+    );
+    req.on('error', reject);
+    req.end();
+  });
 }
 
 afterEach(async () => {
@@ -174,37 +214,37 @@ describe('MetricsServer http', () => {
   it('serves the exposition format on the metrics path', async () => {
     const server = makeServer();
     const port = await listen(server);
-    const res = await fetch(`http://127.0.0.1:${port}/metrics`);
+    const res = await request(`http://127.0.0.1:${port}/metrics`);
     expect(res.status).toBe(200);
-    expect(res.headers.get('content-type')).toBe(CONTENT_TYPE);
-    expect(await res.text()).toContain('omegga_up 1');
+    expect(res.headers['content-type']).toBe(CONTENT_TYPE);
+    expect(res.body).toContain('omegga_up 1');
   });
 
   it('answers HEAD with headers and no body', async () => {
     const server = makeServer();
     const port = await listen(server);
-    const res = await fetch(`http://127.0.0.1:${port}/metrics`, {
+    const res = await request(`http://127.0.0.1:${port}/metrics`, {
       method: 'HEAD',
     });
     expect(res.status).toBe(200);
-    expect(await res.text()).toBe('');
+    expect(res.body).toBe('');
   });
 
   it('ignores the query string when routing', async () => {
     const server = makeServer();
     const port = await listen(server);
-    const res = await fetch(`http://127.0.0.1:${port}/metrics?collect=all`);
+    const res = await request(`http://127.0.0.1:${port}/metrics?collect=all`);
     expect(res.status).toBe(200);
   });
 
   it('404s any other path or method', async () => {
     const server = makeServer();
     const port = await listen(server);
-    expect((await fetch(`http://127.0.0.1:${port}/`)).status).toBe(404);
-    expect((await fetch(`http://127.0.0.1:${port}/metrics/x`)).status).toBe(
+    expect((await request(`http://127.0.0.1:${port}/`)).status).toBe(404);
+    expect((await request(`http://127.0.0.1:${port}/metrics/x`)).status).toBe(
       404,
     );
-    const post = await fetch(`http://127.0.0.1:${port}/metrics`, {
+    const post = await request(`http://127.0.0.1:${port}/metrics`, {
       method: 'POST',
     });
     expect(post.status).toBe(404);
@@ -213,9 +253,11 @@ describe('MetricsServer http', () => {
   it('serves on a custom path', async () => {
     const server = makeServer({ path: '/internal/metrics' });
     const port = await listen(server);
-    expect((await fetch(`http://127.0.0.1:${port}/metrics`)).status).toBe(404);
+    expect((await request(`http://127.0.0.1:${port}/metrics`)).status).toBe(
+      404,
+    );
     expect(
-      (await fetch(`http://127.0.0.1:${port}/internal/metrics`)).status,
+      (await request(`http://127.0.0.1:${port}/internal/metrics`)).status,
     ).toBe(200);
   });
 
@@ -224,16 +266,16 @@ describe('MetricsServer http', () => {
     const port = await listen(server);
     const url = `http://127.0.0.1:${port}/metrics`;
 
-    const noAuth = await fetch(url);
+    const noAuth = await request(url);
     expect(noAuth.status).toBe(401);
-    expect(noAuth.headers.get('www-authenticate')).toBe('Bearer');
+    expect(noAuth.headers['www-authenticate']).toBe('Bearer');
 
-    const wrong = await fetch(url, {
+    const wrong = await request(url, {
       headers: { authorization: 'Bearer nope!!' },
     });
     expect(wrong.status).toBe(401);
 
-    const right = await fetch(url, {
+    const right = await request(url, {
       headers: { authorization: 'Bearer sekrit' },
     });
     expect(right.status).toBe(200);
@@ -253,7 +295,7 @@ describe('MetricsServer http', () => {
     const port = await listen(server);
     await server.stop();
     expect(server.started).toBe(false);
-    await expect(fetch(`http://127.0.0.1:${port}/metrics`)).rejects.toThrow();
+    await expect(request(`http://127.0.0.1:${port}/metrics`)).rejects.toThrow();
   });
 });
 
