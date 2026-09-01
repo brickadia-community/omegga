@@ -2,6 +2,11 @@
 
 Release tags publish an image to `ghcr.io/brickadia-community/omegga`.
 
+To run that image under a Pterodactyl panel instead of directly, see
+[Pterodactyl](guides/pterodactyl.md). Wings imposes its own user, working
+directory, and console behaviour, and the egg in `docker/pterodactyl` handles
+them.
+
 ```sh
 docker run -it --rm \
   -v omegga-home:/home/steam \
@@ -12,7 +17,7 @@ docker run -it --rm \
   ghcr.io/brickadia-community/omegga
 ```
 
-Generate a hosting token at https://brickadia.com/account/tokens; without one omegga stops at an interactive auth prompt on first start. Arguments are passed through, so `omegga --debug` and `bash` both work in place of the default command. Omegga handles `SIGINT` and `SIGTERM`, so ctrl+c and `docker stop` shut down gracefully - add `--init` if you also want zombie reaping.
+Generate a hosting token at https://brickadia.com/account/tokens. Without one omegga falls back to an interactive auth prompt, which needs a tty: it stops there under `docker run -it`, and exits with the token URL when there is no tty to prompt on. Set `OMEGGA_NONINTERACTIVE=true` to get that same refusal on a host that does allocate a tty but cannot answer an arrow-key prompt. Arguments are passed through, so `omegga --debug` and `bash` both work in place of the default command. Omegga handles `SIGINT` and `SIGTERM`, so ctrl+c and `docker stop` shut down gracefully - add `--init` if you also want zombie reaping.
 
 Omegga is baked into the image, so it updates by pulling a new one rather than through npm:
 

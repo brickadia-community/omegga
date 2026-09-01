@@ -1,0 +1,147 @@
+{
+    "_comment": "Omegga: Brickadia server wrapper, automator, and plugin runner. https://github.com/brickadia-community/omegga",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2026-09-01T16:08:01+00:00",
+    "name": "Omegga",
+    "author": "cake@brickadia.dev",
+    "description": "Omegga wraps a Brickadia server to provide interactivity and utility via plugins, along with a web interface for managing the server. Brickadia is downloaded through steamcmd on first start.",
+    "features": [
+        "steam_disk_space"
+    ],
+    "docker_images": {
+        "Omegga (latest)": "ghcr.io/brickadia-community/omegga:latest",
+        "Omegga 1.16": "ghcr.io/brickadia-community/omegga:1.16"
+    },
+    "file_denylist": [
+        ".config/omegga/global_auth_token"
+    ],
+    "startup": "if [ -z \"${BRICKADIA_TOKEN}\" ]; then echo \"!> BRICKADIA_TOKEN is empty. Generate a server hosting token at https://brickadia.com/account/tokens, paste it into the \\\"Brickadia hosting token\\\" field on the Startup tab, and start the server again.\"; exit 1; fi; BRICKADIA_PORT={{SERVER_PORT}} OMEGGA_UI_HOST={{SERVER_IP}} omegga {{OMEGGA_FLAGS}}",
+    "config": {
+        "files": "{\"omegga-config.yml\": {\"parser\": \"yaml\", \"find\": {\"server.port\": \"{{server.build.default.port}}\", \"omegga.port\": \"{{env.OMEGGA_PORT}}\"}}}",
+        "startup": "{\"done\": \"Server has started\"}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\n# Runs in a throwaway container with the server volume mounted at /mnt/server,\n# which Wings later presents to the server as /home/container.\n#\n# Omegga creates omegga-config.yml, data/, and plugins/ on its own at first\n# start, so all this does is create them ahead of time; the config is\n# then editable from the file manager before the server has ever booted.\n#\n# Brickadia itself is deliberately NOT downloaded here. Omegga pulls it through\n# steamcmd on first start (~800MB, app 3017590, anonymous login) into $HOME.\n# Doing it here instead would download it as root into the install container's\n# own $HOME and throw it away when the container exits.\n\nset -euo pipefail\n\n# omegga resolves its config dir, data/, and plugins/ relative to $HOME and the\n# working directory, so both have to point at the mounted volume.\nexport HOME=/mnt/server\ncd /mnt/server\n\nif [ -f omegga-config.yml ]; then\n    echo \">> omegga-config.yml already exists, leaving it alone\"\nelse\n    omegga init\nfi\n\necho \">> Omegga install complete\"\n",
+            "container": "ghcr.io/brickadia-community/omegga:latest",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Brickadia hosting token",
+            "description": "Server hosting token, generated at https://brickadia.com/account/tokens.\n\nRequired. Without it Omegga stops at an interactive arrow-key prompt that the Pterodactyl console cannot answer, and the server would hang in \"Starting\" until it timed out. Setting it here keeps the token in the panel database rather than in the console log.",
+            "env_variable": "BRICKADIA_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:200",
+            "field_type": "text"
+        },
+        {
+            "name": "Web UI port",
+            "description": "Port for Omegga's web interface.\n\nThis must be a SECOND allocation assigned to this server on the Network tab. The primary allocation is Brickadia's UDP game port, and Brickadia reports its configured port to the master server, so the two cannot share a number.\n\nOmegga's default is 8080 and that is the default here, but a stock Wings node listens on 8080 itself, so on those nodes this has to be changed to whatever second allocation the server actually holds.",
+            "env_variable": "OMEGGA_PORT",
+            "default_value": "8080",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|between:1,65535",
+            "field_type": "text"
+        },
+        {
+            "name": "Extra omegga flags",
+            "description": "Extra flags appended to the omegga command. Leave empty for normal operation.\n\n  --update   check Steam for a Brickadia update on every start (the server will not start at all if Steam is unreachable)\n  --verbose  print extra messages for debugging\n  --debug    print all console logs, not just chat\n\nUse this rather than the BRICKADIA_DEBUG environment variable: omegga treats that one as set-or-unset, so even the string \"false\" would turn debug on.",
+            "env_variable": "OMEGGA_FLAGS",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "nullable|string|max:64",
+            "field_type": "text"
+        },
+        {
+            "name": "Enable metrics",
+            "description": "Serve the Prometheus metrics endpoint. Needs a third allocation matching the metrics port below. Off by default.",
+            "env_variable": "METRICS_ENABLED",
+            "default_value": "false",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|in:true,false",
+            "field_type": "text"
+        },
+        {
+            "name": "Metrics bind address",
+            "description": "Address the metrics endpoint binds to. Must be 0.0.0.0 to be reachable from outside the container; 127.0.0.1 keeps it container-local.",
+            "env_variable": "METRICS_BIND",
+            "default_value": "0.0.0.0",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:45",
+            "field_type": "text"
+        },
+        {
+            "name": "Metrics port",
+            "description": "Port for the Prometheus metrics endpoint, when metrics are enabled.",
+            "env_variable": "METRICS_PORT",
+            "default_value": "9000",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|integer|between:1,65535",
+            "field_type": "text"
+        },
+        {
+            "name": "Container user id",
+            "description": "Must stay 0.\n\nWings runs egg install scripts as the install image's own default user and mounts the script from a root-owned 0700 directory. The Omegga image's entrypoint drops privileges to its unprivileged `steam` user, which then cannot read that script, and the install fails with \"bash: /mnt/install/install.sh: Permission denied\". PUID=0 tells the entrypoint not to drop.\n\nThis has no effect on the server container: Wings sets the container user there explicitly, so the entrypoint sees a non-root uid and execs straight through without reading PUID at all.",
+            "env_variable": "PUID",
+            "default_value": "0",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|integer|in:0",
+            "field_type": "text"
+        },
+        {
+            "name": "Non-interactive",
+            "description": "Must stay \"true\". Wings gives the container a terminal, so omegga cannot tell on its own that this console submits whole lines and can never answer an arrow-key prompt. Without it omegga waits at the authentication prompt until the startup timeout instead of exiting with the token URL.",
+            "env_variable": "OMEGGA_NONINTERACTIVE",
+            "default_value": "true",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string|in:true",
+            "field_type": "text"
+        },
+        {
+            "name": "Skip steamcmd prompt",
+            "description": "Agrees to installing steamcmd without prompting. Must stay \"true\": the prompt it suppresses cannot be answered from the Pterodactyl console.",
+            "env_variable": "SKIP_STEAMCMD_PROMPT",
+            "default_value": "true",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string|in:true",
+            "field_type": "text"
+        },
+        {
+            "name": "Disable npm update notifier",
+            "description": "Omegga is installed from the container image here, not npm, so the npm update notice would only ever be misleading.",
+            "env_variable": "PACKAGE_NOTIFIER",
+            "default_value": "false",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string|in:false",
+            "field_type": "text"
+        },
+        {
+            "name": "Disable steamcmd update notifier",
+            "description": "Suppresses the steamcmd update notice in the console.",
+            "env_variable": "STEAM_NOTIFIER",
+            "default_value": "false",
+            "user_viewable": false,
+            "user_editable": false,
+            "rules": "required|string|in:false",
+            "field_type": "text"
+        }
+    ]
+}

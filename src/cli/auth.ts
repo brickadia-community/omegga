@@ -1,5 +1,6 @@
 import soft from '@/softconfig';
 import { genAuthFiles, writeAuthFiles } from '@omegga/auth';
+import { isNonInteractive } from '@util/env';
 import * as file from '@util/file';
 import 'colors';
 import fs, { existsSync } from 'node:fs';
@@ -7,6 +8,29 @@ import path from 'node:path';
 import prompts from 'prompts';
 
 export const AUTH_PATH = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
+
+/**
+ * Refuse to authenticate rather than opening a prompt nothing can answer.
+ *
+ * Reaching a prompt on such a host is worse than failing: omegga blocks
+ * before it logs anything a supervisor recognises as a start, so the failure
+ * shows up as a startup timeout with no cause in the log.
+ */
+function failNonInteractive() {
+  console.error(
+    '!>'.red,
+    'No stored auth files and no hosting token, and there is no terminal to prompt on',
+  );
+  console.error(
+    '!>'.red,
+    'Generate a hosting token at https://brickadia.com/account/tokens, then set',
+    'BRICKADIA_TOKEN'.yellow,
+    'or',
+    'credentials.token'.yellow,
+    'in omegga-config.yml',
+  );
+  return false;
+}
 
 // async function to prompt for credentials
 async function credentialPrompt() {
@@ -55,6 +79,8 @@ async function authFromPrompt({
   let files: Record<string, Buffer> | null;
 
   if (isSteam || !email || !password) {
+    if (isNonInteractive()) return failNonInteractive();
+
     // Prompt user to pick to select username/password or Auth Token
     const { authType } = await prompts({
       type: 'select',
@@ -110,6 +136,8 @@ async function authFromPrompt({
   }
 
   if (!email || !password || !isSteam) {
+    if (isNonInteractive()) return failNonInteractive();
+
     // prompt for user credentials
     try {
       [email, password] = await credentialPrompt();

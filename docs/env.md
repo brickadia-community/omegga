@@ -18,8 +18,9 @@ These can be set in your shell or in a `.env` file the same directory as a `omeg
 - `STEAM_APP_ID` - Set the Steam App ID for Brickadia (default `3017590`)
 - `STEAM_USERNAME` - Set the Steam username for downloading Brickadia via steamcmd. Run `omegga steamlogin` to authenticate with Steam Guard
 - `STEAM_PASSWORD` - (Optional) Steam password; if not set, you will be prompted interactively
-- `VERBOSE` - Set to `true` to enable verbose logging (default `false`)
+- `VERBOSE` - Set to `true` to enable verbose logging, equivalent to the `--verbose` flag (default `false`)
 - `PACKAGE_NOTIFIER` - When set to `false`, disables the npm update notifier
 - `STEAM_NOTIFIER` - When set to `false`, disables the SteamCMD update notifier
 - `SKIP_STEAMCMD_PROMPT` - When set to `true`, agrees to installing SteamCMD without prompting
-- `BRICKADIA_DEBUG` - When set, enables debug logging (equivalent to the `--debug` flag)
+- `BRICKADIA_DEBUG` - Set to `true` to enable debug logging, equivalent to the `--debug` flag (default `false`)
+- `OMEGGA_NONINTERACTIVE` - Set to `true` to fail instead of prompting for authentication. Defaults to `true` when stdin is not a terminal; set it explicitly on hosts that provide a terminal that cannot answer a prompt, such as a game panel console that only submits whole lines

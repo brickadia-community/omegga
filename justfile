@@ -9,6 +9,13 @@ build:
 dist:
     npm run dist
 
+# Everything CI runs: linters, both tsconfigs, tests, and generated API docs
+check:
+    npm run lint
+    npm run typecheck
+    CI=true npm test
+    npm run docs:check
+
 # the version .github/workflows/docs.yml builds the published book with
 MDBOOK_VERSION := "0.5.4"
 
@@ -25,3 +32,10 @@ REMOTE := env_var_or_default("REMOTE", "origin")
 # Tag the version in package.json and push it, refusing to move an existing tag
 tag:
     tools/tag.sh {{ REMOTE }}
+
+# The package ships a prebuilt `dist/` and has no lifecycle hook to build it,
+# so publishing without `just dist` would upload a module with no build output.
+
+# Build dist and publish to npm, the last step of a release
+publish: dist
+    npm publish

@@ -10,6 +10,27 @@ if [[ $# -eq 0 || ${1:0:1} == '-' ]]; then
   set -- omegga "$@"
 fi
 
+# Pterodactyl runs this image without overriding the entrypoint, command, or
+# working directory: it passes the command it wants in STARTUP and mounts the
+# server's volume at /home/container, so the image has to adopt all three
+# itself. STARTUP holds a shell command with {{VAR}} placeholders naming other
+# environment variables.
+#
+# Only the default command is replaced. Install scripts arrive as an explicit
+# `bash /mnt/install/install.sh` with STARTUP set as well, and those have to run
+# as given.
+if [[ -n ${STARTUP:-} && -d /home/container && $# -eq 1 && $1 == omegga ]]; then
+  export HOME=/home/container
+  cd "$HOME"
+
+  # {{VAR}} -> ${VAR} for the bash -c below to expand: no eval, no envsubst.
+  startup=${STARTUP//\{\{/\$\{}
+  startup=${startup//\}\}/\}}
+
+  echo ">> Starting: ${startup}" >&2
+  set -- bash -c "$startup"
+fi
+
 # already dropped by `docker run --user`, nothing to remap
 if [[ $(id -u) -ne 0 ]]; then
   exec "$@"

@@ -2,6 +2,17 @@
 
 ## Latest
 
+## 1.16.0 - 2026-09-01
+
+A Pterodactyl egg for running Omegga under a game panel.
+
+- Add a Pterodactyl egg at [`docker/pterodactyl/egg-omegga.json`](https://github.com/brickadia-community/omegga/blob/master/docker/pterodactyl/egg-omegga.json), documented at https://omegga.brickadia.dev/guides/pterodactyl.html
+- The container entrypoint adopts the `STARTUP` command, `HOME`, and working directory Wings expects an image to supply
+- `VERBOSE` now works; it was documented but never read
+- `BRICKADIA_DEBUG` and `SKIP_STEAMCMD_PROMPT` parse their value, so `BRICKADIA_DEBUG=false` no longer enables debug logging
+- Add `OMEGGA_NONINTERACTIVE` to exit instead of waiting at a prompt nothing can answer, on by default when stdin is not a terminal
+- Fix `omegga auth` exiting 0 when authentication failed
+
 ## 1.15.0 - 2026-08-31
 
 A Prometheus metrics endpoint, dashboards for it in the web UI, and the README split into a documentation site.

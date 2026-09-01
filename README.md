@@ -68,7 +68,7 @@ omegga
 
 Omegga will prompt for credentials as necessary and only stores the auth tokens brickadia generates on login. **Omegga does not store your password**.
 
-To run it in a container instead, see [Containers](docs/containers.md). For the long version, including troubleshooting, see [Installing](docs/install/README.md).
+To run it in a container instead, see [Containers](docs/containers.md), or [Pterodactyl](docs/guides/pterodactyl.md) to run it as an egg under a Pterodactyl panel. For the long version, including troubleshooting, see [Installing](docs/install/README.md).
 
 ## Documentation
 
@@ -78,6 +78,7 @@ Everything below is also published as a book at
 | Setting up | |
 | --- | --- |
 | [Installing](docs/install/README.md) | [linux](docs/install/linux.md), [WSL](docs/install/wsl.md), or a [container](docs/containers.md) |
+| [Pterodactyl](docs/guides/pterodactyl.md) | running omegga as a Pterodactyl egg |
 | [Running](docs/running.md) | starting a server and keeping it updated |
 | [Configuration](docs/config.md) | `omegga-config.yml`, field by field |
 | [Environment variables](docs/env.md) | what omegga reads from the environment |
@@ -119,3 +120,19 @@ npm run dist  # build the web ui, omegga's typescript, and omegga.d.ts
 `npm run lint`, `npm run typecheck`, and `npm test` are what CI runs. The API
 pages under `docs/api` are generated from the JSDoc in `src/`; run
 `npm run docs:api` after changing those comments.
+
+### Release Process
+
+1. **Bump**: Bump `version` in `package.json` and sync the lockfile with
+    `npm i --package-lock-only`.
+2. **Changelog**: Move the `## Latest` entries in `CHANGELOG.md` under a
+    `## <version> - <date>` heading.
+3. **Pterodactyl**: Point the pinned image in `docker/pterodactyl/egg-omegga.json` at the new
+    `<major>.<minor>`. Releases only move `latest`, `<major>`, and
+    `<major>.<minor>`, so a pin left on the previous minor is frozen on an
+    image that will never be rebuilt, while still being selectable in the
+    panel.
+4. **Linters**: `just check`
+5. **Commit**: Ensure everything is pushed
+6. **Deploy Container**: `just tag` to push tag the image to ghcr.
+7. **Deploy NPM**: `just publish` to build `dist/` and publish the package to npm.

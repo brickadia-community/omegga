@@ -1,5 +1,6 @@
 import Logger from '@/logger';
 import soft, { METRICS_DEFAULTS } from '@/softconfig';
+import { parseEnvBool } from '@util/env';
 import 'colors';
 import Configstore from 'configstore';
 import fs from 'node:fs';
@@ -54,17 +55,6 @@ function parseEnvPort(name: string) {
   const port = Number(raw);
   if (Number.isInteger(port) && port > 0 && port < 65536) return port;
   Logger.warnp(`Ignoring ${name.yellow}: ${raw.yellow} is not a port`);
-  return undefined;
-}
-
-/** parse a boolean from the environment, warning (and ignoring) when it isn't one */
-function parseEnvBool(name: string) {
-  const raw = process.env[name];
-  if (!raw) return undefined;
-  const value = raw.trim().toLowerCase();
-  if (['true', '1', 'yes', 'on'].includes(value)) return true;
-  if (['false', '0', 'no', 'off'].includes(value)) return false;
-  Logger.warnp(`Ignoring ${name.yellow}: ${raw.yellow} is not a boolean`);
   return undefined;
 }
 

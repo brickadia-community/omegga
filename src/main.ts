@@ -9,6 +9,7 @@ import { readBinaryVersion } from '@omegga/matchers/version';
 import Omegga from '@omegga/server';
 import * as file from '@util/file';
 import { isContainer } from '@util/container';
+import { isNonInteractive, parseEnvBool } from '@util/env';
 import 'colors';
 import commander from 'commander';
 import dotenv from 'dotenv';
@@ -61,6 +62,17 @@ const createDefaultConfig = () => {
   return config.defaultConfig;
 };
 
+/**
+ * `--verbose` and `--debug` also have environment aliases. Both parse the
+ * value rather than testing for presence: an orchestrator that materialises
+ * every declared variable has no way to leave one unset, so `VERBOSE=false`
+ * has to mean false.
+ */
+const isVerbose = (flag?: unknown) =>
+  Boolean(flag) || parseEnvBool('VERBOSE') === true;
+const isDebug = (flag?: unknown) =>
+  Boolean(flag) || parseEnvBool('BRICKADIA_DEBUG') === true;
+
 const program = commander
   .description(PKG.description)
   .version(VERSION)
@@ -72,16 +84,18 @@ const program = commander
     '-u, --update',
     'Check for brickadia updates (on steam) and install them if available',
   )
-  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .option(
+    '-v, --verbose',
+    'Print extra messages for debugging purposes (env: VERBOSE)',
+  )
   .action(async () => {
     const { verbose, update } = program.opts();
-    // BRICKADIA_DEBUG is an env-var alias for the --debug flag
-    const debug = Boolean(program.opts().debug || process.env.BRICKADIA_DEBUG);
+    const debug = isDebug(program.opts().debug);
     if (program.args.length > 0) {
       program.help();
       process.exit(1);
     }
-    Logger.VERBOSE = Boolean(verbose);
+    Logger.VERBOSE = isVerbose(verbose);
 
     // default working directory is the one specified in config
     let workDir = config.store.get('defaultOmegga');
@@ -364,11 +378,8 @@ program
       global: globalAuth,
     }) => {
       const { verbose } = program.opts();
-      // BRICKADIA_DEBUG is an env-var alias for the --debug flag
-      const debug = Boolean(
-        program.opts().debug || process.env.BRICKADIA_DEBUG,
-      );
-      Logger.VERBOSE = Boolean(verbose);
+      const debug = isDebug(program.opts().debug);
+      Logger.VERBOSE = isVerbose(verbose);
 
       let branch: string | undefined,
         authDir: string | undefined,
@@ -451,7 +462,7 @@ program
         Logger.warnp('Authenticating with', 'non-steam launcher'.yellow);
       }
 
-      auth.prompt({
+      const success = await auth.prompt({
         email,
         password,
         debug,
@@ -460,6 +471,7 @@ program
         savedDir,
         launchArgs,
       });
+      if (!success) process.exit(1);
     },
   );
 
@@ -494,8 +506,9 @@ program
       );
       process.exit(1);
     }
-    const { verbose, force } = program.opts();
-    Logger.VERBOSE = Boolean(verbose);
+    const { force } = program.opts();
+    const verbose = isVerbose(program.opts().verbose);
+    Logger.VERBOSE = verbose;
     pluginUtil.install(plugins, { verbose, force });
   });
 
@@ -514,8 +527,9 @@ program
       );
       process.exit(1);
     }
-    const { verbose, force } = program.opts();
-    Logger.VERBOSE = Boolean(verbose);
+    const { force } = program.opts();
+    const verbose = isVerbose(program.opts().verbose);
+    Logger.VERBOSE = verbose;
     pluginUtil.update(plugins, { verbose, force });
   });
 
@@ -532,8 +546,8 @@ program
       );
       process.exit(1);
     }
-    const { verbose } = program.opts();
-    Logger.VERBOSE = Boolean(verbose);
+    const verbose = isVerbose(program.opts().verbose);
+    Logger.VERBOSE = verbose;
     pluginUtil.check(plugins, { verbose });
   });
 
@@ -543,7 +557,7 @@ program
   .description('Initializes a new plugin with the given name and settings')
   .action(async () => {
     const { verbose } = program.opts();
-    Logger.VERBOSE = Boolean(verbose);
+    Logger.VERBOSE = isVerbose(verbose);
 
     pluginUtil.init();
   });
@@ -554,7 +568,7 @@ program
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .action(async () => {
     const { verbose } = program.opts();
-    Logger.VERBOSE = Boolean(verbose);
+    Logger.VERBOSE = isVerbose(verbose);
 
     pluginUtil.init();
   });
@@ -579,7 +593,7 @@ program
     }
     const { verbose } = program.opts();
     const json = program.args.includes('-j') || program.args.includes('--json');
-    Logger.VERBOSE = Boolean(verbose);
+    Logger.VERBOSE = isVerbose(verbose);
     if (!configName) {
       pluginUtil.listConfig(pluginName, json);
     } else {
@@ -609,7 +623,7 @@ program
     }
     const { verbose } = program.opts();
     const yes = program.args.includes('-y') || program.args.includes('--yes');
-    Logger.VERBOSE = Boolean(verbose);
+    Logger.VERBOSE = isVerbose(verbose);
     if (!configName) {
       pluginUtil.resetAllConfigs(pluginName, yes);
     } else if (!configValue) {
@@ -647,16 +661,26 @@ async function setupSteam(config: config.IConfig, forceUpdate = false) {
     const hasSteamcmd = hasbin.sync('steamcmd');
 
     if (!hasSteamcmd) {
+      const skipPrompt = parseEnvBool('SKIP_STEAMCMD_PROMPT') === true;
+
+      if (!skipPrompt && isNonInteractive()) {
+        Logger.errorp(
+          'SteamCMD is not installed and there is no terminal to prompt on. Set',
+          'SKIP_STEAMCMD_PROMPT=true'.yellow,
+          'to install it without asking. Exiting...',
+        );
+        process.exit(1);
+      }
+
       // Prompt to install steamcmd
-      const { install } =
-        process.env.SKIP_STEAMCMD_PROMPT === 'true'
-          ? { install: true }
-          : await prompts({
-              type: 'confirm',
-              name: 'install',
-              message: 'SteamCMD is not installed. OK to download it?',
-              initial: true,
-            });
+      const { install } = skipPrompt
+        ? { install: true }
+        : await prompts({
+            type: 'confirm',
+            name: 'install',
+            message: 'SteamCMD is not installed. OK to download it?',
+            initial: true,
+          });
 
       if (!install) {
         Logger.errorp('SteamCMD is required for steam support. Exiting...');

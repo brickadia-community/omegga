@@ -8,6 +8,7 @@
   - [Linux](install/linux.md)
   - [Windows (WSL)](install/wsl.md)
 - [Containers](containers.md)
+- [Pterodactyl](guides/pterodactyl.md)
 - [Running](running.md)
 - [Configuration](config.md)
 - [Environment variables](env.md)
