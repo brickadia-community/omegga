@@ -131,6 +131,6 @@ export default class Plugin implements OmeggaPlugin<Config, Storage> {
 
 ## See also
 
-- [Plugin structure](README.md) for `doc.json`, `plugin.json`, config, and the store
+- [Plugin structure](../plugins/) for `doc.json`, `plugin.json`, config, and the store
 - [Omegga](../api/omegga.md), [Player](../api/player.md), and [Events](../api/events.md) for what the plugin can reach
 - [Plugin metrics](../metrics.md#plugin-metrics) for exporting your own Prometheus metrics

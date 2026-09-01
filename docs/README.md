@@ -11,11 +11,11 @@ support.
 
 | | |
 | --- | --- |
-| [Installing](install/README.md) | linux, WSL, or a container |
+| [Installing](install/) | linux, WSL, or a container |
 | [Running](running.md) | starting a server and keeping it updated |
 | [Configuration](config.md) | `omegga-config.yml`, field by field |
-| [Plugins](plugins/README.md) | installing them, and writing your own |
-| [API](api/README.md) | what a plugin can reach |
+| [Plugins](plugins/) | installing them, and writing your own |
+| [API](api/) | what a plugin can reach |
 | [Troubleshooting](troubleshooting.md) | when it does not start |
 
 ## What omegga can do

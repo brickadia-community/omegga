@@ -253,6 +253,6 @@ rpc.addMethod('stop', async () => 'ok');
 
 ## See also
 
-- [Plugin structure](README.md) for `doc.json`, `plugin.json`, config, and the store
+- [Plugin structure](../plugins/) for `doc.json`, `plugin.json`, config, and the store
 - [Events](../api/events.md) for what each event carries
 - [Plugin metrics](../metrics.md#plugin-metrics) for exporting your own Prometheus metrics
