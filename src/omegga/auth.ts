@@ -19,7 +19,7 @@ async function removeTempDir() {
     // attempt to remove the temporary dir
     try {
       await file.rmdir(soft.TEMP_DIR_NAME);
-    } catch (e) {
+    } catch {
       // ignore fail - the directory probably doesn't exist
     }
   }

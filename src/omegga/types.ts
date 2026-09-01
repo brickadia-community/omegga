@@ -13,6 +13,14 @@ export interface IServerStatus {
   bricks: number;
   components: number;
   time: number;
+  /** player slots, from the status' `Players (online/max):` line */
+  maxPlayers?: number;
+  /**
+   * every integer-valued line in the status header, keyed by a snake_cased
+   * version of its label (`bricks`, `components`, ...). Reported generically so
+   * stats the game adds later are available without a parser change.
+   */
+  stats?: Record<string, number>;
   players: {
     name: string;
     ping: number;

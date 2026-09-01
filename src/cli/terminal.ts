@@ -22,10 +22,10 @@ declare global {
   }
 }
 
-let log: (...args: any[]) => void,
-  err: (...args: any[]) => void,
-  warn: (...args: any[]) => void,
-  info: (...args: any[]) => void;
+let log: (...args: unknown[]) => void,
+  err: (...args: unknown[]) => void,
+  warn: (...args: unknown[]) => void,
+  info: (...args: unknown[]) => void;
 
 type TerminalCommand = {
   aliases: string[];
@@ -284,7 +284,9 @@ const COMMANDS: TerminalCommand[] = [
       }
 
       log('Checking for updates...');
-      const result = steamcmdCheckUpdate(this.omegga.config.server?.steambeta);
+      const result = await steamcmdCheckUpdate(
+        this.omegga.config.server?.steambeta,
+      );
       if (!result) {
         err('Failed to check for updates.');
         return;
@@ -393,7 +395,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
     .map(p => `[${msToTime(p.time).grey}] ${p.name.brightYellow}`)
     .join('\n  ')}
 `);
-      } catch (e) {
+      } catch {
         err('An error occurred while getting server status');
       }
     },
@@ -1258,7 +1260,7 @@ export default class Terminal {
   }
 
   // let readline render a log without interrupting user input
-  #write(method: 'log' | 'debug' | 'warn' | 'error', args: any[]) {
+  #write(method: 'log' | 'debug' | 'warn' | 'error', args: unknown[]) {
     // stdout has no cursor controls when omegga is piped or run in a container
     if (process.stdout.isTTY) {
       process.stdout.clearLine(0);
@@ -1270,22 +1272,22 @@ export default class Terminal {
     if (process.stdout.isTTY && !this.#rlClosed) this.rl.prompt(true);
   }
 
-  log(...args: any[]) {
+  log(...args: unknown[]) {
     this.#write('log', args);
   }
 
   // let readline render a debug log without interrupting user input
-  debug(...args: any[]) {
+  debug(...args: unknown[]) {
     this.#write('debug', args);
   }
 
   // let readline render a warning log without interrupting user input
-  warn(...args: any[]) {
+  warn(...args: unknown[]) {
     this.#write('warn', args);
   }
 
   // let readline render an error log without interrupting user input
-  error(...args: any[]) {
+  error(...args: unknown[]) {
     this.#write('error', args);
   }
 }

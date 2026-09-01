@@ -2,6 +2,27 @@
 
 ## Latest
 
+## 1.15.0 - 2026-08-31
+
+A Prometheus metrics endpoint, dashboards for it in the web UI, and the README split into a documentation site.
+
+- Add a `ban` event with the name, kicker, reason, and duration
+- Plugins: `getServerStatus` reports `maxPlayers` and a generic `stats` record of every integer line in the status header
+- SteamCMD update checks and downloads no longer block the event loop
+
+### Metrics
+
+- Add a Prometheus scrape endpoint, off by default (`metrics.enabled`), serving game, omegga, and host metrics on its own bind/port/path. Unauthenticated unless `metrics.token` is set
+- Plugins: Add a `metrics` constructor argument with counters, gauges, and histograms, exported as `omegga_plugin_<plugin>_<metric>`
+- Web UI: Add a Metrics tab with players, server, plugins, and host dashboards, read out of a Prometheus that scrapes omegga (`metrics.prometheus.*`), each with its own permission
+- Add `METRICS_ENABLED`, `METRICS_BIND`, `METRICS_PORT`, and `METRICS_PROMETHEUS_*` environment overrides
+
+### Docs
+
+- Split the README into `docs/`, fold in the wiki, and publish it as an mdbook at https://omegga.brickadia.dev
+- API pages are generated from the TypeScript declarations by `npm run docs:api`
+- CI: Deploy the book to GitHub Pages on pushes to master; `just mdbook` builds it locally
+
 ## 1.14.0 - 2026-08-28
 
 - Add `omegga.binaryPath`: the directory containing the game server binary

@@ -23,7 +23,7 @@ export async function getSSLKeys(dataPath: string) {
 
       // make sure the cert is not expired
       if (certData.expires < now) certData = undefined;
-    } catch (e) {
+    } catch {
       // nothing to do here - probably bad json
     }
   }
@@ -39,7 +39,7 @@ export async function getSSLKeys(dataPath: string) {
 
       fs.writeFileSync(certsPath, JSON.stringify(certData));
       certData.new = true;
-    } catch (e) {
+    } catch {
       // probably missing openssl or something
     }
   }
@@ -56,7 +56,7 @@ export function getSessionSecret(dataPath: string) {
   if (fs.existsSync(tokenPath)) {
     try {
       secret = fs.readFileSync(tokenPath, 'utf8');
-    } catch (e) {
+    } catch {
       // nothing to do here - probably file is a folder or something
     }
   }
@@ -68,7 +68,7 @@ export function getSessionSecret(dataPath: string) {
     try {
       // write secret to file
       fs.writeFileSync(tokenPath, secret);
-    } catch (e) {
+    } catch {
       // nothing to do here - maybe missing perms?
     }
   }

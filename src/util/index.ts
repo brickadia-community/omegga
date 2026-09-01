@@ -128,7 +128,7 @@ import brs_, {
 } from 'brs-js';
 
 // this type has to exist or the dts exporter will try to dynamically export brs-js
-const brs: {
+type BrsModule = {
   read(
     rawBytes: Uint8Array,
     options?: {
@@ -142,6 +142,11 @@ const brs: {
       compress?: boolean;
     },
   ): Uint8Array;
+  // `utils` is a namespace, and it reaches plugins through the generated
+  // omegga.d.ts. Naming its real type there would emit an unresolvable
+  // `import("brs-js/...")`, and `unknown` would make it uncallable for
+  // plugins, so `any` is the deliberate choice.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   utils: any;
   constants: {
     MAGIC: Uint8Array;
@@ -149,7 +154,11 @@ const brs: {
     MAX_INT: number;
     DEFAULT_UUID: Uuid;
   };
-} = brs_ as any;
+};
+
+// the runtime module is wider than the shape above; assert through unknown
+// rather than through `any` so the target type is still checked
+const brs: BrsModule = brs_ as unknown as BrsModule;
 
 // brdb container + brz world reading/writing features from brs-js. Members
 // are listed explicitly (rather than `typeof brdbLib`) so the dts bundler
@@ -184,7 +193,9 @@ const brdb = {
   ByteReader: brdbLib.ByteReader,
   ByteWriter: brdbLib.ByteWriter,
   // msgpack is a namespace; cast to any so the dts bundler emits `any`
-  // rather than an unresolvable `import("brs-js/.../msgpack.js")`
+  // rather than an unresolvable `import("brs-js/.../msgpack.js")`, and so
+  // plugins can still call into it (`unknown` would not be callable)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   msgpack: brdbLib.msgpack as any,
 };
 

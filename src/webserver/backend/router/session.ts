@@ -30,6 +30,12 @@ export const sessionRouter = router({
             : resolveAllScopes(userPerms, rolePermissions),
         },
         isSteam: Boolean(omegga.config.__STEAM),
+        // whether the metrics dashboards have a prometheus to read from. the
+        // nav entry is hidden entirely without one, so this has to be known
+        // before any metrics route is called
+        metrics: {
+          enabled: Boolean(omegga.config.metrics?.prometheus?.enabled),
+        },
         update: {
           canCheck: Boolean(omegga.config.__STEAM),
           lastCheck: getLastSteamUpdateCheck()?.result ?? null,

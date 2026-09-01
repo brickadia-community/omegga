@@ -1,4 +1,6 @@
 import Logger from '@/logger';
+import { recordPluginError } from '@/metrics/errors';
+import { METRICS_DEFAULTS } from '@/softconfig';
 import Omegga from '@omegga/server';
 import EventEmitter from 'node:events';
 import fs from 'node:fs';
@@ -79,6 +81,7 @@ export default class NodeVmPlugin extends Plugin {
 
     // when the worker emits an error or a log, pass it up to omegga
     this.plugin.on('error', (resp, ...args) => {
+      recordPluginError(name);
       Logger.error(name.brightRed.underline, '!>'.red, ...args);
       this.notify(resp);
     });
@@ -201,6 +204,14 @@ export default class NodeVmPlugin extends Plugin {
       }
     });
 
+    // periodic metric snapshots from the worker. the payload crosses a process
+    // boundary from plugin-controlled code, so the host re-validates and
+    // re-caps it rather than trusting the worker to have done so
+    this.plugin.on('metrics.snapshot', (resp, families) => {
+      this.omegga?.metrics?.plugins.setSnapshot(this.getName(), families);
+      this.notify(resp);
+    });
+
     // command registration
     this.plugin.on('command.registers', async (_, blob) => {
       if (typeof blob !== 'string') return;
@@ -220,8 +231,8 @@ export default class NodeVmPlugin extends Plugin {
   }
 
   // emit a custom plugin event
-  async emitPlugin(ev: string, from: string, args: any[]) {
-    const [r]: any[] = await this.emit('emitPlugin', ev, from, args);
+  async emitPlugin(ev: string, from: string, args: unknown[]) {
+    const [r]: unknown[] = await this.emit('emitPlugin', ev, from, args);
     return r;
   }
 
@@ -269,6 +280,13 @@ export default class NodeVmPlugin extends Plugin {
       // tell the worker its name :)
       await this.emit('name', this.getName());
 
+      // hand the worker a metrics registry, but only when the endpoint is on -
+      // otherwise it keeps a no-op facade and never flushes anything
+      const metricsHost = omegga.metrics;
+      if (metricsHost && metricsHost.config.plugins !== false) {
+        await this.emit('metrics.enable', METRICS_DEFAULTS.pluginFlushInterval);
+      }
+
       // create the vm, export the plugin's class
       Logger.verbose('Loading safe plugin');
       if (!(await this.emit('load', this.path, vmOptions))[0]) throw '';
@@ -283,7 +301,7 @@ export default class NodeVmPlugin extends Plugin {
             action: 'brickadiaEvent',
             args: [ev, ...initialData[ev]],
           });
-        } catch (e) {
+        } catch {
           /* just writing 'safe' code :) */
         }
       }
@@ -300,6 +318,7 @@ export default class NodeVmPlugin extends Plugin {
       // kill the worker
       await this.emit('kill');
 
+      recordPluginError(this.getName());
       Logger.error(
         '!>'.red,
         'error loading node vm plugin',
@@ -342,6 +361,7 @@ export default class NodeVmPlugin extends Plugin {
 
           frozen = false;
           if (timed) return false;
+          this.dropMetrics();
           this.emitStatus();
           this.commands = [];
           return true;
@@ -391,7 +411,7 @@ export default class NodeVmPlugin extends Plugin {
   }
 
   // emit an action to the worker and return a promise with its response
-  emit(action: string, ...args: any[]): Promise<unknown[]> {
+  emit(action: string, ...args: unknown[]): Promise<unknown[]> {
     // no worker means no response; callers treat empty results as failure
     if (!this.#worker) return Promise.resolve([]);
 
@@ -417,7 +437,7 @@ export default class NodeVmPlugin extends Plugin {
   }
 
   // notify a response to the worker
-  notify(action: string, ...args: any[]) {
+  notify(action: string, ...args: unknown[]) {
     if (!this.#worker) return;
 
     // post the message
@@ -426,7 +446,7 @@ export default class NodeVmPlugin extends Plugin {
         action,
         args: [...args],
       });
-    } catch (e) {
+    } catch {
       // do nothing here
     }
   }
@@ -488,13 +508,16 @@ export default class NodeVmPlugin extends Plugin {
         );
       }
       this.#worker = undefined;
+      // this fires on a crash as well as a clean unload. without it a crashed
+      // plugin's last metric snapshot would keep being scraped as if live
+      this.dropMetrics();
       this.emitStatus();
     });
 
     return worker;
   }
 
-  eventPassthrough(...args: any[]) {
+  eventPassthrough(...args: unknown[]) {
     // worker does not exist
     if (!this.#worker) return;
 

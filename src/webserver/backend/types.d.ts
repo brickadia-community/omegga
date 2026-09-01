@@ -72,8 +72,10 @@ export interface IStoreBanHistory {
   type: 'banHistory';
   banned: string;
   bannerId: string | null;
-  created: any;
-  expires: any;
+  /** epoch ms, from parseBrickadiaTime */
+  created: number;
+  /** epoch ms, from parseBrickadiaTime */
+  expires: number;
   reason: string;
 }
 
@@ -91,7 +93,8 @@ export interface IStoreKickHistory {
   type: 'kickHistory';
   kicked: string;
   kickerId: string | null;
-  created: any;
+  /** epoch ms, from parseBrickadiaTime */
+  created: number;
   reason: string;
 }
 

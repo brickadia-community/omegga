@@ -8,7 +8,7 @@ import {
   STEAMCMD_PATH,
 } from '@/softconfig';
 import { readBinaryVersion } from '@omegga/matchers/version';
-import { execSync, spawnSync } from 'node:child_process';
+import { execSync, spawn, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import prompts from 'prompts';
 import acfParser from 'steam-acf2json';
@@ -37,6 +37,11 @@ const STEAM_APP_STATES: Record<number, string> = {
   0x400000: 'Committing',
   0x800000: 'Update Stopping',
 };
+
+// game download state, read by the metrics endpoint
+let updating = false;
+let updateCount = 0;
+let lastUpdateTime = 0;
 
 function decodeAppState(state: number): string[] {
   const flags: string[] = [];
@@ -82,6 +87,65 @@ export async function steamcmdInteractiveLogin(): Promise<boolean> {
   return result.status === 0;
 }
 
+/**
+ * Run steamcmd without blocking the event loop.
+ *
+ * Arguments are passed as an array rather than as a shell string: it keeps the
+ * beta password and steam username out of a shell's hands, and there is nothing
+ * here that needs shell features. Rejects with an Error carrying `status`, so
+ * callers can match on steamcmd's exit code the way they did with execSync.
+ */
+function runSteamcmd(
+  args: string[],
+  {
+    capture = false,
+    timeoutMs,
+  }: { capture?: boolean; timeoutMs?: number } = {},
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(STEAMCMD_PATH, args, {
+      stdio: capture ? ['inherit', 'pipe', 'pipe'] : 'inherit',
+    });
+
+    let output = '';
+    child.stdout?.on('data', chunk => (output += chunk));
+    child.stderr?.on('data', chunk => (output += chunk));
+
+    const timer = timeoutMs
+      ? setTimeout(() => {
+          child.kill('SIGKILL');
+          reject(
+            Object.assign(
+              new Error(`steamcmd timed out after ${timeoutMs}ms`),
+              {
+                status: null,
+              },
+            ),
+          );
+        }, timeoutMs)
+      : undefined;
+
+    child.once('error', err => {
+      if (timer) clearTimeout(timer);
+      reject(err);
+    });
+
+    child.once('close', (code, signal) => {
+      if (timer) clearTimeout(timer);
+      if (code === 0) return resolve(output);
+      reject(
+        Object.assign(
+          new Error(
+            `steamcmd exited with ${signal ? `signal ${signal}` : `code ${code}`}` +
+              (output ? `\n${output}` : ''),
+          ),
+          { status: code },
+        ),
+      );
+    });
+  });
+}
+
 function handleSteamError(err: unknown) {
   if (err instanceof Error && err.message) {
     const stateMatch = err.message.match(
@@ -117,9 +181,6 @@ export async function steamcmdDownloadGame({
   retryDelayMs?: number;
 } = {}) {
   const hasCredentials = !!process.env.STEAM_USERNAME;
-  const steamLogin = hasCredentials
-    ? `"${process.env.STEAM_USERNAME}"`
-    : 'anonymous';
   if (hasCredentials) {
     Logger.verbose('Using cached Steam credentials for download.');
   }
@@ -130,17 +191,18 @@ export async function steamcmdDownloadGame({
   Logger.verbose('Using with app ID:', appId.yellow);
 
   const args = [
-    `+force_install_dir ${path.join(installDir, steambeta ?? 'main')}`,
-    `+login ${steamLogin}`,
-    `+app_update ${appId}`,
-    steambeta ? `-beta ${steambeta}` : null,
-    steambeta && steambetaPassword
-      ? `-betapassword ${steambetaPassword}`
-      : null,
+    '+force_install_dir',
+    path.join(installDir, steambeta ?? 'main'),
+    '+login',
+    process.env.STEAM_USERNAME || 'anonymous',
+    '+app_update',
+    appId,
+    ...(steambeta ? ['-beta', steambeta] : []),
+    ...(steambeta && steambetaPassword
+      ? ['-betapassword', steambetaPassword]
+      : []),
     '+quit',
-  ].filter(Boolean);
-
-  const cmd = `${STEAMCMD_PATH} ${args.join(' ')}`;
+  ];
 
   // mirrors the "Launching Brickadia Server CL####" startup log
   const logUpdatedVersion = () => {
@@ -152,6 +214,9 @@ export async function steamcmdDownloadGame({
         GAME_BIN_PATH,
       ),
     );
+    // called only on the success paths, so it doubles as the update tally
+    updateCount++;
+    lastUpdateTime = Date.now();
     Logger.logp(
       `Brickadia Server updated${
         version ? ' to ' + ('CL' + version).green : ''
@@ -164,64 +229,82 @@ export async function steamcmdDownloadGame({
   const attempts = Math.max(1, retries);
   let triedInteractiveLogin = false;
 
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try {
-      execSync(cmd, { stdio: 'inherit' });
-      logUpdatedVersion();
-      return;
-    } catch (err) {
-      // the error that is ultimately reported/thrown; replaced when the
-      // interactive-login retry fails with a newer error
-      let error: unknown = err;
-      // Steam Guard interactive re-auth on status 5, attempted at most once.
-      if (
-        !triedInteractiveLogin &&
-        hasCredentials &&
-        err instanceof Error &&
-        'status' in err &&
-        (err as NodeJS.ErrnoException & { status: number }).status === 5
-      ) {
-        triedInteractiveLogin = true;
-        Logger.warnp(
-          'Steam login failed. This may require Steam Guard authentication.',
-        );
-        Logger.warnp('Attempting interactive login...');
+  updating = true;
+  try {
+    return await downloadWithRetries();
+  } finally {
+    updating = false;
+  }
 
-        if (await steamcmdInteractiveLogin()) {
-          Logger.logp('Login successful. Retrying download...');
-          try {
-            execSync(cmd, { stdio: 'inherit' });
-            logUpdatedVersion();
-            return;
-          } catch (retryErr) {
-            handleSteamError(retryErr);
-            error = retryErr;
-          }
-        } else {
-          Logger.errorp(
-            'Interactive login failed. Run',
-            'omegga steamlogin'.yellow,
-            'to authenticate manually.',
+  async function downloadWithRetries() {
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        await runSteamcmd(args);
+        logUpdatedVersion();
+        return;
+      } catch (err) {
+        // the error that is ultimately reported/thrown; replaced when the
+        // interactive-login retry fails with a newer error
+        let error: unknown = err;
+        // Steam Guard interactive re-auth on status 5, attempted at most once.
+        if (
+          !triedInteractiveLogin &&
+          hasCredentials &&
+          err instanceof Error &&
+          'status' in err &&
+          (err as NodeJS.ErrnoException & { status: number }).status === 5
+        ) {
+          triedInteractiveLogin = true;
+          Logger.warnp(
+            'Steam login failed. This may require Steam Guard authentication.',
           );
+          Logger.warnp('Attempting interactive login...');
+
+          if (await steamcmdInteractiveLogin()) {
+            Logger.logp('Login successful. Retrying download...');
+            try {
+              await runSteamcmd(args);
+              logUpdatedVersion();
+              return;
+            } catch (retryErr) {
+              handleSteamError(retryErr);
+              error = retryErr;
+            }
+          } else {
+            Logger.errorp(
+              'Interactive login failed. Run',
+              'omegga steamlogin'.yellow,
+              'to authenticate manually.',
+            );
+          }
         }
+
+        handleSteamError(error);
+
+        if (attempt < attempts) {
+          Logger.warnp(
+            `Steam download attempt ${attempt}/${attempts} failed; retrying in ${Math.round(
+              retryDelayMs / 1000,
+            )}s...`,
+          );
+          await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+          continue;
+        }
+
+        throw error;
       }
-
-      handleSteamError(error);
-
-      if (attempt < attempts) {
-        Logger.warnp(
-          `Steam download attempt ${attempt}/${attempts} failed; retrying in ${Math.round(
-            retryDelayMs / 1000,
-          )}s...`,
-        );
-        await new Promise(resolve => setTimeout(resolve, retryDelayMs));
-        continue;
-      }
-
-      throw error;
     }
   }
 }
+
+/** Whether a game download is in progress. */
+export const isUpdatingGame = () => updating;
+
+/** number of successful game updates this process has performed */
+export const getUpdateCount = () => updateCount;
+
+/** unix ms of the last successful game update, or 0 */
+export const getLastUpdateTime = () => lastUpdateTime;
 
 export type SteamAppStatus = {
   installState: string;
@@ -291,27 +374,30 @@ export type SteamUpdateCheck = {
   hasUpdate: boolean | null;
 };
 
-export function steamcmdCheckUpdate(
+export async function steamcmdCheckUpdate(
   steambeta?: string,
-): SteamUpdateCheck | null {
+): Promise<SteamUpdateCheck | null> {
   const appId = getAppId();
   const installDir = path.join(getSteamInstallDir(), steambeta ?? 'main');
-  const steamLogin = process.env.STEAM_USERNAME
-    ? `"${process.env.STEAM_USERNAME}"`
-    : 'anonymous';
 
   try {
-    const output = execSync(
+    // this runs on the autorestart interval, so it must not block the loop
+    // either: a 30s steamcmd stall used to freeze the whole process
+    const output = await runSteamcmd(
       [
-        STEAMCMD_PATH,
-        `+force_install_dir ${installDir}`,
-        `+login ${steamLogin}`,
-        '+app_info_update 1',
-        `+app_info_print ${appId}`,
-        `+app_status ${appId}`,
+        '+force_install_dir',
+        installDir,
+        '+login',
+        process.env.STEAM_USERNAME || 'anonymous',
+        '+app_info_update',
+        '1',
+        '+app_info_print',
+        appId,
+        '+app_status',
+        appId,
         '+quit',
-      ].join(' '),
-      { encoding: 'utf-8', stdio: ['inherit', 'pipe', 'pipe'], timeout: 30000 },
+      ],
+      { capture: true, timeoutMs: 30000 },
     );
 
     const local = parseAppStatus(output);
@@ -350,7 +436,7 @@ export const clearLastSteamUpdateCheck = () => {
 export async function hasSteamUpdate(steambeta?: string) {
   lastUpdateCheck = Date.now();
 
-  const check = steamcmdCheckUpdate(steambeta);
+  const check = await steamcmdCheckUpdate(steambeta);
   if (!check) return false;
 
   lastUpdateAvailable = Date.now();

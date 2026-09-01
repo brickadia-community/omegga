@@ -4,4 +4,7 @@ export {
   steamcmdInteractiveLogin,
   steamcmdCheckUpdate,
   hasSteamUpdate,
+  isUpdatingGame,
+  getUpdateCount,
+  getLastUpdateTime,
 } from './steam';

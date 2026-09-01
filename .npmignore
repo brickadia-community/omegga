@@ -22,3 +22,5 @@ Dockerfile
 .dockerignore
 /docker/
 justfile
+book.toml
+tools/gen-api-docs.mjs

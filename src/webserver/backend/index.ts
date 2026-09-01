@@ -354,7 +354,7 @@ export default class Webserver {
         delete req.session.mfaPending;
         req.session.save();
         res.status(200).json({});
-      } catch (e) {
+      } catch {
         res.status(400).json({ message: 'verification error' });
       }
     });

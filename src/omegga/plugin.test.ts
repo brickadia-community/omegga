@@ -1,10 +1,10 @@
 import { MockPlugin } from '@/test/mockPlugin';
 import { mockOmegga } from '@/test/util';
 import { runPluginMigrations } from '@/db/migrate';
-import * as pluginSchema from '@/db/pluginSchema';
 import BetterSqlite3 from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { describe, expect, it, test } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import MetricsServer from '@/metrics';
 import { PluginLoader, PluginStorage } from './plugin';
 
 describe('PluginStorage', () => {
@@ -154,5 +154,56 @@ describe('PluginLoader.calculateLoadOrder', () => {
       'b',
       'a',
     ]);
+  });
+});
+
+describe('Plugin metrics', () => {
+  it('hands out a no-op facade when the metrics endpoint is off', () => {
+    // mockOmegga has no metrics server, matching a default config
+    const plugin = new MockPlugin('p', mockOmegga());
+    expect(plugin.metrics.enabled).toBe(false);
+    // handles must still work, so plugins never need to guard their calls
+    expect(() =>
+      plugin.metrics.counter({ name: 'a_total' }).inc(),
+    ).not.toThrow();
+  });
+
+  it('exports through the metrics server when one is present', async () => {
+    const omegga = mockOmegga();
+    omegga.metrics = new MetricsServer(omegga, { enabled: true, port: 0 });
+    const plugin = new MockPlugin('Cool Plugin', omegga);
+
+    expect(plugin.metrics.enabled).toBe(true);
+    plugin.metrics.counter({ name: 'kills_total', help: 'k' }).inc(2);
+
+    omegga.metrics.setup();
+    expect(await omegga.metrics.collect()).toContain(
+      'omegga_plugin_cool_plugin_kills_total{plugin="Cool Plugin"} 2',
+    );
+  });
+
+  it('stops exporting a plugin metrics once it is dropped', async () => {
+    const omegga = mockOmegga();
+    omegga.metrics = new MetricsServer(omegga, { enabled: true, port: 0 });
+    const plugin = new MockPlugin('p', omegga);
+    plugin.metrics.counter({ name: 'a_total' }).inc();
+
+    omegga.metrics.setup();
+    expect(await omegga.metrics.collect()).toContain('omegga_plugin_p_a_total');
+
+    plugin.dropMetrics();
+    expect(await omegga.metrics.collect()).not.toContain(
+      'omegga_plugin_p_a_total',
+    );
+  });
+
+  it('honours metrics.plugins: false', () => {
+    const omegga = mockOmegga();
+    omegga.metrics = new MetricsServer(omegga, {
+      enabled: true,
+      port: 0,
+      plugins: false,
+    });
+    expect(new MockPlugin('p', omegga).metrics.enabled).toBe(false);
   });
 });

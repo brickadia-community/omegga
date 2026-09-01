@@ -1,4 +1,5 @@
-import { type IPluginDocumentation } from '@/plugin';
+import { NOOP_PLUGIN_METRICS } from '@/metrics/plugin';
+import { type IPluginDocumentation, type PluginMetrics } from '@/plugin';
 import { PLUGIN_PATH } from '@/softconfig';
 import { type IPluginJSON, PluginStorage } from '@omegga/plugin';
 import Omegga from '@omegga/server';
@@ -34,7 +35,7 @@ export class Plugin {
   static readJSON(file: string) {
     try {
       return JSON.parse(readFileSync(file, 'utf8'));
-    } catch (e) {
+    } catch {
       return null;
     }
   }
@@ -78,6 +79,22 @@ export class Plugin {
     this.storage = storage;
   }
 
+  /**
+   * Prometheus metrics scoped to this plugin, exported under
+   * `omegga_plugin_<name>_`. Falls back to a no-op facade when the metrics
+   * endpoint is off, so plugins never need to guard their metric calls.
+   */
+  get metrics(): PluginMetrics {
+    const host = this.omegga?.metrics;
+    if (!host || host.config.plugins === false) return NOOP_PLUGIN_METRICS;
+    return host.plugins.facade(this.getName());
+  }
+
+  /** stop exporting this plugin's metrics (called when it unloads) */
+  dropMetrics() {
+    this.omegga?.metrics?.plugins.drop(this.getName());
+  }
+
   // check if the plugin is enabled
   isEnabled() {
     return !existsSync(path.join(this.path, DISABLED_FILE));
@@ -106,7 +123,11 @@ export class Plugin {
   }
 
   // emit a custom event from another plugin
-  async emitPlugin(_ev: string, _from: string, _args: any[]): Promise<any> {}
+  async emitPlugin(
+    _ev: string,
+    _from: string,
+    _args: unknown[],
+  ): Promise<any> {}
 
   // get the plugin name, usually based on documentation data
   getName() {

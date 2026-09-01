@@ -26,5 +26,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Check generated API docs are current
+        run: npm run docs:check
+
       - name: Run tests
         run: npm run test:backend

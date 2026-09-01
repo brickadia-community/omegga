@@ -58,7 +58,7 @@ export const chatRouter = router({
 
     onMessage: protectedProcedure(ScopeName.ChatRecent).subscription(
       async function* ({ signal, ctx }) {
-        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
+        const combined = AbortSignal.any([signal!, ctx.userAbort().signal]);
         for await (const [chatLog] of on(serverEvents, 'chat', {
           signal: combined,
         })) {

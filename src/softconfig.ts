@@ -8,6 +8,35 @@ export const GLOBAL_TOKEN = path.join(CONFIG_HOME, 'global_auth_token');
 
 export const DEFAULT_PORT = 8080;
 
+// prometheus metrics endpoint defaults. it binds to loopback because the
+// endpoint is unauthenticated unless a token is configured
+export const METRICS_DEFAULTS = {
+  bind: '127.0.0.1',
+  port: 9000,
+  path: '/metrics',
+  /** seconds a cached server status may age before a scrape refreshes it */
+  statusMaxAge: 15,
+  /** how often a plugin worker ships its metric snapshot to the host */
+  pluginFlushInterval: 5000,
+};
+
+// reading metrics back out of a prometheus that scrapes omegga, for the web
+// UI's metrics dashboards. separate from METRICS_DEFAULTS, which describes the
+// endpoint omegga serves rather than the one it queries
+export const PROMETHEUS_DEFAULTS = {
+  url: 'http://127.0.0.1:9090',
+  /** seconds before a query is abandoned; prometheus is local, so slow means broken */
+  timeout: 3,
+  /** seconds a dashboard's results are reused, matching a typical scrape interval */
+  cacheSeconds: 15,
+  /** how far back the range picker may reach, matching prometheus' retention */
+  retentionDays: 15,
+  /** roughly one point per few pixels of chart width */
+  maxPoints: 400,
+  /** smallest step prometheus is asked for, matching a typical scrape interval */
+  minStep: 15,
+};
+
 // filenames that omegga searches for
 // extensions are added based on the available config formats
 export const CONFIG_FILENAMES = [
@@ -96,6 +125,8 @@ export default {
   PROJECT_NAME,
   CONFIG_HOME,
   DEFAULT_PORT,
+  METRICS_DEFAULTS,
+  PROMETHEUS_DEFAULTS,
   CONFIG_FILENAMES,
   BRICKADIA_INSTALLS,
   LOCAL_LAUNCHER,

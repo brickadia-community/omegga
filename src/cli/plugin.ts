@@ -239,7 +239,7 @@ export async function install(plugins: string[], _options: unknown) {
     if (!name) {
       try {
         name = path.parse(transformed.url).name.replace(/^omegga-/, '');
-      } catch (e) {
+      } catch {
         console.error('!>'.red, 'Error parsing name from url', transformed.url);
         break;
       }
@@ -552,7 +552,7 @@ export async function update(pluginsNames: string[], _options: unknown) {
         } else {
           plgWarn(plugin, 'Restored from backup and plugin not updated...');
         }
-      } catch (e) {
+      } catch {
         plgErr(plugin, 'Error restoring from backup... Whelp...');
       }
       continue;
@@ -721,7 +721,7 @@ async function init() {
     verboseLog('Running', 'npm i'.yellow, 'in the new plugin directory ...');
     try {
       await exec('npm i', { cwd: dest });
-    } catch (e) {
+    } catch {
       log('Warning: npm i'.yellow, 'failed to execute. Proceeding anyway...');
     }
   }

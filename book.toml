@@ -1,0 +1,18 @@
+[book]
+title = "Omegga"
+description = "Brickadia server installer, updater, manager, wrapper, configurator, and automator"
+authors = ["cake"]
+src = "docs"
+language = "en"
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+git-repository-url = "https://github.com/brickadia-community/omegga"
+edit-url-template = "https://github.com/brickadia-community/omegga/edit/master/docs/{path}"
+site-url = "/"
+no-section-label = true
+
+[output.html.fold]
+enable = true
+level = 1

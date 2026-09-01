@@ -1,0 +1,526 @@
+@use '../../css/theme';
+@use '../../css/mixins';
+
+.metrics-container {
+  @include mixins.column-container;
+}
+
+// nothing on this view scrolls sideways: the grid tracks shrink instead of
+// forcing a minimum, and panels are allowed to be narrower than their contents
+.metrics-container .scroll-scroller {
+  overflow-x: hidden;
+}
+
+// the dashboards are a fixed grid rather than a full-bleed table, so past a
+// certain width the panels are better centered than stretched
+.metrics-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px 8px 8px 0;
+}
+
+.metrics-tabs {
+  flex-wrap: wrap;
+  gap: 4px;
+  flex-shrink: 0;
+  // .navbar fixes a 32px height, which a wrapped second row overflows
+  height: auto;
+  min-height: 32px;
+}
+
+// The dashboards and the ranges wrap as whole groups, so a narrow screen gets
+// one row each instead of a single range button orphaned onto its own line.
+.metrics-tab-group,
+.metrics-range-group {
+  display: flex;
+  gap: 4px;
+}
+
+.metrics-tab-group {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+}
+
+.metrics-range-group {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  margin-left: auto;
+}
+
+// A dashboard carries up to ten panels titled with phrases, where the widget
+// menu this borrows from shows three single words. So it sizes to its longest
+// title rather than the inherited 200px, and caps its height rather than
+// running off the bottom of the screen.
+.metrics-panel-list .widgets-list {
+  width: max-content;
+  min-width: 240px;
+  max-width: min(90vw, 480px);
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  // `overflow-y: auto` alone computes overflow-x to auto as well, and the
+  // vertical scrollbar then eats into the width max-content measured, which is
+  // enough on its own to produce a horizontal scrollbar
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+
+  .widget-item {
+    gap: 12px;
+    // the rows sit flush; the list's own rounding clips the ends
+    border-radius: 0;
+  }
+
+  .widget-item .name {
+    // titles are phrases, so they keep their case and stay on one line
+    text-transform: none;
+    white-space: nowrap;
+  }
+}
+
+.metrics-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: theme.$br-radius-md;
+  background-color: theme.$br-bg-secondary;
+  color: theme.$br-boring-button-fg;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  strong {
+    color: theme.$br-button-fg;
+  }
+
+  &.error {
+    background-color: rgba(224, 45, 45, 0.15);
+    color: theme.$br-error-hover;
+  }
+
+  &.warn {
+    background-color: rgba(255, 161, 11, 0.15);
+    color: theme.$br-warn-hover;
+  }
+}
+
+.metrics-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
+  gap: 8px;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+  gap: 8px;
+}
+
+.metrics-panel {
+  display: flex;
+  flex-direction: column;
+  background-color: theme.$br-bg-secondary;
+  border-radius: theme.$br-radius-md;
+  overflow: hidden;
+  // a grid item is min-width:auto by default, which lets a wide child stretch
+  // its track and take the whole row with it
+  min-width: 0;
+
+  > * {
+    min-width: 0;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background-color: theme.$br-bg-header;
+    color: theme.$br-fg-header;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: default;
+  }
+
+  .panel-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .panel-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px;
+    min-height: 60px;
+  }
+
+  // a chart is 180px tall plus its legend, so loading and empty states claim
+  // the same room; without this the grid reflows every time a query reruns
+  &.kind-table .panel-body {
+    justify-content: flex-start;
+  }
+
+  &.kind-line .panel-body,
+  &.kind-area .panel-body,
+  &.kind-stacked .panel-body,
+  &.kind-histogram .panel-body {
+    min-height: 212px;
+  }
+
+  .panel-empty,
+  .panel-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: theme.$br-boring-button-fg;
+    opacity: 0.7;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    min-height: 60px;
+  }
+
+  .panel-error {
+    color: theme.$br-error-hover;
+    opacity: 1;
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+  }
+
+  .panel-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .panel-stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    line-height: 1.1;
+    color: theme.$br-button-fg;
+
+    &.good {
+      color: theme.$br-main-hover;
+    }
+    &.bad {
+      color: theme.$br-error-hover;
+    }
+  }
+
+  .panel-stat-label {
+    font-size: 13px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: theme.$br-boring-button-fg;
+  }
+
+  .panel-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    --trend-ok: #{theme.$br-main-hover};
+    --trend-bad: #{theme.$br-error-hover};
+
+    td {
+      padding: 3px 4px;
+      vertical-align: top;
+    }
+
+    .panel-table-name {
+      color: theme.$br-button-fg;
+      font-weight: bold;
+      overflow-wrap: anywhere;
+      width: 100%;
+    }
+
+    .panel-table-trend {
+      width: 120px;
+      // the row's text sits on the first line, so the trend line should too
+      // rather than centering itself against a name that wrapped
+      padding-top: 5px;
+    }
+
+    .panel-table-value {
+      text-align: right;
+      color: theme.$br-button-fg;
+      font-weight: bold;
+      white-space: nowrap;
+
+      &.good {
+        color: theme.$br-main-hover;
+      }
+      &.bad {
+        color: theme.$br-error-hover;
+      }
+    }
+  }
+}
+
+.chart {
+  position: relative;
+  width: 100%;
+
+  svg {
+    display: block;
+  }
+
+  .chart-grid {
+    stroke: rgba(255, 255, 255, 0.07);
+    stroke-width: 1;
+  }
+
+  .chart-crosshair {
+    stroke: rgba(255, 255, 255, 0.3);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+  }
+
+  .chart-label {
+    fill: theme.$br-boring-button-fg;
+    font-size: 10px;
+    opacity: 0.8;
+  }
+}
+
+.chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  color: theme.$br-boring-button-fg;
+  opacity: 0.7;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.chart-tooltip {
+  position: absolute;
+  top: 4px;
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  background-color: theme.$br-bg-footer;
+  border-radius: theme.$br-radius-sm;
+  padding: 6px 8px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.chart-tooltip {
+  font-weight: bold;
+
+  &.left {
+    left: 4px;
+  }
+
+  &.right {
+    right: 4px;
+  }
+}
+
+.chart-tooltip-time {
+  color: theme.$br-boring-button-fg;
+  margin-bottom: 2px;
+}
+
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-tooltip-name {
+  flex: 1;
+  color: theme.$br-boring-button-fg;
+}
+
+.chart-tooltip-value {
+  color: theme.$br-button-fg;
+  font-weight: bold;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 4px 8px 0;
+  font-size: 12px;
+  font-weight: normal;
+  color: theme.$br-boring-button-fg;
+}
+
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    color: theme.$br-button-fg;
+  }
+
+  &.dimmed {
+    opacity: 0.4;
+  }
+}
+
+.chart-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.sparkline {
+  display: block;
+  width: 120px;
+  height: 16px;
+}
+
+.sparkline-empty {
+  display: inline-block;
+  width: 120px;
+  height: 16px;
+}
+
+.bar-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  padding: 4px 4px 0;
+}
+
+.bar-chart-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  // leave room for the labels running under the bars
+  padding-bottom: 20px;
+  font-size: 10px;
+  color: theme.$br-boring-button-fg;
+  opacity: 0.8;
+  text-align: right;
+}
+
+.bar-chart-plot {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bar-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bar-track {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 2px 2px 0 0;
+}
+
+.bar-fill {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.25s ease;
+  min-height: 1px;
+}
+
+.bar-column.hover .bar-fill {
+  filter: brightness(1.3);
+}
+
+.bar-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 4px;
+  background-color: theme.$br-bg-footer;
+  border-radius: theme.$br-radius-sm;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.bar-tooltip-value {
+  color: theme.$br-button-fg;
+}
+
+.bar-tooltip-label {
+  color: theme.$br-boring-button-fg;
+}
+
+.bar-label {
+  height: 20px;
+  line-height: 20px;
+  font-size: 10px;
+  color: theme.$br-boring-button-fg;
+  opacity: 0.8;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media screen and (max-width: 600px) {
+  // `.generic-container` is `flex: 1` (flex-basis 0), which would otherwise
+  // override the height below in the main-content flex column, leaving the
+  // dashboards to scroll underneath the fixed bottom navigation bar. Same
+  // measurements as the list views: below the top bar, above the bottom nav.
+  .metrics-container {
+    flex: none;
+    height: calc(var(--vvh, 100dvh) - 178px - env(safe-area-inset-bottom, 0px));
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics-stats {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+
+  .metrics-panel .panel-stat {
+    font-size: 22px;
+  }
+}

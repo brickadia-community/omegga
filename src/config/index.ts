@@ -1,5 +1,5 @@
 import Logger from '@/logger';
-import soft from '@/softconfig';
+import soft, { METRICS_DEFAULTS } from '@/softconfig';
 import 'colors';
 import Configstore from 'configstore';
 import fs from 'node:fs';
@@ -40,7 +40,72 @@ export const defaultConfig: IConfig = {
       : 7777,
     map: 'Plate',
   },
+  metrics: {
+    enabled: false,
+    bind: METRICS_DEFAULTS.bind,
+    port: METRICS_DEFAULTS.port,
+  },
 };
+
+/** parse a port from the environment, warning (and ignoring) when it isn't one */
+function parseEnvPort(name: string) {
+  const raw = process.env[name];
+  if (!raw) return undefined;
+  const port = Number(raw);
+  if (Number.isInteger(port) && port > 0 && port < 65536) return port;
+  Logger.warnp(`Ignoring ${name.yellow}: ${raw.yellow} is not a port`);
+  return undefined;
+}
+
+/** parse a boolean from the environment, warning (and ignoring) when it isn't one */
+function parseEnvBool(name: string) {
+  const raw = process.env[name];
+  if (!raw) return undefined;
+  const value = raw.trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(value)) return true;
+  if (['false', '0', 'no', 'off'].includes(value)) return false;
+  Logger.warnp(`Ignoring ${name.yellow}: ${raw.yellow} is not a boolean`);
+  return undefined;
+}
+
+/** parse a positive number of seconds, warning (and ignoring) when it isn't one */
+function parseEnvSeconds(name: string) {
+  const raw = process.env[name];
+  if (!raw) return undefined;
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds) && seconds > 0) return seconds;
+  Logger.warnp(`Ignoring ${name.yellow}: ${raw.yellow} is not a duration`);
+  return undefined;
+}
+
+/** parse an http(s) URL, warning (and ignoring) when it isn't one */
+function parseEnvUrl(name: string) {
+  const raw = process.env[name]?.trim();
+  if (!raw) return undefined;
+  try {
+    const url = new URL(raw);
+    if (url.protocol === 'http:' || url.protocol === 'https:') return raw;
+  } catch {
+    // fall through to the warning
+  }
+  Logger.warnp(`Ignoring ${name.yellow}: ${raw.yellow} is not an http URL`);
+  return undefined;
+}
+
+/**
+ * Parse a prometheus label value. The same restriction the config schema
+ * applies, repeated here because environment overrides land after the schema
+ * has already validated the file.
+ */
+function parseEnvLabel(name: string) {
+  const raw = process.env[name]?.trim();
+  if (!raw) return undefined;
+  if (/^[A-Za-z0-9_.:-]+$/.test(raw)) return raw;
+  Logger.warnp(
+    `Ignoring ${name.yellow}: ${raw.yellow} is not a valid label value`,
+  );
+  return undefined;
+}
 
 /**
  * Apply `OMEGGA_PORT` and `BRICKADIA_PORT` on top of a loaded config. A
@@ -48,20 +113,47 @@ export const defaultConfig: IConfig = {
  * so the environment has to be able to win.
  */
 export function applyPortOverrides(conf: IConfig): IConfig {
-  const parsePort = (name: string) => {
-    const raw = process.env[name];
-    if (!raw) return undefined;
-    const port = Number(raw);
-    if (Number.isInteger(port) && port > 0 && port < 65536) return port;
-    Logger.warnp(`Ignoring ${name.yellow}: ${raw.yellow} is not a port`);
-    return undefined;
-  };
-
-  const omeggaPort = parsePort('OMEGGA_PORT');
+  const omeggaPort = parseEnvPort('OMEGGA_PORT');
   if (omeggaPort) conf.omegga = { ...conf.omegga, port: omeggaPort };
 
-  const serverPort = parsePort('BRICKADIA_PORT');
+  const serverPort = parseEnvPort('BRICKADIA_PORT');
   if (serverPort) conf.server = { ...conf.server, port: serverPort };
+
+  return conf;
+}
+
+/**
+ * Apply `METRICS_ENABLED`, `METRICS_BIND`, and `METRICS_PORT` on top of a
+ * loaded config, for the same reason `applyPortOverrides` exists: a container
+ * can't template the config file in its mounted volume.
+ */
+export function applyMetricsOverrides(conf: IConfig): IConfig {
+  const enabled = parseEnvBool('METRICS_ENABLED');
+  if (enabled != null) conf.metrics = { ...conf.metrics, enabled };
+
+  const bind = process.env.METRICS_BIND?.trim();
+  if (bind) conf.metrics = { ...conf.metrics, bind };
+
+  const port = parseEnvPort('METRICS_PORT');
+  if (port) conf.metrics = { ...conf.metrics, port };
+
+  const prometheus = { ...conf.metrics?.prometheus };
+  let touched = false;
+  const set = <K extends keyof typeof prometheus>(
+    key: K,
+    value: (typeof prometheus)[K] | undefined,
+  ) => {
+    if (value == null) return;
+    prometheus[key] = value;
+    touched = true;
+  };
+
+  set('enabled', parseEnvBool('METRICS_PROMETHEUS_ENABLED'));
+  set('url', parseEnvUrl('METRICS_PROMETHEUS_URL'));
+  set('instance', parseEnvLabel('METRICS_PROMETHEUS_INSTANCE'));
+  set('timeout', parseEnvSeconds('METRICS_PROMETHEUS_TIMEOUT'));
+
+  if (touched) conf.metrics = { ...conf.metrics, prometheus };
 
   return conf;
 }
@@ -95,4 +187,5 @@ export default {
   defaultConfig,
   formats,
   applyPortOverrides,
+  applyMetricsOverrides,
 };

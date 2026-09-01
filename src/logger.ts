@@ -19,7 +19,7 @@ export default class Logger {
   /**
    * Prepend a grey timestamp to args if configured
    */
-  static timestamped(args: any[]): any[] {
+  static timestamped(args: unknown[]): unknown[] {
     if (!Logger.timestampFmt || !Logger.dateformat) return args;
     return [Logger.dateformat(new Date(), Logger.timestampFmt).grey, ...args];
   }
@@ -27,7 +27,10 @@ export default class Logger {
   /**
    * Log with timestamp when no terminal, pass through to terminal otherwise
    */
-  private static out(method: 'log' | 'debug' | 'warn' | 'error', args: any[]) {
+  private static out(
+    method: 'log' | 'debug' | 'warn' | 'error',
+    args: unknown[],
+  ) {
     if (Logger.terminal) {
       Logger.terminal[method](...args);
     } else {
@@ -38,56 +41,56 @@ export default class Logger {
   /**
    * Send a console log to the readline terminal or stdout
    */
-  static log(...args: any[]) {
+  static log(...args: unknown[]) {
     Logger.out('log', args);
   }
 
   /**
    * Send a prefixed console log to the readline terminal or stdout
    */
-  static logp(...args: any[]) {
+  static logp(...args: unknown[]) {
     Logger.out('log', ['>>'.green, ...args]);
   }
 
   /**
    * Send a console debug to the readline terminal or stdout
    */
-  static debug(...args: any[]) {
+  static debug(...args: unknown[]) {
     Logger.out('debug', args);
   }
 
   /**
    * Send a console error to the readline terminal or stderr
    */
-  static error(...args: any[]) {
+  static error(...args: unknown[]) {
     Logger.out('error', args);
   }
 
   /**
    * Send a prefixed console error to the readline terminal or stderr
    */
-  static errorp(...args: any[]) {
+  static errorp(...args: unknown[]) {
     Logger.out('error', ['!>'.red, ...args]);
   }
 
   /**
    * Send a console warn to the readline terminal or stdout
    */
-  static warn(...args: any[]) {
+  static warn(...args: unknown[]) {
     Logger.out('warn', args);
   }
 
   /**
    * Send a prefixed console warn to the readline terminal or stdout
    */
-  static warnp(...args: any[]) {
+  static warnp(...args: unknown[]) {
     Logger.out('warn', ['>>'.yellow, ...args]);
   }
 
   /**
    * Send a console log when omegga is launched when --verbose
    */
-  static verbose(...args: any[]) {
+  static verbose(...args: unknown[]) {
     if (!Logger.VERBOSE) return;
     Logger.out('log', ['V>'.magenta, ...args]);
   }

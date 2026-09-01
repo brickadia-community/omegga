@@ -95,8 +95,17 @@ body {
   }
 }
 
+// Firefox and other non-WebKit engines ignore the ::-webkit- rules below and
+// would fall back to the OS scrollbar. `scrollbar-color` is inherited, so
+// stating it once on the root themes every scroller in the app.
+html {
+  scrollbar-color: theme.$br-element-bg theme.$br-element-footer-bg;
+}
+
 ::-webkit-scrollbar {
   width: 16px;
+  // horizontal scrollers (wide tables) were left at the browser default
+  height: 16px;
 }
 
 ::-webkit-scrollbar-track {
@@ -105,10 +114,16 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: theme.$br-element-bg;
+  border-radius: theme.$br-radius-sm;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #fff;
+}
+
+// where a horizontal and a vertical scrollbar meet
+::-webkit-scrollbar-corner {
+  background-color: theme.$br-element-footer-bg;
 }
 
 .generic-container {

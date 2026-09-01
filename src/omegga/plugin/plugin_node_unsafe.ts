@@ -1,6 +1,12 @@
 /// <reference path="./disrequire.d.ts" />
 import Logger from '@/logger';
-import OmeggaPlugin, { type PluginStore } from '@/plugin';
+import { recordPluginError } from '@/metrics/errors';
+import OmeggaPlugin, {
+  type OmeggaLike,
+  type PluginConfig,
+  type PluginMetrics,
+  type PluginStore,
+} from '@/plugin';
 import type Omegga from '@omegga/server';
 import * as util from '@util';
 import disrequire from 'disrequire';
@@ -9,6 +15,18 @@ import path from 'node:path';
 import { Plugin } from './interface';
 
 global.OMEGGA_UTIL = util;
+
+/**
+ * What an unsafe plugin's entry file exports: the plugin class itself, not an
+ * instance. Typing it as `OmeggaPlugin` (the instance type) is what previously
+ * forced `as any` at every use.
+ */
+type PluginConstructor = new (
+  omegga: OmeggaLike,
+  config: PluginConfig,
+  store: PluginStore,
+  metrics: PluginMetrics,
+) => OmeggaPlugin;
 
 // Main plugin file (like index.js)
 // this isn't named 'index.js' or 'plugin.js' because those may be filenames
@@ -91,12 +109,12 @@ export default class NodePlugin extends Plugin {
 
       // require the plugin itself
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- unsafe plugins are loaded with a real runtime require
-      const Plugin: OmeggaPlugin = require(this.pluginFile);
+      const Plugin = require(this.pluginFile) as PluginConstructor;
 
       // node plugins must export a class with a constructor
       if (
-        typeof (Plugin as any).prototype !== 'object' ||
-        typeof (Plugin as any).prototype.constructor !== 'function'
+        typeof Plugin?.prototype !== 'object' ||
+        typeof Plugin.prototype.constructor !== 'function'
       )
         return stopPlugin('missing constructor in plugin');
 
@@ -110,11 +128,13 @@ export default class NodePlugin extends Plugin {
         keys: () => this.storage.keys(),
       };
 
-      // create the loaded plugin
-      const loadedPlugin: OmeggaPlugin = new (Plugin as any)(
-        this.omegga,
-        config,
+      // unsafe plugins run in omegga's own process, so their metrics facade
+      // writes straight into the host registry
+      const loadedPlugin: OmeggaPlugin = new Plugin(
+        this.server,
+        config ?? {},
         store,
+        this.metrics,
       );
       this.loadedPlugin = loadedPlugin;
 
@@ -138,6 +158,7 @@ export default class NodePlugin extends Plugin {
       this.emitStatus();
       return true;
     } catch (e) {
+      recordPluginError(this.getName());
       Logger.errorp('error loading node plugin', this.getName(), e);
       this.emitStatus();
       return false;
@@ -160,10 +181,12 @@ export default class NodePlugin extends Plugin {
       // unload the plugin
       this.disrequireAll();
       this.loadedPlugin = undefined;
+      this.dropMetrics();
       this.emitStatus();
       this.commands = [];
       return true;
     } catch (e) {
+      recordPluginError(this.getName());
       Logger.errorp('error unloading node plugin', this.getName(), e);
       this.emitStatus();
       return false;
@@ -171,7 +194,7 @@ export default class NodePlugin extends Plugin {
   }
 
   // forward plugin events to the loaded plugin instance
-  async emitPlugin(ev: string, from: string, args: any[]) {
+  async emitPlugin(ev: string, from: string, args: unknown[]) {
     if (typeof this.loadedPlugin?.pluginEvent === 'function') {
       return await this.loadedPlugin.pluginEvent(ev, from, ...args);
     }

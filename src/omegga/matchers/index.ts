@@ -9,6 +9,7 @@ import leave from './leave';
 import chat from './chat';
 // 'chat' event => name, message; 'chatcmd:command' event => name, [...args]
 // 'kick' event => name, kicker, reason
+// 'ban' event => name, banner, reason, duration (absent when permanent)
 
 import command from './command';
 // 'cmd:command' event => name, args (string)

@@ -1,4 +1,5 @@
 import Logger from '@/logger';
+import { recordPluginError } from '@/metrics/errors';
 import { type EnvironmentPreset } from '@brickadia/presets';
 import Omegga from '@omegga/server';
 import { type WriteSaveObject } from 'brs-js';
@@ -79,7 +80,8 @@ export default class RpcPlugin extends Plugin {
   // spawn the plugin as a child process
   async load() {
     const name = this.getName();
-    const verbose = (...msg: any[]) => Logger.verbose(name.underline, ...msg);
+    const verbose = (...msg: unknown[]) =>
+      Logger.verbose(name.underline, ...msg);
     verbose('Load method invoked');
     let frozen = true,
       timed = false;
@@ -99,7 +101,7 @@ export default class RpcPlugin extends Plugin {
     try {
       verbose('Getting plugin config');
       config = await this.storage.getConfig();
-    } catch (e) {
+    } catch {
       return false;
     }
 
@@ -222,6 +224,9 @@ export default class RpcPlugin extends Plugin {
 
   // kill the child process after requesting it to stop
   unload() {
+    // an unloaded plugin stops exporting metrics rather than freezing its
+    // last values into the scrape forever
+    this.dropMetrics();
     if (!this.#child || this.#child.exitCode) {
       this.detachListeners();
       this.emitStatus();
@@ -237,7 +242,7 @@ export default class RpcPlugin extends Plugin {
           // let the plugin know it's time to stop, if this error it's probably because the method was not implemented
           try {
             await this.emit('stop');
-          } catch (e) {
+          } catch {
             // lazy developer - just implement stop please
           }
 
@@ -310,6 +315,7 @@ export default class RpcPlugin extends Plugin {
     this.#child?.on('error', () => this.kill());
     this.#child?.on('close', () => this.kill());
     this.#child?.on('exit', code => {
+      if (code) recordPluginError(name);
       Logger.errorp(
         '!>'.red,
         'rpc plugin',
@@ -337,7 +343,7 @@ export default class RpcPlugin extends Plugin {
     try {
       if (this.#child && !this.#child.exitCode)
         this.#child.stdin.write(line + '\n');
-    } catch (e) {
+    } catch {
       // the child probably died... oops!
     }
   }
@@ -347,6 +353,9 @@ export default class RpcPlugin extends Plugin {
     this.#rpc.rejectAllPendingRequests('Plugin Terminated');
     this.detachListeners();
     this.omegga?.off('*', this.eventPassthrough);
+    // kill() is the crash path as well as the unload path; a dead plugin's
+    // last metric snapshot must not keep being scraped as if it were live
+    this.dropMetrics();
     const child = this.#child;
     if (!child) return;
 
@@ -365,7 +374,7 @@ export default class RpcPlugin extends Plugin {
     this.emitStatus();
   }
 
-  eventPassthrough(type: string, ...args: any[]) {
+  eventPassthrough(type: string, ...args: unknown[]) {
     if (!this.#child) return;
     this.notify(type, args);
   }
@@ -416,6 +425,15 @@ export default class RpcPlugin extends Plugin {
     rpc.addMethod('store.wipe', () => this.storage.wipe());
     rpc.addMethod('store.count', () => this.storage.count());
     rpc.addMethod('store.keys', () => this.storage.keys());
+
+    // metric snapshots. an rpc plugin pushes its whole metric state whenever it
+    // likes (a timer is the usual choice) and the host replaces what it holds.
+    // the payload comes from another process, so it is re-validated and
+    // re-capped here rather than trusted
+    rpc.addMethod('metrics', families => {
+      this.omegga?.metrics?.plugins.setSnapshot(this.getName(), families);
+      return 'ok';
+    });
 
     // server can run console commands
     rpc.addMethod('exec', line =>
@@ -802,7 +820,7 @@ export default class RpcPlugin extends Plugin {
 
     rpc.addMethod(
       'plugin.emit',
-      async ([name, event, ...args]: [string, string, ...any[]]) => {
+      async ([name, event, ...args]: [string, string, ...unknown[]]) => {
         const plugin = this.server.pluginLoader?.plugins.find(
           p => p.getName() === name,
         );
@@ -819,20 +837,20 @@ export default class RpcPlugin extends Plugin {
   }
 
   // emit a custom plugin event
-  async emitPlugin(event: string, from: string, args: any[]) {
+  async emitPlugin(event: string, from: string, args: unknown[]) {
     return await this.emit('plugin:emit', [event, from, ...args]);
   }
 
   // emit a message to the plugin via the jsonrpc client and expect a response
-  emit(type: string, arg?: any) {
+  emit(type: string, arg?: unknown) {
     return this.#rpc.request(type, arg);
   }
 
   // emit a message to the plugin via the jsonrpc client, don't expect a response
-  notify(type: string, arg?: any) {
+  notify(type: string, arg?: unknown) {
     try {
       this.#rpc.notify(type, arg);
-    } catch (e) {
+    } catch {
       // this only happens if the RPC library is hitting some issues - probably redundant
     }
   }

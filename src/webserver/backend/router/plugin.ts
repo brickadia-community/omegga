@@ -159,7 +159,7 @@ export const pluginRouter = router({
             plugin.getName().yellow,
           );
           return true;
-        } catch (e) {
+        } catch {
           error(
             'Error',
             input.enabled ? 'enabling'.green : 'disabling'.red,
@@ -172,7 +172,7 @@ export const pluginRouter = router({
 
     onStatus: protectedProcedure(ScopeName.PluginList).subscription(
       async function* ({ signal, ctx }) {
-        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
+        const combined = AbortSignal.any([signal!, ctx.userAbort().signal]);
         for await (const [payload] of on(serverEvents, 'plugin', {
           signal: combined,
         })) {

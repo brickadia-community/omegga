@@ -111,6 +111,11 @@ class OmeggaWrapper extends EventEmitter {
   getGameBinaryDir(): string | null {
     return this.#server.getGameBinaryDir();
   }
+
+  /** pid of the running game process, or null when it isn't running */
+  get gamePid(): number | null {
+    return this.#server.pid;
+  }
 }
 
 export default OmeggaWrapper;

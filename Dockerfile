@@ -66,8 +66,8 @@ ENV HOME=/home/steam
 COPY docker/entrypoint.sh /usr/local/bin/omegga-entrypoint
 WORKDIR /server
 
-# web ui, brickadia
-EXPOSE 8080/tcp 7777/udp
+# web ui, brickadia, prometheus metrics (only served when metrics.enabled)
+EXPOSE 8080/tcp 7777/udp 9000/tcp
 
 ENTRYPOINT ["/usr/local/bin/omegga-entrypoint"]
 CMD ["omegga"]
