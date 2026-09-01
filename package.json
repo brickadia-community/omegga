@@ -117,6 +117,8 @@
     "build": "npx vite build -c vite.backend.config.mts",
     "db:generate": "npx drizzle-kit generate && npx drizzle-kit generate --config=drizzle.plugin.config.ts",
     "dist": "npm run build:frontend && npm run build && npm run dts",
+    "docs:api": "node tools/gen-api-docs.mjs",
+    "docs:check": "node tools/gen-api-docs.mjs --check",
     "dts": "npx dts-bundle-generator --inline-declare-global --no-banner --no-check --external-inlines brs-js --external-inlines better-sqlite3 -o templates/safe-ts/omegga.d.ts -- ./src/plugin.ts",
     "eslint": "npx eslint",
     "eslint:fix": "npx eslint --fix",
