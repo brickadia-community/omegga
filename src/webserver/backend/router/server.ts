@@ -223,7 +223,7 @@ export const serverRouter = router({
 
     onStatus: protectedProcedure(ScopeName.ServerStatus).subscription(
       async function* ({ signal, ctx }) {
-        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
+        const combined = AbortSignal.any([signal!, ctx.userAbort().signal]);
         for await (const [_] of on(serverEvents, 'serverStatus', {
           signal: combined,
         })) {
@@ -239,7 +239,7 @@ export const serverRouter = router({
 
     onHeartbeat: protectedProcedure(ScopeName.ServerStatus).subscription(
       async function* ({ signal, ctx }) {
-        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
+        const combined = AbortSignal.any([signal!, ctx.userAbort().signal]);
         for await (const [status] of on(serverEvents, 'heartbeat', {
           signal: combined,
         })) {
@@ -253,7 +253,7 @@ export const serverRouter = router({
     onPlayerCount: protectedProcedure(ScopeName.ServerStatus).subscription(
       async function* ({ signal, ctx }) {
         const { omegga } = getContextDeps();
-        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
+        const combined = AbortSignal.any([signal!, ctx.userAbort().signal]);
         // start listening before the initial yield so a join/leave that lands
         // in between isn't dropped (on() buffers events from when it's called)
         const events = on(serverEvents, 'playerCount', { signal: combined });
@@ -266,7 +266,7 @@ export const serverRouter = router({
 
     onUtilization: protectedProcedure(ScopeName.ServerUtilization).subscription(
       async function* ({ signal, ctx }) {
-        const combined = AbortSignal.any([signal!, ctx.userAbort.signal]);
+        const combined = AbortSignal.any([signal!, ctx.userAbort().signal]);
         for await (const [utilization] of on(serverEvents, 'utilization', {
           signal: combined,
         })) {

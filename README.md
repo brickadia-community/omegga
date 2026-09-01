@@ -1388,3 +1388,48 @@ often as they like:
 Histogram families also carry `buckets` (ascending upper bounds); their samples
 carry `counts` (one per bucket plus a trailing `+Inf` slot, not cumulative),
 `sum`, and `count`. Names must start with the plugin's own prefix.
+
+### Dashboards in the web UI
+
+Omegga can also read those metrics *back* out of a Prometheus that scrapes it,
+and chart them in the web UI. Off unless configured:
+
+```yaml
+metrics:
+  prometheus:
+    enabled: true
+    url: http://127.0.0.1:9090
+    instance: server-1 # the `instance` label identifying this omegga's series
+```
+
+Or `METRICS_PROMETHEUS_ENABLED`, `_URL`, `_INSTANCE`, `_TIMEOUT`. Also
+available: `timeout` (seconds, default 3), `cacheSeconds` (default 15), and
+`retentionDays` (default 15), which limits how far back the range picker
+reaches.
+
+Set `instance` to whatever your scrape config relabels this server to. Without
+it every query runs unfiltered, so a Prometheus scraping two servers charts
+both at once. Only `[A-Za-z0-9_.:-]` is accepted, because the value goes into a
+PromQL label matcher.
+
+A **Metrics** entry then appears in the nav for users holding any of the
+`metrics.*` permissions, with four dashboards: **players**, **server health**,
+**plugins**, and **host health**. Each has its own permission, so a moderator
+can see player activity without seeing the machine. Panels can be hidden per
+dashboard from the Panels menu; that choice is per browser. Hovering a panel
+header explains what it measures.
+
+Two things the UI does not do, deliberately:
+
+- **It never accepts PromQL from the browser.** Panels are a fixed catalog in
+  [`dashboards.ts`](src/webserver/backend/dashboards.ts) and the client asks for
+  them by name. A Prometheus scraping omegga is usually scraping everything else
+  its operator runs, so a pass-through `?query=` would make the web UI a read
+  interface for all of it.
+- **It never writes config.** The connection is file and environment only.
+
+If Prometheus is unreachable the dashboards say so instead of rendering empty
+charts, and a panel whose query fails reports it in place without disturbing
+the rest. "Reachable but holds nothing for this instance" gets its own message,
+since the usual cause is a scrape config that relabels differently than
+`instance` expects.

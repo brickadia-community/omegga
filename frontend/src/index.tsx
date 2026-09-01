@@ -11,6 +11,7 @@ import { NotFound } from './views/NotFound';
 import { AccountView } from './views/account/AccountView';
 import { HistoryView } from './views/history';
 import { HomeView } from './views/home';
+import { MetricsView } from './views/metrics';
 import { PlayerList } from './views/players/PlayerList';
 import { PluginList } from './views/plugins';
 import { ServerView } from './views/server';
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/" component={HomeView} />
           <Route path="/account" component={AccountView} />
           <Route path="/history/:time?" component={HistoryView} />
+          <Route path="/metrics/:view?" component={MetricsView} />
           <Route path="/players/:id?" component={PlayerList} />
           <Route path="/plugins/:id?" component={PluginList} />
           <Route path="/server" component={ServerView} />

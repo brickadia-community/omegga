@@ -1,5 +1,6 @@
 import { mergeRouters } from '../trpc';
 import { chatRouter } from './chat';
+import { metricsRouter } from './metrics';
 import { mfaRouter } from './mfa';
 import { playerRouter } from './player';
 import { pluginRouter } from './plugin';
@@ -19,6 +20,7 @@ export const appRouter = mergeRouters(
   worldRouter,
   roleRouter,
   mfaRouter,
+  metricsRouter,
 );
 
 export type AppRouter = typeof appRouter;

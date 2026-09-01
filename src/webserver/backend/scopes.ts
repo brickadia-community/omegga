@@ -3,6 +3,7 @@ export const ScopeDomain = {
   Player: 'player',
   Plugin: 'plugin',
   Server: 'server',
+  Metrics: 'metrics',
   User: 'user',
   World: 'world',
   Role: 'role',
@@ -39,6 +40,11 @@ export const ScopeName = {
   ServerAutorestartGet: 'server.autorestart.get',
   ServerAutorestartSet: 'server.autorestart.set',
   ServerUtilization: 'server.utilization',
+
+  MetricsPlayers: 'metrics.players',
+  MetricsServer: 'metrics.server',
+  MetricsPlugins: 'metrics.plugins',
+  MetricsHost: 'metrics.host',
 
   UserList: 'user.list',
   UserCreate: 'user.create',
@@ -211,6 +217,28 @@ export const SCOPES = {
     domain: D.Server,
   },
 
+  // Metrics
+  [S.MetricsPlayers]: {
+    description: 'View the player metrics dashboard',
+    readOnly: true,
+    domain: D.Metrics,
+  },
+  [S.MetricsServer]: {
+    description: 'View the server health metrics dashboard',
+    readOnly: true,
+    domain: D.Metrics,
+  },
+  [S.MetricsPlugins]: {
+    description: 'View the plugin metrics dashboard',
+    readOnly: true,
+    domain: D.Metrics,
+  },
+  [S.MetricsHost]: {
+    description: 'View the host health metrics dashboard',
+    readOnly: true,
+    domain: D.Metrics,
+  },
+
   // User
   [S.UserList]: {
     description: 'View web UI user accounts in the users view',
@@ -347,6 +375,7 @@ export const DOMAIN_LABELS: Record<string, string> = {
   [D.Player]: 'Player',
   [D.Plugin]: 'Plugin',
   [D.Server]: 'Server',
+  [D.Metrics]: 'Metrics',
   [D.User]: 'User',
   [D.World]: 'World',
   [D.Role]: 'Role',
@@ -357,6 +386,7 @@ export const DOMAIN_ORDER = [
   D.Player,
   D.Plugin,
   D.Server,
+  D.Metrics,
   D.User,
   D.World,
   D.Role,

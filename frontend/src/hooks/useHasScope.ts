@@ -29,3 +29,18 @@ export const useRequireScope = (scope: Permission): boolean => {
   }, [user, allowed]);
   return allowed;
 };
+
+/**
+ * Same, for a view that any one of several scopes admits. Waits for the session
+ * before redirecting: scopes read as absent until it loads, so acting early
+ * bounces the user off a page they are allowed to see whenever they reload it.
+ */
+export const useRequireAnyScope = (...scopes: Permission[]): boolean => {
+  const user = useStore($user);
+  const allowed = useHasAnyScope(...scopes);
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    if (user && !allowed) navigate('/');
+  }, [user, allowed]);
+  return allowed;
+};

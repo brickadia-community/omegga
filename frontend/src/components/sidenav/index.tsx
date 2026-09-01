@@ -1,4 +1,5 @@
 import {
+  IconChartLine,
   IconDashboard,
   IconList,
   IconMessages,
@@ -39,7 +40,9 @@ type NavItem = {
 const useNavItems = (): NavItem[] => {
   const user = useStore($user);
   const resolved = useStore($resolvedScopes);
-  const userless = useStore($omeggaData)?.userless;
+  const omeggaData = useStore($omeggaData);
+  const userless = omeggaData?.userless;
+  const metricsEnabled = omeggaData?.metrics?.enabled ?? false;
 
   return useMemo(() => {
     const has = (scope?: Permission) =>
@@ -85,6 +88,24 @@ const useNavItems = (): NavItem[] => {
         color: '#b3006b',
         tooltip: 'Browse player info and play time',
       });
+    // the metrics dashboards need a prometheus to read from; without one the
+    // entry would lead to a page that can only report that it is unconfigured
+    if (
+      metricsEnabled &&
+      [
+        Permissions.MetricsPlayers,
+        Permissions.MetricsServer,
+        Permissions.MetricsPlugins,
+        Permissions.MetricsHost,
+      ].some(scope => has(scope))
+    )
+      items.push({
+        to: '/metrics',
+        label: 'Metrics',
+        Icon: IconChartLine,
+        color: '#00786b',
+        tooltip: 'Player, server, plugin, and host metrics over time',
+      });
     if (has(Permissions.ServerStatus))
       items.push({
         to: '/server',
@@ -120,7 +141,7 @@ const useNavItems = (): NavItem[] => {
         tooltip: 'Your account settings',
       });
     return items;
-  }, [user, resolved, userless]);
+  }, [user, resolved, userless, metricsEnabled]);
 };
 
 const isItemActive = (item: NavItem, location: string) =>
