@@ -381,8 +381,10 @@ export default class BrickadiaServer extends EventEmitter {
     // kill the process
     this.#child.kill('SIGINT');
 
-    // ...kill it again just to make sure it's dead
-    spawn('kill', ['-9', this.#child.pid + '']);
+    // ...kill it again just to make sure it's dead. this signals the pid
+    // directly rather than shelling out: slim container images have no
+    // `kill` binary, only the shell builtin, and spawn cannot use that.
+    this.#child.kill('SIGKILL');
   }
 
   // detaches listeners

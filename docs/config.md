@@ -71,5 +71,6 @@ metrics:
   defaultMetrics: true # export standard process_/nodejs_ metrics for omegga
   statusMaxAge: 15 # seconds before a scrape refreshes the cached server status
   plugins: true # let plugins register their own metrics
+```
 
 The [metrics](metrics.md) section is documented in full on its own page.

@@ -2,6 +2,11 @@
 
 ## Latest
 
+## 1.16.1 - 2026-09-02
+
+- Fix stopping the server or a JSON-RPC plugin crashing with `spawn kill ENOENT` on container images that ship no `kill` binary
+- Bump brs-js to 3.8.0 for new performance improvements
+
 ## 1.16.0 - 2026-09-01
 
 A Pterodactyl egg for running Omegga under a game panel.

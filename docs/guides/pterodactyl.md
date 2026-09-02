@@ -71,11 +71,8 @@ too, or the server cannot be placed on it.
 <https://brickadia.com/account/tokens> and paste it into **Brickadia hosting
 token** on the Startup tab.
 
-
-Once authentication succeeds the token is stored in the volume
-(`.config/omegga/global_auth_token`), so it survives restarts and reinstalls of
-the container. The egg adds that path to the file denylist to keep it out of
-the file manager.
+Omegga reads the token from the environment on every start and passes it to the
+server, so it stays in the panel and is never written into the volume.
 
 ## Variables
 

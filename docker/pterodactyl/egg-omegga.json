@@ -15,9 +15,7 @@
         "Omegga (latest)": "ghcr.io/brickadia-community/omegga:latest",
         "Omegga 1.16": "ghcr.io/brickadia-community/omegga:1.16"
     },
-    "file_denylist": [
-        ".config/omegga/global_auth_token"
-    ],
+    "file_denylist": [],
     "startup": "if [ -z \"${BRICKADIA_TOKEN}\" ]; then echo \"!> BRICKADIA_TOKEN is empty. Generate a server hosting token at https://brickadia.com/account/tokens, paste it into the \\\"Brickadia hosting token\\\" field on the Startup tab, and start the server again.\"; exit 1; fi; BRICKADIA_PORT={{SERVER_PORT}} OMEGGA_UI_HOST={{SERVER_IP}} omegga {{OMEGGA_FLAGS}}",
     "config": {
         "files": "{\"omegga-config.yml\": {\"parser\": \"yaml\", \"find\": {\"server.port\": \"{{server.build.default.port}}\", \"omegga.port\": \"{{env.OMEGGA_PORT}}\"}}}",
