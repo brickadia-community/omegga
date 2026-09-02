@@ -1,0 +1,196 @@
+/* Repaint mdBook's "navy" theme (the book's default) in the omegga web UI's
+ * palette, so the docs and the UI look like the same product. Values are taken
+ * from frontend/src/css/theme.scss; the few mdBook needs that the palette has
+ * no equivalent for are derived and marked below. Loaded as additional-css,
+ * which comes after mdBook's own variables.css, so these win on equal
+ * specificity without vendoring the whole file.
+ *
+ * Only "navy" is restyled. The other themes in the paintbrush menu stay stock,
+ * which is what a reader picking "Light" is asking for. */
+.navy {
+  --bg: #131d30; /* $br-bg-secondary */
+  --fg: #dfe7f0; /* derived: body text, softer than $br-button-fg white */
+
+  --sidebar-bg: #091021; /* $br-bg-footer */
+  --sidebar-fg: #a7bbce; /* $br-boring-button-fg */
+  --sidebar-active: #009bee; /* $br-info-normal, same blue as links */
+  --sidebar-non-existant: #5e7190; /* $br-element-fg, used for draft chapters */
+  --sidebar-spacer: #263f61; /* $br-element-pressed */
+
+  --scrollbar: #455a7e; /* $br-button-normal */
+
+  --icons: #5e7190; /* $br-element-fg */
+  --icons-hover: #a7bbce; /* $br-boring-button-fg */
+
+  --links: #009bee; /* $br-info-normal */
+
+  --inline-code-color: #4cb9f3; /* $br-info-hover */
+
+  --theme-popup-bg: #162841; /* $br-element-header-bg */
+  --theme-popup-border: #455a7e; /* $br-button-normal */
+  --theme-hover: #263f61; /* $br-element-pressed */
+
+  --quote-bg: #182b44; /* $br-bg-primary-alt */
+  --quote-border: #455a7e; /* $br-button-normal */
+
+  --warning-border: #ffa10b; /* $br-warn-normal */
+
+  --table-border-color: #263f61; /* $br-element-pressed */
+  --table-header-bg: #1b2f4a; /* $br-bg-primary, the UI's thead th */
+  --table-alternate-bg: #111a2b; /* $br-bg-secondary-alt, the UI's alt row */
+
+  --searchbar-border-color: #455a7e; /* $br-button-normal */
+  --searchbar-bg: #263f61; /* $br-element-pressed */
+  --searchbar-fg: #ffffff; /* $br-button-fg */
+  --searchbar-shadow-color: #091021; /* $br-bg-footer */
+  --searchresults-header-fg: #a7bbce; /* $br-boring-button-fg */
+  --searchresults-border-color: #455a7e; /* $br-button-normal */
+  --searchresults-li-bg: #182b44; /* $br-bg-primary-alt */
+  --search-mark-bg: #4cb9f3; /* $br-info-hover */
+
+  --footnote-highlight: #009bee; /* $br-info-normal */
+  --overlay-bg: rgba(9, 16, 33, 0.6); /* $br-bg-footer, translucent */
+
+  --sidebar-header-border-color: #263f61; /* $br-element-pressed */
+
+  /* GitHub-style alert blockquotes, on the palette's semantic colors */
+  --blockquote-note-color: #009bee; /* $br-info-normal */
+  --blockquote-tip-color: #5da93d; /* $br-main-normal */
+  --blockquote-important-color: #4cb9f3; /* $br-info-hover */
+  --blockquote-warning-color: #ffa10b; /* $br-warn-normal */
+  --blockquote-caution-color: #e02d2d; /* $br-error-normal */
+
+  /* --copy-button-filter{,-hover} are left at mdBook's defaults: they are
+   * filter matrices that tint an SVG, not colors, and the stock grey/blue
+   * pair already reads correctly against this background. */
+}
+
+/* Glacial Indifference, the web UI's body font, for the sidebar only. The
+ * files live in docs/assets/fonts/ because mdBook copies non-markdown src
+ * files verbatim; putting them in theme/fonts/ would replace mdBook's bundled
+ * Open Sans, which still sets the type for the page body. These url()s resolve
+ * against this file's own location (book/theme/), not the page's. */
+@font-face {
+  font-family: 'Glacial Indifference';
+  src: url('../assets/fonts/GlacialIndifferenceRegular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Glacial Indifference';
+  src: url('../assets/fonts/GlacialIndifferenceBold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* mdBook renders the sidebar in an iframe whose body is .sidebar-iframe-inner
+ * and which loads this stylesheet too; .sidebar covers the non-iframe case. */
+.sidebar-iframe-inner,
+.sidebar {
+  font-family: 'Glacial Indifference', 'Open Sans', sans-serif;
+}
+
+/* Nothing in mdBook's chrome.css sets a font-weight on the chapter list, so
+ * this inherits down to links, draft-chapter spans, and fold arrows alike. */
+.chapter {
+  font-weight: 700;
+}
+
+/* Headings in the page body. mdBook sets no font-family on h1-h6, so these
+ * inherit Open Sans from body and this rule applies with no specificity
+ * fight. They are bold by browser default, which is the 700 face above. */
+.content h1,
+.content h2,
+.content h3,
+.content h4,
+.content h5,
+.content h6 {
+  font-family: 'Glacial Indifference', 'Open Sans', sans-serif;
+}
+
+/* Tables as rounded panels, the way the web UI draws its list containers:
+ * one outer border with $br-radius-md corners and no interior lines at all,
+ * rows told apart purely by the alternating background, exactly as the UI's
+ * own `table.br-table` does it. Colours come from the same palette pair the
+ * UI uses: $br-bg-primary for the header, $br-bg-secondary{,-alt} for rows.
+ *
+ * border-collapse must be `separate` for border-radius to apply at all, which
+ * is why mdBook's `collapse` is overridden here. `overflow: hidden` clips the
+ * corner cells; the explicit corner radii below do the same job for renderers
+ * that decline to honour overflow on a table. */
+.content table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--table-border-color);
+  border-radius: 12px; /* $br-radius-md */
+  overflow: hidden;
+  background: #131d30; /* $br-bg-secondary, the UI's odd row */
+}
+
+.content table thead {
+  background: var(--table-header-bg);
+}
+
+.content table th,
+.content table td {
+  border: none;
+  padding: 8px 16px;
+}
+
+.content table thead th,
+.content table thead td {
+  font-family: 'Glacial Indifference', 'Open Sans', sans-serif;
+  font-weight: 700;
+  text-align: left;
+  color: #ffffff; /* $br-button-fg */
+}
+
+/* Markdown has no headerless table, so a two-column layout like the "Start
+ * here" list on the index is written `| | |` and renders an empty thead. Drop
+ * it instead of painting a blank header bar. Browsers without :has() simply
+ * keep the bar, which is what they show today. */
+.content table thead:not(:has(th:not(:empty))) {
+  display: none;
+}
+
+/* ...which makes the first body row the top row, so the corners move with it */
+.content table thead:not(:has(th:not(:empty))) + tbody tr:first-child td:first-child {
+  border-top-left-radius: 12px;
+}
+.content table thead:not(:has(th:not(:empty))) + tbody tr:first-child td:last-child {
+  border-top-right-radius: 12px;
+}
+
+.content table thead tr:first-child th:first-child {
+  border-top-left-radius: 12px;
+}
+.content table thead tr:first-child th:last-child {
+  border-top-right-radius: 12px;
+}
+.content table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 12px;
+}
+.content table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 12px;
+}
+
+/* Code blocks on the sidebar's background. The colour comes from the same
+ * variable the sidebar uses, so the two can never drift apart.
+ *
+ * Scoped to `pre > code` rather than `.hljs`: book.js adds the hljs class to
+ * every `code` element, inline ones included, and mdBook styles those as
+ * inline chips. A bare `.hljs` rule here would give every `inline mention`
+ * in prose a dark background box. */
+.navy pre > code {
+  background: var(--sidebar-bg);
+}
+
+/* Rounded to the same radius as the tables. Not scoped to a theme, since the
+ * corner shape should hold whichever palette the reader picks. mdBook already
+ * sets `overflow-x: auto` here for wide lines, so the corners clip cleanly. */
+.content pre > code {
+  border-radius: 12px; /* $br-radius-md */
+}

@@ -2,29 +2,24 @@
 
 [Omegga](README.md)
 
-# Setting up
-
-- [Installing](install/README.md)
+- [Setting up]()
+  - [Installing](install/README.md)
   - [Linux](install/linux.md)
   - [Windows (WSL)](install/wsl.md)
-- [Containers](containers.md)
-- [Pterodactyl](guides/pterodactyl.md)
-- [Running](running.md)
+  - [Running](running.md)
+  - [Troubleshooting](troubleshooting.md)
+  - [Containers](containers.md)
+  - [Pterodactyl / Pelican](guides/pterodactyl.md)
+  - [Uninstalling](uninstall.md)
 - [Configuration](config.md)
-- [Environment variables](env.md)
-- [Troubleshooting](troubleshooting.md)
-- [Uninstalling](uninstall.md)
-
-# Plugins
-
+  - [Environment variables](env.md)
+  - [Web UI permissions](permissions.md)
+  - [Metrics](metrics.md)
 - [Plugins](plugins/README.md)
   - [Installing plugins](plugins/installing.md)
   - [Node VM plugins](plugins/safe.md)
   - [Node plugins](plugins/unsafe.md)
   - [JSON RPC plugins](plugins/jsonrpc.md)
-
-# API
-
 - [API](api/README.md)
   - [Omegga](api/omegga.md)
   - [Player](api/player.md)
@@ -32,10 +27,7 @@
   - [Events](api/events.md)
   - [Types](api/types.md)
   - [Log parsing](api/log-parsing.md)
-
-# Operating a server
-
-- [Metrics](metrics.md)
-- [Web UI permissions](permissions.md)
-- [HTTPS with a real certificate](guides/https.md)
-- [Running on another machine](guides/remote.md)
+- [Guides](guides/README.md)
+  - [In-game wire integration](guides/wires.md)
+  - [HTTPS with a real certificate](guides/https.md)
+  - [Running on another machine](guides/remote.md)

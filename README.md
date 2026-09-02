@@ -1,7 +1,7 @@
-# Omegga
+# <img src="docs/assets/logo.png" alt="" width="32"> <img src="https://cdn.discordapp.com/emojis/615904012432310274.png" alt="" width="32"> Omegga
 
-**[Documentation](https://omegga.brickadia.dev/)** ·
-[Discord](https://discord.gg/UcdwTYhS75)
+**[Documentation](https://omegga.brickadia.dev/)** &
+[Discord](https://discord.gg/UcdwTYhS75) (Read the docs before asking questions in the Discord please!)
 
 Omegga wraps [Brickadia](https://brickadia.com/)'s server console to provide interactivity and utility via plugins along with a web interface for managing your server.
 

@@ -25,8 +25,14 @@ Narrow down where the issue might be with the following options:
      1. Set your WSL to WSL 2
      2. `npm i -g omegga`
      3. Set your WSL back to WSL 1 (assuming you want wsl1)
-- If you're getting a "`gyp ERR! stack Error: not found: make`"
-  - Install [build-essential](https://wiki.gnucash.org/wiki/Install_Build_Tools)
+- If you're getting a "`gyp ERR! stack Error: not found: make`", `make` comes
+  from [build-essential](https://wiki.gnucash.org/wiki/Install_Build_Tools):
+
+  ```sh
+  sudo apt update && sudo apt upgrade
+  sudo apt install build-essential
+  npm i -g omegga # re-run the omegga install
+  ```
 
 For problems during `npm i -g omegga` rather than after it, see
 [Install troubleshooting](install/linux.md#install-troubleshooting).

@@ -7,10 +7,11 @@ Omegga runs on linux. Pick the one that matches where you are starting from:
 | [Linux](linux.md) | a linux machine or VPS you already have a shell on |
 | [Windows (WSL)](wsl.md) | Windows, through the Windows Subsystem for Linux |
 | [Containers](../containers.md) | docker or podman, with node and omegga already in the image |
+| [Pterodactyl / Pelican](../guides/pterodactyl.md) | a game server panel, running the published image from an egg |
 
-The container image is the only option that does not need node on the host. The
-other two are the same install once you have a shell, so the WSL page is just
-the extra steps to get one.
+Neither the container image nor the panel needs node on the host, since both run
+the published image. Linux and WSL are the same install once you have a shell,
+so the WSL page is just the extra steps to get one.
 
 <font size="5" color="red">Do not install omegga or run brickadia/omegga as root/superuser</font>:
 
@@ -22,9 +23,5 @@ the extra steps to get one.
 
 If any of the above are true, [create a new user](linux.md#creating-a-new-user)
 and continue from there.
-
-If you need to run omegga as root, make sure your branch is `main-server` or
-`unstable-server`, as `main` will not work as root.
-
 
 Once it is installed, head to [Running](../running.md).

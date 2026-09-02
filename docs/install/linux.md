@@ -64,6 +64,7 @@ If you are having issues running omegga, see [Troubleshooting](../troubleshootin
 
   - If you get an error like "`gyp ERR! stack Error: not found: make`" you need to install build-essential:
     ```sh
+    sudo apt update && sudo apt upgrade # refresh the package index first
     sudo apt install build-essential # install make
     npm i -g omegga # re-run omegga install
     ```

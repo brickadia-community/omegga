@@ -1,9 +1,13 @@
-# Pterodactyl
+# Pterodactyl / Pelican
 
 [Pterodactyl](https://pterodactyl.io/) runs game servers as Docker containers
 managed by a web panel. An egg tells it how to install and run one.
 [`docker/pterodactyl/egg-omegga.json`](https://github.com/brickadia-community/omegga/blob/master/docker/pterodactyl/egg-omegga.json)
 in this repository is that egg for Omegga.
+
+[Pelican](https://pelican.dev/) is a fork of Pterodactyl and imports the same
+egg format, so these steps apply there too; only the panel's own naming for the
+UI bits differs.
 
 It runs the published image, so Omegga updates by changing the image tag rather
 than reinstalling. Brickadia is not in the image; Omegga downloads it through
@@ -11,13 +15,21 @@ steamcmd on first start, into the server's own volume.
 
 Setting one up takes three steps:
 
-1. [Import the egg](#importing-the-egg) into a nest.
+1. [Import the egg](#importing-the-egg).
 2. [Create a server](#creating-a-server) from it, with two allocations.
 3. [Set a hosting token](#the-hosting-token)
 
 ## Importing the egg
 
-The panel has no CLI or API for importing eggs, so this is a UI operation:
+Pelican can import an egg from a URL, so there is nothing to download. Point its
+egg import at the raw file:
+
+```
+https://raw.githubusercontent.com/brickadia-community/omegga/master/docker/pterodactyl/egg-omegga.json
+```
+
+Pterodactyl has no URL import, and no CLI or API for eggs either, so there it is
+a file upload:
 
 1. Download the egg [here](https://raw.githubusercontent.com/brickadia-community/omegga/master/docker/pterodactyl/egg-omegga.json) or with `curl`:
 

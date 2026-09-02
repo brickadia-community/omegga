@@ -1,4 +1,4 @@
-# <img src="https://cdn.discordapp.com/emojis/615904012432310274.png" width="32"> Omegga
+# <img src="assets/logo.png" alt="" width="32"> <img src="https://cdn.discordapp.com/emojis/615904012432310274.png" alt="" width="32"> Omegga
 
 Omegga wraps [Brickadia](https://brickadia.com/)'s server console to provide
 interactivity and utility via plugins along with a web interface for managing
@@ -11,12 +11,13 @@ support.
 
 | | |
 | --- | --- |
-| [Installing](install/) | linux, WSL, or a container |
+| [Installing](install/) | linux, WSL, a container, or Pterodactyl/Pelican |
 | [Running](running.md) | starting a server and keeping it updated |
+| [Troubleshooting](troubleshooting.md) | when it does not start |
 | [Configuration](config.md) | `omegga-config.yml`, field by field |
 | [Plugins](plugins/) | installing them, and writing your own |
 | [API](api/) | what a plugin can reach |
-| [Troubleshooting](troubleshooting.md) | when it does not start |
+| [Guides](guides/) | wires, HTTPS, and running on another machine |
 
 ## What omegga can do
 

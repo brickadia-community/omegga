@@ -12,6 +12,8 @@ git-repository-url = "https://github.com/brickadia-community/omegga"
 edit-url-template = "https://github.com/brickadia-community/omegga/edit/master/docs/{path}"
 site-url = "/"
 no-section-label = true
+additional-css = ["theme/omegga.css"]
+additional-js = ["theme/wirescript-hljs.js"]
 
 [output.html.fold]
 enable = true
