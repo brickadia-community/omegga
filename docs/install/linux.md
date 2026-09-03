@@ -107,6 +107,9 @@ covers all of these on Debian and Ubuntu.
 | `git` | `omegga install` and `omegga update` for plugins |
 | `openssl` | the web UI's https certificate. Without it the web UI falls back to http |
 
+SteamCMD is not on that list: omegga asks to install it on the first start, into
+`~/.config/omegga/steam`, or uses one already on `PATH`.
+
 Omegga is installed as a global npm package
 
     npm i -g omegga

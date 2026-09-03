@@ -15,6 +15,12 @@ To start a server, simply type the following in a linux shell after install:
 
 Omegga will prompt for credentials as necessary and only stores the auth tokens brickadia generates on login. **Omegga does not store your password**.
 
+The first start downloads Brickadia through SteamCMD. Omegga uses a `steamcmd`
+already on `PATH`, or asks before installing its own into
+`~/.config/omegga/steam`. Installing one yourself first is optional. Anything
+that cannot answer that prompt, like a service manager or a game panel, should
+set `SKIP_STEAMCMD_PROMPT=true` to agree in advance.
+
 Omegga runs in the current working directory. To have it always use the same
 folder regardless of where you start it, run `omegga config default $(pwd)`.
 
