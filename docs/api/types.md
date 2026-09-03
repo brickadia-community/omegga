@@ -309,7 +309,7 @@ type IWatcher<T> = {
   afterMatchDelay: number;
   last: (match: T) => boolean;
   callback: () => void;
-  resolve: (...args: any[]) => void;
+  resolve: (...args: T[]) => void;
   remove: () => void;
   done: () => void;
   timeout: ReturnType<typeof setTimeout>;

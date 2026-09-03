@@ -35,7 +35,7 @@ Run when plugin is stopped
 ### `pluginEvent`
 
 ```ts
-pluginEvent?(event: string, from: string, ...args: any[]): Promise<unknown>
+pluginEvent?(event: string, from: string, ...args: unknown[]): Promise<unknown>
 ```
 
 Run when another plugin tries to interact with this plugin
@@ -44,7 +44,7 @@ Run when another plugin tries to interact with this plugin
 | --- | --- | --- |
 | `event` | `string` | Event name |
 | `from` | `string` | Name of origin plugin |
-| `...args` | `any[]` |  |
+| `...args` | `unknown[]` |  |
 
 **Returns** value other plugin expects
 
@@ -278,7 +278,7 @@ type PluginMetricLabels = Record<string, string | number | boolean>
 ### `emitPlugin`
 
 ```ts
-emitPlugin?(event: string, args: any[]): Promise<any>
+emitPlugin?(event: string, args: unknown[]): Promise<unknown>
 ```
 
 <sub>Declared in [`src/plugin.ts`](https://github.com/brickadia-community/omegga/blob/master/src/plugin.ts).</sub>
