@@ -2,6 +2,16 @@
 
 ## Latest
 
+## 1.17.0 - 2026-09-03
+
+Plugins install and update without git installed.
+
+- Plugin installs and updates fall back to a bundled git implementation when the `git` binary is missing, so they work on hosts and container images without it. `OMEGGA_GIT` set to `bin` or `js` picks one explicitly
+- Add `/plugins update [...plugin names]` to the console, alongside the existing `/plugins install`
+- `omegga install` no longer exits when git is missing, and `omegga init-plugin` starts a repo whether or not it is
+- `omegga check` no longer skips a plugin directory that is not a git repo
+- A failed plugin update rolls back to the commit it started from, rather than leaving an `omegga-upgrade-backup` branch behind
+
 ## 1.16.1 - 2026-09-02
 
 - Fix stopping the server or a JSON-RPC plugin crashing with `spawn kill ENOENT` on container images that ship no `kill` binary

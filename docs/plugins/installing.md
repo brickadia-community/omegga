@@ -10,6 +10,8 @@ The available shorthands are `gh` for github.com and `gl` for gitlab.com
 
 This is the recommended way of installing plugins as it automatically runs a setup script when present.
 
+The same is available in the omegga console as `/plugin install gh:user/repo`.
+
 ## Manual Installation
 
 You can clone a plugin's github repo inside the `plugins` folder (created when you run `omegga` for the first time):
@@ -20,7 +22,7 @@ You can clone a plugin's github repo inside the `plugins` folder (created when y
 
 ## Updating Plugins
 
-Plugins can be updated with `omegga update`:
+Plugins can be updated with `omegga update`, or with `/plugin update` in the omegga console:
 
 ```sh
 # update all plugins
@@ -29,6 +31,10 @@ omegga update
 # update plugins named "pluginName" and "anotherPluginName"
 omegga update pluginName anotherPluginName
 ```
+
+Updating pulls new commits for every installed plugin, or the ones named. It
+skips a plugin with uncommitted changes, one on a branch other than
+`main`/`master`, and one that is ahead of its remote.
 
 Plugins may also need to be updated based on the project's README file.
 
