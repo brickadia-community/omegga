@@ -18,7 +18,7 @@ const tsRecommendedRules = PluginTypescript.configs['flat/recommended'].reduce(
 
 export default defineConfig([
   {
-    // build artifacts and vendored/template code
+    // build artifacts and vendored/template/generated code
     ignores: [
       'dist/**',
       'public/**',
@@ -26,6 +26,8 @@ export default defineConfig([
       'plugins/**',
       'tools/**',
       'frontend/dist/**',
+      // mdbook output; its bundled vendor js carries its own lint directives
+      'book/**',
     ],
   },
 
@@ -53,15 +55,18 @@ export default defineConfig([
       'prettier/prettier': 'error',
 
       '@typescript-eslint/no-unused-vars': [
-        'warn',
+        'error',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
           caughtErrorsIgnorePattern: '^_',
         },
       ],
-      // the codebase intentionally uses `any` at dynamic boundaries (plugin
-      // rpc payloads, log matchers); surface them without failing the lint
+      // `any` is down to the two places that cannot be typed without changing
+      // behaviour (see MockEventListener in src/plugin.ts and the player method
+      // dispatch in plugin_jsonrpc_stdio.ts), both commented at the site. This
+      // stays a warning rather than an error so those two do not need inline
+      // disables; a new one still shows up in `npm run lint`
       '@typescript-eslint/no-explicit-any': 'warn',
       // `catch (e) { /* ignored */ }` is a common idiom around console io
       'no-empty': ['error', { allowEmptyCatch: true }],
@@ -73,6 +78,11 @@ export default defineConfig([
       ],
       // only require const when every destructured binding is never reassigned
       'prefer-const': ['error', { destructuring: 'all' }],
+      // `smart` still allows `x == null`, which the codebase uses to mean
+      // "null or undefined"
+      eqeqeq: ['error', 'smart'],
+      'object-shorthand': ['error', 'properties'],
+      '@typescript-eslint/no-inferrable-types': 'error',
     },
   },
 
@@ -108,10 +118,11 @@ export default defineConfig([
       'react/prop-types': 'off',
       'prettier/prettier': 'error',
       'typescript/no-unused-vars': [
-        'warn',
+        'error',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
         },
       ],
     },

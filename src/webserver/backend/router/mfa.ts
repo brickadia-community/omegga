@@ -4,7 +4,6 @@ import QRCode from 'qrcode';
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
-  type AuthenticatorTransportFuture,
 } from '@simplewebauthn/server';
 import { z } from 'zod/v4';
 import { ScopeName } from '../scopes';
@@ -97,7 +96,7 @@ export const mfaRouter = router({
             userName: ctx.user.username || 'Admin',
             excludeCredentials: (ctx.user.passkeys ?? []).map(p => ({
               id: p.id,
-              transports: p.transports as AuthenticatorTransportFuture[],
+              transports: p.transports,
             })),
             authenticatorSelection: {
               residentKey: 'preferred',

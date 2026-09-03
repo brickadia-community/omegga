@@ -5,7 +5,7 @@ import validate from './validator';
 // given a list of formats, generate a function to write to any of those formats
 const reader =
   (formats: IConfigFormat[]) =>
-  (path: string = '') => {
+  (path = '') => {
     // find the config format that matches this extension
     const ext = path.split('.').pop()?.toLowerCase();
     const format = formats.find(f => f.extension === ext);

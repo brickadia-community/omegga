@@ -10,6 +10,10 @@ import Datastore from 'nedb-promises';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import {
+  type IStoreAutoRestartConfig,
+  type IStoreDefaultPermissions,
+} from '@/webserver/backend/types';
 import { importNedbIfNeeded, NEDB_FILES } from './nedbImport';
 import * as mainSchema from './schema';
 import * as pluginSchema from './pluginSchema';
@@ -27,7 +31,7 @@ function openTestDb() {
   return { sqlite, db };
 }
 
-async function writeNedb(filepath: string, docs: any[]) {
+async function writeNedb(filepath: string, docs: Record<string, unknown>[]) {
   const store = Datastore.create({ filename: filepath, autoload: true });
   for (const doc of docs) {
     await store.insert(doc);
@@ -135,7 +139,7 @@ describe('importNedbIfNeeded', () => {
     await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
 
     const users = mainDb.select().from(mainSchema.users).all();
-    const perms = users[0].permissions as any;
+    const perms = users[0].permissions!;
     expect(perms.root).toBe('off');
     expect(perms.domains).toEqual({ chat: 'all' });
     // the old colon-encoded keys are decoded to the dotted runtime form
@@ -165,7 +169,7 @@ describe('importNedbIfNeeded', () => {
     await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
 
     const users = mainDb.select().from(mainSchema.users).all();
-    const perms = users[0].permissions as any;
+    const perms = users[0].permissions!;
     expect(perms.scopes).toEqual({ 'user.ban': true, 'role.edit': false });
   });
 
@@ -343,11 +347,15 @@ describe('importNedbIfNeeded', () => {
     const configs = mainDb.select().from(mainSchema.serverConfig).all();
     const dpConfig = configs.find(c => c.key === 'defaultPermissions');
     expect(dpConfig).toBeDefined();
-    expect((dpConfig!.value as any).root).toBe('read');
+    expect(
+      (dpConfig!.value as Omit<IStoreDefaultPermissions, 'type'>).root,
+    ).toBe('read');
 
     const arcConfig = configs.find(c => c.key === 'autoRestartConfig');
     expect(arcConfig).toBeDefined();
-    expect((arcConfig!.value as any).maxUptime).toBe(48);
+    expect(
+      (arcConfig!.value as Omit<IStoreAutoRestartConfig, 'type'>).maxUptime,
+    ).toBe(48);
   });
 
   it('migrates old defaultPermissions format', async () => {
@@ -363,7 +371,10 @@ describe('importNedbIfNeeded', () => {
     await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
 
     const configs = mainDb.select().from(mainSchema.serverConfig).all();
-    const dp = configs.find(c => c.key === 'defaultPermissions')!.value as any;
+    const dp = configs.find(c => c.key === 'defaultPermissions')!.value as Omit<
+      IStoreDefaultPermissions,
+      'type'
+    >;
     expect(dp.root).toBe('off');
     expect(dp.domains).toEqual({ chat: 'all' });
     expect(dp.scopes).toEqual({ 'chat.send': true, 'server.start': false });
@@ -383,7 +394,10 @@ describe('importNedbIfNeeded', () => {
     await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
 
     const configs = mainDb.select().from(mainSchema.serverConfig).all();
-    const dp = configs.find(c => c.key === 'defaultPermissions')!.value as any;
+    const dp = configs.find(c => c.key === 'defaultPermissions')!.value as Omit<
+      IStoreDefaultPermissions,
+      'type'
+    >;
     expect(dp.root).toBe('read');
     expect(dp.scopes).toEqual({ 'chat.send': true, 'server.start': false });
   });
@@ -405,7 +419,7 @@ describe('importNedbIfNeeded', () => {
     await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
 
     const roles = mainDb.select().from(mainSchema.webRoles).all();
-    expect((roles[0].permissions as any).scopes).toEqual({
+    expect(roles[0].permissions.scopes).toEqual({
       'player.kick': true,
     });
   });
@@ -453,7 +467,7 @@ describe('importNedbIfNeeded', () => {
 
     const configs = pluginDb.select().from(pluginSchema.pluginConfig).all();
     expect(configs).toHaveLength(1);
-    expect((configs[0].value as any).enabled).toBe(true);
+    expect(configs[0].value.enabled).toBe(true);
 
     pluginSqlite.close();
   });
@@ -661,8 +675,7 @@ describe('importNedbIfNeeded', () => {
     fs.writeFileSync(path.join(tmpDir, NEDB_FILES.users), line + '\n');
     await importNedbIfNeeded(tmpDir, mainSqlite, mainDb);
 
-    const perms = mainDb.select().from(mainSchema.users).all()[0]
-      .permissions as any;
+    const perms = mainDb.select().from(mainSchema.users).all()[0].permissions!;
     expect(perms.root).toBe('off');
     expect(perms.domains).toEqual({ chat: 'all' });
   });

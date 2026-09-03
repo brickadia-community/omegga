@@ -761,7 +761,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
               return;
             }
           }
-          let loadRes: boolean = false;
+          let loadRes = false;
           if (revision) {
             log(`Loading world ${worldName.yellow} at revision ${revision}...`);
             loadRes = await this.omegga.loadWorldRevision(worldName, revision);

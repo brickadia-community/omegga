@@ -341,7 +341,7 @@ export default class Database extends EventEmitter {
   async setUserPermissions(username: string, permissions: PermissionSet) {
     this.db
       .update(schema.users)
-      .set({ permissions: permissions })
+      .set({ permissions })
       .where(eq(schema.users.username, username))
       .run();
   }
@@ -367,7 +367,7 @@ export default class Database extends EventEmitter {
       this.defaultPermissionsCache = defaults;
       return defaults;
     }
-    const val = row.value as any;
+    const val = row.value as Partial<Omit<IStoreDefaultPermissions, 'type'>>;
     const result: IStoreDefaultPermissions = {
       type: 'defaultPermissions',
       root: val.root ?? RootLevel.Off,
@@ -689,7 +689,7 @@ export default class Database extends EventEmitter {
           name,
           description,
           order: 1,
-          permissions: permissions,
+          permissions,
         })
         .run();
     });
@@ -701,7 +701,7 @@ export default class Database extends EventEmitter {
       name,
       description,
       order: 1,
-      permissions: permissions,
+      permissions,
     };
   }
 
@@ -711,7 +711,7 @@ export default class Database extends EventEmitter {
       permissions?: PermissionSet;
     },
   ): Promise<void> {
-    const $set: Record<string, any> = {};
+    const $set: Partial<typeof schema.webRoles.$inferInsert> = {};
     if (updates.name !== undefined) $set.name = updates.name;
     if (updates.description !== undefined)
       $set.description = updates.description;

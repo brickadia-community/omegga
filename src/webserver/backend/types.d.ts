@@ -14,7 +14,7 @@ export interface IWebAuthnCredential {
   name: string;
   created: number;
   lastUsed: number;
-  transports?: string[];
+  transports?: import('@simplewebauthn/server').AuthenticatorTransportFuture[];
 }
 
 export interface IPlayer {

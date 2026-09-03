@@ -34,8 +34,8 @@ import * as util from './util';
 const PUBLIC_PATH = path.join(__dirname, '../../../public');
 const ASSETS_PATH = path.join(__dirname, '../../../public/assets');
 
-const log = (...args: any[]) => Logger.log(...args);
-const error = (...args: any[]) => Logger.error(...args);
+const log = (...args: unknown[]) => Logger.log(...args);
+const error = (...args: unknown[]) => Logger.error(...args);
 
 // the webserver serves an authenticated web UI
 export default class Webserver {
@@ -339,7 +339,7 @@ export default class Webserver {
             id: passkey.id,
             publicKey: Buffer.from(passkey.publicKey, 'base64url'),
             counter: passkey.counter,
-            transports: passkey.transports as any,
+            transports: passkey.transports,
           },
         });
         if (!verification.verified) {
@@ -350,7 +350,7 @@ export default class Webserver {
           passkey.id,
           verification.authenticationInfo.newCounter,
         );
-        req.session.userId = (user as any)._id;
+        req.session.userId = user._id;
         delete req.session.mfaPending;
         req.session.save();
         res.status(200).json({});

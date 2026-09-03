@@ -34,7 +34,7 @@ export const roleRouter = router({
         const role = await database.getRole(input.id);
         if (!role) return null;
         const { type: _t, permissions, ...r } = role;
-        return { ...r, permissions: permissions };
+        return { ...r, permissions };
       }),
 
     create: protectedProcedure(ScopeName.RoleEdit)
@@ -52,7 +52,7 @@ export const roleRouter = router({
         if (!ctx.user.isOwner) {
           const err = await checkRoleHierarchy(
             ctx.user,
-            { order: 1 } as any,
+            { order: 1 },
             ScopeName.RoleEdit,
           );
           if (err) return err;

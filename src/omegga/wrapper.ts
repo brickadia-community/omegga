@@ -71,7 +71,7 @@ class OmeggaWrapper extends EventEmitter {
   }
 
   // event emitter to catch everything
-  emit(type: string, ...args: any) {
+  emit(type: string, ...args: unknown[]) {
     if (type !== 'line') Logger.verbose('Emitting event', type);
     try {
       (super.emit as EventEmitter['emit'])('*', type, ...args);

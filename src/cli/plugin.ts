@@ -85,7 +85,7 @@ const transformUrl = (url: string): IPlugin => {
 let needsNL = false;
 
 // rewrite a console line
-const rewriteLine = (...args: string[]) => {
+const rewriteLine = (...args: unknown[]) => {
   // stdout has no cursor controls when omegga is piped or run in a container
   if (process.stdout.isTTY) {
     process.stdout.clearLine(0);
@@ -96,14 +96,14 @@ const rewriteLine = (...args: string[]) => {
 };
 
 // logging helper functions
-const plg = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
+const plg = (plugin: IPlugin | IInstalledPlugin, ...args: unknown[]) => {
   if (needsNL) {
     needsNL = false;
     console.log();
   }
   console.log(plugin.name, '>>'.green, ...args);
 };
-const plgLog = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
+const plgLog = (plugin: IPlugin | IInstalledPlugin, ...args: unknown[]) => {
   if (Logger.VERBOSE) plg(plugin, ...args);
   else
     rewriteLine(
@@ -112,14 +112,14 @@ const plgLog = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
       ...args,
     );
 };
-const plgWarn = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
+const plgWarn = (plugin: IPlugin | IInstalledPlugin, ...args: unknown[]) => {
   if (needsNL) {
     needsNL = false;
     console.warn();
   }
   console.warn(plugin.name, 'W>'.yellow, ...args);
 };
-const plgErr = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
+const plgErr = (plugin: IPlugin | IInstalledPlugin, ...args: unknown[]) => {
   if (needsNL) {
     needsNL = false;
     console.error();
@@ -127,21 +127,21 @@ const plgErr = (plugin: IPlugin | IInstalledPlugin, ...args: any[]) => {
   console.error(plugin.name, '!>'.red, ...args);
 };
 
-const err = (...args: any[]) => {
+const err = (...args: unknown[]) => {
   if (needsNL) {
     needsNL = false;
     console.error();
   }
   console.error('!>'.red, ...args);
 };
-const log = (...args: any[]) => {
+const log = (...args: unknown[]) => {
   if (needsNL) {
     needsNL = false;
     console.log();
   }
   console.log('>>'.green, ...args);
 };
-const verboseLog = (...args: any[]) => {
+const verboseLog = (...args: unknown[]) => {
   if (!Logger.VERBOSE) return;
   if (needsNL) {
     needsNL = false;
@@ -530,7 +530,7 @@ async function init() {
       ],
     },
     {
-      type: prev => (prev == 'safe' ? 'confirm' : null),
+      type: prev => (prev === 'safe' ? 'confirm' : null),
       name: 'ts',
       message:
         'Would you like to use ' + 'TypeScript'.yellow + ' in your plugin?',
@@ -545,7 +545,7 @@ async function init() {
 
   const name = response.name;
   const type: PluginType =
-    response.type == 'safe' && response.ts ? 'safe-ts' : response.type;
+    response.type === 'safe' && response.ts ? 'safe-ts' : response.type;
 
   if (!PLUGIN_TYPES.includes(type)) {
     err('Invalid plugin type', type.red, '!');

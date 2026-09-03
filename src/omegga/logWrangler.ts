@@ -312,14 +312,13 @@ class LogWrangler implements LogWrangling {
       },
       {
         array: this.#watchers,
-        onMatch<T>(
-          match: T | RegExpMatchArray | '[OMEGGA_WATCHER_DONE]',
-          watcher: IWatcher<T>,
-        ) {
+        onMatch<T>(match: T, watcher: IWatcher<T>) {
           // if the watcher is in bundle mode, add the match to its matches
           if (watcher.bundle) {
-            // allow the watcher to terminate early
-            if (match === '[OMEGGA_WATCHER_DONE]') {
+            // allow the watcher to terminate early - a pattern signals this by
+            // returning the sentinel in place of its usual payload, so the
+            // comparison has to widen past T
+            if ((match as unknown) === '[OMEGGA_WATCHER_DONE]') {
               clearTimeout(watcher.timeout);
               watcher.done();
               return;
@@ -330,7 +329,7 @@ class LogWrangler implements LogWrangling {
               | T[];
 
             // check if this is the last line and terminate early
-            if (watcher?.last?.(match as T)) {
+            if (watcher?.last?.(match)) {
               clearTimeout(watcher.timeout);
               watcher.done();
               return;

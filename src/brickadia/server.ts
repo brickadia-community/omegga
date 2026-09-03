@@ -432,9 +432,9 @@ export default class BrickadiaServer extends EventEmitter {
     }
   }
 
-  exitListener(...args: any[]) {
+  exitListener(code: number | null, signal: NodeJS.Signals | null) {
     Logger.verbose('Exit listener fired');
-    this.emit('closed', ...args);
+    this.emit('closed', code, signal);
     this.cleanup();
   }
 

@@ -39,7 +39,7 @@ function createDatabase(
   db: BetterSQLite3Database,
 ) {
   const omegga = mockOmegga();
-  return new Database({ port: 7777 } as any, omegga, sqlite, db);
+  return new Database({ port: 7777 }, omegga, sqlite, db);
 }
 
 describe('Database', () => {

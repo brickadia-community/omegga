@@ -53,7 +53,7 @@ const join: MatchGenerator<Player> = omegga => {
           }
 
           // LogNet lets us know the player successfully joined
-        } else if (generator == 'LogNet') {
+        } else if (generator === 'LogNet') {
           // find which player joined
           const match = data.match(/^Join succeeded: (.+)$/);
 

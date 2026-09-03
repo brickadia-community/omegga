@@ -605,7 +605,7 @@ class Player implements OmeggaPlayer {
     const me = resp.find(r => r.groups?.pawn === pawn);
     if (!me?.groups) return false;
 
-    return me.groups.crouched == 'True';
+    return me.groups.crouched === 'True';
   }
 
   async isDead(pawn?: string): Promise<boolean> {
@@ -624,7 +624,7 @@ class Player implements OmeggaPlayer {
     const me = resp.find(r => r.groups?.pawn === pawn);
     if (!me?.groups) return true;
 
-    return me.groups.dead == 'True';
+    return me.groups.dead === 'True';
   }
 
   async getTemplateBounds() {

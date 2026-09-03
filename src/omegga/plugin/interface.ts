@@ -127,7 +127,9 @@ export class Plugin {
     _ev: string,
     _from: string,
     _args: unknown[],
-  ): Promise<any> {}
+  ): Promise<unknown> {
+    return undefined;
+  }
 
   // get the plugin name, usually based on documentation data
   getName() {

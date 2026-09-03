@@ -38,7 +38,9 @@ import minigameJoin from './minigameJoin';
 import wire from './wire';
 // 'wirelog' event => raw; 'wirecmd:command' event => [...args]
 
-export default [
+// each matcher owns the payload its own pattern hands to its own callback, so
+// the list only needs to promise that the two halves of a pair agree
+const matchers: MatchGenerator<unknown>[] = [
   join,
   leave,
   chat,
@@ -51,4 +53,6 @@ export default [
   interact,
   minigameJoin,
   wire,
-] as MatchGenerator<any>[];
+];
+
+export default matchers;

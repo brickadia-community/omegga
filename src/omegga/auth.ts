@@ -142,7 +142,7 @@ export async function genAuthFiles(
     let finished = false;
     const finish =
       (name: string) =>
-      (...args: any[]) => {
+      (...args: unknown[]) => {
         if (finished) return;
         finished = true;
         Logger.verbose('Brickadia', name, 'with code', ...args);

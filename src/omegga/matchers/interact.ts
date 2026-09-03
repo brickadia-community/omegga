@@ -23,7 +23,7 @@ const interact: MatchGenerator<BrickInteraction> = omegga => {
 
       // check if log is the kill server log
       if (groups) {
-        let blob: any = null,
+        let blob: BrickInteraction['data'] = null,
           error = false,
           json = false;
         if (groups.message?.startsWith('json:')) {

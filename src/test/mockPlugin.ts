@@ -45,7 +45,7 @@ export class MockPlugin extends Plugin {
     };
   }
 
-  emitPluginEvent(event: string, from: string, ...args: any[]) {
+  emitPluginEvent(event: string, from: string, ...args: unknown[]) {
     this.events.emit('emitPlugin', event, from, ...args);
   }
 
