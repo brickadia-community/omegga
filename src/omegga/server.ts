@@ -600,7 +600,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
    * this should not be called by a plugin
    */
   //
-  async start(): Promise<any> {
+  async start(): Promise<void> {
     this.starting = true;
 
     // Resolve the game version straight from the server binary before plugins
@@ -1723,7 +1723,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         name,
         documentation: plugin.getDocumentation(),
         loaded: plugin.isLoaded(),
-        emitPlugin: (event: string, ...args: any[]) => {
+        emitPlugin: (event: string, ...args: unknown[]) => {
           return plugin.emitPlugin(event, 'unsafe', args);
         },
       };

@@ -149,7 +149,7 @@ export const RoleList = () => {
       hideModals();
       rolesQuery.refetch();
       if (result?.id) navigate(`/roles/${result.id}`);
-    } catch (e) {
+    } catch {
       setModalLoading(false);
       setError('Failed to create role');
     }

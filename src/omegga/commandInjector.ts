@@ -18,15 +18,18 @@ type Cast<X, Y> = X extends Y ? X : Y;
 type ArrayElement<A> = A extends readonly (infer T)[] ? T : never;
 type Extract<T, U> = T extends U ? T : never;
 // used by the commented-out getAllPawnData experiment below
-export type FromEntriesDataField<T> = T extends PawnDataField<infer Key, any>[]
+export type FromEntriesDataField<T> = T extends PawnDataField<
+  infer Key,
+  unknown
+>[]
   ? {
       [K in Cast<Key, string>]: ReturnType<
         NonNullable<
-          Extract<ArrayElement<T>, PawnDataField<K, any>>['valueTransform']
+          Extract<ArrayElement<T>, PawnDataField<K, unknown>>['valueTransform']
         >
       >;
     }
-  : { [key in string]: any };
+  : Record<string, unknown>;
 
 export type PawnDataField<F, T = string> = {
   /**

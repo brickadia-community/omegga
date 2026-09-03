@@ -41,7 +41,7 @@ const auth: MatchGenerator<
     },
     // when there's a match, emit the chat message event
     callback([type, host]) {
-      if (type == 'host' && host) {
+      if (type === 'host' && host) {
         // store the host info
         omegga.host = Object.freeze(host);
         omegga.emit('host', Object.freeze(host));

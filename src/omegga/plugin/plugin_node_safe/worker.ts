@@ -87,7 +87,7 @@ const omegga = new ProxyOmegga(exec);
 // add plugin fetcher
 omegga.getPlugin = async name => {
   const plugin = (await emit('getPlugin', name)) as PluginInterop & {
-    emitPlugin(event: string, ...args: unknown[]): Promise<any>;
+    emitPlugin(event: string, ...args: unknown[]): Promise<unknown>;
   };
   if (plugin) {
     plugin.emitPlugin = async (ev: string, ...args: unknown[]) => {
@@ -492,12 +492,7 @@ parent.on('load', async (resp, pluginPath, options) => {
 parent.on('start', async (resp, config) => {
   try {
     if (!PluginClass) throw new Error('plugin is not loaded');
-    pluginInstance = new PluginClass(
-      omegga as any as Omegga,
-      config,
-      store,
-      metrics,
-    );
+    pluginInstance = new PluginClass(omegga, config, store, metrics);
     const result = await pluginInstance.init();
     // if a plugin init returns a list of strings, treat them as the list of commands
     if (typeof result === 'object' && result) {

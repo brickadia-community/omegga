@@ -493,11 +493,6 @@ program
   .option('-v, --verbose', 'Print extra messages for debugging purposes')
   .description('Installs a plugin to the current brickadia server')
   .action(async plugins => {
-    if (!hasbin.sync('git')) {
-      Logger.errorp('git'.yellow, 'must be installed to install plugins.');
-      process.exit(1);
-    }
-
     if (!config.find('.')) {
       Logger.errorp(
         'Not an omegga directory, run ',

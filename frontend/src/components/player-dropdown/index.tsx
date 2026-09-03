@@ -111,7 +111,7 @@ export const PlayerDropdown = ({
       <div className="player-search" ref={ref}>
         <Input
           type="text"
-          placeholder="Search Players..."
+          placeholder={placeholder ?? 'Search Players...'}
           value={search}
           onChange={value => {
             setSearch(value);

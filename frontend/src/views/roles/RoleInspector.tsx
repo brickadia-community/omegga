@@ -130,7 +130,7 @@ export const RoleInspector = () => {
         roleQuery.refetch();
         utils.role.list.invalidate();
       }
-    } catch (e) {
+    } catch {
       setError('Failed to save');
     }
     setSaving(false);

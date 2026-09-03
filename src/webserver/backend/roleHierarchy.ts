@@ -31,9 +31,16 @@ export function getActorHighestOrder(
   return highest;
 }
 
+/**
+ * The parts of a role the hierarchy check reads. Role creation has no stored
+ * role to compare against, so only the order it would be created at is
+ * required.
+ */
+export type HierarchyRole = { order: number; name?: string };
+
 export function canManageRole(
   actorOrder: number,
-  targetRole: IStoreRole,
+  targetRole: HierarchyRole,
 ): boolean {
   return actorOrder > targetRole.order;
 }
@@ -104,7 +111,7 @@ export function getActorEffectivePermissions(
 export function validateHierarchy(
   actor: IStoreUser,
   actorRoles: IStoreRole[],
-  targetRole: IStoreRole,
+  targetRole: HierarchyRole,
   requiredScope: Scope,
   allRolePermissions?: PermissionSet[],
 ): string | null {
@@ -140,7 +147,7 @@ export async function checkUserHierarchy(
 
 export async function checkRoleHierarchy(
   user: IStoreUser,
-  role: IStoreRole & { id: string },
+  role: HierarchyRole,
   scope: Scope,
 ): Promise<string | null> {
   if (user.isOwner) return null;

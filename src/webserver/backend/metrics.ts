@@ -18,7 +18,7 @@ import type { IStoreAutoRestartConfig } from './types';
 // re-exported for the tRPC router, which reads utilization for the web UI
 export { getLastUtilization } from '@/metrics/collectors/host';
 
-const error = (...args: any[]) => Logger.error(...args);
+const error = (...args: unknown[]) => Logger.error(...args);
 let lastRestart = 0;
 
 const sleep = (t: number) => new Promise(resolve => setTimeout(resolve, t));

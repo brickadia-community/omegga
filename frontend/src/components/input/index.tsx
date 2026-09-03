@@ -49,6 +49,8 @@ export function Input<T extends 'text' | 'number' | 'password'>({
               }
             : undefined
         }
+        onBlur={onBlur}
+        onFocus={onFocus}
         {...props}
       />
     </div>

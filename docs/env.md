@@ -22,5 +22,6 @@ These can be set in your shell or in a `.env` file the same directory as a `omeg
 - `PACKAGE_NOTIFIER` - When set to `false`, disables the npm update notifier
 - `STEAM_NOTIFIER` - When set to `false`, disables the SteamCMD update notifier
 - `SKIP_STEAMCMD_PROMPT` - When set to `true`, agrees to installing SteamCMD without prompting
+- `OMEGGA_GIT` - Which git implementation plugin installs and updates use: `bin` for the `git` binary, `js` for the bundled one. Defaults to `bin` when git is on `PATH`, `js` when it is not
 - `BRICKADIA_DEBUG` - Set to `true` to enable debug logging, equivalent to the `--debug` flag (default `false`)
 - `OMEGGA_NONINTERACTIVE` - Set to `true` to fail instead of prompting for authentication. Defaults to `true` when stdin is not a terminal; set it explicitly on hosts that provide a terminal that cannot answer a prompt, such as a game panel console that only submits whole lines

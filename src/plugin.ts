@@ -467,12 +467,18 @@ export interface InjectedCommands {
   getGamemode(this: OmeggaLike): Promise<IGamemode | null>;
 }
 
-/** event listener shape, mirroring node's EventEmitter */
+/**
+ * Event listener shape, mirroring node's EventEmitter. The rest parameter is
+ * `any[]` for the same reason node's own is: it is both the type every listener
+ * must be assignable to and the type an inline listener's parameters are
+ * inferred from, so `unknown[]` would type a custom event's arguments as
+ * `unknown` at every call site that does not hit a named overload.
+ */
 export type MockEventListener = (...args: any[]) => void;
 
 export interface MockEventEmitter {
   addListener(event: string, listener: MockEventListener): this;
-  emit(event: string, ...args: any[]): boolean;
+  emit(event: string, ...args: unknown[]): boolean;
   eventNames(): (string | symbol)[];
   getMaxListeners(): number;
   listenerCount(event: string): number;
@@ -1200,7 +1206,7 @@ export default abstract class OmeggaPlugin<
   abstract pluginEvent?(
     event: string,
     from: string,
-    ...args: any[]
+    ...args: unknown[]
   ): Promise<unknown>;
 }
 
@@ -1277,7 +1283,7 @@ export type IWatcher<T> = {
   afterMatchDelay: number;
   last: (match: T) => boolean;
   callback: () => void;
-  resolve: (...args: any[]) => void;
+  resolve: (...args: T[]) => void;
   remove: () => void;
   done: () => void;
   timeout: ReturnType<typeof setTimeout>;
@@ -1360,7 +1366,7 @@ export interface PluginInterop {
   name: string;
   documentation: IPluginDocumentation | null;
   loaded: boolean;
-  emitPlugin?(event: string, args: any[]): Promise<any>;
+  emitPlugin?(event: string, args: unknown[]): Promise<unknown>;
 }
 
 export type WeaponClass =

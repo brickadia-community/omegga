@@ -82,10 +82,10 @@ export function getSessionSecret(dataPath: string) {
  * truthy return value from `check`, or `false` after `ms` milliseconds.
  * Cleans up the listener in both cases.
  */
-export function waitForEvent<T>(
+export function waitForEvent<T, Args extends unknown[] = unknown[]>(
   emitter: EventEmitter,
   event: string,
-  check: (...args: any[]) => T | false | undefined,
+  check: (...args: Args) => T | false | undefined,
   ms = 5000,
 ): Promise<T | false> {
   return new Promise<T | false>(resolve => {
@@ -94,7 +94,7 @@ export function waitForEvent<T>(
       resolve(false);
     }, ms);
 
-    function listener(...args: any[]) {
+    function listener(...args: Args) {
       const result = check(...args);
       if (result) {
         clearTimeout(timer);

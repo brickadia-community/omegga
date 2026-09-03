@@ -104,7 +104,7 @@ covers all of these on Debian and Ubuntu.
 | `build-essential`, `python3` | node-gyp, which builds omegga's native modules on install |
 | `wget`, `tar` | downloading and extracting steamcmd |
 | `lib32gcc-s1` | steamcmd itself, which is a 32-bit binary |
-| `git` | `omegga install` and `omegga update` for plugins |
+| `git` | optional. plugin will install/update with a JS git when absent |
 | `openssl` | the web UI's https certificate. Without it the web UI falls back to http |
 
 SteamCMD is not on that list: omegga asks to install it on the first start, into

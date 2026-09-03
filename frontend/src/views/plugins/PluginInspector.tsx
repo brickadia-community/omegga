@@ -29,7 +29,7 @@ import { handleGlobalError, trpc } from '../../trpc';
 const jsonEq = (a: any, b: any) => {
   try {
     return JSON.stringify(a) === JSON.stringify(b);
-  } catch (e) {
+  } catch {
     return false;
   }
 };

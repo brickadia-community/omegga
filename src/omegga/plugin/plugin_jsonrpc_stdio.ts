@@ -2,6 +2,7 @@ import Logger from '@/logger';
 import { recordPluginError } from '@/metrics/errors';
 import { type EnvironmentPreset } from '@brickadia/presets';
 import Omegga from '@omegga/server';
+import { type OmeggaPlayer, type WeaponClass } from '@/plugin';
 import { type WriteSaveObject } from 'brs-js';
 import {
   JSONRPCClient,
@@ -401,7 +402,7 @@ export default class RpcPlugin extends Plugin {
         name: string,
         symbol: string,
       ) =>
-      (line: any) =>
+      (line: unknown) =>
         console[logFn](name.underline, symbol, line);
 
     const name = this.getName();
@@ -418,7 +419,7 @@ export default class RpcPlugin extends Plugin {
     rpc.addMethod('store.get', key =>
       this.storage.get(key as unknown as string),
     );
-    rpc.addMethod('store.set', ([key, value]: [key: string, value: any]) =>
+    rpc.addMethod('store.set', ([key, value]: [key: string, value: unknown]) =>
       this.storage.set(key, value),
     );
     rpc.addMethod('store.delete', key =>
@@ -676,8 +677,13 @@ export default class RpcPlugin extends Plugin {
     });
 
     // player related operations
-    const addPlayerMethod = (name: string) =>
+    // `any` on the player: this dispatches by method name and always calls
+    // with no arguments, but `getScore` and `getLeaderboard` (registered below)
+    // each declare a required parameter, so there is no method type the call
+    // satisfies. Typing the name still catches a misspelled method.
+    const addPlayerMethod = (name: keyof OmeggaPlayer) =>
       rpc.addMethod(`player.${name}`, player =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (this.server.getPlayer(player as unknown as string) as any)?.[name](),
       );
     rpc.addMethod('player.get', target => {
@@ -760,13 +766,13 @@ export default class RpcPlugin extends Plugin {
     );
     rpc.addMethod(
       'player.giveItem',
-      ({ target, item }: { target: string; item: string }) =>
-        this.server.getPlayer(target)?.giveItem(item as any),
+      ({ target, item }: { target: string; item: WeaponClass }) =>
+        this.server.getPlayer(target)?.giveItem(item),
     );
     rpc.addMethod(
       'player.takeItem',
-      ({ target, item }: { target: string; item: string }) =>
-        this.server.getPlayer(target)?.takeItem(item as any),
+      ({ target, item }: { target: string; item: WeaponClass }) =>
+        this.server.getPlayer(target)?.takeItem(item),
     );
     rpc.addMethod(
       'player.setTeam',

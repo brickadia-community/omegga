@@ -8,7 +8,7 @@ import { sanitize } from '@util/chat';
 import { checkWsl } from '@util/wsl';
 import { serverEvents } from '@webserver/backend/events';
 import readline from 'readline';
-import { install } from './plugin';
+import { install, update as updatePlugins } from './plugin';
 
 declare global {
   interface String {
@@ -416,6 +416,8 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
     desc: 'manage Omegga plugins',
     descLines: () => [
       '/plugins install <...plugin names>'.yellow + ' installs plugins',
+      '/plugins update [...plugin names]'.yellow +
+        ' updates all plugins, or those specified',
       '/plugins load <...plugin names>'.yellow +
         ' loads plugins, and enables if they were disabled',
       '/plugins unload <...plugin names>'.yellow + ' unloads plugins',
@@ -458,6 +460,15 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
           'Use',
           '/plugins reload'.yellow,
           'to reload all plugins and use the installed ones',
+        );
+      } else if (subcommand === 'update') {
+        // update plugins
+        await updatePlugins(args, { verbose: true });
+        log();
+        log(
+          'Use',
+          '/plugins reload'.yellow,
+          'to reload all plugins and use the updated ones',
         );
       } else if (subcommand === 'load') {
         if (args.length === 0) {
@@ -750,7 +761,7 @@ Players: ${status.players.length === 0 ? 'none'.grey : ''}
               return;
             }
           }
-          let loadRes: boolean = false;
+          let loadRes = false;
           if (revision) {
             log(`Loading world ${worldName.yellow} at revision ${revision}...`);
             loadRes = await this.omegga.loadWorldRevision(worldName, revision);

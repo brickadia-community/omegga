@@ -33,8 +33,8 @@ describe('PluginStorage', () => {
     const { storage, sqlite } = makeStorage();
     await storage.set('a', 1);
     await storage.set('b', 2);
-    await storage.set('a', null as any);
-    await storage.set('b', undefined as any);
+    await storage.set('a', null);
+    await storage.set('b', undefined);
     expect(await storage.get('a')).toBe(null);
     expect(await storage.get('b')).toBe(null);
     expect(await storage.count()).toBe(0);
@@ -43,7 +43,7 @@ describe('PluginStorage', () => {
 
   it('does not throw on values that serialize to undefined', async () => {
     const { storage, sqlite } = makeStorage();
-    await storage.set('fn', (() => {}) as any);
+    await storage.set('fn', () => {});
     expect(await storage.get('fn')).toBe(null);
     expect(
       sqlite.prepare('SELECT COUNT(*) c FROM plugin_store').get() as {

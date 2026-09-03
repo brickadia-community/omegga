@@ -45,7 +45,7 @@ describe('parseBrickadiaTime', () => {
   });
 
   it('returns NaN for non-string input', () => {
-    expect(parseBrickadiaTime(undefined as any)).toBeNaN();
-    expect(parseBrickadiaTime(null as any)).toBeNaN();
+    expect(parseBrickadiaTime(undefined as unknown as string)).toBeNaN();
+    expect(parseBrickadiaTime(null as unknown as string)).toBeNaN();
   });
 });
