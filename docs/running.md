@@ -41,3 +41,6 @@ If don't have automatic update enabled, you can start update the Brickadia serve
     omegga --update
 
 Or you can run the `/update` command in the Omegga console, or even update from the Server menu in the web UI.
+
+To install or update the game without starting the server, run `omegga download`. It exits when
+SteamCMD finishes, which is what a provisioning step wants, such as a game panel's install stage.
