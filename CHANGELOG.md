@@ -2,6 +2,10 @@
 
 ## Latest
 
+## 1.17.2 - 2026-09-03
+
+- Publish only what omegga runs on: the npm package no longer ships the rendered book, frontend source maps, docs, etc.
+
 ## 1.17.1 - 2026-09-03
 
 - Add `omegga download`, which installs or updates the Brickadia server and exits, for provisioning a server without starting it

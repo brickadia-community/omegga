@@ -1,13 +1,24 @@
 {
   "name": "omegga",
-  "version": "1.17.1",
+  "version": "1.17.2",
   "description": "Brickadia server installer, updater, manager, wrapper, configurator, and automator",
   "engines": {
     "node": ">=23.0.0"
   },
   "main": "index.js",
+  "files": [
+    "bin/",
+    "dist/",
+    "public/",
+    "!public/**/*.map",
+    "templates/",
+    "tools/brickadia.sh",
+    "tools/install_launcher.sh",
+    "tools/install_steamcmd.sh",
+    "index.js"
+  ],
   "bin": {
-    "omegga": "./bin/omegga"
+    "omegga": "bin/omegga"
   },
   "dependencies": {
     "@simplewebauthn/browser": "^13.3.0",
