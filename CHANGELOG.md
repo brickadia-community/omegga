@@ -2,6 +2,10 @@
 
 ## Latest
 
+## 1.17.1 - 2026-09-03
+
+- Add `omegga download`, which installs or updates the Brickadia server and exits, for provisioning a server without starting it
+
 ## 1.17.0 - 2026-09-03
 
 Plugins install and update without git installed.

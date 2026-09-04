@@ -346,6 +346,31 @@ program
   });
 
 program
+  .command('download')
+  .description('Downloads or updates the Brickadia server, then exits')
+  .option('-v, --verbose', 'Print extra messages for debugging purposes')
+  .action(async () => {
+    const { verbose } = program.opts();
+    Logger.VERBOSE = isVerbose(verbose);
+
+    // the config is only consulted for the steam branch, so a directory
+    // without one still installs the default branch
+    const configFile = config.find('.');
+    const conf = configFile ? config.read(configFile) : config.defaultConfig;
+
+    if (conf?.server?.branch) {
+      Logger.errorp(
+        'This server is configured for the',
+        'non-steam launcher'.yellow,
+        'and has nothing to update through SteamCMD.',
+      );
+      process.exit(1);
+    }
+
+    await setupSteam(conf, true);
+  });
+
+program
   .command('config [field] [value]')
   .description(
     "Configure Omegga's default behavior.\n" +
