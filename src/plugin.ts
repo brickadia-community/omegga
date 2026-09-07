@@ -474,6 +474,7 @@ export interface InjectedCommands {
  * inferred from, so `unknown[]` would type a custom event's arguments as
  * `unknown` at every call site that does not hit a named overload.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
 export type MockEventListener = (...args: any[]) => void;
 
 export interface MockEventEmitter {
