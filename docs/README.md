@@ -1,4 +1,4 @@
-# <img src="assets/logo.png" alt="" width="32"> <img src="https://cdn.discordapp.com/emojis/615904012432310274.png" alt="" width="32"> Omegga
+# <img src="assets/logo.png" alt="" width="32"> <img src="assets/omegga-emoji.png" alt="" width="32"> Omegga
 
 Omegga wraps [Brickadia](https://brickadia.com/)'s server console to provide
 interactivity and utility via plugins along with a web interface for managing
@@ -6,6 +6,14 @@ your server.
 
 [Join the discord](https://discord.gg/UcdwTYhS75) to browse plugins and get
 support.
+
+<a href="assets/screenshots/console-home.png"><img src="assets/screenshots/console-home.png" alt="The omegga console" height="120"/></a>
+<a href="assets/screenshots/chat-search.png"><img src="assets/screenshots/chat-search.png" alt="Searching chat history" height="120"/></a>
+<a href="assets/screenshots/plugins.png"><img src="assets/screenshots/plugins.png" alt="The plugin list" height="120"/></a>
+<a href="assets/screenshots/dashboard.png"><img src="assets/screenshots/dashboard.png" alt="The web UI dashboard" height="120"/></a>
+<a href="assets/screenshots/players.png"><img src="assets/screenshots/players.png" alt="The player list and inspector" height="120"/></a>
+<a href="assets/screenshots/metrics.png"><img src="assets/screenshots/metrics.png" alt="Server metrics" height="120"/></a>
+<a href="assets/screenshots/mobile-dashboard.png"><img src="assets/screenshots/mobile-dashboard.png" alt="The dashboard on a phone" height="120"/></a>
 
 ## Start here
 

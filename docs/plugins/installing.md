@@ -2,6 +2,8 @@
 
 ## CLI Installation
 
+![Installing a plugin from the omegga console](../assets/screenshots/console-startup.png)
+
 You can install plugins with the `omegga install https://github.com/user/repo` command.
 
 You can install plugins using a shorthand `omegga install gh:user/repo` which will install the plugin located at `https://github.com/user/omegga-repo` (note the inserted `omegga-` prefix).

@@ -24,4 +24,10 @@ so the WSL page is just the extra steps to get one.
 If any of the above are true, [create a new user](linux.md#creating-a-new-user)
 and continue from there.
 
+On first start omegga prints a one-time link to claim the web UI. You can set up
+an admin account there, or skip it and run without a password.
+
+<a href="../assets/screenshots/first-login.png"><img src="../assets/screenshots/first-login.png" alt="The first run screen, offering an admin account or skipping it" height="150"/></a>
+<a href="../assets/screenshots/web-login.png"><img src="../assets/screenshots/web-login.png" alt="Signing in afterwards" height="150"/></a>
+
 Once it is installed, head to [Running](../running.md).

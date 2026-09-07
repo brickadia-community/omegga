@@ -28,19 +28,51 @@ Once it is up, the web UI is at <https://127.0.0.1:8080> unless you changed
 `omegga.port`. See [Configuration](config.md) for what else the server reads on
 startup.
 
+<a href="assets/screenshots/console-startup.png"><img src="assets/screenshots/console-startup.png" alt="Omegga starting up and installing a plugin" height="150"/></a>
+
+The console takes the same commands players type, plus omegga's own. `/help`
+lists them, and plugins add their own to it.
+
+<a href="assets/screenshots/console-home.png"><img src="assets/screenshots/console-home.png" alt="The omegga console" height="150"/></a>
+
+## Worlds
+
+Worlds are managed from the web UI: create one, load it, or set the one to load
+on startup.
+
+<a href="assets/screenshots/worlds.png"><img src="assets/screenshots/worlds.png" alt="The world list" height="150"/></a>
+<a href="assets/screenshots/create-world.png"><img src="assets/screenshots/create-world.png" alt="Creating a world" height="150"/></a>
+
 ## Updating
 
-Omegga will tell you when it's out of date. You can update with this command:
+There are two things to keep up to date, and they update differently: the
+Brickadia server, and omegga itself.
 
-    npm i -g omegga
+### The Brickadia server
 
-In a container, pull a new image instead - see [Containers](containers.md).
+The Server page shows the installed game version and updates it, and omegga does
+it on its own when automatic updates are on.
 
-If don't have automatic update enabled, you can start update the Brickadia server by starting omegga with the `--update` flag:
+<a href="assets/screenshots/server.png"><img src="assets/screenshots/server.png" alt="The server page" height="150"/></a>
+
+Without automatic updates, check for one by starting omegga with `--update`:
 
     omegga --update
 
-Or you can run the `/update` command in the Omegga console, or even update from the Server menu in the web UI.
+The `/update` command in the omegga console does the same while it is running.
 
-To install or update the game without starting the server, run `omegga download`. It exits when
-SteamCMD finishes, which is what a provisioning step wants, such as a game panel's install stage.
+To install or update the game without starting the server, run `omegga
+download`. It exits when SteamCMD finishes, which is what a provisioning step
+wants, such as a game panel's install stage.
+
+### Omegga itself
+
+Omegga will tell you when it is out of date. It cannot replace itself while it
+is running, so stop it first:
+
+    npm i -g omegga
+
+That is for the npm install. A container has omegga baked into the image and
+updates by pulling a new one, covered in [Containers](containers.md); a game
+panel updates by changing the image tag it runs, covered in
+[Pterodactyl / Pelican](guides/pterodactyl.md).

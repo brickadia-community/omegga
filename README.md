@@ -1,4 +1,4 @@
-# <img src="docs/assets/logo.png" alt="" width="32"> <img src="https://cdn.discordapp.com/emojis/615904012432310274.png" alt="" width="32"> Omegga
+# <img src="docs/assets/logo.png" alt="" width="32"> <img src="docs/assets/omegga-emoji.png" alt="" width="32"> Omegga
 
 **[Documentation](https://omegga.brickadia.dev/)** &
 [Discord](https://discord.gg/UcdwTYhS75) (Read the docs before asking questions in the Discord please!)
@@ -31,11 +31,12 @@ Omegga plugins can do things like:
 
 ## Screenshots
 
-[<img src="https://i.imgur.com/AqJF2T0.png" width="256"/>](https://i.imgur.com/AqJF2T0.png)
-[<img src="https://i.imgur.com/vGjKoB6.png" width="256"/>](https://i.imgur.com/vGjKoB6.png)
-[<img src="https://i.imgur.com/EhT1GBR.png" width="256"/>](https://i.imgur.com/EhT1GBR.png)
-[<img src="https://i.imgur.com/PLwgVlx.png" width="256"/>](https://i.imgur.com/PLwgVlx.png)
-[<img src="https://i.imgur.com/bCnQ5Pb.png" width="256"/>](https://i.imgur.com/bCnQ5Pb.png)
+[<img src="docs/assets/screenshots/console-home.png" alt="The omegga console" width="256"/>](docs/assets/screenshots/console-home.png)
+[<img src="docs/assets/screenshots/chat-search.png" alt="Searching chat history" width="256"/>](docs/assets/screenshots/chat-search.png)
+[<img src="docs/assets/screenshots/plugins.png" alt="The plugin list" width="256"/>](docs/assets/screenshots/plugins.png)
+[<img src="docs/assets/screenshots/dashboard.png" alt="The web UI dashboard" width="256"/>](docs/assets/screenshots/dashboard.png)
+[<img src="docs/assets/screenshots/players.png" alt="The player list and inspector" width="256"/>](docs/assets/screenshots/players.png)
+[<img src="docs/assets/screenshots/metrics.png" alt="Server metrics" width="256"/>](docs/assets/screenshots/metrics.png)
 
 ## Install
 

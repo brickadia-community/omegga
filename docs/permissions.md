@@ -1,5 +1,13 @@
 # Web UI Permission System
 
+<a href="assets/screenshots/permissions-editor.png"><img src="assets/screenshots/permissions-editor.png" alt="Editing a role's permissions in the web UI" height="150"/></a>
+
+Roles granted here are omegga's own, for who may do what in the web UI. They are
+separate from the in-game roles the console grants, which the same person often
+manages side by side.
+
+<a href="assets/screenshots/console-management.png"><img src="assets/screenshots/console-management.png" alt="Managing roles from the web UI alongside the console" height="150"/></a>
+
 The web UI uses a hierarchical, purely additive permission model. Permissions can only grant access, never deny it.
 
 ## Data Model
@@ -32,6 +40,8 @@ When checking whether a user has a specific scope, the resolver walks these leve
 The `readOnly` flag on each scope definition determines whether "Read Only" mode at root or domain level grants that scope.
 
 ## Roles
+
+<a href="assets/screenshots/roles.png"><img src="assets/screenshots/roles.png" alt="The role list" height="150"/></a>
 
 Roles are named, ordered collections of permissions stored as `PermissionSet` values. A user's effective permissions are the union of their direct permissions, all assigned role permissions, and the default permissions.
 
@@ -155,6 +165,14 @@ Each scope belongs to exactly one domain and is either read-only (R) or read-wri
 | `role.edit` | W | Create, edit, delete, and reorder roles |
 | `role.defaultPermissions` | W | Edit the default permissions that apply to all users |
 | `role.grantPermission` | W | Add or remove permissions within roles |
+
+## Users
+
+Users are created from the web UI, each with their own permissions and roles.
+The Users page adds one under Actions.
+
+<a href="assets/screenshots/add-user-header.png"><img src="assets/screenshots/add-user-header.png" alt="Add User under the Actions menu on the Users page" height="150"/></a>
+<a href="assets/screenshots/web-create-user.png"><img src="assets/screenshots/web-create-user.png" alt="Creating a web UI user" height="150"/></a>
 
 ## Self-Service
 

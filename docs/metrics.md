@@ -1,5 +1,13 @@
 # Metrics
 
+With a Prometheus scraping it, omegga charts what it collects in the web UI.
+
+<a href="assets/screenshots/metrics-panels.png"><img src="assets/screenshots/metrics-panels.png" alt="The metrics view in the web UI" height="200"/></a>
+
+Getting there is two settings: the endpoint omegga serves, and the Prometheus it
+reads back from. [Dashboards in the web UI](#dashboards-in-the-web-ui) covers
+the second.
+
 Omegga can serve a [Prometheus](https://prometheus.io) scrape endpoint, off by
 default. It is a standalone HTTP server, so it works with `omegga.webui: false`
 and binds to its own address and port.
@@ -98,12 +106,15 @@ retention; the web UI reads back at most `metrics.prometheus.retentionDays`
 regardless. Grafana pointed at the same Prometheus works if you want dashboards
 beyond the built-in ones.
 
+<a href="assets/screenshots/metrics-grafana.png"><img src="assets/screenshots/metrics-grafana.png" alt="Omegga metrics in a Grafana dashboard" height="200"/></a>
+
 ## The whole stack in compose
 
 Running omegga [in a container](containers.md) puts it on the same network as
-the scraper, so the metrics port never has to be published and Prometheus
-reaches it by service name. This adds VictoriaMetrics behind Prometheus, which
-keeps the long history while Prometheus stays a 15 day buffer in front of it.
+the scraper, so the metrics port never has to be published and the scraper
+reaches it by service name. VictoriaMetrics scrapes omegga itself and answers
+the queries the web UI makes, so there is one storage service rather than a
+buffer in front of a long term store.
 
 Four files, in one directory:
 
@@ -112,7 +123,7 @@ Four files, in one directory:
 ├── compose.yaml
 ├── .env
 ├── omegga.token
-├── prometheus.yml
+├── scrape.yml
 └── server/
     └── omegga-config.yml
 ```
@@ -137,18 +148,6 @@ services:
       - home:/home/steam
       - ./server:/server
 
-  prometheus:
-    image: prom/prometheus:v3.14.0
-    restart: unless-stopped
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d'
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./omegga.token:/etc/prometheus/omegga.token:ro
-      - prometheus:/prometheus
-
   victoriametrics:
     image: victoriametrics/victoria-metrics:v1.150.0
     restart: unless-stopped
@@ -156,31 +155,30 @@ services:
       - '-storageDataPath=/storage'
       - '-retentionPeriod=2y'
       - '-httpListenAddr=:8428'
+      - '-promscrape.config=/etc/vm/scrape.yml'
     volumes:
+      - ./scrape.yml:/etc/vm/scrape.yml:ro
+      - ./omegga.token:/etc/vm/omegga.token:ro
       - victoriametrics:/storage
 
 volumes:
   home:
-  prometheus:
   victoriametrics:
 ```
 
 ```yaml
-# prometheus.yml
+# scrape.yml - the same scrape_configs prometheus takes
 global:
   scrape_interval: 15s
 
 scrape_configs:
   - job_name: omegga
     authorization:
-      credentials_file: /etc/prometheus/omegga.token
+      credentials_file: /etc/vm/omegga.token
     static_configs:
       - targets: ['omegga:9000']
         labels:
           instance: server-1
-
-remote_write:
-  - url: http://victoriametrics:8428/api/v1/write
 ```
 
 ```yaml
@@ -201,13 +199,13 @@ metrics:
   token: CHANGE_ME
   prometheus:
     enabled: true
-    url: http://prometheus:9090
+    url: http://victoriametrics:8428
     instance: server-1
-    retentionDays: 15
+    retentionDays: 730
 ```
 
 ```sh
-# .env - read for the ${...} in compose.yaml, and passed to the container
+# .env, read for the ${...} in compose.yaml, and passed to the container
 BRICKADIA_TOKEN=...
 OMEGGA_PORT=8080
 BRICKADIA_PORT=7777
@@ -230,29 +228,28 @@ the block in each place is worse than having all of it in one. `METRICS_ENABLED`
 
 A few things this arrangement is doing on purpose:
 
-- **Neither Prometheus nor VictoriaMetrics publishes a port.** Neither has any
-  authentication, and VictoriaMetrics' HTTP API includes both writes and series
-  deletion, so being unreachable is what protects them. Add
-  `ports: - '127.0.0.1:9090:9090'` to prometheus if you want its own UI on the
+- **VictoriaMetrics publishes no port.** It has no authentication, and its HTTP
+  API includes both writes and series deletion, so being unreachable is what
+  protects it. Add `ports: - '127.0.0.1:8428:8428'` if you want its UI on the
   host; that keeps it off the network while making it reachable locally.
 - **The metrics port is not published either**, and does not need to be. Only
-  `prometheus` talks to it, over the compose network. The token is still set
-  because omegga warns about an off-loopback bind without one, and because
+  `victoriametrics` talks to it, over the compose network. The token is still
+  set because omegga warns about an off-loopback bind without one, and because
   anything else you later attach to that network could otherwise read it.
 - **`instance: server-1` appears twice**, in the scrape config and in
   `metrics.prometheus.instance`. They have to agree or the dashboards query
   unfiltered and chart every scraped server at once. A second omegga is another
   service, another `targets` entry, and a distinct `instance`.
-- **Prometheus keeps 15 days, VictoriaMetrics keeps two years.** Losing
-  `prometheus`'s volume costs nothing durable; the one worth backing up is
-  `victoriametrics`.
+- **2 year retention.** You can edit `'-retentionPeriod=2y'` to be longer.
+  `retentionDays` has to match whatever you set, since it caps how far back the
+  web UI range picker reaches: leaving it at 15 would hide almost everything
+  stored. The `victoriametrics` volume is the one worth backing up.
 
-The web UI reads from Prometheus here, so its range picker only reaches back as
-far as `retentionDays`. VictoriaMetrics answers the same `/api/v1/query` and
-`/api/v1/query_range` that omegga uses, so pointing `url` at
-`http://victoriametrics:8428` and raising `retentionDays` gives the dashboards
-the full two years instead.
-
+VictoriaMetrics answers the same `/api/v1/query` and `/api/v1/query_range` that
+omegga uses, which is why `metrics.prometheus.url` points at it directly. A
+Prometheus in front of it, buffering and writing through with `remote_write`,
+is a reasonable arrangement too, but it is a second service to run for storage
+this already does.
 
 ## Game metrics
 
@@ -406,6 +403,8 @@ carry `counts` (one per bucket plus a trailing `+Inf` slot, not cumulative),
 `sum`, and `count`. Names must start with the plugin's own prefix.
 
 ## Dashboards in the web UI
+
+<a href="assets/screenshots/metrics.png"><img src="assets/screenshots/metrics.png" alt="Host health panels in the web UI" height="200"/></a>
 
 Omegga can also read those metrics *back* out of a Prometheus that scrapes it,
 and chart them in the web UI. Off unless configured:

@@ -94,6 +94,8 @@ Every plugin requires a `doc.json` file to document which briefly describes the 
 
 ## Plugin Config
 
+![Configuring a plugin from the web UI](../assets/screenshots/plugin-config.png)
+
 This is an example config section of a `doc.json`. The web ui provides an interface for editing these configs.
 
 ```json
