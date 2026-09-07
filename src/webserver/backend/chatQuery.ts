@@ -104,10 +104,9 @@ export const parseChatQuery = (input: string): ParsedChatQuery => {
     const value = colon > 0 ? token.slice(colon + 1) : '';
 
     if (!value) {
-      // `admin:` on its own is a complete thought: everything omegga sent,
-      // whoever sent it. every other bare filter is one the user is still
-      // typing, not a search for the literal text "from:" -- the search box
-      // inserts exactly that when a filter is picked from the dropdown
+      // `admin:` on its own means everything omegga sent. every other bare
+      // filter is one the user is still typing: picking a filter from the
+      // dropdown inserts exactly that
       if (key === 'admin' && !parsed.adminAny) {
         parsed.adminAny = true;
         parsed.filters.push({ key: 'admin', value: '' });

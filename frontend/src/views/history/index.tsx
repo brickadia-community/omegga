@@ -10,6 +10,7 @@ import {
   Calendar,
   ChatEntry,
   InfiniteScroll,
+  type InfiniteScrollHandle,
   Loader,
   MONTHS,
   NavBar,
@@ -19,6 +20,8 @@ import {
 } from '@components';
 import { useHasScope, useRequireScope } from '@hooks';
 import {
+  IconArrowDown,
+  IconArrowUp,
   IconCalendar,
   IconChevronDown,
   IconChevronUp,
@@ -29,6 +32,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -40,11 +44,6 @@ import { SearchBar } from './SearchBar';
 
 type ChatHistoryItem = RouterOutputs['chat']['history'][number];
 type ChatSearchResult = RouterOutputs['chat']['search'];
-type ChatHistoryEntry = ChatHistoryItem & {
-  date: number;
-  newDay?: string;
-};
-
 // how many entries a single click on an expander reveals
 const CONTEXT_STEP = 5;
 
@@ -82,7 +81,9 @@ export const HistoryView = () => {
   const [absMax, setAbsMax] = useState<number | null>(null);
   const minRef = useRef<number | null>(null);
   const maxRef = useRef<number | null>(null);
-  const chatsRef = useRef<ChatHistoryEntry[]>([]);
+  const chatsRef = useRef<ChatHistoryItem[]>([]);
+  const trimHeightBefore = useRef<number | null>(null);
+  const scroller = useRef<InfiniteScrollHandle>(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeQuery = (searchParams.get('q') ?? '').trim();
@@ -92,6 +93,13 @@ export const HistoryView = () => {
     activeQuery.length > 0 && !isEmptyChatQuery(parseChatQuery(activeQuery));
   const [searchInput, setSearchInput] = useState(searchParams.get('q') ?? '');
   const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
+  // kept apart from the sort: the sort decides which entries you get, this
+  // only decides where they sit
+  const [order, setOrder] = useState<'newest-last' | 'newest-first'>(
+    'newest-last',
+  );
+  const newestFirstRef = useRef(false);
+  newestFirstRef.current = order === 'newest-first';
   const [results, setResults] = useState<ChatSearchResult | null>(null);
   const [searching, setSearching] = useState(false);
   const [timeline, setTimeline] = useState(emptyTimeline<ChatHistoryItem>());
@@ -108,26 +116,16 @@ export const HistoryView = () => {
   const handleChats = useCallback((chats: ChatHistoryItem[]) => {
     if (!chats.length) return;
 
-    // add new chats and sort by create time
-    chatsRef.current = chatsRef.current.concat(chats as ChatHistoryEntry[]);
+    // a duplicate would collide react keys and shuffle the rendered rows
+    const seen = new Set(chatsRef.current.map(c => c._id));
+    chatsRef.current = chatsRef.current.concat(
+      chats.filter(c => !seen.has(c._id)),
+    );
     chatsRef.current.sort((a, b) => a.created - b.created);
 
     // find the min and max times for message creation
     const min = chatsRef.current[0].created;
     const max = chatsRef.current[chatsRef.current.length - 1].created;
-
-    for (let i = 0; i < chatsRef.current.length; i++) {
-      const c = chatsRef.current[i];
-      const date = new Date(c.created);
-      c.date = date.getDate();
-
-      // determine if the date between chat messages is a different day and insert that date
-      if (i === 0 || c.date !== chatsRef.current[i - 1].date) {
-        c.newDay = dayLabel(c.created);
-      } else {
-        c.newDay = undefined;
-      }
-    }
 
     minRef.current = min;
     maxRef.current = max;
@@ -156,6 +154,15 @@ export const HistoryView = () => {
       const trimDir = dir;
       if (trimDir && chatsRef.current.length > 200) {
         requestAnimationFrame(() => {
+          const container = ref.current?.querySelector('.scroll-scroller');
+          const heightBefore = container?.scrollHeight ?? 0;
+          // trimming always drops the end furthest from what was just loaded,
+          // which is above the reader in one arrangement and below in the
+          // other
+          const droppedAbove = newestFirstRef.current
+            ? trimDir === 'top'
+            : trimDir === 'bottom';
+
           if (trimDir === 'bottom') {
             chatsRef.current.splice(0, chatsRef.current.length - 200);
             minRef.current = chatsRef.current[0].created;
@@ -166,6 +173,9 @@ export const HistoryView = () => {
               chatsRef.current[chatsRef.current.length - 1].created;
             setAbsMax(null);
           }
+          // rows removed above the viewport pull everything up under the
+          // reader; correcting a frame later than the commit is a visible jump
+          if (droppedAbove) trimHeightBefore.current = heightBefore;
           setHistoryKey(prev => prev + 1);
         });
       }
@@ -229,6 +239,15 @@ export const HistoryView = () => {
     [activeQuery, sort],
   );
 
+  const firstSort = useRef(true);
+  useEffect(() => {
+    if (firstSort.current) {
+      firstSort.current = false;
+      return;
+    }
+    if (!isSearching) scrollToNewest();
+  }, [order]);
+
   useEffect(() => {
     setTimeline(emptyTimeline());
     if (!isSearching) {
@@ -252,14 +271,63 @@ export const HistoryView = () => {
     runSearch(results.chats[results.chats.length - 1].created);
   };
 
-  const scroll = () =>
+  const newestFirst = order === 'newest-first';
+
+  useLayoutEffect(() => {
+    const heightBefore = trimHeightBefore.current;
+    if (heightBefore === null) return;
+    trimHeightBefore.current = null;
+    scroller.current?.keepPlaceAfterHeightChange(heightBefore);
+  }, [_historyKey]);
+  // stored oldest first however it is shown, so the sort only flips the view
+  const historyEntries = newestFirst
+    ? [...chatsRef.current].reverse()
+    : chatsRef.current;
+
+  /**
+   * Put the newest end of the log in view: the bottom when the oldest is shown
+   * first, the top when it is not.
+   *
+   * Holds it there rather than placing it once, because the rows keep growing
+   * after they mount: the fonts have no `font-display`, so text reflows when
+   * they land, and the height sits still right up until it does. Gives up as
+   * soon as the reader scrolls.
+   */
+  const scrollToNewest = () =>
     new Promise<void>(resolve => {
       const container = ref.current?.querySelector('.scroll-scroller');
-      window.requestAnimationFrame(() => {
-        if (!container) return;
-        container.scrollTop = container.scrollHeight;
-        resolve();
-      });
+      if (!container) return resolve();
+
+      let placed = -1;
+      // only the reader taking over cancels this. a hold running out does not,
+      // or the font pass below would be skipped on exactly the slow loads it
+      // exists for
+      let abandoned = false;
+
+      const hold = (ms: number, done?: () => void) => {
+        const until = performance.now() + ms;
+        const pin = () => {
+          if (abandoned) return done?.();
+          // anywhere other than where this last put it means the reader moved
+          if (placed >= 0 && container.scrollTop !== placed) {
+            abandoned = true;
+            return done?.();
+          }
+
+          container.scrollTop = newestFirst ? 0 : container.scrollHeight;
+          // read back, because the browser clamps to what is really scrollable
+          placed = container.scrollTop;
+
+          if (performance.now() >= until) return done?.();
+          requestAnimationFrame(pin);
+        };
+        requestAnimationFrame(pin);
+      };
+
+      hold(600, resolve);
+      // a hard refresh downloads the fonts again, which takes longer than the
+      // hold above and reflows every row once it lands
+      document.fonts?.ready.then(() => hold(300));
     });
 
   useEffect(() => {
@@ -284,7 +352,7 @@ export const HistoryView = () => {
       } else {
         chatsRef.current = [];
         await getChats({ before: Date.now() });
-        scroll();
+        scrollToNewest();
       }
     })();
   }, [paramTime, isSearching]);
@@ -296,18 +364,35 @@ export const HistoryView = () => {
     await getChats({ after: time });
   };
 
+  // a second call before the first has moved the cursor would ask for the page
+  // already being fetched, and the rows it returns are all discarded as
+  // duplicates, which reads downstream as the log having no more to give
+  const pageInFlight = useRef(false);
+
+  // without a cursor the server falls back to the newest page, which would
+  // fetch what is already on screen a second time and duplicate every row
   const prevPage = async () => {
-    // check if this is absolute min pages (no results)
-    if (absMin && minRef.current && minRef.current <= absMin) return;
-    const chats = await getChats({ before: minRef.current! }, 'top');
-    if (chats.length === 0) setAbsMin(minRef.current);
+    if (pageInFlight.current || minRef.current === null) return;
+    if (absMin && minRef.current <= absMin) return;
+    pageInFlight.current = true;
+    try {
+      const chats = await getChats({ before: minRef.current }, 'top');
+      if (chats.length === 0) setAbsMin(minRef.current);
+    } finally {
+      pageInFlight.current = false;
+    }
   };
 
   const nextPage = async () => {
-    // check if this is absolute max pages (no results)
-    if (absMax && maxRef.current && maxRef.current >= absMax) return;
-    const chats = await getChats({ after: maxRef.current! }, 'bottom');
-    if (chats.length === 0) setAbsMax(maxRef.current);
+    if (pageInFlight.current || maxRef.current === null) return;
+    if (absMax && maxRef.current >= absMax) return;
+    pageInFlight.current = true;
+    try {
+      const chats = await getChats({ after: maxRef.current }, 'bottom');
+      if (chats.length === 0) setAbsMax(maxRef.current);
+    } finally {
+      pageInFlight.current = false;
+    }
   };
   const sortedCalendar = useMemo(() => sorted(calendar), [calendar]);
   const invSortedCalendar = useMemo(() => sorted(calendar, true), [calendar]);
@@ -376,21 +461,35 @@ export const HistoryView = () => {
   return (
     <>
       <NavHeader title="History">
-        {isSearching && (
-          <Button
-            normal
-            boxy
-            data-tooltip={
-              sort === 'newest'
-                ? 'Newest results first'
-                : 'Oldest results first'
-            }
-            onClick={() => setSort(s => (s === 'newest' ? 'oldest' : 'newest'))}
-          >
-            {sort === 'newest' ? <IconSortDescending /> : <IconSortAscending />}{' '}
-            Sort
-          </Button>
-        )}
+        <Button
+          normal
+          boxy
+          data-tooltip={
+            sort === 'newest'
+              ? 'Searching newest results first'
+              : 'Searching oldest results first'
+          }
+          onClick={() => setSort(s => (s === 'newest' ? 'oldest' : 'newest'))}
+        >
+          {sort === 'newest' ? <IconSortDescending /> : <IconSortAscending />}{' '}
+          Sort
+        </Button>
+        <Button
+          normal
+          boxy
+          data-tooltip={
+            order === 'newest-first'
+              ? 'Newest messages at the top'
+              : 'Newest messages at the bottom'
+          }
+          onClick={() =>
+            setOrder(o =>
+              o === 'newest-first' ? 'newest-last' : 'newest-first',
+            )
+          }
+        >
+          {order === 'newest-first' ? <IconArrowUp /> : <IconArrowDown />} Order
+        </Button>
         {canCalendar && (
           <div className="calendar-container">
             <Button
@@ -480,13 +579,14 @@ export const HistoryView = () => {
                   <InfiniteScroll
                     loading={searching}
                     onBottom={moreResults}
-                    // results page downward only; there is nothing above the
-                    // newest match to scroll back into
+                    // results page downward only, and reaching the top must
+                    // not throw the reader to the bottom
                     onTop={() => {}}
+                    onTopScrollsToBottom={false}
                     offset={500}
                     className="scroll-scroller"
                   >
-                    {timelineItems(timeline, sort === 'newest').map(
+                    {timelineItems(timeline, newestFirst).map(
                       (item, index, all) => {
                         if (item.kind === 'gap')
                           return (
@@ -545,21 +645,29 @@ export const HistoryView = () => {
               <>
                 <div className="scroll-container">
                   <InfiniteScroll
+                    ref={scroller}
                     loading={loading}
-                    onTop={prevPage}
-                    onBottom={nextPage}
+                    // newest first puts the newer end at the top, so the two
+                    // ends of the log swap which way they are paged from
+                    onTop={newestFirst ? nextPage : prevPage}
+                    onBottom={newestFirst ? prevPage : nextPage}
                     onTopScrollsToBottom={false}
                     offset={500}
                     className="scroll-scroller"
                   >
-                    {chatsRef.current.map(chat => (
-                      <React.Fragment key={chat._id}>
-                        {chat.newDay && (
-                          <div className="chat-new-day">{chat.newDay}</div>
-                        )}
-                        <ChatEntry key={chat._id} log={chat} />
-                      </React.Fragment>
-                    ))}
+                    {historyEntries.map((chat, index, all) => {
+                      const day = dayLabel(chat.created);
+                      const previous = all[index - 1];
+                      return (
+                        <React.Fragment key={chat._id}>
+                          {(!previous ||
+                            day !== dayLabel(previous.created)) && (
+                            <div className="chat-new-day">{day}</div>
+                          )}
+                          <ChatEntry log={chat} />
+                        </React.Fragment>
+                      );
+                    })}
                   </InfiniteScroll>
                 </div>
                 <Loader active={loading && firstLoad} size="huge">

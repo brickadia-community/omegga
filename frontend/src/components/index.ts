@@ -8,7 +8,7 @@ export { Dimmer } from './dimmer';
 export { Dropdown } from './dropdown';
 export { Footer } from './footer';
 export { Header } from './header';
-export { InfiniteScroll } from './infinite-scroll';
+export { InfiniteScroll, type InfiniteScrollHandle } from './infinite-scroll';
 export { Input, TextArea } from './input';
 export { ListInput, type ListInputType } from './list-input';
 export { Loader } from './loader';

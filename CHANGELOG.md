@@ -8,8 +8,10 @@ Search the chat history.
 
 - Search chat history from the history view, with `from:`, `role:`, `admin:`, `before:`, `after:`, and `action:` filters. The search box completes each of them as you type, `before:`/`after:` open a calendar to pick a date, and past searches are kept. `from:` matches names a player has since changed away from, `action:crash` finds server crashes, `admin:` finds what a web user or the server console sent, and the query lives in the URL so a search can be linked
 - Search results are grouped under date headers, and chevrons above and below a match reveal the messages around it a few at a time
+- Add sort and order toggles to the history view: which end of the log to search from, and which end to draw at the top
 - Add a "Total Messages" stat to the web UI player inspector, and a sortable message count column to the player list
 - A few fixes for the chat history's calendar widget
+- Fix the chat history stalling at the top when scrolled faster than it could load, and losing your place when it caught up ([#56](https://github.com/brickadia-community/omegga/issues/56))
 - Fix chat timestamps not showing their full date on hover
 - Fix a server crash leaving no trace in the chat log when crash auto-restart was disabled
 

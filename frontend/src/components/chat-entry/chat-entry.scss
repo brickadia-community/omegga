@@ -16,6 +16,8 @@
     .time-link {
       display: flex;
       align-items: center;
+      // the timestamp is a fixed width worth keeping; only the message gives
+      flex: none;
 
       .tabler-icon {
         opacity: 0;
@@ -25,6 +27,11 @@
 
     .message {
       flex: 1;
+      // a flex item will not shrink past its content without this, so one
+      // unbroken run of characters widens the row and the whole log scrolls
+      // sideways
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
   }
 

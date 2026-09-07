@@ -52,9 +52,7 @@
 .calendar-container {
   position: relative;
   margin-right: 8px;
-  // above the search bar, which sits later in the document and would otherwise
-  // win the tie at an equal z-index
-  z-index: 200;
+  z-index: 100;
 
   .calendar {
     position: absolute;

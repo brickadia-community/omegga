@@ -9,6 +9,12 @@
 
 .main-nav {
   margin-bottom: 16px;
+  // everything the header hangs below itself, the calendar and the account
+  // menu, has to clear the page content it opens over. done here rather than
+  // per dropdown, which only ever moved the tie to the next one. stays under
+  // the dimmer at 200 so a modal still covers the header
+  position: relative;
+  z-index: 150;
 }
 
 .navbar {
