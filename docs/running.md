@@ -60,6 +60,12 @@ Without automatic updates, check for one by starting omegga with `--update`:
     omegga --update
 
 The `/update` command in the omegga console does the same while it is running.
+It always stops and restarts the server, whether or not there was anything to
+download, so `/updatecheck` (`/uc`, `/check`) asks Steam whether an update
+exists and leaves the server alone. `/uc show` prints the local and remote build
+IDs, and `/uc on`/`/uc off` toggles automatic updates.
+
+`/version` (`/ver`) prints the version the server is running.
 
 To install or update the game without starting the server, run `omegga
 download`. It exits when SteamCMD finishes, which is what a provisioning step

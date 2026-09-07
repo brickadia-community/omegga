@@ -28,7 +28,7 @@ docker compose pull && docker compose up -d # or, under compose
 
 `latest` moves with every release, so pin a version like `:1.14.0` if you would rather choose when that happens. Nothing pulls on its own - `podman auto-update` and watchtower are the usual ways to automate it.
 
-The game is not in the image. It updates in place inside the volume with `omegga --update` or `/update`, and steamcmd keeps itself up to date. Setting the container's command to `omegga --update` (`command: omegga --update` under compose) checks on every start, at the cost of not starting at all when Steam is unreachable, rather than running the version already installed.
+The game is not in the image. It updates in place inside the volume with `omegga --update` or `/update` (which always restarts the server, unlike `/updatecheck`, which only reports whether an update exists), and steamcmd keeps itself up to date. Setting the container's command to `omegga --update` (`command: omegga --update` under compose) checks on every start, at the cost of not starting at all when Steam is unreachable, rather than running the version already installed.
 
 ## Compose
 
