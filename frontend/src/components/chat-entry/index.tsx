@@ -39,12 +39,21 @@ export const UserName = ({
   return <span {...props}>{user?.displayName || user?.name}</span>;
 };
 
-export const ChatEntry = ({ log }: { log: ChatLogEntry }) => {
+export const ChatEntry = ({
+  log,
+  dim,
+}: {
+  log: ChatLogEntry;
+  /** surrounding context in a search result, played down against the match */
+  dim?: boolean;
+}) => {
   const [_match, params] = useRoute('/history/:time?');
   const isFocused = params?.time === log.created + '';
 
   return (
-    <div className={`log-entry ${isFocused ? 'focused' : ''}`}>
+    <div
+      className={`log-entry ${isFocused ? 'focused' : ''} ${dim ? 'dim' : ''}`}
+    >
       <div className="log-row">
         <Link
           href={`/history/${isFocused ? '' : log.created}`}
@@ -78,6 +87,9 @@ export const ChatEntry = ({ log }: { log: ChatLogEntry }) => {
         )}
         {log.action === 'server' && (
           <div className="message server-message">{log.message}</div>
+        )}
+        {log.action === 'crash' && (
+          <div className="message crash-message">{log.message}</div>
         )}
       </div>
     </div>

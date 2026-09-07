@@ -51,6 +51,33 @@ export const chatRouter = router({
         return database.getChats({ after: input.after, before: input.before });
       }),
 
+    search: protectedProcedure(ScopeName.ChatHistory)
+      .input(
+        z.object({
+          query: z.string().max(256),
+          // `created` of the last entry on the previous page
+          cursor: z.number().optional(),
+          sort: z.enum(['newest', 'oldest']).optional(),
+        }),
+      )
+      .query(({ input }) => {
+        const { database } = getContextDeps();
+        return database.searchChats(input);
+      }),
+
+    context: protectedProcedure(ScopeName.ChatHistory)
+      .input(
+        z.object({
+          id: z.number(),
+          direction: z.enum(['before', 'after']),
+          count: z.number().min(1).max(25).optional(),
+        }),
+      )
+      .query(({ input }) => {
+        const { database } = getContextDeps();
+        return database.getChatContext(input);
+      }),
+
     calendar: protectedProcedure(ScopeName.ChatCalendar).query(() => {
       const { database } = getContextDeps();
       return database.calendar.years;

@@ -146,6 +146,7 @@ export const playerRouter = router({
           nameHistory,
           banHistory,
           kickHistory,
+          messageCount: await database.getPlayerMessageCount(id),
           seenAgo: now - entry.lastSeen,
           createdAgo: now - entry.created,
           isHost: omegga.getHostId() === id,

@@ -1,6 +1,7 @@
 export { AnimatedDropdown } from './animated-dropdown';
 export { Background } from './background';
 export { Button } from './button';
+export { Calendar, MONTHS, monthShape } from './calendar';
 export { ChatEntry, UserName } from './chat-entry';
 export { ChatTime } from './chat-time';
 export { Dimmer } from './dimmer';

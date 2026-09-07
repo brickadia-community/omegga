@@ -284,6 +284,12 @@ export const PlayerInspector = () => {
                     {player.instances}
                   </div>
                   <div className="stat">
+                    <b data-tooltip="Number of chat messages this player has sent">
+                      Total Messages:
+                    </b>{' '}
+                    {player.messageCount}
+                  </div>
+                  <div className="stat">
                     <b>Bans:</b> {player.banHistory.length}
                   </div>
                 </div>

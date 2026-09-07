@@ -1,4 +1,9 @@
 import Logger from '@/logger';
+import MetricsServer from '@/metrics';
+import {
+  recordUncaughtException,
+  recordUnhandledRejection,
+} from '@/metrics/errors';
 import {
   type OmeggaLike,
   type OmeggaPlayer,
@@ -23,11 +28,6 @@ import { type IConfig } from '@config/types';
 import { map as mapUtils, pattern, uuid } from '@util';
 import { readBrdbRevisions } from '@util/brdb';
 import { copyFiles, mkdir, readWatchedJSON } from '@util/file';
-import MetricsServer from '@/metrics';
-import {
-  recordUncaughtException,
-  recordUnhandledRejection,
-} from '@/metrics/errors';
 import Webserver from '@webserver/backend';
 import brs, {
   WorldReader,
@@ -42,10 +42,10 @@ import { basename, join, resolve, sep } from 'path';
 import { type AutoRestartConfig } from '..';
 import commandInjector from './commandInjector';
 import {
-  type ConsoleCommands,
   EA2_VERSION,
   PREFAB_VERSION,
   resolveConsoleCommands,
+  type ConsoleCommands,
 } from './commands';
 import MATCHERS from './matchers';
 import { readBinaryVersion } from './matchers/version';
@@ -419,7 +419,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
         this.emit('error', err);
 
         // publish stop to database
-        this.webserver?.database?.addChatLog('server', {}, 'Server error');
+        this.webserver?.database?.addChatLog('crash', {}, 'Omegga error');
 
         await this.stop();
       } catch (e) {
@@ -465,6 +465,10 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       const wasCrash = this.crashDetected;
       this.crashDetected = false;
       if (this.started) this.emit('exit');
+      // recorded whatever happens next: a crash that is not restarted from is
+      // still a crash, and used to leave no trace in the chat log at all
+      if (wasCrash)
+        this.webserver?.database?.addChatLog('crash', {}, 'Server crashed');
       const doRestart = async () => {
         if (!wasCrash) return;
         try {
@@ -474,7 +478,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
             this.webserver?.database?.addChatLog(
               'server',
               {},
-              'Server crashed, restarting...',
+              'Restarting after crash...',
             );
             await this.start();
           }

@@ -175,6 +175,10 @@ html {
   .server-message {
     color: #ff00ff;
   }
+
+  .crash-message {
+    color: theme.$br-error-hover;
+  }
 }
 
 table.br-table {

@@ -9,7 +9,7 @@ export const ChatTime = ({ time }: { time: string | number | Date }) => {
   }
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return (
-    <div className="chat-timestamp">
+    <div className="chat-timestamp" data-tooltip={date.toLocaleString()}>
       {hours}:{minutes} {pm}
     </div>
   );

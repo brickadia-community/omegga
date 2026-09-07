@@ -1,5 +1,6 @@
 @use '../../css/theme';
 @use '../../css/mixins';
+@use 'sass:color';
 
 .history-container {
   display: flex;
@@ -43,78 +44,281 @@
   position: sticky;
   text-transform: uppercase;
   border-radius: theme.$br-radius-sm;
+  // dimmed context entries are their own stacking context, and would paint
+  // over this header without one of its own to sit above them
+  z-index: 1;
 }
 
 .calendar-container {
   position: relative;
   margin-right: 8px;
+  // above the search bar, which sits later in the document and would otherwise
+  // win the tie at an equal z-index
+  z-index: 200;
+
+  .calendar {
+    position: absolute;
+    top: 100%;
+    right: 0;
+  }
+}
+
+// the bar rows carry the surface and spacing; the search only needs to be a
+// positioning context its dropdown can hang from
+.chat-search-bar {
+  // a search with several badges wraps onto more lines than a navbar allows
+  height: auto;
+  min-height: 32px;
+  // above the results row, so the dropdown is not painted over by it
+  position: relative;
   z-index: 100;
 }
 
-.calendar {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background-color: theme.$br-element-footer-bg;
-  border-radius: theme.$br-radius-md;
-  min-width: 200px;
+.chat-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
 
-  .year,
-  .month {
-    @include mixins.center;
-    background-color: theme.$br-bg-header;
-    justify-content: space-between;
-    padding: 0 8px;
-    padding-bottom: 8px;
+.chat-search-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  // 8px is the spacing the rest of the ui puts between a control and its
+  // neighbour, via the trailing margin buttons carry
+  gap: 8px;
+
+  // buttons carry a trailing margin by default, which would push the scroll
+  // area away from the bar
+  .button {
+    margin-right: 0;
+  }
+}
+
+// mimics .input, but holds filter badges alongside the text being typed
+.chat-search-field {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 12px;
+  min-height: theme.$br-element-height;
+  box-sizing: border-box;
+  background: theme.$br-element-normal;
+  border-radius: theme.$br-radius-sm;
+  cursor: text;
+
+  &:focus-within {
+    background: theme.$br-element-overlay;
   }
 
-  .year {
-    padding-top: 8px;
-  }
+  input {
+    flex: 1;
+    min-width: 80px;
+    height: calc(theme.$br-element-height - 4px);
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'Glacial Indifference';
+    font-weight: bold;
+    font-size: theme.$br-element-font;
+    color: theme.$br-inverted-fg;
 
-  .calendar-days {
-    font-size: 24px;
-    display: grid;
-    grid-template-columns: repeat(7, 40px);
-    grid-auto-rows: 40px;
-    text-align: center;
-
-    .days {
-      @include mixins.center;
-      color: theme.$br-boring-button-fg;
-
-      &.week-header {
-        background-color: theme.$br-bg-header;
-      }
-
-      &.available {
-        color: white;
-        background-color: theme.$br-button-normal;
-        border-radius: 0;
-        cursor: pointer;
-
-        &:hover {
-          background-color: theme.$br-element-hover;
-        }
-        &:active {
-          background-color: theme.$br-element-pressed;
-        }
-        &.today:hover {
-          background-color: theme.$br-info-hover;
-        }
-        &.today:active {
-          background-color: theme.$br-info-pressed;
-        }
-      }
-
-      &.today {
-        color: white;
-        border: 2px solid theme.$br-info-normal;
-      }
-
-      &:not(.today):not(.available) {
-        pointer-events: none;
-      }
+    &::placeholder {
+      color: color.adjust(theme.$br-element-bg, $lightness: -5%);
     }
   }
+}
+
+.chat-search-icon {
+  flex: none;
+  // matches the placeholder exactly, so the two read as one hint
+  color: color.adjust(theme.$br-element-bg, $lightness: -5%);
+}
+
+.chat-search-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  height: calc(theme.$br-element-height - 8px);
+  // distinct from the field it sits in ($br-element-normal) without the
+  // near-black of the header ramp
+  background: theme.$br-element-popout-bg;
+  color: white;
+  font-weight: bold;
+  font-size: 18px;
+  border-radius: theme.$br-radius-sm;
+  white-space: nowrap;
+}
+
+.chat-search-badge-remove {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  color: theme.$br-boring-button-fg;
+
+  &:hover {
+    color: white;
+  }
+}
+
+.chat-search-dropdown {
+  // stated rather than inherited: the bar this now sits inside sets the 24px
+  // footer size, which is far too large for a list of options
+  font-size: 18px;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  width: 360px;
+  max-width: 100%;
+  background-color: theme.$br-element-footer-bg;
+  border-radius: theme.$br-radius-md;
+  overflow: hidden;
+  // never taller than the list it covers, so options stay reachable
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+// the calendar brings its own surface, so this only places it
+.chat-search-picker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+}
+
+.chat-search-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px 4px;
+  color: theme.$br-boring-button-fg;
+  font-weight: bold;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.chat-search-clear {
+  cursor: pointer;
+
+  &:hover {
+    color: white;
+  }
+}
+
+.chat-search-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  color: white;
+  cursor: pointer;
+
+  // the popout surface, not $br-element-hover: that is an alias of
+  // $br-element-fg and equals $br-button-hover, which is meant to sit on the
+  // mid-blue button ground rather than this dark one
+  &:hover,
+  &.highlighted {
+    background-color: theme.$br-element-popout-bg;
+  }
+}
+
+.chat-search-option-icon {
+  flex: none;
+  color: theme.$br-boring-button-fg;
+}
+
+// the label sits above its syntax hint, as the filter list in discord does
+.chat-search-option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  .option-title {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .option-hint {
+    color: theme.$br-boring-button-fg;
+    font-weight: bold;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .chat-search-dropdown {
+    width: 100%;
+    max-height: 50vh;
+  }
+
+  // the row is tight on a phone; the placeholder says enough on its own
+  .chat-search-icon {
+    display: none;
+  }
+}
+
+// the two rows read as one bar: the search squares its bottom edge only while
+// a results row follows it, and that row squares the top edge to meet it
+.chat-search-bar.attached + .chat-search-summary {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.chat-search-summary {
+  flex-wrap: wrap;
+  gap: 8px;
+  height: auto;
+  min-height: 32px;
+  color: theme.$br-boring-button-fg;
+  margin-bottom: 8px;
+}
+
+.chat-search-chip {
+  color: white;
+  background-color: theme.$br-button-normal;
+  border-radius: theme.$br-radius-sm;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+// a thin expander above and below the match, in the spirit of the chevrons a
+// diff uses to reveal the lines around a hunk
+.chat-search-expand {
+  @include mixins.center;
+  height: 20px;
+  margin: 4px 0;
+  color: theme.$br-boring-button-fg;
+  background-color: theme.$br-element-popout-bg;
+  border-radius: theme.$br-radius-sm;
+  cursor: pointer;
+
+  &:hover {
+    color: white;
+    background-color: theme.$br-element-normal;
+  }
+}
+
+// revealed context frames the matches without competing with them
+.chat-search .log-entry.dim,
+.scroll-scroller .log-entry.dim {
+  opacity: 0.55;
+}
+
+.chat-search-empty {
+  @include mixins.center;
+  color: theme.$br-boring-button-fg;
+  font-weight: bold;
+  padding: 32px;
+  text-align: center;
 }

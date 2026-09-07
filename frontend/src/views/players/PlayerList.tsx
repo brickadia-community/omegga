@@ -12,6 +12,7 @@ import {
   SortIcons,
   Toggle,
 } from '@components';
+import { useMobileInspector, useRequireScope } from '@hooks';
 import {
   IconArrowBarToLeft,
   IconArrowBarToRight,
@@ -20,9 +21,9 @@ import {
   IconBan,
   IconFilter,
   IconMapPin,
+  IconMessage,
   IconRotate,
 } from '@tabler/icons-react';
-import { useMobileInspector, useRequireScope } from '@hooks';
 import { debounce, duration, heartbeatAgo } from '@utils';
 import { useMemo, useRef, useState } from 'react';
 import { Route, Switch, useLocation, useRoute } from 'wouter';
@@ -247,6 +248,19 @@ export const PlayerList = () => {
                           />
                         </span>
                       </th>
+                      <th
+                        onClick={() => setSort('messages')}
+                        data-tooltip="Number of chat messages sent"
+                      >
+                        <span className="icon-cell">
+                          <IconMessage className="label" size="30" />
+                          <SortIcons
+                            name="messages"
+                            sort={sort}
+                            direction={direction}
+                          />
+                        </span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -299,6 +313,9 @@ export const PlayerList = () => {
                         </td>
                         <td style={{ textAlign: 'right' }}>
                           {player.sessions}
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          {player.messageCount}
                         </td>
                       </tr>
                     ))}

@@ -1,22 +1,23 @@
-import { type IServerConfig } from '@config/types';
 import * as schema from '@/db/schema';
+import { type IServerConfig } from '@config/types';
 import type Omegga from '@omegga/server';
 import { explode } from '@util/pattern';
 import { parseBrickadiaTime } from '@util/time';
+import * as uuid from '@util/uuid';
 import bcrypt from 'bcryptjs';
 import type BetterSqlite3 from 'better-sqlite3';
 import chokidar from 'chokidar';
 import {
   and,
+  asc,
   count,
   desc,
   eq,
+  gt,
   inArray,
   lt,
-  gt,
   or,
   sql,
-  asc,
   type SQL,
 } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
@@ -24,6 +25,11 @@ import EventEmitter from 'events';
 import { randomUUID } from 'node:crypto';
 import path from 'path';
 import Calendar from './calendar';
+import {
+  isEmptyChatQuery,
+  parseChatQuery,
+  type ChatSearchAction,
+} from './chatQuery';
 import { serverEvents } from './events';
 import {
   EMPTY_PERMISSIONS,
@@ -55,6 +61,20 @@ const createPunchcard = (): number[][] =>
   );
 
 // the database keeps track of metrics for omegga
+/**
+ * Most searches return far fewer matches than this, so the reported total is
+ * exact; past it the ui says "1000+" rather than paying for a full scan.
+ */
+const SEARCH_COUNT_CAP = 1000;
+
+/** What a crash looked like in the log before `crash` was an action. */
+const LEGACY_CRASH_MESSAGES = ['Server error', 'Server crashed, restarting...'];
+
+/** Escapes a value so its wildcards are matched literally inside LIKE. */
+const escapeLike = (value: string) => value.replace(/[\\%_]/g, c => '\\' + c);
+const likePrefix = (value: string) => `${escapeLike(value)}%`;
+const likeAnywhere = (value: string) => `%${escapeLike(value)}%`;
+
 export default class Database extends EventEmitter {
   options: IServerConfig;
   omegga: Omegga;
@@ -789,7 +809,7 @@ export default class Database extends EventEmitter {
 
   // add a chat message to the chat log store
   async addChatLog(
-    action: 'msg' | 'server' | 'leave' | 'join',
+    action: 'msg' | 'server' | 'leave' | 'join' | 'crash',
     user: IPlayer,
     message?: string,
   ) {
@@ -863,6 +883,327 @@ export default class Database extends EventEmitter {
     }));
   }
 
+  /**
+   * Number of chat messages a player has sent. Join, leave, and server entries
+   * are not counted. Console and web messages from accounts with no linked
+   * player id are stored with an empty id, so they are never attributed.
+   */
+  async getPlayerMessageCount(id: string) {
+    if (!id) return 0;
+    const row = this.db
+      .select({ count: count() })
+      .from(schema.chatLogs)
+      .where(
+        and(
+          // spelled to match chat_logs_user_id_action_created_idx, which is
+          // an expression index and is skipped if the expression differs
+          eq(sql`json_extract(${schema.chatLogs.user}, '$.id')`, id),
+          eq(schema.chatLogs.action, 'msg'),
+        ),
+      )
+      .get();
+    return row?.count ?? 0;
+  }
+
+  /**
+   * Resolve `from:` terms to players. Matches ids exactly and names fuzzily,
+   * including names a player has since changed away from, so searching by the
+   * name someone used at the time still finds them.
+   */
+  private resolveChatSenders(names: string[]) {
+    const clauses = names.map(name => {
+      // a pick from the completion dropdown carries the player id, and must
+      // resolve to that one player: matching it by name too would pull in
+      // everyone whose name happens to contain the same letters
+      if (uuid.match(name)) return eq(schema.playerHistory.id, name);
+
+      const pattern = explode(name).source;
+      return sql`(
+        ${schema.playerHistory.id} = ${name}
+        OR ${schema.playerHistory.name} REGEXP ${pattern}
+        OR ${schema.playerHistory.displayName} REGEXP ${pattern}
+        OR EXISTS (
+          SELECT 1 FROM json_each(${schema.playerHistory.nameHistory})
+          WHERE json_each.type = 'object'
+            AND (json_extract(json_each.value, '$.name') REGEXP ${pattern}
+              OR json_extract(json_each.value, '$.displayName') REGEXP ${pattern})
+        )
+      )`;
+    });
+
+    return this.db
+      .select({
+        id: schema.playerHistory.id,
+        name: schema.playerHistory.name,
+        displayName: schema.playerHistory.displayName,
+      })
+      .from(schema.playerHistory)
+      .where(clauses.length > 1 ? or(...clauses) : clauses[0])
+      .limit(25)
+      .all();
+  }
+
+  /**
+   * Player ids currently holding any of the named roles, matched without
+   * regard to case.
+   *
+   * Role assignments are the server's present-day config, not a record of who
+   * held what when: someone promoted yesterday matches everything they ever
+   * said, and someone demoted matches none of it.
+   */
+  private resolveRoleMembers(roleNames: string[]) {
+    const wanted = new Set(roleNames.map(r => r.toLowerCase()));
+    const assignments =
+      this.omegga.getRoleAssignments?.()?.savedPlayerRoles ?? {};
+
+    return Object.entries(assignments)
+      .filter(([, entry]) =>
+        (entry?.roles ?? []).some(role => wanted.has(role.toLowerCase())),
+      )
+      .map(([id]) => id);
+  }
+
+  /**
+   * Search the chat log with the query language in {@link parseChatQuery}.
+   * Terms are ANDed and match anywhere in a message.
+   *
+   * A query with words in it searches chat messages, since nothing else has
+   * words to match. A query built only of filters scopes the log instead, and
+   * returns joins, leaves and server entries alongside messages. `action:`
+   * overrides either way.
+   *
+   * Paginates on `created` alone, as {@link getChats} does, so two entries
+   * logged in the same millisecond can straddle a page boundary.
+   */
+  async searchChats({
+    query,
+    count: limit = 50,
+    cursor,
+    sort = 'newest',
+  }: {
+    query: string;
+    count?: number;
+    cursor?: number;
+    sort?: 'newest' | 'oldest';
+  }) {
+    const parsed = parseChatQuery(query);
+    const empty = {
+      chats: [] as Awaited<ReturnType<Database['getChats']>>,
+      senders: [] as { id: string; name: string; displayName: string }[],
+      filters: parsed.filters,
+      hasMore: false,
+      total: 0,
+      totalCapped: false,
+      context: {} as Record<
+        string,
+        {
+          before: Awaited<ReturnType<Database['getChatContext']>>;
+          after: Awaited<ReturnType<Database['getChatContext']>>;
+        }
+      >,
+    };
+    if (isEmptyChatQuery(parsed)) return empty;
+
+    // searching for words only makes sense against something that has words,
+    // so terms imply messages. a query built purely of filters is scoping the
+    // log rather than searching it, and keeps joins, leaves and server entries
+    const actions: ChatSearchAction[] =
+      parsed.actions.length > 0
+        ? parsed.actions
+        : parsed.terms.length > 0
+          ? ['msg']
+          : ['msg', 'server', 'leave', 'join', 'crash'];
+    const byAction = inArray(schema.chatLogs.action, actions);
+    const conditions: SQL[] = [
+      // crashes were logged as ordinary server entries before they had an
+      // action of their own, so searching for them has to reach back to those
+      // too or a server's existing history looks crash-free
+      actions.includes('crash')
+        ? or(
+            byAction,
+            and(
+              eq(schema.chatLogs.action, 'server'),
+              inArray(schema.chatLogs.message, LEGACY_CRASH_MESSAGES),
+            ),
+          )!
+        : byAction,
+    ];
+
+    let senders: { id: string; name: string; displayName: string }[] = [];
+    if (parsed.from.length > 0) {
+      senders = this.resolveChatSenders(parsed.from);
+      // a from: nobody matches must return nothing, not everything
+      if (senders.length === 0) return empty;
+      conditions.push(
+        inArray(
+          sql`json_extract(${schema.chatLogs.user}, '$.id')`,
+          senders.map(s => s.id),
+        ),
+      );
+    }
+
+    if (parsed.roles.length > 0) {
+      const members = this.resolveRoleMembers(parsed.roles);
+      // a role nobody holds must match nothing, not everything
+      if (members.length === 0) return empty;
+      conditions.push(
+        inArray(sql`json_extract(${schema.chatLogs.user}, '$.id')`, members),
+      );
+    }
+
+    if (parsed.adminAny || parsed.admin.length > 0) {
+      // omegga stamps `web` on anything it sends itself and stores the name
+      // behind it: a web user's login, or SERVER for the console. the id is
+      // matched too so a pasted player id works as it does for from:
+      const web = sql`json_extract(${schema.chatLogs.user}, '$.web')`;
+      const name = sql`lower(json_extract(${schema.chatLogs.user}, '$.name'))`;
+      const id = sql`json_extract(${schema.chatLogs.user}, '$.id')`;
+      conditions.push(
+        parsed.admin.length === 0
+          ? sql`${web} = 1`
+          : and(
+              sql`${web} = 1`,
+              or(
+                inArray(
+                  name,
+                  parsed.admin.map(a => a.toLowerCase()),
+                ),
+                inArray(id, parsed.admin),
+              ),
+            )!,
+      );
+    }
+
+    for (const term of parsed.terms) {
+      conditions.push(
+        sql`${schema.chatLogs.message} LIKE ${likeAnywhere(term)} ESCAPE '\\'`,
+      );
+    }
+
+    if (parsed.before)
+      conditions.push(lt(schema.chatLogs.created, parsed.before));
+    if (parsed.after)
+      conditions.push(gt(schema.chatLogs.created, parsed.after));
+
+    // the total counts every match, so it is taken before the cursor narrows
+    // the query to one page. counting stops at the cap: on a large log a
+    // common word can match most of the table, and an exact total is not worth
+    // scanning all of it
+    const cappedMatches = this.db
+      .select({ one: sql`1` })
+      .from(schema.chatLogs)
+      .where(and(...conditions))
+      .limit(SEARCH_COUNT_CAP + 1)
+      .as('capped');
+    const counted =
+      this.db.select({ total: count() }).from(cappedMatches).get()?.total ?? 0;
+
+    const newest = sort === 'newest';
+    if (cursor !== undefined) {
+      conditions.push(
+        newest
+          ? lt(schema.chatLogs.created, cursor)
+          : gt(schema.chatLogs.created, cursor),
+      );
+    }
+
+    // one extra row answers whether another page exists without a second count
+    const rows = this.db
+      .select()
+      .from(schema.chatLogs)
+      .where(and(...conditions))
+      .orderBy((newest ? desc : asc)(schema.chatLogs.created))
+      .limit(limit + 1)
+      .all();
+
+    const hasMore = rows.length > limit;
+    const page = rows.slice(0, limit);
+
+    // one neighbour each way ships with the results so every match arrives
+    // with a line of context. these are primary key seeks, so the loop costs
+    // far less than the round trip per result it saves
+    const context: (typeof empty)['context'] = {};
+    for (const row of page) {
+      context[String(row.id)] = {
+        before: await this.getChatContext({
+          id: row.id,
+          direction: 'before',
+          count: 1,
+        }),
+        after: await this.getChatContext({
+          id: row.id,
+          direction: 'after',
+          count: 1,
+        }),
+      };
+    }
+
+    return {
+      context,
+      total: Math.min(counted, SEARCH_COUNT_CAP),
+      totalCapped: counted > SEARCH_COUNT_CAP,
+      chats: page.map(r => ({
+        type: 'chat' as const,
+        _id: String(r.id),
+        created: r.created,
+        instanceId: r.instanceId,
+        action: r.action,
+        user: r.user,
+        message: r.message,
+      })),
+      senders,
+      filters: parsed.filters,
+      hasMore,
+    };
+  }
+
+  /**
+   * The entries immediately before or after one chat log row, for expanding a
+   * search result outward a few lines at a time. Keyed on the row id rather
+   * than `created` so entries logged in the same millisecond stay in insertion
+   * order and none are skipped or repeated while paging outward.
+   *
+   * Returns oldest first in both directions. A short result means that end of
+   * the log has been reached.
+   */
+  async getChatContext({
+    id,
+    direction,
+    count = 5,
+  }: {
+    id: number;
+    direction: 'before' | 'after';
+    count?: number;
+  }) {
+    const rows =
+      direction === 'before'
+        ? this.db
+            .select()
+            .from(schema.chatLogs)
+            .where(lt(schema.chatLogs.id, id))
+            .orderBy(desc(schema.chatLogs.id))
+            .limit(count)
+            .all()
+            .reverse()
+        : this.db
+            .select()
+            .from(schema.chatLogs)
+            .where(gt(schema.chatLogs.id, id))
+            .orderBy(asc(schema.chatLogs.id))
+            .limit(count)
+            .all();
+
+    return rows.map(r => ({
+      type: 'chat' as const,
+      _id: String(r.id),
+      created: r.created,
+      instanceId: r.instanceId,
+      action: r.action,
+      user: r.user,
+      message: r.message,
+    }));
+  }
+
   // get paginated players
   async getPlayers({
     count: limit = 50,
@@ -922,27 +1263,85 @@ export default class Database extends EventEmitter {
               : sql`${schema.playerHistory.name} COLLATE NOCASE`;
     const orderDir = direction === 1 ? asc : desc;
 
+    // the search pattern matches letters in order anywhere in a name, so "ori"
+    // finds pAlaCe_Echo as readily as Acetone. completion needs the name someone
+    // is most plausibly typing first, which is the closest match, not the most
+    // recently seen one
+    const relevance =
+      sort === 'relevance' && search.length > 0
+        ? sql`CASE
+            WHEN ${schema.playerHistory.name} = ${search} COLLATE NOCASE THEN 0
+            WHEN ${schema.playerHistory.displayName} = ${search} COLLATE NOCASE THEN 1
+            WHEN ${schema.playerHistory.name} LIKE ${likePrefix(search)} ESCAPE '\\' THEN 2
+            WHEN ${schema.playerHistory.displayName} LIKE ${likePrefix(search)} ESCAPE '\\' THEN 3
+            WHEN ${schema.playerHistory.name} LIKE ${likeAnywhere(search)} ESCAPE '\\' THEN 4
+            WHEN ${schema.playerHistory.displayName} LIKE ${likeAnywhere(search)} ESCAPE '\\' THEN 5
+            ELSE 6
+          END`
+        : null;
+
     const totalResult = this.db
       .select({ count: count() })
       .from(schema.playerHistory)
       .where(baseWhere)
       .get();
+    // counted per row rather than joined, so the subquery runs for the page
+    // being shown unless the sort itself needs every count
+    // built rather than written out: the query builder qualifies both tables,
+    // which a hand-written subquery has to do itself or its bare "id" resolves
+    // to chat_logs.id and matches nobody. json_extract stays raw because
+    // drizzle has no helper for sqlite's json functions
+    const messageCount = sql<number>`${this.db
+      .select({ n: count() })
+      .from(schema.chatLogs)
+      .where(
+        and(
+          eq(
+            sql`json_extract(${schema.chatLogs.user}, '$.id')`,
+            schema.playerHistory.id,
+          ),
+          eq(schema.chatLogs.action, 'msg'),
+        ),
+      )}`;
+
     const players = this.db
-      .select()
+      .select({
+        id: schema.playerHistory.id,
+        name: schema.playerHistory.name,
+        displayName: schema.playerHistory.displayName,
+        nameHistory: schema.playerHistory.nameHistory,
+        ips: schema.playerHistory.ips,
+        created: schema.playerHistory.created,
+        lastSeen: schema.playerHistory.lastSeen,
+        lastInstanceId: schema.playerHistory.lastInstanceId,
+        heartbeats: schema.playerHistory.heartbeats,
+        sessions: schema.playerHistory.sessions,
+        instances: schema.playerHistory.instances,
+        messageCount,
+      })
       .from(schema.playerHistory)
       .where(baseWhere)
-      .orderBy(orderDir(sortCol))
+      .orderBy(
+        ...(relevance
+          ? [relevance, desc(schema.playerHistory.lastSeen)]
+          : sort === 'messages'
+            ? [orderDir(messageCount)]
+            : [orderDir(sortCol)]),
+      )
       .limit(limit)
       .offset(limit * page)
       .all();
 
     const total = totalResult?.count ?? 0;
-    const result = players.map(p => this._toUserHistory(p));
+    const result = players.map(p => ({
+      ...this._toUserHistory(p),
+      messageCount: p.messageCount,
+    }));
 
     // exact match detection
     if (search.length > 0 && page === 0) {
       const exactRows = this.db
-        .select()
+        .select({ row: schema.playerHistory, messageCount })
         .from(schema.playerHistory)
         .where(
           or(
@@ -954,10 +1353,17 @@ export default class Database extends EventEmitter {
         .all();
       if (exactRows.length > 0) {
         for (const res of exactRows) {
-          const idx = result.findIndex(p => p.id === res.id);
+          const idx = result.findIndex(p => p.id === res.row.id);
           if (idx >= 0) result.splice(idx, 1);
         }
-        result.splice(0, 0, ...exactRows.map(r => this._toUserHistory(r)));
+        result.splice(
+          0,
+          0,
+          ...exactRows.map(r => ({
+            ...this._toUserHistory(r.row),
+            messageCount: r.messageCount,
+          })),
+        );
       }
     }
 

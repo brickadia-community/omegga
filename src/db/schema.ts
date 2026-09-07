@@ -1,3 +1,5 @@
+import type { PermissionSet } from '@webserver/backend/permissions';
+import type { IChatUser, IWebAuthnCredential } from '@webserver/backend/types';
 import { sql } from 'drizzle-orm';
 import {
   index,
@@ -6,8 +8,6 @@ import {
   text,
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
-import type { PermissionSet } from '@webserver/backend/permissions';
-import type { IChatUser, IWebAuthnCredential } from '@webserver/backend/types';
 
 export const users = sqliteTable(
   'users',
@@ -57,13 +57,22 @@ export const chatLogs = sqliteTable(
     instanceId: text('instance_id').notNull(),
     action: text('action')
       .notNull()
-      .$type<'msg' | 'server' | 'leave' | 'join'>(),
+      .$type<'msg' | 'server' | 'leave' | 'join' | 'crash'>(),
     user: text('user', { mode: 'json' }).notNull().$type<Partial<IChatUser>>(),
     message: text('message'),
   },
   table => [
     index('chat_logs_created_idx').on(table.created),
     index('chat_logs_instance_created_idx').on(table.instanceId, table.created),
+    // the sender lives inside the user JSON, so anything keyed on it needs an
+    // expression index. (sender, action) counts a player's messages without
+    // touching rows, and the trailing created lets a from: search seek straight
+    // to that player and walk the range already in date order
+    index('chat_logs_user_id_action_created_idx').on(
+      sql`json_extract(${table.user}, '$.id')`,
+      table.action,
+      table.created,
+    ),
   ],
 );
 

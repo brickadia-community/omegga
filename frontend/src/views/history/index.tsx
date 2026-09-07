@@ -1,19 +1,31 @@
+import { isEmptyChatQuery, parseChatQuery } from '@backend/chatQuery';
+import {
+  addContext,
+  addMatches,
+  emptyTimeline,
+  timelineItems,
+} from '@backend/chatTimeline';
 import {
   Button,
+  Calendar,
   ChatEntry,
   InfiniteScroll,
   Loader,
+  MONTHS,
+  NavBar,
   NavHeader,
   PageContent,
   SideNav,
 } from '@components';
-import { AnimatePresence, motion } from 'motion/react';
 import { useHasScope, useRequireScope } from '@hooks';
 import {
-  IconArrowLeft,
-  IconArrowRight,
   IconCalendar,
+  IconChevronDown,
+  IconChevronUp,
+  IconSortAscending,
+  IconSortDescending,
 } from '@tabler/icons-react';
+import { AnimatePresence, motion } from 'motion/react';
 import React, {
   useCallback,
   useEffect,
@@ -21,30 +33,25 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useRoute } from 'wouter';
+import { useRoute, useSearchParams } from 'wouter';
 import { Permissions } from '../../permissions';
 import { trpc, type RouterOutputs } from '../../trpc';
+import { SearchBar } from './SearchBar';
 
 type ChatHistoryItem = RouterOutputs['chat']['history'][number];
+type ChatSearchResult = RouterOutputs['chat']['search'];
 type ChatHistoryEntry = ChatHistoryItem & {
   date: number;
   newDay?: string;
 };
 
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+// how many entries a single click on an expander reveals
+const CONTEXT_STEP = 5;
+
+const dayLabel = (time: number) => {
+  const date = new Date(time);
+  return `${MONTHS[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+};
 
 const sorted = (obj: Record<number, any>, reverse = false) =>
   Object.keys(obj)
@@ -69,7 +76,6 @@ export const HistoryView = () => {
   const [year, setYear] = useState(nowYear);
   const nowMonth = useMemo(() => new Date().getMonth(), []);
   const [month, setMonth] = useState(nowMonth);
-  const nowDay = useMemo(() => new Date().getDate(), []);
   const ref = useRef<HTMLDivElement>(null);
 
   const [absMin, setAbsMin] = useState<number | null>(null);
@@ -77,6 +83,18 @@ export const HistoryView = () => {
   const minRef = useRef<number | null>(null);
   const maxRef = useRef<number | null>(null);
   const chatsRef = useRef<ChatHistoryEntry[]>([]);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeQuery = (searchParams.get('q') ?? '').trim();
+  // a half-typed filter such as `from:` narrows nothing, so it should leave the
+  // history on screen rather than flipping to an empty result list
+  const isSearching =
+    activeQuery.length > 0 && !isEmptyChatQuery(parseChatQuery(activeQuery));
+  const [searchInput, setSearchInput] = useState(searchParams.get('q') ?? '');
+  const [sort, setSort] = useState<'newest' | 'oldest'>('newest');
+  const [results, setResults] = useState<ChatSearchResult | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [timeline, setTimeline] = useState(emptyTimeline<ChatHistoryItem>());
 
   const utils = trpc.useUtils();
 
@@ -105,9 +123,7 @@ export const HistoryView = () => {
 
       // determine if the date between chat messages is a different day and insert that date
       if (i === 0 || c.date !== chatsRef.current[i - 1].date) {
-        c.newDay = `${MONTHS[date.getMonth()]} ${
-          c.date
-        }, ${date.getFullYear()}`;
+        c.newDay = dayLabel(c.created);
       } else {
         c.newDay = undefined;
       }
@@ -159,6 +175,83 @@ export const HistoryView = () => {
     [],
   );
 
+  // names for the senders the last search resolved, so a linked query whose
+  // from: holds an id still shows that player's name in the badge
+  const senderNames = useMemo(
+    () =>
+      Object.fromEntries(
+        (results?.senders ?? []).map(sender => [sender.id, sender.name]),
+      ),
+    [results?.senders],
+  );
+
+  const commitSearch = useCallback(
+    (query: string) => {
+      const next = new URLSearchParams(searchParams);
+      if (query.trim()) next.set('q', query);
+      else next.delete('q');
+      if (next.toString() !== searchParams.toString())
+        setSearchParams(next, { replace: true });
+    },
+    [searchParams],
+  );
+
+  // typing updates the url rather than firing a request, so a search is
+  // linkable and the back button steps through searches
+  useEffect(() => {
+    const timer = setTimeout(() => commitSearch(searchInput), 500);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const runSearch = useCallback(
+    async (cursor?: number) => {
+      setSearching(true);
+      const page = await utils.chat.search.fetch({
+        query: activeQuery,
+        sort,
+        ...(cursor === undefined ? {} : { cursor }),
+      });
+      setResults(prev =>
+        cursor === undefined || !prev
+          ? page
+          : { ...page, chats: [...prev.chats, ...page.chats] },
+      );
+      const merged = page.chats.map(chat => ({
+        match: chat,
+        before: page.context[chat._id]?.before ?? [],
+        after: page.context[chat._id]?.after ?? [],
+      }));
+      setTimeline(prev =>
+        addMatches(cursor === undefined ? emptyTimeline() : prev, merged),
+      );
+      setSearching(false);
+    },
+    [activeQuery, sort],
+  );
+
+  useEffect(() => {
+    setTimeline(emptyTimeline());
+    if (!isSearching) {
+      setResults(null);
+      return;
+    }
+    runSearch();
+  }, [activeQuery, sort]);
+
+  const expandGap = async (id: string, direction: 'before' | 'after') => {
+    const rows = await utils.chat.context.fetch({
+      id: Number(id),
+      direction,
+      count: CONTEXT_STEP,
+    });
+    setTimeline(prev => addContext(prev, id, direction, rows, CONTEXT_STEP));
+  };
+
+  const moreResults = () => {
+    if (searching || !results?.hasMore || results.chats.length === 0) return;
+    runSearch(results.chats[results.chats.length - 1].created);
+  };
+
   const scroll = () =>
     new Promise<void>(resolve => {
       const container = ref.current?.querySelector('.scroll-scroller');
@@ -176,6 +269,9 @@ export const HistoryView = () => {
     (async () => {
       if (firstLoad && canCalendar) await getCalendar();
 
+      // results replace the history list, so there is nothing to load behind them
+      if (isSearching) return;
+
       // ensures time is not nan
       if (time && !Number.isNaN(time.getTime())) {
         chatsRef.current = [];
@@ -191,7 +287,7 @@ export const HistoryView = () => {
         scroll();
       }
     })();
-  }, [paramTime]);
+  }, [paramTime, isSearching]);
 
   const focusDay = async (year: number, month: number, day: number) => {
     chatsRef.current = [];
@@ -268,20 +364,33 @@ export const HistoryView = () => {
     return [foundYear, foundMonth] as [number, number];
   }, [year, month, calendar]);
 
+  // the nav memos hand back the target as [year, month]
   const setDate = (date: [number, number] | null) => {
     if (!date) return;
-    setYear(year);
-    setMonth(month);
+    setYear(date[0]);
+    setMonth(date[1]);
   };
-
-  const numDays = new Date(year, month + 1, 0).getDate();
-  const startDay = new Date(year, month, 1).getDay();
 
   if (!canAccess) return null;
 
   return (
     <>
       <NavHeader title="History">
+        {isSearching && (
+          <Button
+            normal
+            boxy
+            data-tooltip={
+              sort === 'newest'
+                ? 'Newest results first'
+                : 'Oldest results first'
+            }
+            onClick={() => setSort(s => (s === 'newest' ? 'oldest' : 'newest'))}
+          >
+            {sort === 'newest' ? <IconSortDescending /> : <IconSortAscending />}{' '}
+            Sort
+          </Button>
+        )}
         {canCalendar && (
           <div className="calendar-container">
             <Button
@@ -310,14 +419,9 @@ export const HistoryView = () => {
                       prevMonth,
                       month,
                       nextMonth,
-                      startDay,
-                      numDays,
-                      nowMonth,
-                      nowYear,
-                      nowDay,
-                      calendar,
-                      focusDay,
                     }}
+                    available={calendar}
+                    onPick={focusDay}
                   />
                 </motion.div>
               )}
@@ -329,136 +433,143 @@ export const HistoryView = () => {
         <SideNav />
         <div className="generic-container history-container" ref={ref}>
           <div className="chat-history">
-            <div className="scroll-container">
-              <InfiniteScroll
-                loading={loading}
-                onTop={prevPage}
-                onBottom={nextPage}
-                onTopScrollsToBottom={false}
-                offset={500}
-                className="scroll-scroller"
-              >
-                {chatsRef.current.map(chat => (
-                  <React.Fragment key={chat._id}>
-                    {chat.newDay && (
-                      <div className="chat-new-day">{chat.newDay}</div>
+            <NavBar
+              attached={isSearching && !!results}
+              className="chat-search-bar"
+            >
+              <SearchBar
+                value={searchInput}
+                onChange={setSearchInput}
+                onSubmit={commitSearch}
+                onClear={() => {
+                  setSearchInput('');
+                  commitSearch('');
+                }}
+                senderNames={senderNames}
+              />
+            </NavBar>
+            {isSearching ? (
+              <>
+                {results && (
+                  <NavBar className="chat-search-summary">
+                    <span>
+                      {results.total}
+                      {results.totalCapped ? '+' : ''} result
+                      {results.total === 1 ? '' : 's'}
+                    </span>
+                    {results.senders.map(sender => (
+                      <span className="chat-search-chip" key={sender.id}>
+                        from: {sender.name}
+                      </span>
+                    ))}
+                    {results.filters
+                      .filter(f => f.key !== 'from')
+                      .map(filter => (
+                        <span
+                          className="chat-search-chip"
+                          key={filter.key + filter.value}
+                        >
+                          {filter.key}:{' '}
+                          {filter.value ||
+                            (filter.key === 'admin' ? 'any' : '')}
+                        </span>
+                      ))}
+                  </NavBar>
+                )}
+                <div className="scroll-container">
+                  <InfiniteScroll
+                    loading={searching}
+                    onBottom={moreResults}
+                    // results page downward only; there is nothing above the
+                    // newest match to scroll back into
+                    onTop={() => {}}
+                    offset={500}
+                    className="scroll-scroller"
+                  >
+                    {timelineItems(timeline, sort === 'newest').map(
+                      (item, index, all) => {
+                        if (item.kind === 'gap')
+                          return (
+                            <div
+                              key={`gap:${item.direction}:${item.id}`}
+                              className="chat-search-expand"
+                              data-tooltip={
+                                item.direction === 'before'
+                                  ? 'Show earlier messages'
+                                  : 'Show later messages'
+                              }
+                              onClick={() => expandGap(item.id, item.direction)}
+                            >
+                              {sort === 'newest' ? (
+                                item.direction === 'before' ? (
+                                  <IconChevronDown />
+                                ) : (
+                                  <IconChevronUp />
+                                )
+                              ) : item.direction === 'before' ? (
+                                <IconChevronUp />
+                              ) : (
+                                <IconChevronDown />
+                              )}
+                            </div>
+                          );
+
+                        const day = dayLabel(item.entry.created);
+                        const previous = all
+                          .slice(0, index)
+                          .reverse()
+                          .find(i => i.kind === 'entry');
+                        return (
+                          <React.Fragment key={item.id}>
+                            {(!previous ||
+                              day !== dayLabel(previous.entry.created)) && (
+                              <div className="chat-new-day">{day}</div>
+                            )}
+                            <ChatEntry log={item.entry} dim={!item.isMatch} />
+                          </React.Fragment>
+                        );
+                      },
                     )}
-                    <ChatEntry key={chat._id} log={chat} />
-                  </React.Fragment>
-                ))}
-              </InfiniteScroll>
-            </div>
-            <Loader active={loading && firstLoad} size="huge">
-              Loading Chat
-            </Loader>
+                    {results && results.chats.length === 0 && !searching && (
+                      <div className="chat-search-empty">
+                        No messages match this search
+                      </div>
+                    )}
+                  </InfiniteScroll>
+                </div>
+                <Loader active={searching && !results} size="huge">
+                  Searching
+                </Loader>
+              </>
+            ) : (
+              <>
+                <div className="scroll-container">
+                  <InfiniteScroll
+                    loading={loading}
+                    onTop={prevPage}
+                    onBottom={nextPage}
+                    onTopScrollsToBottom={false}
+                    offset={500}
+                    className="scroll-scroller"
+                  >
+                    {chatsRef.current.map(chat => (
+                      <React.Fragment key={chat._id}>
+                        {chat.newDay && (
+                          <div className="chat-new-day">{chat.newDay}</div>
+                        )}
+                        <ChatEntry key={chat._id} log={chat} />
+                      </React.Fragment>
+                    ))}
+                  </InfiniteScroll>
+                </div>
+                <Loader active={loading && firstLoad} size="huge">
+                  Loading Chat
+                </Loader>
+              </>
+            )}
           </div>
         </div>
       </PageContent>
     </>
   );
 };
-
-const Calendar = ({
-  prevYear,
-  setDate,
-  year,
-  nextYear,
-  prevMonth,
-  month,
-  nextMonth,
-  startDay,
-  numDays,
-  nowMonth,
-  nowYear,
-  nowDay,
-  calendar,
-  focusDay,
-}: {
-  prevYear: [number, number] | null;
-  setDate: (date: [number, number] | null) => void;
-  year: number;
-  nextYear: [number, number] | null;
-  prevMonth: [number, number] | null;
-  month: number;
-  nextMonth: [number, number] | null;
-  startDay: number;
-  numDays: number;
-  nowMonth: number;
-  nowYear: number;
-  nowDay: number;
-  calendar: Record<number, Record<number, Record<number, boolean>>>;
-  focusDay: (year: number, month: number, day: number) => Promise<void>;
-}) => (
-  <div className="calendar">
-    <div className="year">
-      <Button
-        icon
-        normal
-        disabled={!prevYear}
-        onClick={() => setDate(prevYear)}
-      >
-        <IconArrowLeft />
-      </Button>
-      {year}
-      <Button
-        icon
-        normal
-        disabled={!nextYear}
-        onClick={() => setDate(nextYear)}
-      >
-        <IconArrowRight />
-      </Button>
-    </div>
-    <div className="month">
-      <Button
-        icon
-        normal
-        disabled={!prevMonth}
-        onClick={() => setDate(prevMonth)}
-      >
-        <IconArrowLeft />
-      </Button>
-      {MONTHS[month]}
-      <Button
-        icon
-        normal
-        disabled={!nextMonth}
-        onClick={() => setDate(nextMonth)}
-      >
-        <IconArrowRight />
-      </Button>
-    </div>
-    <div className="calendar-days">
-      <div className="week-header days">S</div>
-      <div className="week-header days">M</div>
-      <div className="week-header days">T</div>
-      <div className="week-header days">W</div>
-      <div className="week-header days">T</div>
-      <div className="week-header days">F</div>
-      <div className="week-header days">S</div>
-      {Array.from({ length: startDay }).map((_, i) => (
-        <div key={`empty-${i}`} />
-      ))}
-      {Array.from({
-        length: numDays,
-      }).map((_, d) => (
-        <div
-          key={d}
-          className={`days ${
-            nowMonth === month && nowYear === year && d + 1 === nowDay
-              ? 'today'
-              : ''
-          } ${
-            !(nowMonth === month && nowYear === year && d + 1 > nowDay) &&
-            calendar[year]?.[month]?.[d]
-              ? 'available'
-              : ''
-          }`}
-          onClick={() => focusDay(year, month, d + 1)}
-        >
-          {d + 1}
-        </div>
-      ))}
-    </div>
-  </div>
-);

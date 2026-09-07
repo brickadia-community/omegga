@@ -8,6 +8,13 @@
       "when": 1781405588199,
       "tag": "0000_long_killer_shrike",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788672926999,
+      "tag": "0001_shocking_the_captain",
+      "breakpoints": true
     }
   ]
 }

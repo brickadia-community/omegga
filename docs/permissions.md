@@ -85,7 +85,7 @@ Each scope belongs to exactly one domain and is either read-only (R) or read-wri
 |-------|-----|-------------|
 | `chat.send` | W | Send messages in the dashboard chat widget |
 | `chat.recent` | R | View recent chat on the dashboard |
-| `chat.history` | R | Browse past chat logs in the history view |
+| `chat.history` | R | Browse and search past chat logs in the history view |
 | `chat.calendar` | R | Navigate chat by date in the history view |
 
 ### Player

@@ -62,7 +62,7 @@ export interface IStoreChat {
   type: 'chat';
   created: number;
   instanceId: string;
-  action: 'msg' | 'server' | 'leave' | 'join';
+  action: 'msg' | 'server' | 'leave' | 'join' | 'crash';
   user: Partial<IChatUser>;
   /** null for join/leave/server entries (the database column is nullable) */
   message?: string | null;
