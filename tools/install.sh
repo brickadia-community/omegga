@@ -1,19 +1,13 @@
 #!/usr/bin/env bash
-# Checks what this machine already has, offers to install the rest, and installs
-# omegga as the user running it.
+# Installs omegga and whatever it needs, as the user running it.
 #
 #   curl -fsSL https://omegga.brickadia.dev/install.sh | bash
 #
-# The docs build publishes this file at that URL; it is also readable straight
-# from the repo at raw.githubusercontent.com/brickadia-community/omegga/master/
-# tools/install.sh.
-#
-# Nothing is installed without being offered first, so it is safe to run on a
-# machine that already has node, and safe to run twice.
+# The docs build publishes this file at that URL. Nothing happens without being
+# asked about first, and running it twice is fine.
 
-# `sh install.sh` bypasses the shebang and fails later with errors that read as
-# omegga's fault ("can't cd to ."), so it is turned away here while the script
-# is still parseable by a POSIX shell.
+# `sh install.sh` skips the shebang and dies later with confusing errors
+# ("can't cd to ."). Catch it here, while sh can still parse the file.
 if [ -z "${BASH_VERSION:-}" ]; then
   echo ">! run this with bash, not sh:  bash install.sh" >&2
   exit 1
@@ -21,13 +15,12 @@ fi
 
 set -euo pipefail
 
-# Omegga needs node 23 or newer (package.json "engines"). 24 is what the install
-# docs walk through and the release line omegga is tested against.
+# Omegga needs node 23 or newer (package.json "engines"). 24 is what the docs
+# install and what omegga is tested against.
 #
-# The OMEGGA_ prefix and the absence of readonly are both load-bearing: this
-# script sources nvm.sh into its own shell, nvm declares NODE_VERSION and
-# NVM_VERSION as locals, and `local` against a readonly name fails quietly
-# enough that `nvm install 24` installs the newest node instead.
+# Prefixed, and not readonly, on purpose: this script sources nvm.sh, nvm uses
+# NODE_VERSION and NVM_VERSION as its own locals, and `local` on a readonly
+# name fails quietly enough that `nvm install 24` installs the newest node.
 OMEGGA_MIN_NODE_MAJOR=23
 OMEGGA_NVM_VERSION=v0.40.3
 OMEGGA_NODE_VERSION=24
@@ -35,9 +28,17 @@ OMEGGA_NODE_VERSION=24
 ASSUME_YES=0
 DRY_RUN=0
 
-say()  { printf '>> %s\n' "$*"; }
-warn() { printf '>! %s\n' "$*" >&2; }
-die()  { printf '>! %s\n' "$*" >&2; exit 1; }
+# Per stream, so a redirected log does not collect escape codes because the
+# other stream happens to be a terminal.
+GREEN='' YELLOW='' RED='' OFF_OUT='' OFF_ERR=''
+if [[ -z ${NO_COLOR:-} && ${TERM:-dumb} != dumb ]]; then
+  if [[ -t 1 ]]; then GREEN=$'\e[32m' YELLOW=$'\e[33m' OFF_OUT=$'\e[0m'; fi
+  if [[ -t 2 ]]; then RED=$'\e[31m' OFF_ERR=$'\e[0m'; fi
+fi
+
+say()  { printf '%s>>%s %s\n' "$GREEN" "$OFF_OUT" "$*"; }
+warn() { printf '%s>!%s %s\n' "$RED" "$OFF_ERR" "$*" >&2; }
+die()  { warn "$*"; exit 1; }
 
 usage() {
   cat <<'EOF'
@@ -60,9 +61,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Prompts read from the terminal rather than stdin. Under `curl ... | bash` the
-# script itself is stdin, and reading answers from there would swallow the rest
-# of the script and run half an installer.
+# Under `curl ... | bash` the script is stdin, so reading answers from stdin
+# would eat the rest of it. Prompts go to /dev/tty instead.
 ask() {
   local prompt="$1" reply
   if [[ $ASSUME_YES == 1 ]]; then
@@ -70,10 +70,10 @@ ask() {
     return 0
   fi
   if [[ ! -r /dev/tty ]]; then
-    warn "no terminal to ask on, and --yes was not given: assuming no"
+    warn "no terminal to ask on and no --yes, so assuming no"
     return 1
   fi
-  read -r -p ">> $prompt [Y/n] " reply < /dev/tty || return 1
+  read -r -p "$GREEN>>$OFF_OUT $prompt [Y/n] " reply < /dev/tty || return 1
   [[ -z $reply || $reply == [yY]* ]]
 }
 
@@ -87,15 +87,15 @@ as_root() {
   fi
 }
 
-# The path this script was read from, or nothing when it came down a pipe.
-# Continuing as another user needs a real file to hand them.
+# Where this script lives, or nothing if it came down a pipe. Handing it to
+# another user needs a real file.
 self_path() {
   if [[ -f ${BASH_SOURCE[0]} ]]; then
     readlink -f "${BASH_SOURCE[0]}"
   fi
 }
 
-# The flags this run was given, to pass on to a run as another user.
+# Flags to pass along when re-running as someone else.
 forwarded_args() {
   if [[ $ASSUME_YES == 1 ]]; then printf ' --yes'; fi
   if [[ $DRY_RUN == 1 ]]; then printf ' --dry-run'; fi
@@ -127,8 +127,7 @@ else
   ADMIN_GROUP=wheel
 fi
 
-# lib32 is the odd one out: it is a library rather than a command, so the
-# package manager is asked about it instead of PATH.
+# lib32 is a library, not a command, so the package manager answers for it.
 dep_desc() {
   case "$1" in
     curl)      echo "downloading the nvm installer" ;;
@@ -154,15 +153,14 @@ dep_present() {
         debian) dpkg -s lib32gcc-s1 >/dev/null 2>&1 ;;
         fedora) rpm -q libgcc.i686 >/dev/null 2>&1 && rpm -q libstdc++.i686 >/dev/null 2>&1 ;;
         arch)   pacman -Q lib32-gcc-libs >/dev/null 2>&1 ;;
-        # Unknown distro: steamcmd needs the 32-bit loader, so look for that
-        # rather than for a package name that may not exist.
+        # unknown distro: look for the 32-bit loader, not a package name
         *) [[ -e /lib/ld-linux.so.2 || -e /lib32/ld-linux.so.2 ]] ;;
       esac ;;
     *) command -v "$1" >/dev/null ;;
   esac
 }
 
-# Package names providing a dependency on this family, space separated.
+# Packages that provide a dependency here, space separated.
 dep_packages() {
   case "$FAMILY:$1" in
     debian:toolchain) echo build-essential ;;
@@ -170,8 +168,8 @@ dep_packages() {
     arch:toolchain)   echo base-devel ;;
     arch:python3)     echo python ;;
     debian:cabundle|arch:cabundle) echo ca-certificates ;;
-    # Fedora ships no bundle file at any legacy path, only p11-kit's hashed
-    # directory, so no package fixes this one: install_dependencies links it.
+    # Fedora has no bundle file to install, only p11-kit's hashed directory;
+    # link_ca_bundle handles it
     fedora:cabundle) ;;
     debian:lib32)     echo lib32gcc-s1 ;;
     fedora:lib32)     echo glibc.i686 libgcc.i686 libstdc++.i686 ;;
@@ -201,8 +199,8 @@ install_dependencies() {
     if [[ ${#packages[@]} -eq 0 ]]; then
       : # nothing this package manager can supply; the fixups below cover it
     elif [[ $FAMILY == unknown ]]; then
-      warn "unrecognised distro, so these package names are a guess."
-      warn "install this distro's equivalent of: ${packages[*]}"
+      warn "unknown distro, so these names are a guess. install this system's"
+      warn "equivalent of: ${packages[*]}"
       ask "continue without them?" || exit 1
     else
       sudo_cmd=()
@@ -212,15 +210,14 @@ install_dependencies() {
         sudo_cmd=(sudo)
       fi
 
-      # Arch ships the 32-bit repository disabled, and steamcmd is 32-bit, so
-      # enabling it is part of installing that dependency rather than a separate
-      # concern. Dropping the package is survivable: everything but steamcmd works.
+      # Arch keeps 32-bit packages in multilib, which ships disabled. Skipping
+      # it only costs steamcmd; the rest of omegga still works.
       if [[ $FAMILY == arch ]] && printf '%s\n' "${missing[@]}" | grep -qx lib32 &&
          ! grep -q '^\[multilib\]' /etc/pacman.conf; then
-        if ask "enable the multilib repository in /etc/pacman.conf, for 32-bit steamcmd?"; then
+        if ask "enable multilib in /etc/pacman.conf? steamcmd is 32-bit"; then
           "${sudo_cmd[@]}" sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf
         else
-          warn "skipping lib32-gcc-libs. steamcmd cannot run until multilib is on."
+          warn "skipping lib32-gcc-libs, so steamcmd will not run"
           keep=()
           for p in "${packages[@]}"; do
             if [[ $p != lib32-gcc-libs ]]; then keep+=("$p"); fi
@@ -235,8 +232,8 @@ install_dependencies() {
         arch)   install_cmd=("${sudo_cmd[@]}" pacman -S --needed --noconfirm "${packages[@]}") ;;
       esac
 
-      say "missing packages: ${packages[*]}"
-      if ask "install them with: ${install_cmd[*]} ?"; then
+      say "Required packages: ${packages[*]}"
+      if ask "Okay to run: ${install_cmd[*]}?"; then
         case "$FAMILY" in
           debian) "${sudo_cmd[@]}" apt-get update ;;
           # -Sy alone leaves a partial upgrade, where a newly installed package
@@ -245,7 +242,7 @@ install_dependencies() {
         esac
         "${install_cmd[@]}"
       else
-        warn "continuing without them. omegga may fail to build or to start."
+        warn "going on without them. omegga may not build or start."
       fi
     fi
   fi
@@ -254,31 +251,29 @@ install_dependencies() {
 }
 
 # Fedora has no CA bundle file at any legacy path, only p11-kit's hashed
-# directory, and no package puts one there. steamcmd reads one path and calls an
-# empty trust store being offline, so the game download fails on an otherwise
-# perfect install.
+# directory, and no package provides one. steamcmd reads a single path and
+# reports an empty trust store as being offline, so downloads fail.
 link_ca_bundle() {
   local bundle=/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
   if [[ $FAMILY != fedora ]] || [[ -e /etc/ssl/certs/ca-certificates.crt ]]; then
     return 0
   fi
   if [[ ! -f $bundle ]]; then
-    warn "no trust bundle at $bundle. steamcmd will not be able to download."
+    warn "no trust bundle at $bundle, so steamcmd cannot download"
     return 0
   fi
-  warn "this distro ships no /etc/ssl/certs/ca-certificates.crt, which is the"
-  warn "only place steamcmd looks for CA certificates. Without it the game"
-  warn "download fails as 'Steamcmd needs to be online'."
+  warn "steamcmd reads CA certificates from /etc/ssl/certs/ca-certificates.crt"
+  warn "and nowhere else, and this system has no file there. Downloads fail"
+  warn "with 'Steamcmd needs to be online' until it does."
   if ask "link it to $bundle?"; then
     as_root ln -sfn "$bundle" /etc/ssl/certs/ca-certificates.crt
   else
-    warn "leaving it. steamcmd cannot download the server until that path exists."
+    warn "left alone. steamcmd will not be able to download the server."
   fi
 }
 
-# Installing as root is the most common way to end up with an unusable install:
-# npm puts the package in root's home, the game server refuses to run as root,
-# and everything omegga writes afterwards is root-owned.
+# Installing as root leaves a broken setup: npm puts omegga in root's home, the
+# game server will not run as root, and everything omegga writes is root-owned.
 if [[ $EUID -eq 0 ]]; then
   self=$(self_path) || true
 
@@ -294,7 +289,7 @@ if [[ $EUID -eq 0 ]]; then
   warn "you are root. omegga must not be installed or run as root."
   new_user=brickadia
   if [[ $ASSUME_YES != 1 && -r /dev/tty ]]; then
-    read -r -p ">> name for the new user [brickadia]: " reply < /dev/tty || true
+    read -r -p "$GREEN>>$OFF_OUT name for the new user [brickadia]: " reply < /dev/tty || true
     if [[ -n ${reply:-} ]]; then new_user="$reply"; fi
   fi
   ask "create user '$new_user' and continue as them?" ||
@@ -308,8 +303,8 @@ if [[ $EUID -eq 0 ]]; then
       usermod -aG "$ADMIN_GROUP" "$new_user"
     fi
     say "created $new_user"
-    # Without a password the account cannot be logged into again once this
-    # shell closes, so ask while there is still a terminal to ask on.
+    # No password means no way back into the account once this shell closes,
+    # so ask for one while a terminal is still here.
     if [[ $ASSUME_YES != 1 && -r /dev/tty ]]; then
       passwd "$new_user" < /dev/tty || warn "no password set. run: passwd $new_user"
     else
@@ -320,10 +315,9 @@ if [[ $EUID -eq 0 ]]; then
   if [[ -z $self ]]; then
     die "now run this again as $new_user:  su - $new_user  and re-run the install command"
   fi
-  # Installing the system packages here, while this shell is still root, is
-  # what makes the new account usable: it has no password yet, so sudo would
-  # have nothing to authenticate with. Everything left to do as them (nvm, npm)
-  # happens inside their own home and needs no root at all.
+  # Install the system packages while this shell is still root. The new account
+  # has no password yet, so its sudo would have nothing to authenticate with,
+  # and everything left to do (nvm, npm) happens inside its own home anyway.
   if [[ $DRY_RUN != 1 ]]; then
     check_dependencies
     install_dependencies
@@ -342,6 +336,20 @@ have_nvm=0
 if [[ -s "$NVM_DIR/nvm.sh" ]]; then have_nvm=1; fi
 
 node_bin="$(command -v node || true)"
+
+# A shell that has not sourced nvm.sh sees none of nvm's node, so without this
+# a second run would offer to install a node that is already there, and would
+# never find an omegga installed under it.
+nvm_sourced=0
+if [[ -z $node_bin && $have_nvm == 1 ]]; then
+  set +eu
+  # shellcheck disable=SC1091
+  . "$NVM_DIR/nvm.sh" >/dev/null 2>&1
+  set -eu
+  node_bin="$(command -v node || true)"
+  if [[ -n $node_bin ]]; then nvm_sourced=1; fi
+fi
+
 node_major=0
 if [[ -n $node_bin ]]; then
   node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0)"
@@ -349,8 +357,14 @@ fi
 node_ok=0
 if [[ $node_major -ge $OMEGGA_MIN_NODE_MAJOR ]]; then node_ok=1; fi
 
-# The package that owns a file, or nothing when no package does. An nvm node
-# is owned by nobody, which is how the two are told apart.
+omegga_bin="$(command -v omegga || true)"
+omegga_version=""
+if [[ -n $omegga_bin ]]; then
+  omegga_version="$("$omegga_bin" --version 2>/dev/null || true)"
+fi
+
+# The package owning a file, or nothing. An nvm node belongs to no package,
+# which is how the two are told apart.
 package_owning() {
   local direct="$1" resolved
   resolved="$(readlink -f "$direct" 2>/dev/null || echo "$direct")"
@@ -363,9 +377,8 @@ package_owning() {
   esac
 }
 
-# A node installed by the distro puts its global packages under /usr, where a
-# non-root `npm i -g` cannot write. That is the "which npm says /bin/npm" case
-# in the install docs, and nvm is the way out of it.
+# A distro node puts global packages under /usr, where `npm i -g` needs root.
+# That is the "which npm says /bin/npm" case in the install docs.
 npm_prefix=""
 node_writable=0
 if [[ $node_ok == 1 ]]; then
@@ -373,8 +386,8 @@ if [[ $node_ok == 1 ]]; then
   if [[ -n $npm_prefix && -w $npm_prefix ]]; then node_writable=1; fi
 fi
 
-# Packages that would keep putting their own node and npm on PATH after nvm is
-# in place. An nvm-managed node is not one of them, so it is never listed.
+# Packages that would keep their own node and npm on PATH after nvm is in
+# place. A node under NVM_DIR belongs to no package, so it never lands here.
 distro_node_packages=()
 if [[ -n $node_bin && $node_bin != "$NVM_DIR"/* ]]; then
   for candidate in "$node_bin" "$(command -v npm || true)"; do
@@ -387,7 +400,14 @@ if [[ -n $node_bin && $node_bin != "$NVM_DIR"/* ]]; then
   done
 fi
 
-status() { printf '   %-11s %-38s [%s]\n' "$1" "$2" "$3"; }
+status() {
+  local state="$3" colour=''
+  case "$state" in
+    ok) colour="$GREEN" ;;
+    install|replace|manual) colour="$YELLOW" ;;
+  esac
+  printf '   %-11s %-38s %s[%s]%s\n' "$1" "$2" "$colour" "$state" "$OFF_OUT"
+}
 
 say "system"
 if [[ $FAMILY == unknown ]]; then
@@ -429,6 +449,15 @@ else
   status nvm "not installed" -
 fi
 
+say "omegga"
+if [[ -n $omegga_version ]]; then
+  status omegga "$omegga_version at $omegga_bin" ok
+elif [[ -n $omegga_bin ]]; then
+  status omegga "installed at $omegga_bin, but will not run" replace
+else
+  status omegga "not installed" install
+fi
+
 if [[ $DRY_RUN == 1 ]]; then
   say "dry run, nothing installed"
   exit 0
@@ -438,11 +467,10 @@ install_dependencies
 
 install_node=0
 if [[ $node_ok == 1 && $node_writable == 1 ]]; then
-  say "using the node already installed, $("$node_bin" -v)"
+  say "using node $("$node_bin" -v)"
 elif [[ $node_ok == 1 ]]; then
-  warn "node $("$node_bin" -v) is installed, but its global packages live in"
-  warn "$npm_prefix, which you cannot write to. Installing omegga there would"
-  warn "take root, and an omegga installed by root does not work."
+  warn "node $("$node_bin" -v) puts global packages in $npm_prefix, which"
+  warn "only root can write to, and omegga installed by root does not work."
   if ask "install node $OMEGGA_NODE_VERSION through nvm instead? (recommended)"; then
     install_node=1
   fi
@@ -464,10 +492,9 @@ if [[ $install_node == 1 ]]; then
   fi
   [[ -s "$NVM_DIR/nvm.sh" ]] || die "nvm did not install to $NVM_DIR"
 
-  # nvm is a shell function, not a program: it exists only in a shell that has
-  # sourced it. Its installer edits the shell rc files, which does nothing for
-  # the shell already running. nvm.sh is not written to survive `set -eu`,
-  # hence the relaxed scope around it.
+  # nvm is a shell function, not a program, so it only exists in a shell that
+  # sourced nvm.sh. Its installer edits the rc files, which does nothing for a
+  # shell already running. nvm.sh does not survive `set -eu`, hence the +eu.
   set +eu
   # shellcheck disable=SC1091
   . "$NVM_DIR/nvm.sh"
@@ -484,34 +511,33 @@ if [[ $install_node == 1 ]]; then
   if [[ $OMEGGA_NODE_VERSION =~ ^[0-9]+$ && $node_major != "$OMEGGA_NODE_VERSION" ]]; then
     warn "asked nvm for node $OMEGGA_NODE_VERSION and it installed $node_major"
   fi
-  # A default alias that resolves to nothing is the failure that only shows up
-  # later: this shell has node, and the next login shell has none.
+  # A dangling default alias only bites later: node works in this shell, and
+  # the next login shell has none.
   [[ $default_version != N/A ]] ||
-    die "nvm's default alias does not resolve, so a new shell would find no node"
+    die "nvm's default alias points at nothing, so a new shell would have no node"
   say "node $("$node_bin" -v) from $node_bin"
 fi
 
-# Only offered once nvm's node is working: a machine that has had its distro
-# node taken away and gained nothing is worse off than one with an old node.
+# Only after nvm's node works. Removing the old one first risks leaving the
+# machine with no node at all.
 remove_distro_node() {
   if [[ ${#distro_node_packages[@]} -eq 0 || $install_node != 1 ]]; then
     return 0
   fi
-  warn "node also comes from the ${distro_node_packages[*]} package. Left in"
-  warn "place its npm keeps winning on PATH for anything that does not load"
-  warn "nvm, which is the 'which npm says /bin/npm' failure in the docs."
+  warn "node also comes from ${distro_node_packages[*]}. Left in place, its npm"
+  warn "wins on PATH in any shell that has not loaded nvm."
 
   if [[ $EUID -ne 0 ]] && ! command -v sudo >/dev/null; then
     warn "no sudo here. As root: remove ${distro_node_packages[*]}"
     return 0
   fi
 
-  # apt takes reverse dependencies with it, and on a desktop that can be a long
-  # list, so it is shown before anything is agreed to.
+  # apt takes reverse dependencies with it, which on a desktop can be a long
+  # list, so show it before asking.
   if [[ $FAMILY == debian ]]; then
     local removed
-    # a simulated purge marks packages Purg or Remv depending on whether their
-    # configuration goes too; both are packages that would leave the machine
+    # -s marks lines Purg or Remv depending on whether config files go too;
+    # either way the package leaves
     removed="$(as_root apt-get -s purge "${distro_node_packages[@]}" 2>/dev/null |
       awk '/^(Remv|Purg) / {print "     " $2}')"
     if [[ -n $removed ]]; then
@@ -521,7 +547,7 @@ remove_distro_node() {
   fi
 
   if ! ask "remove ${distro_node_packages[*]}?"; then
-    warn "leaving it. If npm misbehaves later, this is the first thing to undo."
+    warn "left in place. if npm acts up later, remove it then."
     return 0
   fi
 
@@ -531,7 +557,7 @@ remove_distro_node() {
     arch)   as_root pacman -Rns --noconfirm "${distro_node_packages[@]}" ;;
   esac
 
-  # The shell remembers where node was, and it is not there any more.
+  # bash caches command paths, and node just moved.
   hash -r 2>/dev/null || true
   node_bin="$(command -v node || true)"
   if [[ -z $node_bin ]]; then
@@ -544,19 +570,30 @@ remove_distro_node
 
 command -v npm >/dev/null || die "npm is missing, so node is not usable"
 
-say "installing omegga"
+if [[ -n $omegga_version ]]; then
+  say "updating omegga, currently $omegga_version"
+else
+  say "installing omegga"
+fi
 npm i -g omegga
 
 version="$(omegga --version 2>/dev/null || true)"
 [[ -n $version ]] ||
   die "omegga installed but will not run. https://omegga.brickadia.dev/troubleshooting.html"
 
-say "omegga $version installed"
-if [[ $install_node == 1 ]]; then
-  say "node came from nvm, so open a new shell before using omegga in this one"
+if [[ $version == "$omegga_version" ]]; then
+  say "omegga $version, already up to date"
+else
+  say "omegga $version installed"
+fi
+echo
+# A child process cannot change its parent's PATH, so this shell needs the line
+# that does. It goes first, as part of the same block, because running the rest
+# without it is the confusing way to find out.
+if [[ $install_node == 1 || $nvm_sourced == 1 ]]; then
+  printf '   . %s/nvm.sh   # this shell has not loaded nvm yet\n' "$NVM_DIR"
 fi
 cat <<'EOF'
-
    mkdir ~/myServer && cd ~/myServer
    omegga
 
