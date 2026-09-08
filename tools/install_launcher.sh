@@ -9,8 +9,12 @@ FILE=$LAUNCHER_PATH/$TAR_FILE
 BINARY_PATH=$LAUNCHER_PATH/brickadia-launcher/main-brickadia-launcher
 
 if ! [[ $(which tar) && $(which wget) && $(which xz) ]]; then
-  echo ">! Missing dependencies, please run:" >&2
-  echo "  apt-get install wget tar xz-utils" >&2
+  # the package holding xz is the only name that moves: xz-utils on Debian and
+  # Ubuntu, xz everywhere else
+  echo ">! Missing dependencies. Install wget, tar and xz:" >&2
+  echo "  Debian/Ubuntu: sudo apt-get install wget tar xz-utils" >&2
+  echo "  Fedora:        sudo dnf install wget tar xz" >&2
+  echo "  Arch:          sudo pacman -S wget tar xz" >&2
   echo
   exit 1
 fi;

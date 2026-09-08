@@ -2,6 +2,13 @@
 
 ## Latest
 
+## 1.18.1 - 2026-09-07
+
+Improved install experience and install docs. Added support for more distros.
+
+- Fix SteamCMD failing to download on Fedora
+- Missing dependency and missing library errors name the right packages on Fedora and Arch, not just Debian
+
 ## 1.18.0 - 2026-09-06
 
 Search the chat history.

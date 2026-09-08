@@ -21,8 +21,19 @@ import EventEmitter from 'node:events';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { env } from 'node:process';
+import { installHint } from '@util/distro';
 import readline from 'readline';
 import stripAnsi from 'strip-ansi';
+
+/**
+ * libgl1-mesa-glx was dropped after Debian 11 and Ubuntu 22.04; libgl1 is what
+ * provides libGL.so.1 there now.
+ */
+const MISSING_LIBRARY_FIX = installHint({
+  debian: 'libgl1 libglib2.0-0',
+  fedora: 'mesa-libGL glib2',
+  arch: 'libglvnd glib2',
+});
 
 // list of errors that can be solved by yelling at the user
 const knownErrors: {
@@ -33,13 +44,13 @@ const knownErrors: {
 }[] = [
   {
     name: 'MISSING_LIBGL',
-    solution: 'apt-get install libgl1-mesa-glx libglib2.0-0',
+    solution: MISSING_LIBRARY_FIX,
     match:
       /error while loading shared libraries: libGL\.so\.1: cannot open shared object file/,
   },
   {
     name: 'MISSING_GLIB',
-    solution: 'apt-get install libgl1-mesa-glx libglib2.0-0',
+    solution: MISSING_LIBRARY_FIX,
     match:
       /error while loading shared libraries: libgthread-2\.0\.so\.0: cannot open shared object file/,
   },
