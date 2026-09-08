@@ -25,6 +25,16 @@ Narrow down where the issue might be with the following options:
      1. Set your WSL to WSL 2
      2. `npm i -g omegga`
      3. Set your WSL back to WSL 1 (assuming you want wsl1)
+- If SteamCMD says "`Steamcmd needs to be online to update`" but the machine is
+  online, it cannot read any CA certificates. steamcmd looks for them at exactly
+  one path, and Fedora ships no file there:
+
+  ```sh
+  ls /etc/ssl/certs/ca-certificates.crt   # missing on Fedora
+  sudo ln -s /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem /etc/ssl/certs/ca-certificates.crt
+  ```
+
+  The install script does this for you when you agree to it.
 - If you're getting a "`gyp ERR! stack Error: not found: make`", `make` comes
   from [build-essential](https://wiki.gnucash.org/wiki/Install_Build_Tools):
 

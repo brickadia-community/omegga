@@ -13,7 +13,7 @@ edit-url-template = "https://github.com/brickadia-community/omegga/edit/master/d
 site-url = "/"
 no-section-label = true
 additional-css = ["theme/omegga.css"]
-additional-js = ["theme/wirescript-hljs.js"]
+additional-js = ["theme/wirescript-hljs.js", "theme/shell-hljs.js"]
 
 [output.html.fold]
 enable = true

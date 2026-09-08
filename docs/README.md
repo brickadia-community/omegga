@@ -15,6 +15,17 @@ support.
 <a href="assets/screenshots/metrics.png"><img src="assets/screenshots/metrics.png" alt="Server metrics" height="120"/></a>
 <a href="assets/screenshots/mobile-dashboard.png"><img src="assets/screenshots/mobile-dashboard.png" alt="The dashboard on a phone" height="120"/></a>
 
+## Quick Install
+
+Get Omegga on Debian, Ubuntu, Fedora, or Arch with:
+
+```sh
+curl -fsSL https://omegga.brickadia.dev/install.sh | bash
+```
+
+[Omegga `install.sh` Docs](install/linux.html#quick-setup) | [Omegga `install.sh` Source](https://github.com/brickadia-community/omegga/blob/master/tools/install.sh)
+
+
 ## Start here
 
 | | |

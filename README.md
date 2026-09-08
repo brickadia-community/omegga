@@ -42,6 +42,17 @@ Omegga plugins can do things like:
 
 Omegga runs on linux, including the [Windows Subsystem for Linux](docs/install/wsl.md). **Do not install or run it as root**; if `whoami` prints "root", [create a new user](docs/install/linux.md#creating-a-new-user) first.
 
+Get Omegga on Debian, Ubuntu, Fedora, or Arch with:
+
+```sh
+curl -fsSL https://omegga.brickadia.dev/install.sh | bash
+```
+
+[Omegga `install.sh` Docs](docs/install/linux.md#quick-setup) | [Omegga `install.sh` Source](tools/install.sh)
+
+<details>
+<summary>Manual Install for Debian or Ubuntu</summary>
+
 ```sh
 # update what's installed, then install what omegga needs
 sudo apt update && sudo apt upgrade
@@ -59,6 +70,8 @@ nvm install 24
 # install omegga
 npm i -g omegga
 ```
+
+</details>
 
 Then make a folder for your server and start it:
 

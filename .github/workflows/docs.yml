@@ -4,8 +4,9 @@ on:
   push:
     branches: [master]
     paths:
-      - 'docs/**'
+      - "docs/**"
       - book.toml
+      - tools/install.sh
       - .github/workflows/docs.yml
   workflow_dispatch:
 
@@ -33,7 +34,9 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Build
-        run: mdbook build
+        run: |
+          mdbook build
+          cp tools/install.sh book/install.sh
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

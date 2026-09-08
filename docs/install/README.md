@@ -13,6 +13,17 @@ Neither the container image nor the panel needs node on the host, since both run
 the published image. Linux and WSL are the same install once you have a shell,
 so the WSL page is just the extra steps to get one.
 
+Get Omegga on Debian, Ubuntu, Fedora, or Arch with:
+
+```sh
+curl -fsSL https://omegga.brickadia.dev/install.sh | bash
+```
+
+This script will ask before installing anything, and refuses to install
+omegga as root. [Read what it does](linux.md#quick-setup). Windows users need
+[WSL](wsl.md) first: this script will not run on windows, and omegga
+is not supported on Windows.
+
 <font size="5" color="red">Do not install omegga or run brickadia/omegga as root/superuser</font>:
 
 - running `whoami` should NOT print "root"

@@ -2,6 +2,37 @@
 
 ## Quick Setup
 
+Get Omegga on Debian, Ubuntu, Fedora, or Arch with:
+
+```sh
+curl -fsSL https://omegga.brickadia.dev/install.sh | bash
+```
+
+This bash script will ask before installing anything, and refuses to install
+omegga as root. [Read what it does](linux.md#quick-setup). Windows users need
+[WSL](wsl.md) first: this script will not run on windows, and omegga
+is not supported on Windows.
+
+It checks what is installed, offers to install missing dependencies,
+installs node through nvm, and installs omegga. Nothing is installed without
+asking first, and running it twice is safe. Read the source: [tools/install.sh](https://github.com/brickadia-community/omegga/blob/master/tools/install.sh).
+
+Flags go after `-s --`, because the script is stdin here:
+
+```sh
+# report what is missing and stop
+curl -fsSL https://omegga.brickadia.dev/install.sh | bash -s -- --dry-run
+
+# take the recommended answer to everything, for a container build or a panel
+curl -fsSL https://omegga.brickadia.dev/install.sh | bash -s -- --yes
+```
+
+It knows the package names for Debian, Ubuntu, Fedora and Arch, and their
+derivatives. On anything else it still reports what is missing and installs node
+and omegga; only the package names are left to you.
+
+## Manual Quick Setup
+
 1. Install linux if you haven't already ([Windows Install](wsl.md) is not that bad)
 
 2. If you type `whoami` and it says "root", [create a new user](#creating-a-new-user) and come back. This step is usually only necessary for people using a VPS.
@@ -15,9 +46,16 @@
     sudo apt install curl git build-essential python3 wget tar openssl lib32gcc-s1
     ```
 
-    [What each of those is for](#packages). On non-Debian distros the names
-    differ; on Arch, `lib32gcc-s1` is `lib32-gcc-libs` and needs `multilib`
-    enabled.
+    [What each of those is for](#packages). The names differ elsewhere:
+
+    | | |
+    | --- | --- |
+    | Fedora | `sudo dnf install curl git gcc gcc-c++ make python3 wget tar openssl glibc.i686 libgcc.i686 libstdc++.i686` |
+    | Arch | `sudo pacman -S --needed curl git base-devel python wget tar openssl lib32-gcc-libs` |
+
+    The 32-bit packages are for steamcmd. On Arch they come from the `multilib`
+    repository, which ships disabled: uncomment `[multilib]` and the `Include`
+    line under it in `/etc/pacman.conf` first.
 
 4. Run these commands (Installs a node installer, installs node, installs omegga):
 
