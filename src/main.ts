@@ -93,6 +93,9 @@ const program = commander
     // before isDebug/isVerbose, which warn on a malformed BRICKADIA_DEBUG
     // or VERBOSE
     Logger.startCapture();
+    // file only: brackets each run in a log file that outlives the process and
+    // holds more than one of them. the console has the launch banner already
+    Logger.record('log', ['>>'.green, 'Hello!']);
     const { verbose, update } = program.opts();
     const debug = isDebug(program.opts().debug);
     if (program.args.length > 0) {

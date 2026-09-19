@@ -49,12 +49,14 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: npm
 
-      # `npm stage` is newer than the npm node bundles. current npm does not run
-      # on node 25 either, so the node version above is not a free choice
+      - run: npm ci
+
+      # after npm ci, which it would otherwise break: current npm blocks a
+      # dependency's install scripts unless they are allow-listed, leaving
+      # better-sqlite3 with no native binding. only `npm stage` below needs it,
+      # and it does not run on node 25, so the node version above is fixed too
       - name: Update npm
         run: npm install -g npm@latest
-
-      - run: npm ci
 
       - name: Lint, typecheck and test
         run: |

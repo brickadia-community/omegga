@@ -1236,10 +1236,16 @@ export default class Terminal {
       err('Error stopping server:', e);
     }
     this.rl.close();
+    // file only, pairing the `Hello!` main.ts records at startup
+    Logger.record('log', ['>>'.green, 'Goodbye']);
     process.exit();
   }
 
   async handleLine(line: string) {
+    // file only: readline echoed it already, and output with no sign of the
+    // input that caused it is hard to read
+    if (line.trim()) Logger.record('log', ['$'.grey, line]);
+
     if (line.startsWith('/')) {
       const [cmd, ...args] = line.slice(1).split(' ');
       const c = COMMANDS.find(c => c.aliases.includes(cmd));

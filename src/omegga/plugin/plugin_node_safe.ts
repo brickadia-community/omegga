@@ -457,7 +457,10 @@ export default class NodeVmPlugin extends Plugin {
       // vite transpiles worker.ts to dist/worker.js
       path.join(__dirname, '../../worker.js'),
       {
+        // without both, node also pipes worker output to the parent and every
+        // line the readlines below feed to Logger prints twice
         stdout: true,
+        stderr: true,
         env: {
           VERBOSE: Logger.VERBOSE + '',
         },
