@@ -10,6 +10,7 @@ import Omegga from '@omegga/server';
 import * as file from '@util/file';
 import { isContainer } from '@util/container';
 import { isNonInteractive, parseEnvBool } from '@util/env';
+import { openLogFile, resolveLogOptions } from '@util/logfile';
 import 'colors';
 import commander from 'commander';
 import dotenv from 'dotenv';
@@ -89,6 +90,9 @@ const program = commander
     'Print extra messages for debugging purposes (env: VERBOSE)',
   )
   .action(async () => {
+    // before isDebug/isVerbose, which warn on a malformed BRICKADIA_DEBUG
+    // or VERBOSE
+    Logger.startCapture();
     const { verbose, update } = program.opts();
     const debug = isDebug(program.opts().debug);
     if (program.args.length > 0) {
@@ -137,10 +141,18 @@ const program = commander
 
     config.applyPortOverrides(conf);
     config.applyMetricsOverrides(conf);
+    config.applyLogsOverrides(conf);
 
     if (conf?.terminal?.timestamp) {
       Logger.setTimestamp(conf.terminal.timestamp);
     }
+
+    // the earliest point where both the working directory and config are known
+    const logOptions = resolveLogOptions(workDir, conf.logs);
+    if (logOptions)
+      logOptions.onError = err =>
+        Logger.errorp('Disabled log file:', String(err));
+    Logger.setFileSink(openLogFile(logOptions), conf.logs?.verbose ?? false);
 
     const overrideBinary = getOverrideGameBinary();
     const isSteam = !conf?.server?.branch;

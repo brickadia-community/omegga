@@ -35,6 +35,34 @@ export const TerminalConfigSchema = z.object({
 });
 
 /**
+ * Omegga's console output is mirrored to dated files under the working
+ * directory, so a crash that scrolled off screen is still readable. Only what
+ * omegga prints is captured; Brickadia writes its own log, and `--debug` is
+ * what puts that here too.
+ */
+export const LogsConfigSchema = z.object({
+  /** write console output to disk */
+  enabled: z.boolean().optional(),
+  /** where the files go, relative to the omegga working directory */
+  dir: z.string().optional(),
+  /** megabytes one day may reach before rolling to a numbered part */
+  maxSizeMB: z.number().positive().optional(),
+  /** days to keep, counting today. 0 keeps them forever */
+  keepDays: z.number().nonnegative().optional(),
+  /**
+   * keep `--verbose` detail in the file while leaving the console quiet.
+   * `--verbose` itself still writes to both.
+   */
+  verbose: z.boolean().optional(),
+  /**
+   * dateformat pattern prefixed to every line, always applied: a file outlives
+   * the day it was written. Unlike `terminal.timestamp`, which is off unless
+   * it is configured.
+   */
+  timestamp: z.string().optional(),
+});
+
+/**
  * Reading metrics back out of a prometheus that scrapes omegga, to render the
  * web UI's metrics dashboards. Independent of the endpoint omegga serves: the
  * scraper may live elsewhere, and the endpoint is useful without a dashboard.
@@ -94,6 +122,7 @@ export const ConfigSchema = z.object({
   omegga: ServerConfigSchema.optional(),
   server: BrickadiaConfigSchema,
   terminal: TerminalConfigSchema.optional(),
+  logs: LogsConfigSchema.optional(),
   metrics: MetricsConfigSchema.optional(),
   credentials: CredentialsSchema.optional(),
   __STEAM: z.boolean().optional(),
@@ -101,6 +130,7 @@ export const ConfigSchema = z.object({
 
 export type IServerConfig = z.infer<typeof ServerConfigSchema>;
 export type IBrickadiaConfig = z.infer<typeof BrickadiaConfigSchema>;
+export type ILogsConfig = z.infer<typeof LogsConfigSchema>;
 export type IMetricsConfig = z.infer<typeof MetricsConfigSchema>;
 export type IPrometheusConfig = z.infer<typeof PrometheusConfigSchema>;
 export type IConfig = z.infer<typeof ConfigSchema>;

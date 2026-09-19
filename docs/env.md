@@ -13,6 +13,12 @@ These can be set in your shell or in a `.env` file the same directory as a `omeg
 - `METRICS_ENABLED` - Serve the prometheus metrics endpoint; overrides `metrics.enabled` from the config
 - `METRICS_BIND` - Address the metrics endpoint binds to (default `127.0.0.1`); overrides `metrics.bind`
 - `METRICS_PORT` - Metrics endpoint port (default `9000`); overrides `metrics.port`
+- `LOGS_ENABLED` - Write console output to log files (default `true`); overrides `logs.enabled` from the config
+- `LOGS_DIR` - Where log files go, relative to the working directory (default `./data/logs`); overrides `logs.dir`
+- `LOGS_MAX_SIZE_MB` - Megabytes one day's log may reach before rolling to a numbered part (default `32`); overrides `logs.maxSizeMB`
+- `LOGS_KEEP_DAYS` - Days of logs to keep, counting today; `0` keeps them forever (default `7`); overrides `logs.keepDays`
+- `LOGS_TIMESTAMP` - dateformat pattern prefixed to every log line (default `yyyy-mm-dd HH:MM:ss.l`); overrides `logs.timestamp`
+- `LOGS_VERBOSE` - Keep `--verbose` detail in the log file while the terminal stays quiet (default `false`); overrides `logs.verbose`
 - `BRICKADIA_DIR` - Override the need to use steamcmd and point to a Brickadia install directory (eg. `/home/<USER>/.config/omegga/steam_installs/main/Brickadia`)
 - `STEAM_INSTALLS_DIR` - Set where omegga installs brickadia via steamcmd (default `~/.config/omegga/steam_installs`)
 - `STEAM_APP_ID` - Set the Steam App ID for Brickadia (default `3017590`)

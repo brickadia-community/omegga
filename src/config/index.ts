@@ -1,5 +1,5 @@
 import Logger from '@/logger';
-import soft, { METRICS_DEFAULTS } from '@/softconfig';
+import soft, { LOGS_DEFAULTS, METRICS_DEFAULTS } from '@/softconfig';
 import { parseEnvBool } from '@util/env';
 import 'colors';
 import Configstore from 'configstore';
@@ -41,6 +41,11 @@ export const defaultConfig: IConfig = {
       : 7777,
     map: 'Plate',
   },
+  logs: {
+    enabled: true,
+    verbose: false,
+    timestamp: LOGS_DEFAULTS.timestamp,
+  },
   metrics: {
     enabled: false,
     bind: METRICS_DEFAULTS.bind,
@@ -65,6 +70,16 @@ function parseEnvSeconds(name: string) {
   const seconds = Number(raw);
   if (Number.isFinite(seconds) && seconds > 0) return seconds;
   Logger.warnp(`Ignoring ${name.yellow}: ${raw.yellow} is not a duration`);
+  return undefined;
+}
+
+/** parse a positive number, warning (and ignoring) when it isn't one */
+function parseEnvPositive(name: string, noun: string) {
+  const raw = process.env[name];
+  if (!raw) return undefined;
+  const value = Number(raw);
+  if (Number.isFinite(value) && value > 0) return value;
+  Logger.warnp(`Ignoring ${name.yellow}: ${raw.yellow} is not ${noun}`);
   return undefined;
 }
 
@@ -148,6 +163,42 @@ export function applyMetricsOverrides(conf: IConfig): IConfig {
   return conf;
 }
 
+/**
+ * Apply `LOGS_*` on top of a loaded config, for the same reason
+ * `applyPortOverrides` exists: a container can't template the config file in
+ * its mounted volume, and a panel that tails a fixed path needs `LOGS_DIR`.
+ */
+export function applyLogsOverrides(conf: IConfig): IConfig {
+  const enabled = parseEnvBool('LOGS_ENABLED');
+  if (enabled != null) conf.logs = { ...conf.logs, enabled };
+
+  const dir = process.env.LOGS_DIR?.trim();
+  if (dir) conf.logs = { ...conf.logs, dir };
+
+  const timestamp = process.env.LOGS_TIMESTAMP?.trim();
+  if (timestamp) conf.logs = { ...conf.logs, timestamp };
+
+  const verbose = parseEnvBool('LOGS_VERBOSE');
+  if (verbose != null) conf.logs = { ...conf.logs, verbose };
+
+  const maxSizeMB = parseEnvPositive('LOGS_MAX_SIZE_MB', 'a size in megabytes');
+  if (maxSizeMB) conf.logs = { ...conf.logs, maxSizeMB };
+
+  // 0 is a valid retention, and parseEnvPositive reads falsy as "not set"
+  const rawKeep = process.env.LOGS_KEEP_DAYS?.trim();
+  if (rawKeep) {
+    const keepDays = Number(rawKeep);
+    if (Number.isFinite(keepDays) && keepDays >= 0)
+      conf.logs = { ...conf.logs, keepDays };
+    else
+      Logger.warnp(
+        `Ignoring ${'LOGS_KEEP_DAYS'.yellow}: ${rawKeep.yellow} is not a number of days`,
+      );
+  }
+
+  return conf;
+}
+
 // Writes save data to a file
 export const write = writer(formats);
 
@@ -178,4 +229,5 @@ export default {
   formats,
   applyPortOverrides,
   applyMetricsOverrides,
+  applyLogsOverrides,
 };

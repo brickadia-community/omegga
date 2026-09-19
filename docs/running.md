@@ -35,6 +35,27 @@ lists them, and plugins add their own to it.
 
 <a href="assets/screenshots/console-home.png"><img src="assets/screenshots/console-home.png" alt="The omegga console" height="150"/></a>
 
+## Log files
+
+Everything the console prints is also written to `data/logs`, one file per day,
+so a crash that scrolled off screen is still readable afterwards:
+
+```
+data/logs/omegga-2026-09-16.log
+data/logs/omegga-2026-09-16.1.log
+```
+
+A day that passes `logs.maxSizeMB` (32MB) rolls to the numbered parts, and files
+older than `logs.keepDays` (7) are deleted at startup and at each midnight. The
+colors are stripped, so the files are plain text and grep works on them.
+
+These hold omegga's own output: startup, plugins, chat, joins and leaves, kicks
+and bans. Brickadia writes its own log separately, under `data/Saved/Logs`.
+Starting with `--debug` puts that output here as well, which makes the files
+very much larger.
+
+See [Configuration](config.md) for how to tune or disable this.
+
 ## Worlds
 
 Worlds are managed from the web UI: create one, load it, or set the one to load

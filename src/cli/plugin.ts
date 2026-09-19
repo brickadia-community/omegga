@@ -84,7 +84,9 @@ const transformUrl = (url: string): IPlugin => {
 
 let needsNL = false;
 
-// rewrite a console line
+// rewrite a console line. stays on raw stdout rather than going through
+// Logger: it rewinds the cursor for progress, and a partial line is noise in
+// the log file. the `needsNL` newline below is that same bookkeeping
 const rewriteLine = (...args: unknown[]) => {
   // stdout has no cursor controls when omegga is piped or run in a container
   if (process.stdout.isTTY) {
@@ -101,7 +103,7 @@ const plg = (plugin: IPlugin | IInstalledPlugin, ...args: unknown[]) => {
     needsNL = false;
     console.log();
   }
-  console.log(plugin.name, '>>'.green, ...args);
+  Logger.log(plugin.name, '>>'.green, ...args);
 };
 const plgLog = (plugin: IPlugin | IInstalledPlugin, ...args: unknown[]) => {
   if (Logger.VERBOSE) plg(plugin, ...args);
@@ -117,14 +119,14 @@ const plgWarn = (plugin: IPlugin | IInstalledPlugin, ...args: unknown[]) => {
     needsNL = false;
     console.warn();
   }
-  console.warn(plugin.name, 'W>'.yellow, ...args);
+  Logger.warn(plugin.name, 'W>'.yellow, ...args);
 };
 const plgErr = (plugin: IPlugin | IInstalledPlugin, ...args: unknown[]) => {
   if (needsNL) {
     needsNL = false;
     console.error();
   }
-  console.error(plugin.name, '!>'.red, ...args);
+  Logger.error(plugin.name, '!>'.red, ...args);
 };
 
 const err = (...args: unknown[]) => {
@@ -132,14 +134,14 @@ const err = (...args: unknown[]) => {
     needsNL = false;
     console.error();
   }
-  console.error('!>'.red, ...args);
+  Logger.errorp(...args);
 };
 const log = (...args: unknown[]) => {
   if (needsNL) {
     needsNL = false;
     console.log();
   }
-  console.log('>>'.green, ...args);
+  Logger.logp(...args);
 };
 const verboseLog = (...args: unknown[]) => {
   if (!Logger.VERBOSE) return;
@@ -147,7 +149,7 @@ const verboseLog = (...args: unknown[]) => {
     needsNL = false;
     console.log();
   }
-  console.log('V>'.magenta, ...args);
+  Logger.verbose(...args);
 };
 
 function checkPlugin(
@@ -234,7 +236,7 @@ export async function install(plugins: string[], _options: unknown) {
       try {
         name = path.parse(transformed.url).name.replace(/^omegga-/, '');
       } catch {
-        console.error('!>'.red, 'Error parsing name from url', transformed.url);
+        err('Error parsing name from url', transformed.url);
         break;
       }
     }

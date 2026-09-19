@@ -65,7 +65,7 @@ PGID=1000
 ## Volumes
 
 - `/home/steam` - the Brickadia install, steamcmd, and auth files. Keep it on a named volume or the game is downloaded again every time the container is recreated.
-- `/server` - the omegga working directory: `omegga-config.yml`, `data`, and `plugins`. Bind mount it to edit them from the host.
+- `/server` - the omegga working directory: `omegga-config.yml`, `data`, and `plugins`. Bind mount it to edit them from the host. Console output is written to `data/logs` as well as to the container's stdout, so it survives the container being recreated.
 
 ## Ports
 

@@ -1128,6 +1128,22 @@ export default class Terminal {
         `${p.displayName.underline} (${p.name.underline}) left.`.brightBlue,
       ),
     );
+    // admin actions belong in the console, which is also what logs them
+    omegga.on('kick', (name: string, kicker: string, reason: string) =>
+      this.log(
+        `${name.underline} was kicked by ${kicker.underline} (${reason})`
+          .brightRed,
+      ),
+    );
+    omegga.on(
+      'ban',
+      (name: string, kicker: string, reason: string, duration?: string) =>
+        this.log(
+          `${name.underline} was banned by ${kicker.underline} (${reason})${
+            duration ? `, expires in ${duration}` : ''
+          }`.brightRed,
+        ),
+    );
     omegga.on('chat', (name, message) => {
       const player = omegga.getPlayer(name);
       this.log(
@@ -1272,6 +1288,10 @@ export default class Terminal {
 
   // let readline render a log without interrupting user input
   #write(method: 'log' | 'debug' | 'warn' | 'error', args: unknown[]) {
+    // the log file's only sink for terminal output, including the constructor
+    // events that never pass through Logger. recorded before stdout so a closed
+    // pipe cannot cost the line, and from raw args because the file times it
+    Logger.record(method, args);
     // stdout has no cursor controls when omegga is piped or run in a container
     if (process.stdout.isTTY) {
       process.stdout.clearLine(0);

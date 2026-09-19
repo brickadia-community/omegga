@@ -97,6 +97,18 @@ export const TEMP_DIR_NAME = '.omegga-temp-data';
 // path to certain info folders
 export const DATA_PATH = './data';
 export const PLUGIN_PATH = './plugins';
+export const LOGS_PATH = './data/logs';
+
+// `omegga-YYYY-MM-DD.log`, plus `.1`, `.2` parts once a day passes the cap
+export const LOG_FILE_PREFIX = 'omegga';
+
+// 32MB parts stay openable in an editor; a week outlasts most bug reports
+export const LOGS_DEFAULTS = {
+  maxSizeMB: 32,
+  keepDays: 7,
+  /** dateformat pattern prefixed to every line */
+  timestamp: 'yyyy-mm-dd HH:MM:ss.l',
+};
 
 // plugin data
 export const PLUGIN_FILE = './plugin.json';
@@ -136,6 +148,9 @@ export default {
   TEMP_DIR_NAME,
   DATA_PATH,
   PLUGIN_PATH,
+  LOGS_PATH,
+  LOG_FILE_PREFIX,
+  LOGS_DEFAULTS,
   PLUGIN_FILE,
   PLUGIN_POSTINSTALL,
   MAIN_DB,

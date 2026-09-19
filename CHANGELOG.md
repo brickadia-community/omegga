@@ -2,6 +2,16 @@
 
 ## Latest
 
+## 1.19.0 - 2026-09-19
+
+Omegga logs can now be stored in rotating dated log files.
+
+- Omegga's console output is written to `data/logs`, one file per day. Parts roll past 32MB, files older than 7 days are deleted
+- Configure it with the new `logs` config block or the `LOGS_*` environment variables. `logs.verbose` keeps `--verbose` detail in the file while the console stays quiet
+- Kicks and bans are printed to the console
+- Authentication failures, plugin install output, and JSON-RPC plugin logs are logged to the file. JSON-RPC plugin logs are also now timestamped
+- `--debug` puts Brickadia's own output in the log file too, which makes it much larger
+
 ## 1.18.1 - 2026-09-07
 
 Improved install experience and install docs. Added support for more distros.

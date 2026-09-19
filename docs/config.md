@@ -35,6 +35,15 @@ terminal:
   # timestamp: "HH:MM"                # 14:05
   # timestamp: "hh:MM:ss TT"          # 02:05:30 PM
   # timestamp: "[HH:MM:ss]"           # [14:05:30]
+logs:
+  # console output is also written to data/logs, one file per day
+  # enabled: false     # turn it off entirely
+  # dir: ./data/logs   # relative to the omegga working directory
+  # maxSizeMB: 32      # roll to omegga-DATE.1.log past this
+  # keepDays: 7        # 0 keeps every file forever
+  # verbose: true      # --verbose detail in the file, quiet terminal
+  # every line is timestamped; this only changes the format
+  # timestamp: "yyyy-mm-dd HH:MM:ss.l"
 ```
 
 Note: `BRANCH-server` branches download only server data
@@ -62,6 +71,13 @@ server:
 terminal:
   # prepend timestamps to terminal output (see https://www.npmjs.com/package/dateformat)
   #timestamp: "HH:MM:ss" # e.g. 14:05:30, "[HH:MM:ss]" for [14:05:30]
+logs:
+  enabled: true # write console output to data/logs
+  dir: ./data/logs # relative to the omegga working directory
+  maxSizeMB: 32 # one day rolls to omegga-DATE.1.log past this
+  keepDays: 7 # deleted at startup and at midnight once older; 0 keeps them
+  verbose: false # keep --verbose detail in the file while the terminal stays quiet
+  timestamp: "yyyy-mm-dd HH:MM:ss.l" # every line is timestamped; this is the format
 metrics:
   enabled: false # serve a prometheus metrics endpoint
   bind: 127.0.0.1 # address to bind (the endpoint is unauthenticated by default)
@@ -73,4 +89,5 @@ metrics:
   plugins: true # let plugins register their own metrics
 ```
 
-The [metrics](metrics.md) section is documented in full on its own page.
+The [metrics](metrics.md) section is documented in full on its own page, and
+[Running a server](running.md#log-files) covers what ends up in the log files.

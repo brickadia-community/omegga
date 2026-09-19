@@ -1,3 +1,4 @@
+import Logger from '@/logger';
 import soft from '@/softconfig';
 import { genAuthFiles, writeAuthFiles } from '@omegga/auth';
 import { isNonInteractive } from '@util/env';
@@ -17,12 +18,10 @@ export const AUTH_PATH = path.join(soft.CONFIG_HOME, soft.CONFIG_AUTH_DIR);
  * shows up as a startup timeout with no cause in the log.
  */
 function failNonInteractive() {
-  console.error(
-    '!>'.red,
+  Logger.errorp(
     'No stored auth files and no hosting token, and there is no terminal to prompt on',
   );
-  console.error(
-    '!>'.red,
+  Logger.errorp(
     'Generate a hosting token at https://brickadia.com/account/tokens, then set',
     'BRICKADIA_TOKEN'.yellow,
     'or',
@@ -34,12 +33,7 @@ function failNonInteractive() {
 
 // async function to prompt for credentials
 async function credentialPrompt() {
-  console.log(
-    '>>'.green,
-    'Enter',
-    'Brickadia'.green.underline,
-    'credentials (not stored)',
-  );
+  Logger.logp('Enter', 'Brickadia'.green.underline, 'credentials (not stored)');
 
   const response = await prompts([
     {
@@ -93,7 +87,7 @@ async function authFromPrompt({
     });
 
     if (!authType) {
-      console.error('!>'.red, 'No authentication method selected');
+      Logger.errorp('No authentication method selected');
       return false;
     }
 
@@ -108,16 +102,16 @@ async function authFromPrompt({
       });
 
       if (!token) {
-        console.error('!>'.red, 'Hosting token is required');
+        Logger.errorp('Hosting token is required');
         return false;
       }
 
       // Write to global token file
       try {
-        console.log('>>'.green, 'Storing hosting token...');
+        Logger.logp('Storing hosting token...');
         fs.writeFileSync(soft.GLOBAL_TOKEN, token.trim());
       } catch (err) {
-        console.error('!>'.red, 'Error writing hosting token to config\n', err);
+        Logger.errorp('Error writing hosting token to config\n', err);
         return false;
       }
 
@@ -125,10 +119,7 @@ async function authFromPrompt({
     }
 
     if (isSteam) {
-      console.error(
-        '!>'.red,
-        'Launching with steam requires a hosting token right now.',
-      );
+      Logger.errorp('Launching with steam requires a hosting token right now.');
       return false;
     }
 
@@ -142,20 +133,20 @@ async function authFromPrompt({
     try {
       [email, password] = await credentialPrompt();
     } catch (err) {
-      console.error('!>'.red, 'Error prompting credentials\n', err);
+      Logger.errorp('Error prompting credentials\n', err);
       return false;
     }
   }
 
   if (!email || !password) {
-    console.error('!>'.red, 'Email and password are required');
+    Logger.errorp('Email and password are required');
     return false;
   }
 
   // generate auth tokens
-  console.log('>>'.green, 'Generating auth tokens...');
+  Logger.logp('Generating auth tokens...');
   const timeout = setTimeout(() => {
-    console.log('>>'.green, 'Probably also installing the game...');
+    Logger.logp('Probably also installing the game...');
   }, 10000);
   try {
     files = await genAuthFiles(email, password, {
@@ -168,18 +159,18 @@ async function authFromPrompt({
     clearTimeout(timeout);
   } catch (err) {
     clearTimeout(timeout);
-    console.error('!>'.red, 'Error generating tokens:', err);
+    Logger.errorp('Error generating tokens:', err);
     return false;
   }
 
   if (!files) {
-    console.error('!>'.red, 'Authentication Failed');
+    Logger.errorp('Authentication Failed');
     return;
   }
 
   // save the tokens to the config path (will be copied when omegga starts)
   try {
-    console.log('>>'.green, 'Storing auth tokens...');
+    Logger.logp('Storing auth tokens...');
     const authPath = path.join(
       soft.CONFIG_HOME,
       savedDir && savedDir !== soft.CONFIG_SAVED_DIR ? savedDir : '',
@@ -188,11 +179,11 @@ async function authFromPrompt({
     file.mkdir(authPath);
     writeAuthFiles(authPath, files);
   } catch (err) {
-    console.error('!>'.red, 'Error writing tokens to config\n', err);
+    Logger.errorp('Error writing tokens to config\n', err);
     return false;
   }
 
-  console.log('>>'.green, 'Auth tokens successfully generated!');
+  Logger.logp('Auth tokens successfully generated!');
   return true;
 }
 

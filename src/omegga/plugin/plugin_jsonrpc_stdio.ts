@@ -395,15 +395,23 @@ export default class RpcPlugin extends Plugin {
     });
     const rpc = new JSONRPCServerAndClient(server, client);
 
-    // plugin log generator function
+    // console has levels Logger does not, so info and trace fold into log and
+    // stay apart by their symbol
+    const LOG_FNS = {
+      log: 'log',
+      info: 'log',
+      trace: 'log',
+      debug: 'debug',
+      warn: 'warn',
+      error: 'error',
+    } as const;
+
+    // plugin log generator function, routed through Logger like every other
+    // plugin log path so these reach the log file and redraw the prompt
     const ezLog =
-      (
-        logFn: 'log' | 'error' | 'info' | 'debug' | 'warn' | 'trace',
-        name: string,
-        symbol: string,
-      ) =>
+      (logFn: keyof typeof LOG_FNS, name: string, symbol: string) =>
       (line: unknown) =>
-        console[logFn](name.underline, symbol, line);
+        Logger[LOG_FNS[logFn]](name.underline, symbol, line);
 
     const name = this.getName();
 
