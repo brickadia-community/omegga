@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)release'
+        required: true
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  # npm trusted publishing, in place of a stored npm credential
+  id-token: write
+
+jobs:
+  release:
+    name: Publish to npm and GitHub
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      # before anything is built, so a bad tag or an empty changelog fails cheap
+      - name: Check tag matches package.json
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          pkg="v$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "tag $tag does not match package.json $pkg" >&2
+            exit 1
+          fi
+
+      - name: Extract release notes
+        run: |
+          bash tools/release-notes.sh "${{ github.event.inputs.tag || github.ref_name }}" --body > release-notes.md
+          echo "--- release body ---"
+          cat release-notes.md
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      # `npm stage` is newer than the npm node bundles. current npm does not run
+      # on node 25 either, so the node version above is not a free choice
+      - name: Update npm
+        run: npm install -g npm@latest
+
+      - run: npm ci
+
+      - name: Lint, typecheck and test
+        run: |
+          npm run lint
+          npm run typecheck
+          npm run docs:check
+          CI=true npm run test:backend
+
+      # the trusted publisher may only stage; approving on npmjs.com publishes.
+      # skipped when already live so a half-finished release can be re-run
+      - name: Stage npm release
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if npm view "omegga@${version}" version >/dev/null 2>&1; then
+            echo ">> omegga@${version} is already live, skipping"
+          else
+            npm stage publish
+          fi
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          # idempotent, so a re-run over an existing tag refreshes the notes
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release edit "$TAG" \
+              --repo "${{ github.repository }}" \
+              --title "$TAG" \
+              --notes-file release-notes.md
+          else
+            gh release create "$TAG" \
+              --repo "${{ github.repository }}" \
+              --title "$TAG" \
+              --notes-file release-notes.md
+          fi
+
+      # last, so it links a release that exists. the script no-ops without the
+      # secret, and a webhook outage must not fail an already-shipped release
+      - name: Announce on Discord
+        continue-on-error: true
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: node tools/discord-release.mjs "${{ github.event.inputs.tag || github.ref_name }}"

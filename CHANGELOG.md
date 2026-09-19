@@ -12,6 +12,8 @@ Omegga logs can now be stored in rotating dated log files.
 - Authentication failures, plugin install output, and JSON-RPC plugin logs are logged to the file. JSON-RPC plugin logs are also now timestamped
 - `--debug` puts Brickadia's own output in the log file too, which makes it much larger
 
+This the first release where CI is building, publishing, and announcing everything! MFA is required for NPM releases to be deployed so it may take a moment actually get the latest code.
+
 ## 1.18.1 - 2026-09-07
 
 Improved install experience and install docs. Added support for more distros.

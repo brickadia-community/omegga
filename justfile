@@ -33,9 +33,18 @@ REMOTE := env_var_or_default("REMOTE", "origin")
 tag:
     tools/tag.sh {{ REMOTE }}
 
-# The package ships a prebuilt `dist/` and has no lifecycle hook to build it,
-# so publishing without `just dist` would upload a module with no build output.
+# Preview the CHANGELOG section the release workflow puts in the release body
+notes *ARGS:
+    tools/release-notes.sh {{ ARGS }}
 
-# Build dist and publish to npm, the last step of a release
-publish: dist
+# Announce a release to DISCORD_WEBHOOK_URL (`just announce --dry-run` to preview)
+announce *ARGS:
+    tools/discord-release.mjs {{ ARGS }}
+
+# Pushing a `v*` tag only *stages* the release; it is promoted on npmjs.com.
+# This publishes directly instead, which needs an npm OTP. `prepublishOnly`
+# builds what the package ships, so neither path can upload an unbuilt module.
+
+# Publish to npm, the last step of a release
+publish:
     npm publish

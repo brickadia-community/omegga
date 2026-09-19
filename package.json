@@ -137,6 +137,7 @@
     "lint": "npm run prettier && npm run eslint",
     "lint:fix": "npm run prettier:fix && npm run eslint:fix",
     "prettier": "npx prettier --check \"src/\" \"frontend/src\"",
+    "prepublishOnly": "npm run dist",
     "prettier:fix": "npx prettier --write \"src/\" \"frontend/src/\"",
     "start": "node --enable-source-maps index.js",
     "test:backend": "vitest --config vitest.backend.config.mts --dir ./src",

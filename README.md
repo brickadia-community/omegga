@@ -140,7 +140,7 @@ pages under `docs/api` are generated from the JSDoc in `src/`; run
 1. **Bump**: Bump `version` in `package.json` and sync the lockfile with
     `npm i --package-lock-only`.
 2. **Changelog**: Move the `## Latest` entries in `CHANGELOG.md` under a
-    `## <version> - <date>` heading.
+    `## <version> - <date>` heading. Preview with `just notes`
 3. **Pterodactyl**: Point the pinned image in `docker/pterodactyl/egg-omegga.json` at the new
     `<major>.<minor>`. Releases only move `latest`, `<major>`, and
     `<major>.<minor>`, so a pin left on the previous minor is frozen on an
@@ -148,5 +148,11 @@ pages under `docs/api` are generated from the JSDoc in `src/`; run
     panel.
 4. **Linters**: `just check`
 5. **Commit**: Ensure everything is pushed
-6. **Deploy Container**: `just tag` to push tag the image to ghcr.
-7. **Deploy NPM**: `just publish` to build `dist/` and publish the package to npm.
+6. **Tag**: `just tag` pushes `v<version>` and builds the ghcr image and npm releases
+7. **Approve the npm release**: A developer with npm access must do the following:
+
+    ```sh
+    npm stage list omegga    # find the stage-id
+    npm stage download <id>  # optional, inspect the tarball before approving
+    npm stage approve <id>   # prompts for an OTP, then publishes
+    ```
