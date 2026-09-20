@@ -185,6 +185,11 @@ export default class Webserver {
     const openApi = express.Router();
     const api = express.Router();
 
+    // express-session leaves req.session undefined on requests it declines,
+    // like a request target that is not a path (`OPTIONS *`)
+    const requireSession: express.RequestHandler = (req, res, next) =>
+      req.session ? next() : res.status(400).json({ message: 'no session' });
+
     // check if this is the first user in the database
     openApi.get('/first', async (_req, res) =>
       res.json(await this.database.isFirstUser()),
@@ -376,6 +381,7 @@ export default class Webserver {
       });
     });
 
+    this.app.use('/api/v1', requireSession);
     this.app.use('/api/v1', openApi);
     this.app.use('/api/v1', api);
 
@@ -393,10 +399,10 @@ export default class Webserver {
 
     // every request goes through the index file (frontend handles 404s)
     this.app.use(async (req, res) => {
-      if (req.session.mfaPending) {
+      if (req.session?.mfaPending) {
         return res.sendFile(path.join(PUBLIC_PATH, 'auth.html'));
       }
-      const user = await this.database.findUserById(req.session.userId);
+      const user = await this.database.findUserById(req.session?.userId);
       const isAuth = user && !user.isBanned;
       if (isAuth) {
         res.sendFile(path.join(PUBLIC_PATH, 'app.html'));

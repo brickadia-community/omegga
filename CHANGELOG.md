@@ -2,6 +2,10 @@
 
 ## Latest
 
+## 1.19.1 - 2026-09-20
+
+- Fix a crash serving the web UI to requests express-session declines to give a session, such as a request target that is not a path (`OPTIONS *`). Those requests now get the login page, and `/api/v1` answers them with a 400 instead of taking down the server
+
 ## 1.19.0 - 2026-09-19
 
 Omegga logs can now be stored in rotating dated log files.
