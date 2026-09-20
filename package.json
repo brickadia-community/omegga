@@ -1,6 +1,6 @@
 {
   "name": "omegga",
-  "version": "1.19.1",
+  "version": "1.20.0",
   "description": "Brickadia server installer, updater, manager, wrapper, configurator, and automator",
   "engines": {
     "node": ">=23.0.0"
@@ -157,5 +157,13 @@
   "bugs": {
     "url": "https://github.com/brickadia-community/omegga/issues"
   },
-  "homepage": "https://github.com/brickadia-community/omegga#readme"
+  "homepage": "https://github.com/brickadia-community/omegga#readme",
+  "allowScripts": {
+    "better-sqlite3@12.2.0": true,
+    "esbuild": false,
+    "@parcel/watcher": false,
+    "bufferutil": false,
+    "utf-8-validate": false,
+    "@swc/core": false
+  }
 }

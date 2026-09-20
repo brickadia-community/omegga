@@ -2,6 +2,15 @@
 
 ## Latest
 
+## 1.20.0 - 2026-09-20
+
+A failing web UI request no longer takes the game server down with it.
+
+- Web routes that throw answer with a 500, and protected routes answer 401 instead of 500
+- The webserver's background work (chat, join, leave, and kick logging) reports a failed database write rather than reaching node's unhandled rejection handler, which stops the server
+- Dependency updates from `npm audit fix`: express, body-parser, qs, js-yaml, and vitest
+- Omegga's dependencies no longer run install scripts. `allowScripts` in package.json approves better-sqlite3, which needs one to get its native binding, and denies the rest: their scripts either do nothing or fetch a binary that is already installed as a platform package. npm 11.7 and later skip every dependency that is not listed
+
 ## 1.19.1 - 2026-09-20
 
 - Fix a crash serving the web UI to requests express-session declines to give a session, such as a request target that is not a path (`OPTIONS *`). Those requests now get the login page, and `/api/v1` answers them with a 400 instead of taking down the server
