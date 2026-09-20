@@ -11,6 +11,7 @@ import {
   hasSteamUpdate,
   steamcmdDownloadGame,
 } from '@/updater/steam';
+import { background, backgroundHandler } from '@util/async';
 import { serverEvents } from './events';
 import type Webserver from './index';
 import type { IStoreAutoRestartConfig } from './types';
@@ -62,7 +63,10 @@ export default function (server: Webserver) {
     const action = update ? 'Updating' : 'Restarting';
 
     if (config.announcementEnabled) {
-      database.addChatLog('server', {}, action + ' in 30 seconds...');
+      background(
+        'Failed to log restart announcement',
+        database.addChatLog('server', {}, action + ' in 30 seconds...'),
+      );
       Logger.logp(action + ' in 30 seconds...');
       const announce = (t: number) =>
         omegga.broadcast(
@@ -91,7 +95,10 @@ export default function (server: Webserver) {
     await omegga.saveServer(iconfig);
 
     Logger.logp(action + '...');
-    database.addChatLog('server', {}, action + ' server...');
+    background(
+      'Failed to log restart',
+      database.addChatLog('server', {}, action + ' server...'),
+    );
     omegga.once('mapchange', () => {
       omegga.restoreServer();
     });
@@ -255,54 +262,72 @@ export default function (server: Webserver) {
   }, soft.METRIC_HEARTBEAT_INTERVAL);
 
   // chat events
-  omegga.on('chat', async (name, message) => {
-    const p = omegga.getPlayer(name);
-    // the player may have left before the chat event was handled
-    if (!p) return;
-    const user = {
-      id: p.id,
-      name,
-      displayName: p.displayName,
-      color: p.getNameColor(),
-    };
+  omegga.on(
+    'chat',
+    backgroundHandler('Failed to log chat', async (name, message) => {
+      const p = omegga.getPlayer(name);
+      // the player may have left before the chat event was handled
+      if (!p) return;
+      const user = {
+        id: p.id,
+        name,
+        displayName: p.displayName,
+        color: p.getNameColor(),
+      };
 
-    // tell web users about a chat message
-    serverEvents.emit('chat', await database.addChatLog('msg', user, message));
-  });
+      // tell web users about a chat message
+      serverEvents.emit(
+        'chat',
+        await database.addChatLog('msg', user, message),
+      );
+    }),
+  );
 
   // player leave events
-  omegga.on('leave', async ({ id, name, displayName }) => {
-    // update realtime player count subscribers (the player has already been
-    // removed from omegga.players by the time 'leave' fires)
-    serverEvents.emit('playerCount', omegga.players.length);
+  omegga.on(
+    'leave',
+    backgroundHandler(
+      'Failed to log leave',
+      async ({ id, name, displayName }) => {
+        // update realtime player count subscribers (the player has already been
+        // removed from omegga.players by the time 'leave' fires)
+        serverEvents.emit('playerCount', omegga.players.length);
 
-    // tell web users a player left
-    serverEvents.emit(
-      'chat',
-      await database.addChatLog('leave', { id, name, displayName }),
-    );
-  });
+        // tell web users a player left
+        serverEvents.emit(
+          'chat',
+          await database.addChatLog('leave', { id, name, displayName }),
+        );
+      },
+    ),
+  );
 
   // player join events
-  omegga.on('join', async ({ id, name, displayName }) => {
-    // add the visit to the database
-    const isFirst = await database.addVisit({ id, name, displayName });
+  omegga.on(
+    'join',
+    backgroundHandler(
+      'Failed to log join',
+      async ({ id, name, displayName }) => {
+        // add the visit to the database
+        const isFirst = await database.addVisit({ id, name, displayName });
 
-    // update realtime player count subscribers (the awaited DB call above means
-    // omegga.players has been pushed to by the time we read it here)
-    serverEvents.emit('playerCount', omegga.players.length);
+        // update realtime player count subscribers (the awaited DB call above means
+        // omegga.players has been pushed to by the time we read it here)
+        serverEvents.emit('playerCount', omegga.players.length);
 
-    // tell web users a player joined (and if it's their first time joining)
-    serverEvents.emit(
-      'chat',
-      await database.addChatLog('join', {
-        id,
-        name,
-        displayName,
-        ...(isFirst ? { isFirst } : {}),
-      }),
-    );
-  });
+        // tell web users a player joined (and if it's their first time joining)
+        serverEvents.emit(
+          'chat',
+          await database.addChatLog('join', {
+            id,
+            name,
+            displayName,
+            ...(isFirst ? { isFirst } : {}),
+          }),
+        );
+      },
+    ),
+  );
 
   // tell web users plugin status
   omegga.on(

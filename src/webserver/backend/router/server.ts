@@ -2,6 +2,7 @@ import Logger from '@/logger';
 import type { IServerStatus } from '@/omegga/types';
 import { steamcmdDownloadGame } from '@/updater';
 import { getLastSteamUpdateCheck, hasSteamUpdate } from '@/updater/steam';
+import { background } from '@util/async';
 import { on } from 'events';
 import { z } from 'zod/v4';
 import { serverEvents } from '../events';
@@ -160,7 +161,10 @@ export const serverRouter = router({
           ctx.error('Error while saving server setup', err);
         }
 
-        database.addChatLog('server', {}, 'Restarting in 5 seconds...');
+        background(
+          'Failed to log restart announcement',
+          database.addChatLog('server', {}, 'Restarting in 5 seconds...'),
+        );
         Logger.logp('Restarting in 5 seconds...');
         omegga.broadcast(
           `<size="20">Server restart in <b><color="ffffbb">${5} seconds</></></>`,

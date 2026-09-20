@@ -1,6 +1,7 @@
 import * as schema from '@/db/schema';
 import { type IServerConfig } from '@config/types';
 import type Omegga from '@omegga/server';
+import { backgroundHandler } from '@util/async';
 import { explode } from '@util/pattern';
 import { parseBrickadiaTime } from '@util/time';
 import * as uuid from '@util/uuid';
@@ -141,19 +142,25 @@ export default class Database extends EventEmitter {
       // time the event listener should expire
       const eventExpire = Date.now() + 100;
       // detect a single leave
-      this.omegga.once('leave', async leavingPlayer => {
-        const now = Date.now();
-        // if a player leaves more than 100ms from the kick command, it's bugged
-        if (now > eventExpire) return;
-        if (leavingPlayer.id === kicked.id) {
-          this.upsertKickHistory({
-            kicked: kicked.id,
-            kickerId: kicker.id,
-            created: now,
-            reason,
-          });
-        }
-      });
+      this.omegga.once(
+        'leave',
+        backgroundHandler(
+          'Failed to record kick',
+          async (leavingPlayer: IPlayer & { id: string }) => {
+            const now = Date.now();
+            // if a player leaves more than 100ms from the kick command, it's bugged
+            if (now > eventExpire) return;
+            if (leavingPlayer.id === kicked.id) {
+              this.upsertKickHistory({
+                kicked: kicked.id,
+                kickerId: kicker.id,
+                created: now,
+                reason,
+              });
+            }
+          },
+        ),
+      );
     };
 
     // for a5 is based on the chat event
