@@ -4,12 +4,12 @@
 
 ## 1.20.0 - 2026-09-30
 
-A failing web UI request no longer takes the game server down with it.
+Web UI can't crash the game server anymore
 
-- A web page that hits an error now shows an error response instead of crashing the server, and logged-out visitors to protected pages are told to log in rather than getting an error
+- Web UI errors that used to crash the server now have a 500 status code
 - A failed database write while logging chat, joins, leaves, or kicks is now reported instead of stopping the server
-- Dependency updates from `npm audit fix`: express, body-parser, qs, js-yaml, and vitest
-- Dependencies no longer run install scripts, except better-sqlite3, which needs one for its native binding. This is set with `allowScripts` in package.json (npm 11.7 and later)
+- NPM audit fix/bumps on express, body-parser, qs, js-yaml, and vitest
+- Dependencies no longer run install scripts, except better-sqlite3 (which is required)
 - Fix `savePrefab` and `savePrefabAsync` ignoring `userId` unless `rootEntityPersistentIndex` was also set. A user filter alone now saves from the main world grid, including that user's entities when `entities` is on
 
 ## 1.19.1 - 2026-09-20
