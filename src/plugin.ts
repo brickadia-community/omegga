@@ -982,7 +982,9 @@ export interface OmeggaCore {
   /**
    * Save the world (or a region of it) as a prefab (EA3).
    * @param path destination prefab bundle path ref (e.g. `Prefabs/MyPrefab.brz`)
-   * @param options save options; omit `region` to capture the whole world
+   * @param options save options; omit `region` to capture the whole world.
+   * `userId` limits the save to one user's bricks and entities; it defaults
+   * the root to the main world grid unless `rootEntityPersistentIndex` is set
    */
   savePrefab(
     path: string,

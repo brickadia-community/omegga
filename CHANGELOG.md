@@ -2,14 +2,15 @@
 
 ## Latest
 
-## 1.20.0 - 2026-09-20
+## 1.20.0 - 2026-09-30
 
 A failing web UI request no longer takes the game server down with it.
 
-- Web routes that throw answer with a 500, and protected routes answer 401 instead of 500
-- The webserver's background work (chat, join, leave, and kick logging) reports a failed database write rather than reaching node's unhandled rejection handler, which stops the server
+- A web page that hits an error now shows an error response instead of crashing the server, and logged-out visitors to protected pages are told to log in rather than getting an error
+- A failed database write while logging chat, joins, leaves, or kicks is now reported instead of stopping the server
 - Dependency updates from `npm audit fix`: express, body-parser, qs, js-yaml, and vitest
-- Omegga's dependencies no longer run install scripts. `allowScripts` in package.json approves better-sqlite3, which needs one to get its native binding, and denies the rest: their scripts either do nothing or fetch a binary that is already installed as a platform package. npm 11.7 and later skip every dependency that is not listed
+- Dependencies no longer run install scripts, except better-sqlite3, which needs one for its native binding. This is set with `allowScripts` in package.json (npm 11.7 and later)
+- Fix `savePrefab` and `savePrefabAsync` ignoring `userId` unless `rootEntityPersistentIndex` was also set. A user filter alone now saves from the main world grid, including that user's entities when `entities` is on
 
 ## 1.19.1 - 2026-09-20
 

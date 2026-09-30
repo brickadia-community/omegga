@@ -69,6 +69,10 @@ const MISSING_CMD =
 // maximal extent centered on the origin to capture everything.
 const WHOLE_WORLD_EXTENT = 1_000_000_000;
 
+// Persistent index of the main brick grid entity, used as the prefab save root
+// when only a user filter is given.
+const WORLD_GRID_PERSISTENT_INDEX = 1;
+
 // These helpers are module-level (not class methods) on purpose: safe plugins
 // call these methods through a ProxyOmegga whose prototype steals Omegga's
 // implementations (see injectOmeggaPrototypes). A `#private` method would fail
@@ -1630,11 +1634,18 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     // As in loadPrefab, the root entity persistent index is looked up as a
     // literal brick-grid entity, so passing the -1 sentinel fails with
     // "No brick grid entity with persistent index 4294967295" and nothing is
-    // written. Omit it (and the user id after it) to save from the world grid.
-    const rootPart =
+    // written. The arguments are positional and the user id follows the
+    // index, so a user filter with no explicit root falls back to the main
+    // world grid (index 1; 0 resolves to the same grid). Without either, both
+    // are omitted and the game saves from the world grid itself.
+    const rootIndex =
       rootEntityPersistentIndex >= 0
-        ? ` ${rootEntityPersistentIndex}${userId ? ` "${userId}"` : ''}`
-        : '';
+        ? rootEntityPersistentIndex
+        : userId
+          ? WORLD_GRID_PERSISTENT_INDEX
+          : -1;
+    const rootPart =
+      rootIndex >= 0 ? ` ${rootIndex}${userId ? ` "${userId}"` : ''}` : '';
     this.writeln(
       `${this.Console.Prefab.SaveRegion} "${path}" ${center} ${extent} ${
         entities ? 1 : 0
