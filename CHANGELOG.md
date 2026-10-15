@@ -2,6 +2,12 @@
 
 ## Latest
 
+## 1.20.1 - 2026-10-15
+
+Update for EA3.2
+
+- Bumps brs-js to v4.0.0
+
 ## 1.20.0 - 2026-09-30
 
 Web UI can't crash the game server anymore
