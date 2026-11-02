@@ -9,6 +9,7 @@ import {
 } from '@/softconfig';
 import { readBinaryVersion } from '@omegga/matchers/version';
 import { execSync, spawn, spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import prompts from 'prompts';
 import acfParser from 'steam-acf2json';
@@ -92,8 +93,11 @@ export async function steamcmdInteractiveLogin(): Promise<boolean> {
  *
  * Arguments are passed as an array rather than as a shell string: it keeps the
  * beta password and steam username out of a shell's hands, and there is nothing
- * here that needs shell features. Rejects with an Error carrying `status`, so
- * callers can match on steamcmd's exit code the way they did with execSync.
+ * here that needs shell features. Rejects with a SteamcmdError, so callers can
+ * match on steamcmd's exit code the way they did with execSync.
+ *
+ * Without `capture`, output still reaches the terminal as it arrives, but it is
+ * also collected so a failure can be diagnosed from what steamcmd printed.
  */
 function runSteamcmd(
   args: string[],
@@ -104,22 +108,27 @@ function runSteamcmd(
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(STEAMCMD_PATH, args, {
-      stdio: capture ? ['inherit', 'pipe', 'pipe'] : 'inherit',
+      stdio: ['inherit', 'pipe', 'pipe'],
     });
 
     let output = '';
-    child.stdout?.on('data', chunk => (output += chunk));
-    child.stderr?.on('data', chunk => (output += chunk));
+    child.stdout.on('data', chunk => {
+      output += chunk;
+      if (!capture) process.stdout.write(chunk);
+    });
+    child.stderr.on('data', chunk => {
+      output += chunk;
+      if (!capture) process.stderr.write(chunk);
+    });
 
     const timer = timeoutMs
       ? setTimeout(() => {
           child.kill('SIGKILL');
           reject(
-            Object.assign(
-              new Error(`steamcmd timed out after ${timeoutMs}ms`),
-              {
-                status: null,
-              },
+            steamcmdError(
+              `steamcmd timed out after ${timeoutMs}ms`,
+              null,
+              output,
             ),
           );
         }, timeoutMs)
@@ -133,29 +142,50 @@ function runSteamcmd(
     child.once('close', (code, signal) => {
       if (timer) clearTimeout(timer);
       if (code === 0) return resolve(output);
+      // already on screen when it was not captured
       reject(
-        Object.assign(
-          new Error(
-            `steamcmd exited with ${signal ? `signal ${signal}` : `code ${code}`}` +
-              (output ? `\n${output}` : ''),
-          ),
-          { status: code },
+        steamcmdError(
+          `steamcmd exited with ${signal ? `signal ${signal}` : `code ${code}`}` +
+            (capture && output ? `\n${output}` : ''),
+          code,
+          output,
         ),
       );
     });
   });
 }
 
+type SteamcmdError = Error & { status: number | null; output: string };
+
+function steamcmdError(
+  message: string,
+  status: number | null,
+  output: string,
+): SteamcmdError {
+  return Object.assign(new Error(message), { status, output });
+}
+
+function isSteamcmdError(err: unknown): err is SteamcmdError {
+  return err instanceof Error && 'output' in err && 'status' in err;
+}
+
+/**
+ * The app state steamcmd reported for a failed update job, e.g. 0x6 for
+ * "state is 0x6 after update job".
+ */
+function failedUpdateState(err: unknown): number | null {
+  if (!isSteamcmdError(err)) return null;
+  const match = err.output.match(/state is (0x[0-9A-Fa-f]+) after update job/);
+  return match ? parseInt(match[1], 16) : null;
+}
+
 function handleSteamError(err: unknown) {
   if (err instanceof Error && err.message) {
-    const stateMatch = err.message.match(
-      /state is (0x[0-9A-Fa-f]+) after update job/,
-    );
-    if (stateMatch) {
-      const state = parseInt(stateMatch[1], 16);
+    const state = failedUpdateState(err);
+    if (state !== null) {
       const flags = decodeAppState(state);
       Logger.error(
-        `Steam app state ${stateMatch[1]} (${state}):`,
+        `Steam app state 0x${state.toString(16)} (${state}):`,
         flags.length > 0 ? flags.join(', ') : 'Unknown',
       );
     }
@@ -228,6 +258,13 @@ export async function steamcmdDownloadGame({
   // 0x406 after update job") are frequently transient, so retry before giving up.
   const attempts = Math.max(1, retries);
   let triedInteractiveLogin = false;
+  let setAsideManifest = false;
+  const manifestPath = path.join(
+    installDir,
+    steambeta ?? 'main',
+    'steamapps',
+    `appmanifest_${appId}.acf`,
+  );
 
   updating = true;
   try {
@@ -250,9 +287,8 @@ export async function steamcmdDownloadGame({
         if (
           !triedInteractiveLogin &&
           hasCredentials &&
-          err instanceof Error &&
-          'status' in err &&
-          (err as NodeJS.ErrnoException & { status: number }).status === 5
+          isSteamcmdError(err) &&
+          err.status === 5
         ) {
           triedInteractiveLogin = true;
           Logger.warnp(
@@ -280,6 +316,28 @@ export async function steamcmdDownloadGame({
         }
 
         handleSteamError(error);
+
+        // 0x6 is Update Required + Fully Installed: steamcmd knows the install
+        // is behind but planned a 0 byte job. An install left alone across
+        // branch changes gets here from a stale appmanifest, and no -beta flag
+        // gets past it. Without the manifest, steamcmd verifies the files
+        // already on disk and fetches only what changed.
+        if (
+          !setAsideManifest &&
+          failedUpdateState(error) === 0x6 &&
+          fs.existsSync(manifestPath)
+        ) {
+          setAsideManifest = true;
+          const stalePath = `${manifestPath}.stale`;
+          fs.renameSync(manifestPath, stalePath);
+          Logger.warnp(
+            'Steam refused to update the existing install. Moved its manifest to',
+            stalePath.yellow,
+            'and retrying; existing files will be verified, not redownloaded.',
+          );
+          attempt--;
+          continue;
+        }
 
         if (attempt < attempts) {
           Logger.warnp(

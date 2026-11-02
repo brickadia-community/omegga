@@ -2,6 +2,13 @@
 
 ## Latest
 
+## 1.21.1 - 2026-11-02
+
+- Fix `omegga --update` failing every attempt with `state is 0x6 after update job` on installs left alone across Steam branch changes. The stale Steam app manifest is moved aside to `appmanifest_<appid>.acf.stale` and the update retried once; existing game files are verified, not redownloaded
+- Steam app state errors from game downloads are decoded again (e.g. `0x6 (6): Update Required, Fully Installed`)
+- Bumps brs-js to v4.0.4, simple-git to v4.0.2
+- Removes the glob and rimraf dependencies
+
 ## 1.21.0 - 2026-10-15
 
 Update for EA3.2

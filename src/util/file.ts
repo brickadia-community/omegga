@@ -3,7 +3,6 @@ import chokidar from 'chokidar';
 import fs from 'node:fs';
 import _ from 'lodash';
 import path from 'node:path';
-import rimraf from 'rimraf';
 
 // objects to store cached data
 const cachedTimes: Record<string, number> = {};
@@ -79,14 +78,62 @@ export function mkdir(path: string) {
 }
 
 // rm -rf a path
-export function rmdir(dir: string) {
+export async function rmdir(dir: string) {
   if (!fs.existsSync(dir)) return false;
-  return new Promise((resolve, reject) => {
-    rimraf(dir, error => {
-      if (error) reject(error);
-      else resolve(true);
-    });
-  });
+  await fs.promises.rm(dir, { recursive: true, force: true });
+  return true;
+}
+
+/**
+ * Every file under `dir` whose name ends with `ext`, as full paths, in the
+ * order glob 7 gave them (`localeCompare('en')`).
+ *
+ * Symlinked directories are followed, since servers point saves and prefabs at
+ * shared storage that way; a directory reached twice through links is read
+ * once. Names starting with a dot are skipped, files and directories alike.
+ * `dir` is used literally, so a path containing glob characters such as `[`
+ * still works. A missing `dir` gives an empty list.
+ */
+export function findFiles(dir: string, ext: string): string[] {
+  const found: string[] = [];
+  const visited = new Set<string>();
+
+  const walk = (current: string) => {
+    let real: string;
+    let entries: fs.Dirent[];
+    try {
+      real = fs.realpathSync(current);
+      if (visited.has(real)) return;
+      visited.add(real);
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue;
+      const full = path.join(current, entry.name);
+
+      let isDir = entry.isDirectory();
+      let isFile = entry.isFile();
+      if (entry.isSymbolicLink()) {
+        try {
+          const target = fs.statSync(full);
+          isDir = target.isDirectory();
+          isFile = target.isFile();
+        } catch {
+          // a dangling link names nothing that could be loaded
+          continue;
+        }
+      }
+
+      if (isDir) walk(full);
+      else if (isFile && entry.name.endsWith(ext)) found.push(full);
+    }
+  };
+
+  walk(dir);
+  return found.sort((a, b) => a.localeCompare(b, 'en'));
 }
 
 // copy files from one dir to another, creating the directories in the process

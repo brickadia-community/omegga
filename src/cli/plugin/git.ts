@@ -5,7 +5,7 @@ import isoGit from 'isomorphic-git';
 import http from 'isomorphic-git/http/node';
 import fs from 'node:fs';
 import path from 'node:path';
-import simpleGit, { ResetMode } from 'simple-git';
+import { ResetMode, simpleGit } from 'simple-git';
 
 /**
  * Which implementation of git the plugin commands run on.

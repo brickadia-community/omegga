@@ -27,7 +27,7 @@ import {
 import { type IConfig } from '@config/types';
 import { map as mapUtils, pattern, uuid } from '@util';
 import { readBrdbRevisions } from '@util/brdb';
-import { copyFiles, mkdir, readWatchedJSON } from '@util/file';
+import { copyFiles, findFiles, mkdir, readWatchedJSON } from '@util/file';
 import Webserver from '@webserver/backend';
 import brs, {
   WorldReader,
@@ -36,7 +36,6 @@ import brs, {
   type WriteSaveObject,
 } from 'brs-js';
 import 'colors';
-import glob from 'glob';
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, join, resolve, sep } from 'path';
 import { type AutoRestartConfig } from '..';
@@ -830,12 +829,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   getMinigamePresets(): string[] {
-    const presetPath = join(this.presetPath, 'Minigame');
-    return existsSync(presetPath)
-      ? glob
-          .sync(presetPath + '/**/*.bp')
-          .map(f => basename(f).replace(/\.bp$/, ''))
-      : [];
+    return findFiles(join(this.presetPath, 'Minigame'), '.bp').map(f =>
+      basename(f).replace(/\.bp$/, ''),
+    );
   }
 
   resetEnvironment() {
@@ -918,12 +914,9 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   getEnvironmentPresets(): string[] {
-    const presetPath = join(this.presetPath, 'Environment');
-    return existsSync(presetPath)
-      ? glob
-          .sync(presetPath + '/**/*.bp')
-          .map(f => basename(f).replace(/\.bp$/, ''))
-      : [];
+    return findFiles(join(this.presetPath, 'Environment'), '.bp').map(f =>
+      basename(f).replace(/\.bp$/, ''),
+    );
   }
 
   clearBricks(target: string | { id: string }, quiet = false) {
@@ -1156,21 +1149,15 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
   }
 
   getSaves(): string[] {
-    return existsSync(this.savePath)
-      ? glob.sync(this.savePath + '/**/*.brs')
-      : [];
+    return findFiles(this.savePath, '.brs');
   }
 
   getWorlds(): string[] {
-    return existsSync(this.worldPath)
-      ? glob.sync(this.worldPath + '/**/*.brdb')
-      : [];
+    return findFiles(this.worldPath, '.brdb');
   }
 
   getPrefabs(): string[] {
-    return existsSync(this.prefabPath)
-      ? glob.sync(this.prefabPath + '/**/*.brz')
-      : [];
+    return findFiles(this.prefabPath, '.brz');
   }
 
   getSavePath(saveName: string) {
