@@ -644,7 +644,7 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
     }
 
     Logger.verbose('Starting Brickadia');
-    super.start();
+    super.start(this.pluginLoader?.getLaunchOptions());
     this.emit('server:starting');
   }
 

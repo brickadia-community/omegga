@@ -14,6 +14,8 @@ import {
 } from '@/softconfig';
 import { getGlobalToken } from '@cli/auth';
 import { type IConfig } from '@config/types';
+import { type LaunchOptions } from '@omegga/launch';
+import { readBinaryVersion } from '@omegga/matchers/version';
 import { checkWsl } from '@util/wsl';
 import 'colors';
 import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
@@ -57,6 +59,26 @@ const knownErrors: {
 ];
 
 /** Start a brickadia server */
+/**
+ * Launch args that stop crash report uploads. Brickadia's switch is
+ * `-AllowCustomArchivesAndDisableCrashReporterForVersion=CL<changelist>`, honoured only
+ * when the changelist matches the binary, so it is read from the binary each
+ * start. The same switch also lets unsigned (custom) pak archives load.
+ */
+export function crashReportArgs(gameBinary: string | null): string[] {
+  const cl = readBinaryVersion(gameBinary);
+  if (cl == null) {
+    Logger.warn(
+      'Could not read the game version from the binary; crash reports may still be sent',
+    );
+    return ['-nocrashreports'];
+  }
+  return [
+    '-nocrashreports',
+    `-AllowCustomArchivesAndDisableCrashReporterForVersion=CL${cl}`,
+  ];
+}
+
 export default class BrickadiaServer extends EventEmitter {
   #child: ChildProcessWithoutNullStreams | null = null;
   #errInterface: readline.Interface | null = null;
@@ -201,7 +223,7 @@ export default class BrickadiaServer extends EventEmitter {
   }
 
   // start the server child process
-  start() {
+  start(launch?: LaunchOptions) {
     const {
       email,
       password,
@@ -265,16 +287,24 @@ export default class BrickadiaServer extends EventEmitter {
     }
 
     // handle local launcher support
-    const launchArgs = isSteam
-      ? [gameBinary]
-      : [
-          this.config.server.__LOCAL
-            ? path.join(__dirname, '../../tools/brickadia.sh')
-            : 'brickadia',
-          this.config.server.branch && `--branch=${this.config.server.branch}`,
-          '--server',
-          '--',
-        ];
+    if (launch?.wrappers.length)
+      Logger.verbose('Launch wrappers', launch.wrappers.join(' ').yellow);
+
+    const launchArgs = [
+      // plugin wrappers each exec the rest of the command line
+      ...(launch?.wrappers ?? []),
+      ...(isSteam
+        ? [gameBinary]
+        : [
+            this.config.server.__LOCAL
+              ? path.join(__dirname, '../../tools/brickadia.sh')
+              : 'brickadia',
+            this.config.server.branch &&
+              `--branch=${this.config.server.branch}`,
+            '--server',
+            '--',
+          ]),
+    ];
 
     const world = this.getNextWorld();
     if (world) {
@@ -300,6 +330,10 @@ export default class BrickadiaServer extends EventEmitter {
       '-log',
       // remote file access is on unless explicitly disabled in the config
       this.config.server.remoteFiles === false ? '-NoRemoteFileAccess' : null,
+      // crash reports are on unless explicitly disabled in the config
+      ...(this.config.server.crashreports === false
+        ? crashReportArgs(gameBinary)
+        : []),
       checkWsl() === 1 ? '-OneThread' : null,
       this.path ? `-UserDir="${this.path}"` : null,
       token ? `-Token="${token}"` : null, // remove token argument if not provided
@@ -307,6 +341,7 @@ export default class BrickadiaServer extends EventEmitter {
       !token && password ? `-Password="${password}"` : null, // remove password argument if not provided or token is provided
       `-port="${this.config.server.port}"`,
       this.config.server.launchArgs,
+      ...(launch?.args ?? []),
     ]
       .filter(arg => typeof arg === 'string')
       .filter(arg => arg.length > 0); // remove unused/empty arguments
@@ -324,7 +359,9 @@ export default class BrickadiaServer extends EventEmitter {
     // Either unbuffer or stdbuf must be used because brickadia's output is buffered
     // this means that multiple lines can be bundled together if the output buffer is not full
     // unfortunately without stdbuf or unbuffer, the output would not happen immediately
-    const child = spawn('stdbuf', params);
+    const child = spawn('stdbuf', params, {
+      env: { ...env, ...launch?.env },
+    });
     this.#child = child;
 
     Logger.verbose('Spawn process', child.pid ?? 'failed'.red);

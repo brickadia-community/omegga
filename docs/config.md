@@ -65,6 +65,9 @@ server:
   map: Plate # map name
   # when false, the server launches with -NoRemoteFileAccess
   remoteFiles: true
+  # when false, crash reports aren't uploaded: the server launches with Brickadia's
+  # -AllowCustomArchivesAndDisableCrashReporterForVersion=CL<changelist> (read from the binary)
+  crashreports: true
   # When branch is present, steamcmd is not used. This is for ALPHA only, and Omegga may not work for Brickadia A5 anymore.
   #branch: release:release-server # branch alias:branch name
   steambeta: public # try `unstable`

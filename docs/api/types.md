@@ -281,6 +281,7 @@ type IPluginConfigDefinition = {
 | `author` | `string` |  |
 | `config` | `Record<string, IPluginConfigDefinition>` |  |
 | `commands` | `IPluginCommand[]` |  |
+| `launch?` | `IPluginLaunch` | Changes to how the game server is launched. Applied when the server starts (a plugin reload alone doesn't relaunch the game), and ignored for sandboxed (node_safe) plugins. |
 
 <sub>Declared in [`src/plugin.ts`](https://github.com/brickadia-community/omegga/blob/master/src/plugin.ts).</sub>
 

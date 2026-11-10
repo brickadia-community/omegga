@@ -178,6 +178,33 @@ That config section would generate the following default config:
 
 This is provided to plugins in the constructor or the RPC init function.
 
+## Plugin Launch Options
+
+A plugin can change how the game server is launched with a `launch` block in its `doc.json`.
+Omegga reads it from every loaded plugin just before it starts the game, so editing it takes
+effect on the next server start; reloading the plugin alone doesn't relaunch the game.
+
+```json
+{
+  "launch": {
+    "wrapper": "bin/run.sh",
+    "args": ["-NoRemoteFileAccess"],
+    "env": { "MY_LIB": "${pluginDir}/lib/thing.so" }
+  }
+}
+```
+
+- `wrapper` is an executable inside the plugin directory. Omegga runs it as
+  `<wrapper> <game command...>` and it must `exec` the command it is given (after any setup).
+  With several plugins, the first-loaded plugin's wrapper is outermost.
+- `args` are appended to the game's command line.
+- `env` is added to the game's environment (and its wrappers'). On a conflict, the
+  later-loaded plugin wins.
+- `${pluginDir}` and `${dataDir}` (omegga's `data` directory) are expanded in `args` and `env`.
+
+A wrapper runs native code next to the game, so `launch` is ignored for safe (`node_safe`)
+plugins. Invalid blocks are logged and skipped; the server still starts.
+
 ## Plugin File
 
 This is an example `plugin.json`, located inside a plugin folder. The plugin file helps omegga know if the plugin is compatible with the current installation. Plugin files can be validated with the `omegga check` command.

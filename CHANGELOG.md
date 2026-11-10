@@ -2,6 +2,14 @@
 
 ## Latest
 
+## 1.22.0 - 2026-11-10
+
+Plugins can change how the game launches
+
+- Plugins can change how the game server launches with a `launch` block in `doc.json` (a wrapper executable, extra args, environment). See [Plugin Launch Options](docs/plugins/README.md#plugin-launch-options)
+- Add `server.crashreports` config (default `true`); when `false`, the server launches with Brickadia's `-AllowCustomArchivesAndDisableCrashReporterForVersion=CL<changelist>`.
+- Bump brs-js to v4.0.5
+
 ## 1.21.1 - 2026-11-02
 
 - Fix `omegga --update` failing every attempt with `state is 0x6 after update job` on installs left alone across Steam branch changes. The stale Steam app manifest is moved aside to `appmanifest_<appid>.acf.stale` and the update retried once; existing game files are verified, not redownloaded

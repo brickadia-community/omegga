@@ -9,6 +9,7 @@ import { type IConfig } from '@config/types';
 import EventEmitter from 'events';
 import path from 'path';
 import { migrateConsoleCommand } from './commands';
+import { type LaunchOptions } from './launch';
 import LogWrangler from './logWrangler';
 import type Omegga from './server';
 
@@ -63,8 +64,8 @@ class OmeggaWrapper extends EventEmitter {
       migrateConsoleCommand(str, (this as unknown as Omegga).version),
     );
   }
-  start() {
-    return this.#server.start();
+  start(launch?: LaunchOptions) {
+    return this.#server.start(launch);
   }
   stop() {
     return this.#server.stop();

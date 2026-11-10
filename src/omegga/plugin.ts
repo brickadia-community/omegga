@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/better-sqlite3';
 import fs from 'node:fs';
 import path from 'node:path';
+import { collectLaunchOptions, type LaunchOptions } from './launch';
 import type Player from './player';
 import { Plugin } from './plugin/interface';
 import RpcPlugin from './plugin/plugin_jsonrpc_stdio';
@@ -459,6 +460,21 @@ export class PluginLoader {
         if (B == null) return A <= 0 ? -1 : 1;
         return A - B;
       });
+  }
+
+  /** Launch changes requested by the loaded plugins, in load order. */
+  getLaunchOptions(): LaunchOptions {
+    return collectLaunchOptions(
+      this.plugins
+        .filter(p => p.isLoaded())
+        .map(p => ({
+          name: p.getName(),
+          dir: p.path,
+          format: (p.constructor as typeof Plugin).getFormat(),
+          launch: p.getDocumentation()?.launch,
+        })),
+      this.dataPath,
+    );
   }
 
   /** Scans plugin directory for plugins and builds their documentation. */

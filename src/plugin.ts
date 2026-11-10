@@ -1363,6 +1363,24 @@ export interface IPluginDocumentation {
   author: string;
   config: Record<string, IPluginConfigDefinition>;
   commands: IPluginCommand[];
+  /**
+   * Changes to how the game server is launched. Applied when the server
+   * starts (a plugin reload alone doesn't relaunch the game), and ignored for
+   * sandboxed (node_safe) plugins.
+   */
+  launch?: IPluginLaunch;
+}
+
+export interface IPluginLaunch {
+  /**
+   * Executable inside the plugin directory, run as `<wrapper> <game command...>`.
+   * It must exec the command it is given.
+   */
+  wrapper?: string;
+  /** Arguments appended to the game's command line. */
+  args?: string[];
+  /** Environment for the game process and wrappers. */
+  env?: Record<string, string>;
 }
 
 export interface PluginInterop {
