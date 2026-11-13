@@ -19,7 +19,7 @@ plugin will be generated for you.
 | `init-plugin` type | Main file | Notes |
 | --- | --- | --- |
 | [`safe`](safe.md) (default) | `omegga.plugin.js` / `.ts` | The standard Node VM plugin. Runs in a VM inside a worker, so a crash does not take omegga down |
-| [`unsafe`](unsafe.md) | `omegga.main.js` | Raw access to internal Omegga APIs, and the ability to crash them |
+| [`unsafe`](unsafe.md) | `omegga.main.js` / `.ts` | Raw access to internal Omegga APIs, and the ability to crash them |
 | [`rpc`](jsonrpc.md) | `omegga_plugin` | Any language that runs from one executable, over JSON-RPC on stdin/stdout |
 | `rust` | `omegga_plugin` | An RPC plugin built on the [omegga-rs](https://github.com/voximity/omegga-rs) Rust interface |
 
@@ -88,9 +88,44 @@ Every plugin requires a `doc.json` file to document which briefly describes the 
       "example": "!pos",
       "args": []
     }
+  ],
+  "consoleCommands": [
+    {
+      "name": "greet",
+      "description": "greets a player from the console",
+      "example": "/greet cake",
+      "args": [
+        {
+          "name": "player",
+          "description": "who to greet",
+          "required": true
+        }
+      ]
+    }
   ]
 }
 ```
+
+### Console Commands
+
+`consoleCommands` lists commands for omegga's terminal, in the same shape as `commands`. Typing
+`/greet cake` in the terminal sends `consolecmd:greet` to that plugin alone, with the words after
+the name as string arguments. The plugin prints its answer with its own `console.log`:
+
+```ts
+this.omegga.on('consolecmd:greet', (player: string) => {
+  console.log('hello', player);
+});
+```
+
+Names match without regard to case (the event uses the lowercase name), and a leading `/` on a
+name is optional. They show up in `/help` under "Plugin commands" while the plugin is loaded.
+Omegga's own terminal commands always win: a plugin declaring one gets a warning when it loads.
+When two plugins declare the same command, the one loaded first keeps it and the other is warned.
+
+An unsafe plugin whose commands are only known once it runs can add more with an
+`extraConsoleCommands()` method returning the same shape. It is called once, right after `init()`.
+Safe and JSON-RPC plugins declare theirs in `doc.json`.
 
 ## Plugin Config
 
@@ -204,6 +239,39 @@ effect on the next server start; reloading the plugin alone doesn't relaunch the
 
 A wrapper runs native code next to the game, so `launch` is ignored for safe (`node_safe`)
 plugins. Invalid blocks are logged and skipped; the server still starts.
+
+## Plugin HTTP Routes
+
+A plugin can answer HTTP requests on omegga's web server: anything under
+`/api/v1/plugin/<plugin name>/` goes to the plugin's `http` method (or the `plugin:http` request
+for JSON-RPC plugins).
+
+```ts
+async http(request: PluginHttpRequest): Promise<PluginHttpResponse | undefined> {
+  if (request.method === 'GET' && request.path === '/players')
+    return { body: this.omegga.getPlayers().map(p => p.name) };
+  // nothing returned: 404
+}
+```
+
+The request has `method`, `path` (below the plugin's prefix, starting with `/`), `query`,
+`headers` (lowercase names), `body` (parsed JSON, the text of a text or form body, or
+undefined), `user` and `ip`. The answer has an optional `status` (default 200), `headers` and
+`body`: a string goes out as text, anything else as JSON.
+
+By default a request needs a web UI login, and `user` is that user (`{ id, username }`).
+A plugin reachable without one sets `http.public` in its `doc.json`, and then checks for itself
+who may do what (a shared secret in a header, say); `user` is null for anonymous requests:
+
+```json
+{
+  "http": { "public": true }
+}
+```
+
+For logged-in requests, a POST, PUT, PATCH or DELETE from another site's page is refused, so a
+page elsewhere can't act with a user's login. The `cookie` header is never passed on. A
+plugin has 10 seconds to answer (504 after that); a handler that throws answers 500.
 
 ## Plugin File
 

@@ -2,17 +2,20 @@
 import Logger from '@/logger';
 import { recordPluginError } from '@/metrics/errors';
 import OmeggaPlugin, {
-  type OmeggaLike,
+  type OmeggaUnsafe,
   type PluginConfig,
+  type PluginHttpRequest,
   type PluginMetrics,
   type PluginStore,
 } from '@/plugin';
 import type Omegga from '@omegga/server';
 import * as util from '@util';
 import disrequire from 'disrequire';
+import EventEmitter from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
-import { Plugin } from './interface';
+import { buildTypedPlugin, PLUGIN_BUILD_DIR } from './build';
+import { Plugin, toConsoleCommands } from './interface';
 
 global.OMEGGA_UTIL = util;
 
@@ -22,7 +25,7 @@ global.OMEGGA_UTIL = util;
  * forced `as any` at every use.
  */
 type PluginConstructor = new (
-  omegga: OmeggaLike,
+  omegga: OmeggaUnsafe,
   config: PluginConfig,
   store: PluginStore,
   metrics: PluginMetrics,
@@ -33,6 +36,11 @@ type PluginConstructor = new (
 // used with other loaders (rpc loader) and are too generic
 // omegga.main.js is rather unique and helps avoid collision
 const MAIN_FILE = 'omegga.main.js';
+// a TypeScript entry is bundled into .build/omegga.main.js on every load, and
+// wins over omegga.main.js, so a plugin can keep a prebuilt omegga.main.js for
+// omegga versions that predate it
+const MAIN_FILE_TS = 'omegga.main.ts';
+const TS_BUILD_FILE = 'omegga.main.js';
 
 // Documentation file (contains name, description, author, command helptext)
 const DOC_FILE = 'doc.json';
@@ -43,7 +51,8 @@ export default class NodePlugin extends Plugin {
   // may evolve this so it checks the contents of the doc file later
   static canLoad(pluginPath: string) {
     return (
-      fs.existsSync(path.join(pluginPath, MAIN_FILE)) &&
+      (fs.existsSync(path.join(pluginPath, MAIN_FILE)) ||
+        fs.existsSync(path.join(pluginPath, MAIN_FILE_TS))) &&
       fs.existsSync(path.join(pluginPath, DOC_FILE))
     );
   }
@@ -55,6 +64,8 @@ export default class NodePlugin extends Plugin {
 
   // path to the file require()d when the plugin loads
   pluginFile: string;
+  // built from omegga.main.ts before each load
+  isTypeScript: boolean;
   // the instantiated plugin class; undefined until load() and after unload()
   loadedPlugin: OmeggaPlugin | undefined;
 
@@ -63,7 +74,10 @@ export default class NodePlugin extends Plugin {
     // TODO: validate documentation
     this.documentation = Plugin.readJSON(path.join(pluginPath, DOC_FILE));
     this.pluginConfig = Plugin.readJSON(path.join(pluginPath, PLUGIN_FILE));
-    this.pluginFile = path.join(pluginPath, MAIN_FILE);
+    this.isTypeScript = fs.existsSync(path.join(pluginPath, MAIN_FILE_TS));
+    this.pluginFile = this.isTypeScript
+      ? path.join(pluginPath, PLUGIN_BUILD_DIR, TS_BUILD_FILE)
+      : path.join(pluginPath, MAIN_FILE);
 
     // list of registered comands
     this.commands = [];
@@ -97,6 +111,7 @@ export default class NodePlugin extends Plugin {
       return false;
     };
     this.commands = [];
+    this.extraConsoleCommands = [];
 
     try {
       const config = await this.storage.getConfig();
@@ -107,9 +122,23 @@ export default class NodePlugin extends Plugin {
         );
       }
 
+      if (this.isTypeScript && !(await this.build()))
+        return stopPlugin('failed to build TypeScript');
+
       // require the plugin itself
       // eslint-disable-next-line @typescript-eslint/no-require-imports -- unsafe plugins are loaded with a real runtime require
-      const Plugin = require(this.pluginFile) as PluginConstructor;
+      const exported: unknown = require(this.pluginFile);
+      // a TypeScript entry's `export default` lands on .default; a JS entry
+      // assigns the class to module.exports. Checked to be a class just
+      // below; its constructor signature can't be checked at runtime
+      const Plugin = (
+        this.isTypeScript &&
+        typeof exported === 'object' &&
+        exported !== null &&
+        'default' in exported
+          ? exported.default
+          : exported
+      ) as PluginConstructor;
 
       // node plugins must export a class with a constructor
       if (
@@ -155,6 +184,22 @@ export default class NodePlugin extends Plugin {
         }
       }
 
+      // before emitStatus, which is when the terminal checks the plugin's
+      // console commands for clashes
+      if (typeof loadedPlugin.extraConsoleCommands === 'function') {
+        try {
+          // typed, but plugin code can return anything
+          const extra: unknown = await loadedPlugin.extraConsoleCommands();
+          this.extraConsoleCommands = toConsoleCommands(extra);
+        } catch (e) {
+          Logger.errorp(
+            'error getting console commands of node plugin',
+            this.getName(),
+            e,
+          );
+        }
+      }
+
       this.emitStatus();
       return true;
     } catch (e) {
@@ -181,6 +226,7 @@ export default class NodePlugin extends Plugin {
       // unload the plugin
       this.disrequireAll();
       this.loadedPlugin = undefined;
+      this.extraConsoleCommands = [];
       this.dropMetrics();
       this.emitStatus();
       this.commands = [];
@@ -193,7 +239,46 @@ export default class NodePlugin extends Plugin {
     }
   }
 
+  /**
+   * Bundle omegga.main.ts into .build/. False when the bundle has errors:
+   * unlike a safe plugin, an unsafe one runs in omegga's process, so a
+   * half-built bundle is not worth starting.
+   */
+  async build() {
+    const output = await buildTypedPlugin(
+      this.getName(),
+      this.path,
+      MAIN_FILE_TS,
+      TS_BUILD_FILE,
+      { absoluteSourcePaths: true },
+    );
+    if (output === undefined) return false;
+    // stack traces from the bundle point at the plugin's .ts files. This is
+    // process wide, and only turned on once a TypeScript plugin needs it,
+    // since it makes every Error.stack in omegga a little slower
+    process.setSourceMapsEnabled(true);
+    return true;
+  }
+
   // forward plugin events to the loaded plugin instance
+  async http(request: PluginHttpRequest) {
+    if (typeof this.loadedPlugin?.http !== 'function') return undefined;
+    return (await this.loadedPlugin.http(request)) ?? undefined;
+  }
+
+  // Unsafe plugins listen on omegga's own emitter, so the event goes out there.
+  // EventEmitter's emit skips omegga's `*` relay, which keeps it from reaching
+  // safe and JSON-RPC plugins; another unsafe plugin listening for the same
+  // command name would still hear it
+  async emitConsoleCommand(name: string, args: string[]) {
+    if (!this.loadedPlugin) return;
+    EventEmitter.prototype.emit.call(
+      this.server,
+      'consolecmd:' + name,
+      ...args,
+    );
+  }
+
   async emitPlugin(ev: string, from: string, args: unknown[]) {
     if (typeof this.loadedPlugin?.pluginEvent === 'function') {
       return await this.loadedPlugin.pluginEvent(ev, from, ...args);
@@ -202,9 +287,18 @@ export default class NodePlugin extends Plugin {
 
   // disrequire all that match plugin path in require.cache
   disrequireAll() {
-    // get all files in plugin directory from require cache
+    // node caches modules under their real path, so a plugin folder that is a
+    // symlink (a checkout linked into plugins/) is matched by its target too;
+    // otherwise a reload keeps running the old code
+    const roots = [this.path];
+    try {
+      const real = fs.realpathSync(this.path);
+      if (real !== this.path) roots.push(real);
+    } catch {
+      // a deleted plugin folder: only its old path can be in the cache
+    }
     const requiredFiles = Object.keys(require.cache).filter(requiredFile =>
-      requiredFile.includes(this.path),
+      roots.some(root => requiredFile.includes(root)),
     );
     // disrequire all the files
     requiredFiles.forEach(file => {

@@ -31,6 +31,7 @@ export type { ConsoleCommands } from '@omegga/commands';
 export { OmeggaPlugin };
 
 export type OL = OmeggaLike;
+export type OU = OmeggaUnsafe;
 export type OP = OmeggaPlugin;
 export type PC<T extends Record<string, unknown> = Record<string, unknown>> =
   PluginConfig<T>;
@@ -583,6 +584,52 @@ export interface OmeggaLike
    * an "unsafe" plugin
    */
   getPlugin(name: string): Promise<PluginInterop | null>;
+}
+
+/** A loaded plugin, as other unsafe plugins see it through the plugin loader. */
+export interface OmeggaPluginHandle {
+  /** the plugin's folder */
+  path: string;
+  getName(): string;
+  /**
+   * How the plugin runs: `node_safe` (sandboxed), `node_unsafe`, or
+   * `jsonrpc_stdio`
+   */
+  getFormat(): string;
+  isEnabled(): boolean;
+  isLoaded(): boolean;
+}
+
+/**
+ * The omegga an unsafe plugin receives: the running server object, which is
+ * everything an `OmeggaLike` is plus the process-level parts below. The object
+ * has more (the webserver, the metrics server, omegga's config), left untyped
+ * here because their types would pull omegga's own dependencies into every
+ * plugin's omegga.d.ts.
+ */
+export interface OmeggaUnsafe extends OmeggaLike {
+  /** omegga's data folder (`data/` in the omegga folder) */
+  dataPath: string;
+  /** whether omegga detected that the game crashed */
+  crashDetected: boolean;
+  /** the game server's process id, while it runs */
+  readonly gamePid: number | null;
+  /** write raw text to the game server's console */
+  write(str: string): void;
+  /** the game server executable, once it is installed */
+  getGameBinaryPath(): string | null;
+  getGameBinaryDir(): string | null;
+  /** the world the server loads on its next start */
+  getActiveWorld(): string | null;
+  setActiveWorld(world: string | null): boolean;
+  worldExists(file: string): boolean;
+  /**
+   * Reload the world (the configured next world, or else the current map), or
+   * start the server when it is not running
+   */
+  restartServer(): Promise<void>;
+  /** unset while omegga runs without plugins */
+  pluginLoader?: { plugins: readonly OmeggaPluginHandle[] };
 }
 
 export interface OmeggaCore {
@@ -1211,6 +1258,26 @@ export default abstract class OmeggaPlugin<
     from: string,
     ...args: unknown[]
   ): Promise<unknown>;
+
+  /**
+   * Answer a request to this plugin's HTTP routes (`/api/v1/plugin/<name>/...`).
+   * Requests need a web UI login unless doc.json sets `http.public`. Returning
+   * nothing answers 404.
+   */
+  abstract http?(
+    request: PluginHttpRequest,
+  ): Promise<PluginHttpResponse | undefined | void>;
+
+  /**
+   * Console commands to offer on top of doc.json's `consoleCommands`, for
+   * plugins whose commands are not known until they run. Read once, right
+   * after `init()`; commands added later are not picked up until a reload.
+   * Only unsafe (node_unsafe) plugins are asked: safe and JSON-RPC plugins
+   * declare theirs in doc.json.
+   */
+  abstract extraConsoleCommands?():
+    | IPluginCommand[]
+    | Promise<IPluginCommand[]>;
 }
 
 export interface LogWrangling {
@@ -1364,11 +1431,62 @@ export interface IPluginDocumentation {
   config: Record<string, IPluginConfigDefinition>;
   commands: IPluginCommand[];
   /**
+   * Commands typed into omegga's terminal as `/name args...`, delivered to
+   * this plugin alone as `consolecmd:<name>` with the args as strings. Names
+   * match case-insensitively and the event uses the lowercase name. Omegga's
+   * own terminal commands always win, and of two plugins with the same
+   * command, the one loaded first keeps it.
+   */
+  consoleCommands?: IPluginCommand[];
+  /**
    * Changes to how the game server is launched. Applied when the server
    * starts (a plugin reload alone doesn't relaunch the game), and ignored for
    * sandboxed (node_safe) plugins.
    */
   launch?: IPluginLaunch;
+  /** How the plugin's HTTP routes (`/api/v1/plugin/<name>/...`) are reached. */
+  http?: IPluginHttp;
+}
+
+export interface IPluginHttp {
+  /**
+   * Let requests through without a web UI login. The plugin then decides on
+   * its own who may do what (a shared secret for webhooks, say); `user` on the
+   * request still says who is logged in, if anyone.
+   */
+  public?: boolean;
+}
+
+/**
+ * A request to one of a plugin's HTTP routes: `<method> /api/v1/plugin/<plugin
+ * name>/<path>` on omegga's web server.
+ */
+export interface PluginHttpRequest {
+  method: string;
+  /** the path below the plugin's prefix, starting with `/` */
+  path: string;
+  query: Record<string, string | string[]>;
+  /** header names in lowercase; repeated headers joined with `, ` */
+  headers: Record<string, string>;
+  /**
+   * The parsed JSON for a JSON body, the text for a text or form body,
+   * undefined for none.
+   */
+  body: unknown;
+  /** the web UI user behind the request, null when nobody is logged in */
+  user: { id: string; username: string } | null;
+  ip: string;
+}
+
+/**
+ * A plugin's answer. A string body goes out as text (unless a content-type
+ * header says otherwise), anything else as JSON.
+ */
+export interface PluginHttpResponse {
+  /** defaults to 200 */
+  status?: number;
+  headers?: Record<string, string>;
+  body?: unknown;
 }
 
 export interface IPluginLaunch {
@@ -1387,7 +1505,7 @@ export interface PluginInterop {
   name: string;
   documentation: IPluginDocumentation | null;
   loaded: boolean;
-  emitPlugin?(event: string, args: unknown[]): Promise<unknown>;
+  emitPlugin?(event: string, ...args: unknown[]): Promise<unknown>;
 }
 
 export type WeaponClass =

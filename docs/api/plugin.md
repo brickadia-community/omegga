@@ -48,6 +48,28 @@ Run when another plugin tries to interact with this plugin
 
 **Returns** value other plugin expects
 
+### `http`
+
+```ts
+http?(request: PluginHttpRequest): Promise<PluginHttpResponse | undefined | void>
+```
+
+Answer a request to this plugin's HTTP routes (`/api/v1/plugin/<name>/...`).
+Requests need a web UI login unless doc.json sets `http.public`. Returning
+nothing answers 404.
+
+### `extraConsoleCommands`
+
+```ts
+extraConsoleCommands?(): IPluginCommand[] | Promise<IPluginCommand[]>
+```
+
+Console commands to offer on top of doc.json's `consoleCommands`, for
+plugins whose commands are not known until they run. Read once, right
+after `init()`; commands added later are not picked up until a reload.
+Only unsafe (node_unsafe) plugins are asked: safe and JSON-RPC plugins
+declare theirs in doc.json.
+
 <sub>Declared in [`src/plugin.ts`](https://github.com/brickadia-community/omegga/blob/master/src/plugin.ts).</sub>
 
 ## `PluginStore`
@@ -278,7 +300,7 @@ type PluginMetricLabels = Record<string, string | number | boolean>
 ### `emitPlugin`
 
 ```ts
-emitPlugin?(event: string, args: unknown[]): Promise<unknown>
+emitPlugin?(event: string, ...args: unknown[]): Promise<unknown>
 ```
 
 <sub>Declared in [`src/plugin.ts`](https://github.com/brickadia-community/omegga/blob/master/src/plugin.ts).</sub>

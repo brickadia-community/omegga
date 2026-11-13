@@ -281,7 +281,9 @@ type IPluginConfigDefinition = {
 | `author` | `string` |  |
 | `config` | `Record<string, IPluginConfigDefinition>` |  |
 | `commands` | `IPluginCommand[]` |  |
+| `consoleCommands?` | `IPluginCommand[]` | Commands typed into omegga's terminal as `/name args...`, delivered to this plugin alone as `consolecmd:<name>` with the args as strings. Names match case-insensitively and the event uses the lowercase name. Omegga's own terminal commands always win, and of two plugins with the same command, the one loaded first keeps it. |
 | `launch?` | `IPluginLaunch` | Changes to how the game server is launched. Applied when the server starts (a plugin reload alone doesn't relaunch the game), and ignored for sandboxed (node_safe) plugins. |
+| `http?` | `IPluginHttp` | How the plugin's HTTP routes (`/api/v1/plugin/<name>/...`) are reached. |
 
 <sub>Declared in [`src/plugin.ts`](https://github.com/brickadia-community/omegga/blob/master/src/plugin.ts).</sub>
 

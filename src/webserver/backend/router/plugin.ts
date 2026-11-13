@@ -1,6 +1,5 @@
 import { z } from 'zod/v4';
 import _ from 'lodash';
-import { Plugin } from '@omegga/plugin/interface';
 import { router, protectedProcedure, getContextDeps } from '../trpc';
 import { ScopeName } from '../scopes';
 import { serverEvents } from '../events';
@@ -39,7 +38,7 @@ export const pluginRouter = router({
 
         return {
           name: plugin.getName(),
-          format: (plugin.constructor as typeof Plugin).getFormat(),
+          format: plugin.getFormat(),
           info: plugin.getInfo(),
           documentation: plugin.getDocumentation(),
           config,

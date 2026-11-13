@@ -16,7 +16,6 @@ import OmeggaPlugin, {
 import Player from '@omegga/player';
 import Omegga from '@omegga/server';
 import OmeggaUtil from '@util';
-import { mkdir } from '@util/file';
 import 'colors';
 import { cloneDeep } from 'lodash';
 import EventEmitter from 'node:events';
@@ -24,13 +23,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parentPort } from 'node:worker_threads';
 import { NodeVM } from 'vm2';
-import webpack, { ExternalItemFunctionData, Stats } from 'webpack';
+import { buildTypedPlugin, PLUGIN_BUILD_DIR } from '../build';
 import { injectOmeggaPrototypes, ProxyOmegga } from './proxyOmegga';
 Logger.VERBOSE = process.env.VERBOSE === 'true';
 
 const MAIN_FILE = 'omegga.plugin.js';
 const MAIN_FILE_TS = 'omegga.plugin.ts';
-const TS_BUILD_DIR = '.build';
 const TS_BUILD_FILE = 'plugin.js';
 let vm: NodeVM | undefined,
   PluginClass:
@@ -165,170 +163,20 @@ async function createVm(
   let pluginCode: string | undefined;
 
   if (isTypeScript) {
-    const tsBuildPath = path.join(pluginPath, TS_BUILD_DIR);
-    const sourceFileName = path.join(pluginPath, MAIN_FILE_TS);
-    const outputPath = path.join(tsBuildPath, TS_BUILD_FILE);
+    const output = await buildTypedPlugin(
+      pluginName,
+      pluginPath,
+      MAIN_FILE_TS,
+      TS_BUILD_FILE,
+      { allowErrors: true },
+    );
+    if (output === undefined)
+      return [false, 'failed compiling building typescript'];
     try {
-      mkdir(tsBuildPath);
-      mkdir(path.join(tsBuildPath, '.cache'));
-
-      const stats = await new Promise<Stats>((resolve, reject) => {
-        webpack(
-          Object.freeze({
-            target: 'node',
-            context: __dirname,
-            mode: fs.existsSync(path.resolve(pluginPath, '.development'))
-              ? 'development'
-              : 'production',
-            entry: sourceFileName,
-            devtool: 'source-map',
-            output: {
-              iife: false,
-              library: {
-                type: 'commonjs',
-              },
-              path: tsBuildPath,
-              filename: TS_BUILD_FILE,
-            },
-            externals: [
-              function (
-                { request }: ExternalItemFunctionData,
-                callback: (err?: Error | null, result?: string) => void,
-              ) {
-                // native addons: resolve the .node binary relative to the plugin
-                if (request.match(/\.node$/)) {
-                  return callback(
-                    null,
-                    'commonjs ' + path.resolve(pluginPath, request),
-                  );
-                }
-                // bundle the plugin's own sources: relative/absolute imports and
-                // the `src` alias all stay in the bundle
-                if (
-                  request.startsWith('.') ||
-                  request === 'src' ||
-                  request.startsWith('src/') ||
-                  path.isAbsolute(request)
-                ) {
-                  return callback();
-                }
-                // everything else is a bare specifier (a node builtin or a
-                // node_modules package). Leave it as a runtime require instead
-                // of bundling it, so native/wasm dependencies (dockerode, ssh2,
-                // grpc, ...) load via real node. The NodeVM permits these via
-                // `external: true` and the plugin's access list.
-                callback(null, 'commonjs ' + request);
-              },
-            ],
-            resolve: {
-              extensions: ['.ts', '.js', '.json', '.node'],
-              alias: {
-                // src is the only hard coded path
-                src: path.resolve(pluginPath, 'src'),
-              },
-            },
-            cache: {
-              type: 'filesystem' as const,
-              cacheLocation: path.join(tsBuildPath, '.cache'),
-              allowCollectingMemory: false,
-              idleTimeout: 0,
-              idleTimeoutForInitialStore: 0,
-              // cache age is one week. plugins probably do not need
-              // to be rebuilt every day
-              maxAge: 1000 * 60 * 60 * 24 * 7,
-              profile: true,
-            },
-            module: {
-              rules: [
-                {
-                  test: /\.[jt]s$/,
-                  exclude: /(node_modules)/,
-                  use: {
-                    loader: 'swc-loader',
-                    options: {
-                      sourceMaps: true,
-                      cwd: pluginPath,
-                      isModule: true,
-                      jsc: {
-                        target: 'es2020',
-                        parser: {
-                          syntax: 'typescript',
-                        },
-                        transform: {},
-                      },
-
-                      module: {
-                        type: 'commonjs',
-                        strictMode: false,
-                      },
-                    },
-                  },
-                },
-              ],
-            },
-          }),
-          (err, stats) =>
-            err || !stats
-              ? reject(err ?? new Error('webpack produced no stats'))
-              : resolve(stats),
-        );
-      });
-
-      if (stats.hasErrors()) {
-        for (const err of stats.toJson().errors ?? []) {
-          Logger.errorp(err.moduleName, err.file);
-          Logger.errorp(err.message);
-        }
-      }
-
-      if (stats.hasWarnings()) {
-        for (const warning of stats.toJson().warnings ?? []) {
-          Logger.warnp(warning.moduleName, warning.file);
-          Logger.warnp(warning.message);
-        }
-      }
-
-      pluginCode = fs.readFileSync(outputPath).toString();
+      pluginCode = fs.readFileSync(output).toString();
     } catch (err) {
       Logger.errorp(pluginName.brightRed, err);
       return [false, 'failed compiling building typescript'];
-    }
-
-    // update omegga.d.ts to latest on plugin compile
-    try {
-      const gitIgnore = path.join(pluginPath, '.gitignore');
-      const omeggaTypesDst = path.join(pluginPath, 'omegga.d.ts');
-      const omeggaTypesSrc = path.join(
-        __dirname,
-        '../../../../templates/safe-ts/omegga.d.ts',
-      );
-
-      // plugin has gitignore with "omegga.d.ts" in it and omegga has omegga.d.ts
-      if (fs.existsSync(gitIgnore) && fs.existsSync(omeggaTypesSrc)) {
-        // and the gitignore covers the omegga.d.ts
-        const hasOmeggaTypesIgnored = fs
-          .readFileSync(gitIgnore)
-          .toString()
-          .match(/(\.\/)?omegga\.d\.ts/);
-
-        // compare last modified times to avoid unnecessary copies
-        const srcLastModified = fs.statSync(omeggaTypesSrc).mtime.getTime();
-        const dstLastModified = fs.existsSync(omeggaTypesDst)
-          ? fs.statSync(omeggaTypesDst).mtime.getTime()
-          : null;
-        if (
-          hasOmeggaTypesIgnored &&
-          (!dstLastModified || srcLastModified > dstLastModified)
-        ) {
-          fs.copyFileSync(omeggaTypesSrc, omeggaTypesDst);
-        }
-      }
-    } catch (err) {
-      Logger.errorp(
-        pluginName.brightRed,
-        'error copying latest omegga.d.ts to typescript plugin',
-        err,
-      );
     }
   }
   if (vm !== undefined) return [false, 'vm is already created'];
@@ -394,7 +242,7 @@ async function createVm(
 
   const file = path.join(
     pluginPath,
-    isTypeScript ? path.join(TS_BUILD_DIR, TS_BUILD_FILE) : MAIN_FILE,
+    isTypeScript ? path.join(PLUGIN_BUILD_DIR, TS_BUILD_FILE) : MAIN_FILE,
   );
   if (!isTypeScript) {
     try {
@@ -533,6 +381,17 @@ parent.on('stop', async resp => {
   } catch (err) {
     emit('error', 'error stopping plugin', errStr(err));
     emit(resp, false);
+  }
+});
+
+// HTTP requests to the plugin's routes; null tells the host there's no answer
+parent.on('http', async (resp, request) => {
+  if (typeof pluginInstance?.http !== 'function') return emit(resp, null);
+  try {
+    emit(resp, (await pluginInstance.http(request)) ?? null);
+  } catch (err) {
+    emit('error', 'error in http handler', errStr(err));
+    emit(resp, { status: 500, body: 'plugin error' });
   }
 });
 

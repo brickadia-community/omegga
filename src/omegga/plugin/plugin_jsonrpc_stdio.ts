@@ -2,7 +2,11 @@ import Logger from '@/logger';
 import { recordPluginError } from '@/metrics/errors';
 import { type EnvironmentPreset } from '@brickadia/presets';
 import Omegga from '@omegga/server';
-import { type OmeggaPlayer, type WeaponClass } from '@/plugin';
+import {
+  type OmeggaPlayer,
+  type PluginHttpRequest,
+  type WeaponClass,
+} from '@/plugin';
 import { type WriteSaveObject } from 'brs-js';
 import {
   JSONRPCClient,
@@ -13,6 +17,7 @@ import { type ChildProcessWithoutNullStreams, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import readline from 'readline';
+import { asHttpResponse } from './http';
 import { Plugin } from './interface';
 import { bootstrap } from './plugin_node_safe/proxyOmegga';
 
@@ -375,6 +380,12 @@ export default class RpcPlugin extends Plugin {
     await promise;
     this.#child = undefined;
     this.emitStatus();
+  }
+
+  // sent like any other event: a notification named for the event, with the
+  // args as its array param
+  async emitConsoleCommand(name: string, args: string[]) {
+    this.eventPassthrough('consolecmd:' + name, ...args);
   }
 
   eventPassthrough(type: string, ...args: unknown[]) {
@@ -850,6 +861,16 @@ export default class RpcPlugin extends Plugin {
     );
 
     return rpc;
+  }
+
+  // RPC plugins answer `plugin:http` requests; one that doesn't know the
+  // method errors, which is the same as having no routes
+  async http(request: PluginHttpRequest) {
+    try {
+      return asHttpResponse(await this.emit('plugin:http', request));
+    } catch {
+      return undefined;
+    }
   }
 
   // emit a custom plugin event

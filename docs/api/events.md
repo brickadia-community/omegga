@@ -27,6 +27,7 @@ code in reaction.
 | `cmd:command` | `name`, `...args` | Same, with the command built into the event name |
 | `chatcmd` | `command`, `name`, `...args` | Same as `cmd`, for `!command` |
 | `chatcmd:command` | `name`, `...args` | Same as `cmd:command`, for `!command` |
+| `consolecmd:command` | `...args` | Omegga's terminal ran `/command args`, for a command in the plugin's `consoleCommands`. Sent to the declaring plugin only. See [Console Commands](../plugins/README.md#console-commands) |
 | `interact` | [`BrickInteraction`](types.md#brickinteraction) | A player clicked a brick with an interact component |
 | `event:NAME` | `player`, `...args` | An interact component's message was `event:NAME:arg1,arg2`. Escape a literal comma as `\,` |
 | `wirelog` | `raw` | A `[Wire Graph]` log line, without the prefix |

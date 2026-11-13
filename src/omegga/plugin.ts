@@ -242,7 +242,7 @@ export class PluginLoader {
           if (p.isEnabled()) {
             Logger.verbose(
               'Loading plugin',
-              (p.constructor as typeof Plugin).getFormat(),
+              p.getFormat(),
               p.getName().underline,
             );
             ok = (await p.load()) || ok;
@@ -470,7 +470,7 @@ export class PluginLoader {
         .map(p => ({
           name: p.getName(),
           dir: p.path,
-          format: (p.constructor as typeof Plugin).getFormat(),
+          format: p.getFormat(),
           launch: p.getDocumentation()?.launch,
         })),
       this.dataPath,

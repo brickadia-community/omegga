@@ -2,6 +2,20 @@
 
 ## Latest
 
+## 1.23.0 - 2026-11-11
+
+Unsafe plugins can be written in TypeScript
+
+- Unsafe plugins can use an `omegga.main.ts` entry, built on load. See [TypeScript](docs/plugins/unsafe.md#typescript)
+- `omegga init-plugin` offers TypeScript for unsafe plugins
+- Add the `OU` (`OmeggaUnsafe`) type for the omegga an unsafe plugin receives
+- Log "Launching Brickadia Server" right before the game starts, and on every restart
+- Fix "Server Not Responding..." when two status commands overlap
+- Fix the `PluginInterop.emitPlugin` type: arguments are passed one by one, not as an array
+- Plugins can answer HTTP requests under `/api/v1/plugin/<name>/` with an `http` method. See [Plugin HTTP Routes](docs/plugins/README.md#plugin-http-routes)
+- Plugins can add terminal commands with `consoleCommands` in `doc.json`, handled as `consolecmd:<name>` events and listed in `/help`. See [Console Commands](docs/plugins/README.md#console-commands)
+- Fix reloading an unsafe plugin whose folder is a symlink
+
 ## 1.22.0 - 2026-11-10
 
 Plugins can change how the game launches

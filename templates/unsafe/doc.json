@@ -1,6 +1,6 @@
 {
   "name": "{{name}}",
-  "description": "A safe Omegga plugin.",
+  "description": "An unsafe Omegga plugin.",
   "author": "{{author}}",
   "config": {},
   "commands": []

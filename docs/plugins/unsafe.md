@@ -20,7 +20,8 @@ In a `plugins` directory create the following folder structure:
 
 - `plugins/myPlugin` - plugin folder (required)
 - `plugins/myPlugin/doc.json`
-- `plugins/myPlugin/omegga.main.js` - js plugin main file (required)
+- `plugins/myPlugin/omegga.main.js` - js plugin main file (required, unless `omegga.main.ts` is there)
+- `plugins/myPlugin/omegga.main.ts` - TypeScript plugin main file, see [TypeScript](#typescript)
 
 ## `omegga.main.js` (example)
 
@@ -59,6 +60,71 @@ class PluginName {
 }
 
 module.exports = PluginName;
+```
+
+## TypeScript
+
+Since omegga 1.23.0, an unsafe plugin can be written in TypeScript with no build
+step of its own: put an `omegga.main.ts` next to `doc.json`, and `export default`
+the plugin class. `omegga init-plugin` sets one up when you pick `unsafe` and
+answer yes to TypeScript.
+
+Every time the plugin loads (including a reload), omegga bundles
+`omegga.main.ts` and everything it imports from the plugin into
+`.build/omegga.main.js`, the same way it builds a typed
+[safe plugin](safe.md#omeggaplugints-example), and `require`s that.
+
+- The build strips types without checking them. Check them yourself with
+  `npx tsc --noEmit`.
+- A build error stops the plugin from starting, and the errors are logged.
+- Rebuilds are cached in `.build/.cache`, so a reload with no changes is quick.
+- Your own files (relative imports, and `src/...` for the plugin's `src`
+  folder) are bundled. Packages from `node_modules` and Node builtins are
+  `require`d at runtime as usual.
+- `__dirname` is the plugin's `.build` folder, so the plugin folder is
+  `path.resolve(__dirname, '..')`.
+- Stack traces point at the `.ts` files.
+- When the plugin's `.gitignore` lists `omegga.d.ts`, omegga keeps that file up to
+  date with its own types on every build.
+
+If a plugin has both files, `omegga.main.ts` wins. A plugin that must also run
+on older omegga versions can keep a prebuilt `omegga.main.js` (for example
+from `tsc` in `setup.sh`), which those versions load instead.
+
+The plugin is constructed with omegga's server object itself, typed `OU`
+(`OmeggaUnsafe`): everything a safe plugin's `OL` has, plus process-level
+parts like `dataPath`, `write()`, `getGameBinaryPath()` and `pluginLoader`.
+
+Put `.build/`, `node_modules/` and `omegga.d.ts` in your `.gitignore`, and use
+the `tsconfig.json` from the [safe plugin example](safe.md#omeggaplugints-example).
+
+`omegga.main.ts`:
+
+```ts
+import OmeggaPlugin, { OU, PC, PM, PS } from 'omegga';
+
+type Config = { foo: string };
+type Storage = { bar: string };
+
+export default class Plugin implements OmeggaPlugin<Config, Storage> {
+  constructor(
+    public omegga: OU,
+    public config: PC<Config>,
+    public store: PS<Storage>,
+    public metrics: PM,
+  ) {}
+
+  async init() {
+    this.omegga.on('cmd:test', (speaker: string) => {
+      this.omegga.broadcast(`Hello, ${speaker}!`);
+    });
+    return { registeredCommands: ['test'] };
+  }
+
+  async stop() {
+    this.omegga.removeAllListeners('cmd:test');
+  }
+}
 ```
 
 ## See also

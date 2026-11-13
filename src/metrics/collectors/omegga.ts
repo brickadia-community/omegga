@@ -117,9 +117,7 @@ export function registerOmeggaMetrics(
       plugins().map(p => ({
         labels: {
           plugin: p.getName(),
-          format: (
-            p.constructor as unknown as { getFormat(): string }
-          ).getFormat(),
+          format: p.getFormat(),
         },
         value: 1,
       })),

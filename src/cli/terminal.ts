@@ -1,7 +1,8 @@
 import Logger from '@/logger';
-import { type OmeggaPlayer } from '@/plugin';
+import { type IPluginCommand, type OmeggaPlayer } from '@/plugin';
 import { steamcmdCheckUpdate, steamcmdDownloadGame } from '@/updater';
 import { readBinaryVersion } from '@omegga/matchers/version';
+import { type Plugin } from '@omegga/plugin/interface';
 import Omegga from '@omegga/server';
 import { type IOmeggaOptions } from '@omegga/types';
 import { sanitize } from '@util/chat';
@@ -99,6 +100,18 @@ const USER_COMMANDS = [
   },
 ];
 
+type PluginConsoleCommand = { plugin: Plugin; command: IPluginCommand };
+
+const isBuiltinCommand = (name: string) =>
+  COMMANDS.some(c => c.aliases.includes(name.toLowerCase()));
+
+// `/name <required> [optional]`
+const consoleCommandUsage = ({ name, args }: IPluginCommand) =>
+  [
+    '/' + name,
+    ...args.map(a => (a.required ? `<${a.name}>` : `[${a.name}]`)),
+  ].join(' ');
+
 const COMMANDS: TerminalCommand[] = [
   // Brickadia commands
   gameCommand(
@@ -172,6 +185,33 @@ const COMMANDS: TerminalCommand[] = [
         if (command.descLines)
           for (const descLine of command.descLines())
             this.log('    ', ' '.repeat(maxLen + 1), descLine);
+      }
+
+      const pluginCommands = [...this.pluginConsoleCommands().values()].sort(
+        (a, b) => a.command.name.localeCompare(b.command.name),
+      );
+      if (pluginCommands.length === 0) return;
+      const maxPluginLen = Math.max(
+        ...pluginCommands.map(c => c.command.name.length),
+      );
+      log();
+      log('-- Plugin commands');
+      for (const { plugin, command } of pluginCommands) {
+        const pad = ' '.repeat(maxPluginLen + 1);
+        this.log(
+          '  ',
+          ('/' + command.name).yellow.underline,
+          '-'.padStart(maxPluginLen - command.name.length + 1),
+          command.description,
+          `(${plugin.getName()})`.grey,
+        );
+        if (command.args.length > 0) {
+          this.log('    ', pad, consoleCommandUsage(command).yellow);
+          for (const arg of command.args)
+            this.log('    ', pad, '  ' + arg.name.yellow, '-', arg.description);
+        }
+        if (command.example)
+          this.log('    ', pad, 'example:', command.example.yellow);
       }
     },
   },
@@ -1028,6 +1068,9 @@ export default class Terminal {
   // using it after that throws ERR_USE_AFTER_CLOSE
   #rlClosed = false;
   #shuttingDown = false;
+  // the load (by Plugin.loadOrder) each plugin's console commands were last
+  // checked for, so repeated status events do not repeat the warnings
+  #clashChecked = new WeakMap<Plugin, number>();
   constructor(omegga: Omegga, options: IOmeggaOptions = {}) {
     this.options = options;
     this.omegga = omegga;
@@ -1210,6 +1253,12 @@ export default class Terminal {
     omegga.on('server:stopped', () =>
       log('Server has closed. Type', '/stop'.yellow, 'to close omegga'),
     );
+    omegga.on('plugin:status', (shortPath: string) => {
+      const plugin = this.omegga.pluginLoader?.plugins.find(
+        p => p.shortPath === shortPath,
+      );
+      if (plugin) this.warnConsoleCommandClashes(plugin);
+    });
 
     this.rl.on('line', this.handleLine.bind(this));
     this.rl.on('close', () => (this.#rlClosed = true));
@@ -1241,6 +1290,62 @@ export default class Terminal {
     process.exit();
   }
 
+  /**
+   * The console commands of loaded plugins by lowercase name, each with the
+   * one plugin that gets it. Built from the loaded plugins on every call, so
+   * an unloaded plugin's commands are gone at once and a command it shadowed
+   * falls to the next plugin that declares it.
+   */
+  pluginConsoleCommands(): Map<string, PluginConsoleCommand> {
+    const owners = new Map<string, PluginConsoleCommand>();
+    const loaded = (this.omegga.pluginLoader?.plugins ?? [])
+      .filter(p => p.isLoaded())
+      .sort((a, b) => (a.loadOrder ?? Infinity) - (b.loadOrder ?? Infinity));
+    for (const plugin of loaded) {
+      for (const command of plugin.getConsoleCommands()) {
+        const key = command.name.toLowerCase();
+        if (isBuiltinCommand(key) || owners.has(key)) continue;
+        owners.set(key, { plugin, command });
+      }
+    }
+    return owners;
+  }
+
+  /**
+   * Warn about console commands a newly loaded plugin cannot have: those
+   * named like an omegga command, and those a plugin loaded earlier
+   * already provides.
+   */
+  warnConsoleCommandClashes(plugin: Plugin) {
+    const order = plugin.loadOrder;
+    if (order === undefined || this.#clashChecked.get(plugin) === order) return;
+    this.#clashChecked.set(plugin, order);
+
+    const owners = this.pluginConsoleCommands();
+    const name = plugin.getName();
+    for (const { name: cmd } of plugin.getConsoleCommands()) {
+      if (isBuiltinCommand(cmd)) {
+        warn(
+          name.cyan,
+          'console command',
+          ('/' + cmd).yellow,
+          'is an omegga command and is ignored',
+        );
+        continue;
+      }
+      const owner = owners.get(cmd.toLowerCase())?.plugin;
+      if (owner && owner !== plugin)
+        warn(
+          name.cyan,
+          'console command',
+          ('/' + cmd).yellow,
+          'is ignored while',
+          owner.getName().cyan,
+          'provides it',
+        );
+    }
+  }
+
   async handleLine(line: string) {
     // file only: readline echoed it already, and output with no sign of the
     // input that caused it is hard to read
@@ -1249,7 +1354,19 @@ export default class Terminal {
     if (line.startsWith('/')) {
       const [cmd, ...args] = line.slice(1).split(' ');
       const c = COMMANDS.find(c => c.aliases.includes(cmd));
-      if (!c) {
+      const pluginCommand = c
+        ? undefined
+        : this.pluginConsoleCommands().get(cmd.toLowerCase());
+      if (pluginCommand) {
+        try {
+          await pluginCommand.plugin.emitConsoleCommand(
+            pluginCommand.command.name.toLowerCase(),
+            args,
+          );
+        } catch (e) {
+          err('unhandled error in plugin console command', e);
+        }
+      } else if (!c) {
         err(
           `unrecognized command /${cmd.underline}. Type /help for more info`
             .red,

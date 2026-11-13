@@ -150,6 +150,8 @@ function typeText(node, source) {
       .replace(/\s*\n\s*/g, ' ')
       .replace(/\s{2,}/g, ' ')
       .trim()
+      // prettier opens a union that wraps onto its own lines with a `|`
+      .replace(/^\|\s*/, '')
   );
 }
 

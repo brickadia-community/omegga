@@ -5,7 +5,7 @@ import {
   recordUnhandledRejection,
 } from '@/metrics/errors';
 import {
-  type OmeggaLike,
+  type OmeggaUnsafe,
   type OmeggaPlayer,
   type PluginInterop,
 } from '@/plugin';
@@ -230,7 +230,7 @@ function writeTempPrefab(
 
 // TODO: safe broadcast parsing
 
-export default class Omegga extends OmeggaWrapper implements OmeggaLike {
+export default class Omegga extends OmeggaWrapper implements OmeggaUnsafe {
   /** The save counter prevents omegga from saving over the same file */
   _tempCounter = { save: 0, environment: 0 };
   /** The save prefix is prepended to all temporary saves */
@@ -643,7 +643,13 @@ export default class Omegga extends OmeggaWrapper implements OmeggaLike {
       await this.pluginLoader.reload();
     }
 
-    Logger.verbose('Starting Brickadia');
+    // logged here rather than before plugins load: a plugin's init can change
+    // how the game launches, and its output belongs before this line
+    Logger.logp(
+      `Launching Brickadia Server${
+        binVersion != null ? ' ' + ('CL' + binVersion).green : ''
+      } on port ${('' + (this.config.server.port || 7777)).green}...`,
+    );
     super.start(this.pluginLoader?.getLaunchOptions());
     this.emit('server:starting');
   }

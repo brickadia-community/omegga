@@ -75,7 +75,9 @@ module.exports = PluginName;
 
 ## `omegga.plugin.ts` (example)
 
-Be sure to put `.build/` and `node_modules/` in your `.gitignore`
+Be sure to put `.build/`, `node_modules/` and `omegga.d.ts` in your `.gitignore`.
+Omegga keeps that `omegga.d.ts` up to date with its own types each time it
+builds the plugin (`omegga init-plugin` puts the first copy there).
 
 **Requires a `tsconfig.json`**:
 
@@ -83,13 +85,16 @@ Be sure to put `.build/` and `node_modules/` in your `.gitignore`
 {
   "compilerOptions": {
     "noEmit": true,
-    "esModuleInterop": true,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
     "target": "es2020",
-    "baseUrl": ".",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
     "paths": {
-      "omegga/*": ["node_modules/omegga/dist/*"]
+      "omegga": ["./omegga.d.ts"],
+      "src/*": ["./src/*"]
     }
   }
 }
@@ -98,7 +103,7 @@ Be sure to put `.build/` and `node_modules/` in your `.gitignore`
 `omegga.plugin.ts`:
 
 ```ts
-import type { OmeggaPlugin, OL, PS, PC } from 'omegga/plugin';
+import OmeggaPlugin, { OL, PC, PS } from 'omegga';
 
 type Config = { foo: string };
 type Storage = { bar: string };

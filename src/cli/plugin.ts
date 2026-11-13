@@ -48,7 +48,7 @@ interface ITransformer {
   fn(match: Record<string, string>): IPlugin;
 }
 
-const PLUGIN_TYPES = ['safe', 'safe-ts', 'unsafe', 'rust', 'rpc'];
+const PLUGIN_TYPES = ['safe', 'safe-ts', 'unsafe', 'unsafe-ts', 'rust', 'rpc'];
 type PluginType = (typeof PLUGIN_TYPES)[number];
 
 // plugin url transformers
@@ -532,7 +532,7 @@ async function init() {
       ],
     },
     {
-      type: prev => (prev === 'safe' ? 'confirm' : null),
+      type: prev => (prev === 'safe' || prev === 'unsafe' ? 'confirm' : null),
       name: 'ts',
       message:
         'Would you like to use ' + 'TypeScript'.yellow + ' in your plugin?',
@@ -547,7 +547,9 @@ async function init() {
 
   const name = response.name;
   const type: PluginType =
-    response.type === 'safe' && response.ts ? 'safe-ts' : response.type;
+    response.ts && (response.type === 'safe' || response.type === 'unsafe')
+      ? `${response.type}-ts`
+      : response.type;
 
   if (!PLUGIN_TYPES.includes(type)) {
     err('Invalid plugin type', type.red, '!');
@@ -605,6 +607,14 @@ async function init() {
 
   verboseLog('Copying and rendering template...');
   await copyAndRender(src, dest);
+  // one omegga.d.ts serves every typed template; a typed plugin's loader keeps
+  // the copy current from then on
+  if (type.endsWith('-ts') && !fs.existsSync(path.join(src, 'omegga.d.ts'))) {
+    await fs.promises.copyFile(
+      path.join(__dirname, '../../templates/safe-ts/omegga.d.ts'),
+      path.join(dest, 'omegga.d.ts'),
+    );
+  }
 
   verboseLog('Starting a repo in the new plugin directory ...');
   try {

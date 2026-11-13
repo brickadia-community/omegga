@@ -263,14 +263,14 @@ Load an environment preset
 ### `loadEnvironmentData`
 
 ```ts
-loadEnvironmentData(preset: | EnvironmentPreset | NonNullable<EnvironmentPreset['data']>['groups']): void
+loadEnvironmentData(preset: EnvironmentPreset | NonNullable<EnvironmentPreset['data']>['groups']): void
 ```
 
 Load some environment preset data
 
 | Param | Type | Description |
 | --- | --- | --- |
-| `preset` | `\| EnvironmentPreset \| NonNullable<EnvironmentPreset['data']>['groups']` | preset data |
+| `preset` | `EnvironmentPreset \| NonNullable<EnvironmentPreset['data']>['groups']` | preset data |
 
 ### `getEnvironmentPresets`
 
@@ -310,7 +310,7 @@ and can optionally clear entities too.
 ### `clearAllBricks`
 
 ```ts
-clearAllBricks(options?: | boolean | { quiet?: boolean; bricks?: boolean; entities?: boolean }): void
+clearAllBricks(options?: boolean | { quiet?: boolean; bricks?: boolean; entities?: boolean }): void
 ```
 
 Clear all bricks on the server. On EA3 this routes to
@@ -319,7 +319,7 @@ is accepted as the legacy `quiet` argument.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| `options` | `\| boolean \| { quiet?: boolean; bricks?: boolean; entities?: boolean }` | quiet (or `{ quiet, bricks, entities }`) |
+| `options` | `boolean \| { quiet?: boolean; bricks?: boolean; entities?: boolean }` | quiet (or `{ quiet, bricks, entities }`) |
 
 ### `saveBricks`
 

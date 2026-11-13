@@ -69,19 +69,29 @@ export type PawnDataField<F, T = string> = {
   field: F;
 };
 
+/**
+ * Builds a row matcher from a status table header. Each column is matched by
+ * the header's width, except the last, which takes the rest of the line: the
+ * game pads the header to its widest cell, so a header for an empty table is
+ * unpadded and its widths say nothing about rows.
+ */
 const buildTableHeaderRegex = (header: string) => {
-  const columns = header.match(/[^|]+/g);
-  if (!columns) throw new Error('invalid table header: ' + header);
+  const columns = header.split('|');
+  if (columns.length < 2) throw new Error('invalid table header: ' + header);
   return new RegExp(
-    columns // get all strings between the |'s'
-      .map((line, i): [string, number] => [
-        line.slice(1, -1),
-        line.length - (i === columns.length - 1 ? 1 : 2),
-      ]) // calculate the lengths (and remove the spaces)
-      .map(([name, len]) => ` (?<${name.trim().toLowerCase()}>.{${len}})( |$)`) // create a regex pattern to match strings of that length (and trim off whitespace at the end)
+    columns
+      .map((column, i) => {
+        const name = column.trim().toLowerCase();
+        // cells are framed by one space on each side
+        const width = column.length - 2;
+        return i === columns.length - 1
+          ? ` (?<${name}>.*?)\\s*$`
+          : ` (?<${name}>.{${width}}) `;
+      })
       .join('\\|'),
-  ); // join the regexes with the |
+  );
 };
+
 /**
  * CL at which the gamemode/team object model (`BP_GameStateBase_C` +
  * `BRGameModeTeam`) replaced the old `BP_Ruleset_C`/`BP_Team_C` minigame model
@@ -182,6 +192,13 @@ const COMMANDS: InjectedCommands = {
             const groups = l.match(columnRegExp)?.groups;
             if (!groups) return [];
             const { name, ping, time: online, roles, address, id } = groups;
+            // a second status block's header can land in the same chunk
+            // when two status commands overlap
+            if (
+              [name, ping, online, roles, address, id].some(g => g == null) ||
+              (name.trim() === 'Name' && id.trim() === 'ID')
+            )
+              return [];
             // trim and parse the matched data
             return [
               {

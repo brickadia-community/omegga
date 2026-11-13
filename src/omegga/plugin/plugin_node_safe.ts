@@ -1,10 +1,12 @@
 import Logger from '@/logger';
 import { recordPluginError } from '@/metrics/errors';
+import type { PluginHttpRequest } from '@/plugin';
 import { METRICS_DEFAULTS } from '@/softconfig';
 import Omegga from '@omegga/server';
 import EventEmitter from 'node:events';
 import fs from 'node:fs';
 import path from 'node:path';
+import { asHttpResponse } from './http';
 import { Worker } from 'node:worker_threads';
 import readline from 'readline';
 import { Plugin } from './interface';
@@ -228,6 +230,18 @@ export default class NodeVmPlugin extends Plugin {
 
     // listen on every message, post them to to the worker
     this.eventPassthrough = this.eventPassthrough.bind(this);
+  }
+
+  // the worker answers with whatever the plugin returned; it crossed a process
+  // boundary from plugin code, so it is checked before the web server uses it
+  async http(request: PluginHttpRequest) {
+    const [r]: unknown[] = await this.emit('http', request);
+    return asHttpResponse(r);
+  }
+
+  // the worker hands brickadiaEvents of any name to the plugin's omegga
+  async emitConsoleCommand(name: string, args: string[]) {
+    this.eventPassthrough('consolecmd:' + name, ...args);
   }
 
   // emit a custom plugin event

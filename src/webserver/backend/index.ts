@@ -31,6 +31,7 @@ import {
   HttpError,
   requireSession,
 } from './middleware';
+import { pluginHttpRouter } from './pluginHttp';
 import { appRouter } from './router';
 import { setWebserver } from './router/server';
 import { verifyToken as verifyTOTP } from './totp';
@@ -401,6 +402,17 @@ export default class Webserver {
     });
 
     this.app.use('/api/v1', requireSession);
+    // plugins' own HTTP routes, ahead of the API's login check: each request
+    // is authorized in the router, since a plugin can choose to be reachable
+    // without a login
+    this.app.use(
+      '/api/v1/plugin',
+      pluginHttpRouter({
+        findPlugin: name =>
+          this.omegga.pluginLoader?.plugins.find(p => p.getName() === name),
+        findUser: id => this.database.findUserById(id),
+      }),
+    );
     this.app.use('/api/v1', openApi);
     this.app.use('/api/v1', api);
 
